@@ -53,7 +53,10 @@ select = ["E", "F", "I", "B", "UP", "SIM"]
 ignore = []
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["B"]
+# Tests: long descriptive assertion lines and inline literals are common and harmless.
+"tests/**" = ["B", "E501"]
+# Fixture/example builders: data-heavy scripts where long literal rows are clearer aligned.
+"scripts/**" = ["E501"]
 # Renderer literals (SVG markup, long content strings, embedded HTML) are part
 # of the locked visual contract (SPEC §3). Keeping them on one line preserves
 # readability against the rendered HTML structure.

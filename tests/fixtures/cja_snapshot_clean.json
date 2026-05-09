@@ -1,0 +1,1272 @@
+{
+  "metadata": {
+    "Generation Timestamp": "2026-04-25 09:14:00",
+    "Data View ID": "dv_clean_prod_web",
+    "Data View Name": "Clean Production Web Analytics",
+    "Total Metrics": 12,
+    "Total Dimensions": 18,
+    "Tool Version": "3.5.17"
+  },
+  "data_view": {
+    "data_view_id": "dv_clean_prod_web",
+    "data_view_name": "Clean Production Web Analytics"
+  },
+  "metrics": [
+    {
+      "id": "metrics/cm_clean_metric_01",
+      "name": "Clean Metric 01",
+      "type": "int",
+      "title": "Clean Metric 01",
+      "description": "Documented metric 01.",
+      "dataType": "integer",
+      "precision": 0,
+      "owner": "owner@example.com",
+      "tags": [
+        "custom"
+      ],
+      "created": "2025-09-01T00:00:00Z",
+      "modified": "2025-09-01T00:00:00Z"
+    },
+    {
+      "id": "metrics/cm_clean_metric_02",
+      "name": "Clean Metric 02",
+      "type": "int",
+      "title": "Clean Metric 02",
+      "description": "Documented metric 02.",
+      "dataType": "integer",
+      "precision": 0,
+      "owner": "owner@example.com",
+      "tags": [
+        "custom"
+      ],
+      "created": "2025-09-01T00:00:00Z",
+      "modified": "2025-09-01T00:00:00Z"
+    },
+    {
+      "id": "metrics/cm_clean_metric_03",
+      "name": "Clean Metric 03",
+      "type": "int",
+      "title": "Clean Metric 03",
+      "description": "Documented metric 03.",
+      "dataType": "integer",
+      "precision": 0,
+      "owner": "owner@example.com",
+      "tags": [
+        "custom"
+      ],
+      "created": "2025-09-01T00:00:00Z",
+      "modified": "2025-09-01T00:00:00Z"
+    },
+    {
+      "id": "metrics/cm_clean_metric_04",
+      "name": "Clean Metric 04",
+      "type": "int",
+      "title": "Clean Metric 04",
+      "description": "Documented metric 04.",
+      "dataType": "integer",
+      "precision": 0,
+      "owner": "owner@example.com",
+      "tags": [
+        "custom"
+      ],
+      "created": "2025-09-01T00:00:00Z",
+      "modified": "2025-09-01T00:00:00Z"
+    },
+    {
+      "id": "metrics/cm_clean_metric_05",
+      "name": "Clean Metric 05",
+      "type": "int",
+      "title": "Clean Metric 05",
+      "description": "Documented metric 05.",
+      "dataType": "integer",
+      "precision": 0,
+      "owner": "owner@example.com",
+      "tags": [
+        "custom"
+      ],
+      "created": "2025-09-01T00:00:00Z",
+      "modified": "2025-09-01T00:00:00Z"
+    },
+    {
+      "id": "metrics/cm_clean_metric_06",
+      "name": "Clean Metric 06",
+      "type": "int",
+      "title": "Clean Metric 06",
+      "description": "Documented metric 06.",
+      "dataType": "integer",
+      "precision": 0,
+      "owner": "owner@example.com",
+      "tags": [
+        "custom"
+      ],
+      "created": "2025-09-01T00:00:00Z",
+      "modified": "2025-09-01T00:00:00Z"
+    },
+    {
+      "id": "metrics/cm_clean_metric_07",
+      "name": "Clean Metric 07",
+      "type": "int",
+      "title": "Clean Metric 07",
+      "description": "Documented metric 07.",
+      "dataType": "integer",
+      "precision": 0,
+      "owner": "owner@example.com",
+      "tags": [
+        "custom"
+      ],
+      "created": "2025-09-01T00:00:00Z",
+      "modified": "2025-09-01T00:00:00Z"
+    },
+    {
+      "id": "metrics/cm_clean_metric_08",
+      "name": "Clean Metric 08",
+      "type": "int",
+      "title": "Clean Metric 08",
+      "description": "Documented metric 08.",
+      "dataType": "integer",
+      "precision": 0,
+      "owner": "owner@example.com",
+      "tags": [
+        "custom"
+      ],
+      "created": "2025-09-01T00:00:00Z",
+      "modified": "2025-09-01T00:00:00Z"
+    },
+    {
+      "id": "metrics/cm_clean_metric_09",
+      "name": "Clean Metric 09",
+      "type": "int",
+      "title": "Clean Metric 09",
+      "description": "Documented metric 09.",
+      "dataType": "integer",
+      "precision": 0,
+      "owner": "owner@example.com",
+      "tags": [
+        "custom"
+      ],
+      "created": "2025-09-01T00:00:00Z",
+      "modified": "2025-09-01T00:00:00Z"
+    },
+    {
+      "id": "metrics/cm_clean_metric_10",
+      "name": "Clean Metric 10",
+      "type": "int",
+      "title": "Clean Metric 10",
+      "description": "Documented metric 10.",
+      "dataType": "integer",
+      "precision": 0,
+      "owner": "owner@example.com",
+      "tags": [
+        "custom"
+      ],
+      "created": "2025-09-01T00:00:00Z",
+      "modified": "2025-09-01T00:00:00Z"
+    },
+    {
+      "id": "metrics/cm_clean_metric_11",
+      "name": "Clean Metric 11",
+      "type": "int",
+      "title": "Clean Metric 11",
+      "description": "Documented metric 11.",
+      "dataType": "integer",
+      "precision": 0,
+      "owner": "owner@example.com",
+      "tags": [
+        "custom"
+      ],
+      "created": "2025-09-01T00:00:00Z",
+      "modified": "2025-09-01T00:00:00Z"
+    },
+    {
+      "id": "metrics/cm_clean_metric_12",
+      "name": "Clean Metric 12",
+      "type": "int",
+      "title": "Clean Metric 12",
+      "description": "Documented metric 12.",
+      "dataType": "integer",
+      "precision": 0,
+      "owner": "owner@example.com",
+      "tags": [
+        "custom"
+      ],
+      "created": "2025-09-01T00:00:00Z",
+      "modified": "2025-09-01T00:00:00Z"
+    }
+  ],
+  "dimensions": [
+    {
+      "id": "variables/evar1",
+      "name": "Clean Dimension 01",
+      "type": "string",
+      "title": "Clean Dimension 01",
+      "description": "Documented dimension 01.",
+      "dataType": "string",
+      "owner": "owner@example.com",
+      "tags": [
+        "custom"
+      ],
+      "created": "2025-09-01T00:00:00Z",
+      "modified": "2025-09-01T00:00:00Z"
+    },
+    {
+      "id": "variables/evar2",
+      "name": "Clean Dimension 02",
+      "type": "string",
+      "title": "Clean Dimension 02",
+      "description": "Documented dimension 02.",
+      "dataType": "string",
+      "owner": "owner@example.com",
+      "tags": [
+        "custom"
+      ],
+      "created": "2025-09-01T00:00:00Z",
+      "modified": "2025-09-01T00:00:00Z"
+    },
+    {
+      "id": "variables/evar3",
+      "name": "Clean Dimension 03",
+      "type": "string",
+      "title": "Clean Dimension 03",
+      "description": "Documented dimension 03.",
+      "dataType": "string",
+      "owner": "owner@example.com",
+      "tags": [
+        "custom"
+      ],
+      "created": "2025-09-01T00:00:00Z",
+      "modified": "2025-09-01T00:00:00Z"
+    },
+    {
+      "id": "variables/evar4",
+      "name": "Clean Dimension 04",
+      "type": "string",
+      "title": "Clean Dimension 04",
+      "description": "Documented dimension 04.",
+      "dataType": "string",
+      "owner": "owner@example.com",
+      "tags": [
+        "custom"
+      ],
+      "created": "2025-09-01T00:00:00Z",
+      "modified": "2025-09-01T00:00:00Z"
+    },
+    {
+      "id": "variables/evar5",
+      "name": "Clean Dimension 05",
+      "type": "string",
+      "title": "Clean Dimension 05",
+      "description": "Documented dimension 05.",
+      "dataType": "string",
+      "owner": "owner@example.com",
+      "tags": [
+        "custom"
+      ],
+      "created": "2025-09-01T00:00:00Z",
+      "modified": "2025-09-01T00:00:00Z"
+    },
+    {
+      "id": "variables/evar6",
+      "name": "Clean Dimension 06",
+      "type": "string",
+      "title": "Clean Dimension 06",
+      "description": "Documented dimension 06.",
+      "dataType": "string",
+      "owner": "owner@example.com",
+      "tags": [
+        "custom"
+      ],
+      "created": "2025-09-01T00:00:00Z",
+      "modified": "2025-09-01T00:00:00Z"
+    },
+    {
+      "id": "variables/evar7",
+      "name": "Clean Dimension 07",
+      "type": "string",
+      "title": "Clean Dimension 07",
+      "description": "Documented dimension 07.",
+      "dataType": "string",
+      "owner": "owner@example.com",
+      "tags": [
+        "custom"
+      ],
+      "created": "2025-09-01T00:00:00Z",
+      "modified": "2025-09-01T00:00:00Z"
+    },
+    {
+      "id": "variables/evar8",
+      "name": "Clean Dimension 08",
+      "type": "string",
+      "title": "Clean Dimension 08",
+      "description": "Documented dimension 08.",
+      "dataType": "string",
+      "owner": "owner@example.com",
+      "tags": [
+        "custom"
+      ],
+      "created": "2025-09-01T00:00:00Z",
+      "modified": "2025-09-01T00:00:00Z"
+    },
+    {
+      "id": "variables/evar9",
+      "name": "Clean Dimension 09",
+      "type": "string",
+      "title": "Clean Dimension 09",
+      "description": "Documented dimension 09.",
+      "dataType": "string",
+      "owner": "owner@example.com",
+      "tags": [
+        "custom"
+      ],
+      "created": "2025-09-01T00:00:00Z",
+      "modified": "2025-09-01T00:00:00Z"
+    },
+    {
+      "id": "variables/evar10",
+      "name": "Clean Dimension 10",
+      "type": "string",
+      "title": "Clean Dimension 10",
+      "description": "Documented dimension 10.",
+      "dataType": "string",
+      "owner": "owner@example.com",
+      "tags": [
+        "custom"
+      ],
+      "created": "2025-09-01T00:00:00Z",
+      "modified": "2025-09-01T00:00:00Z"
+    },
+    {
+      "id": "variables/evar11",
+      "name": "Clean Dimension 11",
+      "type": "string",
+      "title": "Clean Dimension 11",
+      "description": "Documented dimension 11.",
+      "dataType": "string",
+      "owner": "owner@example.com",
+      "tags": [
+        "custom"
+      ],
+      "created": "2025-09-01T00:00:00Z",
+      "modified": "2025-09-01T00:00:00Z"
+    },
+    {
+      "id": "variables/evar12",
+      "name": "Clean Dimension 12",
+      "type": "string",
+      "title": "Clean Dimension 12",
+      "description": "Documented dimension 12.",
+      "dataType": "string",
+      "owner": "owner@example.com",
+      "tags": [
+        "custom"
+      ],
+      "created": "2025-09-01T00:00:00Z",
+      "modified": "2025-09-01T00:00:00Z"
+    },
+    {
+      "id": "variables/evar13",
+      "name": "Clean Dimension 13",
+      "type": "string",
+      "title": "Clean Dimension 13",
+      "description": "Documented dimension 13.",
+      "dataType": "string",
+      "owner": "owner@example.com",
+      "tags": [
+        "custom"
+      ],
+      "created": "2025-09-01T00:00:00Z",
+      "modified": "2025-09-01T00:00:00Z"
+    },
+    {
+      "id": "variables/evar14",
+      "name": "Clean Dimension 14",
+      "type": "string",
+      "title": "Clean Dimension 14",
+      "description": "Documented dimension 14.",
+      "dataType": "string",
+      "owner": "owner@example.com",
+      "tags": [
+        "custom"
+      ],
+      "created": "2025-09-01T00:00:00Z",
+      "modified": "2025-09-01T00:00:00Z"
+    },
+    {
+      "id": "variables/evar15",
+      "name": "Clean Dimension 15",
+      "type": "string",
+      "title": "Clean Dimension 15",
+      "description": "Documented dimension 15.",
+      "dataType": "string",
+      "owner": "owner@example.com",
+      "tags": [
+        "custom"
+      ],
+      "created": "2025-09-01T00:00:00Z",
+      "modified": "2025-09-01T00:00:00Z"
+    },
+    {
+      "id": "variables/evar16",
+      "name": "Clean Dimension 16",
+      "type": "string",
+      "title": "Clean Dimension 16",
+      "description": "Documented dimension 16.",
+      "dataType": "string",
+      "owner": "owner@example.com",
+      "tags": [
+        "custom"
+      ],
+      "created": "2025-09-01T00:00:00Z",
+      "modified": "2025-09-01T00:00:00Z"
+    },
+    {
+      "id": "variables/evar17",
+      "name": "Clean Dimension 17",
+      "type": "string",
+      "title": "Clean Dimension 17",
+      "description": "Documented dimension 17.",
+      "dataType": "string",
+      "owner": "owner@example.com",
+      "tags": [
+        "custom"
+      ],
+      "created": "2025-09-01T00:00:00Z",
+      "modified": "2025-09-01T00:00:00Z"
+    },
+    {
+      "id": "variables/evar18",
+      "name": "Clean Dimension 18",
+      "type": "string",
+      "title": "Clean Dimension 18",
+      "description": "Documented dimension 18.",
+      "dataType": "string",
+      "owner": "owner@example.com",
+      "tags": [
+        "custom"
+      ],
+      "created": "2025-09-01T00:00:00Z",
+      "modified": "2025-09-01T00:00:00Z"
+    }
+  ],
+  "data_quality": [],
+  "derived_fields": {
+    "summary": {
+      "data_view_id": "dv_clean_prod_web",
+      "total_derived_fields": 10
+    },
+    "fields": [
+      {
+        "component_id": "derived/df_clean_01",
+        "component_name": "Clean Derived 01",
+        "component_type": "derived_field",
+        "description": "Documented derived field 01.",
+        "complexity_score": 10.0,
+        "functions_used": [
+          "concat"
+        ],
+        "branch_count": 1,
+        "nesting_depth": 1,
+        "operator_count": 1,
+        "schema_field_count": 1,
+        "schema_fields": [
+          "schema/clean_1"
+        ],
+        "lookup_references": [],
+        "component_references": [],
+        "rule_names": [],
+        "logic_summary": "concat(a, b)",
+        "inferred_output_type": "string",
+        "definition_json": "{\"func\": \"concat\", \"args\": [\"a\", \"b\"]}",
+        "owner": "owner@example.com",
+        "tags": [
+          "custom"
+        ],
+        "created": "2025-09-01T00:00:00Z",
+        "modified": "2025-09-01T00:00:00Z"
+      },
+      {
+        "component_id": "derived/df_clean_02",
+        "component_name": "Clean Derived 02",
+        "component_type": "derived_field",
+        "description": "Documented derived field 02.",
+        "complexity_score": 10.0,
+        "functions_used": [
+          "concat"
+        ],
+        "branch_count": 1,
+        "nesting_depth": 1,
+        "operator_count": 1,
+        "schema_field_count": 1,
+        "schema_fields": [
+          "schema/clean_2"
+        ],
+        "lookup_references": [],
+        "component_references": [],
+        "rule_names": [],
+        "logic_summary": "concat(a, b)",
+        "inferred_output_type": "string",
+        "definition_json": "{\"func\": \"concat\", \"args\": [\"a\", \"b\"]}",
+        "owner": "owner@example.com",
+        "tags": [
+          "custom"
+        ],
+        "created": "2025-09-01T00:00:00Z",
+        "modified": "2025-09-01T00:00:00Z"
+      },
+      {
+        "component_id": "derived/df_clean_03",
+        "component_name": "Clean Derived 03",
+        "component_type": "derived_field",
+        "description": "Documented derived field 03.",
+        "complexity_score": 10.0,
+        "functions_used": [
+          "concat"
+        ],
+        "branch_count": 1,
+        "nesting_depth": 1,
+        "operator_count": 1,
+        "schema_field_count": 1,
+        "schema_fields": [
+          "schema/clean_3"
+        ],
+        "lookup_references": [],
+        "component_references": [],
+        "rule_names": [],
+        "logic_summary": "concat(a, b)",
+        "inferred_output_type": "string",
+        "definition_json": "{\"func\": \"concat\", \"args\": [\"a\", \"b\"]}",
+        "owner": "owner@example.com",
+        "tags": [
+          "custom"
+        ],
+        "created": "2025-09-01T00:00:00Z",
+        "modified": "2025-09-01T00:00:00Z"
+      },
+      {
+        "component_id": "derived/df_clean_04",
+        "component_name": "Clean Derived 04",
+        "component_type": "derived_field",
+        "description": "Documented derived field 04.",
+        "complexity_score": 10.0,
+        "functions_used": [
+          "concat"
+        ],
+        "branch_count": 1,
+        "nesting_depth": 1,
+        "operator_count": 1,
+        "schema_field_count": 1,
+        "schema_fields": [
+          "schema/clean_4"
+        ],
+        "lookup_references": [],
+        "component_references": [],
+        "rule_names": [],
+        "logic_summary": "concat(a, b)",
+        "inferred_output_type": "string",
+        "definition_json": "{\"func\": \"concat\", \"args\": [\"a\", \"b\"]}",
+        "owner": "owner@example.com",
+        "tags": [
+          "custom"
+        ],
+        "created": "2025-09-01T00:00:00Z",
+        "modified": "2025-09-01T00:00:00Z"
+      },
+      {
+        "component_id": "derived/df_clean_05",
+        "component_name": "Clean Derived 05",
+        "component_type": "derived_field",
+        "description": "Documented derived field 05.",
+        "complexity_score": 10.0,
+        "functions_used": [
+          "concat"
+        ],
+        "branch_count": 1,
+        "nesting_depth": 1,
+        "operator_count": 1,
+        "schema_field_count": 1,
+        "schema_fields": [
+          "schema/clean_5"
+        ],
+        "lookup_references": [],
+        "component_references": [],
+        "rule_names": [],
+        "logic_summary": "concat(a, b)",
+        "inferred_output_type": "string",
+        "definition_json": "{\"func\": \"concat\", \"args\": [\"a\", \"b\"]}",
+        "owner": "owner@example.com",
+        "tags": [
+          "custom"
+        ],
+        "created": "2025-09-01T00:00:00Z",
+        "modified": "2025-09-01T00:00:00Z"
+      },
+      {
+        "component_id": "derived/df_clean_06",
+        "component_name": "Clean Derived 06",
+        "component_type": "derived_field",
+        "description": "Documented derived field 06.",
+        "complexity_score": 10.0,
+        "functions_used": [
+          "concat"
+        ],
+        "branch_count": 1,
+        "nesting_depth": 1,
+        "operator_count": 1,
+        "schema_field_count": 1,
+        "schema_fields": [
+          "schema/clean_6"
+        ],
+        "lookup_references": [],
+        "component_references": [],
+        "rule_names": [],
+        "logic_summary": "concat(a, b)",
+        "inferred_output_type": "string",
+        "definition_json": "{\"func\": \"concat\", \"args\": [\"a\", \"b\"]}",
+        "owner": "owner@example.com",
+        "tags": [
+          "custom"
+        ],
+        "created": "2025-09-01T00:00:00Z",
+        "modified": "2025-09-01T00:00:00Z"
+      },
+      {
+        "component_id": "derived/df_clean_07",
+        "component_name": "Clean Derived 07",
+        "component_type": "derived_field",
+        "description": "Documented derived field 07.",
+        "complexity_score": 10.0,
+        "functions_used": [
+          "concat"
+        ],
+        "branch_count": 1,
+        "nesting_depth": 1,
+        "operator_count": 1,
+        "schema_field_count": 1,
+        "schema_fields": [
+          "schema/clean_7"
+        ],
+        "lookup_references": [],
+        "component_references": [],
+        "rule_names": [],
+        "logic_summary": "concat(a, b)",
+        "inferred_output_type": "string",
+        "definition_json": "{\"func\": \"concat\", \"args\": [\"a\", \"b\"]}",
+        "owner": "owner@example.com",
+        "tags": [
+          "custom"
+        ],
+        "created": "2025-09-01T00:00:00Z",
+        "modified": "2025-09-01T00:00:00Z"
+      },
+      {
+        "component_id": "derived/df_clean_08",
+        "component_name": "Clean Derived 08",
+        "component_type": "derived_field",
+        "description": "Documented derived field 08.",
+        "complexity_score": 10.0,
+        "functions_used": [
+          "concat"
+        ],
+        "branch_count": 1,
+        "nesting_depth": 1,
+        "operator_count": 1,
+        "schema_field_count": 1,
+        "schema_fields": [
+          "schema/clean_8"
+        ],
+        "lookup_references": [],
+        "component_references": [],
+        "rule_names": [],
+        "logic_summary": "concat(a, b)",
+        "inferred_output_type": "string",
+        "definition_json": "{\"func\": \"concat\", \"args\": [\"a\", \"b\"]}",
+        "owner": "owner@example.com",
+        "tags": [
+          "custom"
+        ],
+        "created": "2025-09-01T00:00:00Z",
+        "modified": "2025-09-01T00:00:00Z"
+      },
+      {
+        "component_id": "derived/df_clean_09",
+        "component_name": "Clean Derived 09",
+        "component_type": "derived_field",
+        "description": "Documented derived field 09.",
+        "complexity_score": 10.0,
+        "functions_used": [
+          "concat"
+        ],
+        "branch_count": 1,
+        "nesting_depth": 1,
+        "operator_count": 1,
+        "schema_field_count": 1,
+        "schema_fields": [
+          "schema/clean_9"
+        ],
+        "lookup_references": [],
+        "component_references": [],
+        "rule_names": [],
+        "logic_summary": "concat(a, b)",
+        "inferred_output_type": "string",
+        "definition_json": "{\"func\": \"concat\", \"args\": [\"a\", \"b\"]}",
+        "owner": "owner@example.com",
+        "tags": [
+          "custom"
+        ],
+        "created": "2025-09-01T00:00:00Z",
+        "modified": "2025-09-01T00:00:00Z"
+      },
+      {
+        "component_id": "derived/df_clean_10",
+        "component_name": "Clean Derived 10",
+        "component_type": "derived_field",
+        "description": "Documented derived field 10.",
+        "complexity_score": 10.0,
+        "functions_used": [
+          "concat"
+        ],
+        "branch_count": 1,
+        "nesting_depth": 1,
+        "operator_count": 1,
+        "schema_field_count": 1,
+        "schema_fields": [
+          "schema/clean_10"
+        ],
+        "lookup_references": [],
+        "component_references": [],
+        "rule_names": [],
+        "logic_summary": "concat(a, b)",
+        "inferred_output_type": "string",
+        "definition_json": "{\"func\": \"concat\", \"args\": [\"a\", \"b\"]}",
+        "owner": "owner@example.com",
+        "tags": [
+          "custom"
+        ],
+        "created": "2025-09-01T00:00:00Z",
+        "modified": "2025-09-01T00:00:00Z"
+      }
+    ]
+  },
+  "calculated_metrics": {
+    "summary": {
+      "data_view_id": "dv_clean_prod_web",
+      "total_calculated_metrics": 5
+    },
+    "metrics": [
+      {
+        "metric_id": "calculatedMetrics/cm_clean_orders_per_visit",
+        "metric_name": "Cm Clean Orders Per Visit",
+        "description": "Documented metric: Orders / Visits.",
+        "owner": "owner@example.com",
+        "owner_id": "owner",
+        "approved": true,
+        "favorite": false,
+        "tags": [
+          "governance",
+          "custom"
+        ],
+        "created": "2025-09-01T00:00:00Z",
+        "modified": "2025-09-01T00:00:00Z",
+        "shares": [],
+        "shared_to_count": 0,
+        "data_view_id": "dv_clean_prod_web",
+        "site_title": "Clean Production Web Analytics",
+        "complexity_score": 15.0,
+        "functions_used": [
+          "divide"
+        ],
+        "functions_used_internal": [
+          "divide"
+        ],
+        "nesting_depth": 1,
+        "operator_count": 1,
+        "metric_references": [
+          "metrics/orders",
+          "metrics/visits"
+        ],
+        "segment_references": [],
+        "conditional_count": 0,
+        "formula_summary": "Orders / Visits",
+        "polarity": "positive",
+        "metric_type": "decimal",
+        "precision": 2,
+        "definition_json": "{\"func\": \"divide\", \"col1\": {\"func\": \"metric\", \"name\": \"metrics/orders\"}, \"col2\": {\"func\": \"metric\", \"name\": \"metrics/visits\"}}"
+      },
+      {
+        "metric_id": "calculatedMetrics/cm_clean_avg_order_value",
+        "metric_name": "Cm Clean Avg Order Value",
+        "description": "Documented metric: Revenue / Orders.",
+        "owner": "owner@example.com",
+        "owner_id": "owner",
+        "approved": true,
+        "favorite": false,
+        "tags": [
+          "governance",
+          "custom"
+        ],
+        "created": "2025-09-01T00:00:00Z",
+        "modified": "2025-09-01T00:00:00Z",
+        "shares": [],
+        "shared_to_count": 0,
+        "data_view_id": "dv_clean_prod_web",
+        "site_title": "Clean Production Web Analytics",
+        "complexity_score": 16.0,
+        "functions_used": [
+          "divide"
+        ],
+        "functions_used_internal": [
+          "divide"
+        ],
+        "nesting_depth": 1,
+        "operator_count": 1,
+        "metric_references": [
+          "metrics/revenue",
+          "metrics/orders"
+        ],
+        "segment_references": [],
+        "conditional_count": 0,
+        "formula_summary": "Revenue / Orders",
+        "polarity": "positive",
+        "metric_type": "decimal",
+        "precision": 2,
+        "definition_json": "{\"func\": \"divide\", \"col1\": {\"func\": \"metric\", \"name\": \"metrics/revenue\"}, \"col2\": {\"func\": \"metric\", \"name\": \"metrics/orders\"}}"
+      },
+      {
+        "metric_id": "calculatedMetrics/cm_clean_bounce_rate",
+        "metric_name": "Cm Clean Bounce Rate",
+        "description": "Documented metric: Bounces / Visits.",
+        "owner": "owner@example.com",
+        "owner_id": "owner",
+        "approved": true,
+        "favorite": false,
+        "tags": [
+          "governance",
+          "custom"
+        ],
+        "created": "2025-09-01T00:00:00Z",
+        "modified": "2025-09-01T00:00:00Z",
+        "shares": [],
+        "shared_to_count": 0,
+        "data_view_id": "dv_clean_prod_web",
+        "site_title": "Clean Production Web Analytics",
+        "complexity_score": 17.0,
+        "functions_used": [
+          "divide"
+        ],
+        "functions_used_internal": [
+          "divide"
+        ],
+        "nesting_depth": 1,
+        "operator_count": 1,
+        "metric_references": [
+          "metrics/bounces",
+          "metrics/visits"
+        ],
+        "segment_references": [],
+        "conditional_count": 0,
+        "formula_summary": "Bounces / Visits",
+        "polarity": "positive",
+        "metric_type": "decimal",
+        "precision": 2,
+        "definition_json": "{\"func\": \"divide\", \"col1\": {\"func\": \"metric\", \"name\": \"metrics/bounces\"}, \"col2\": {\"func\": \"metric\", \"name\": \"metrics/visits\"}}"
+      },
+      {
+        "metric_id": "calculatedMetrics/cm_clean_signup_rate",
+        "metric_name": "Cm Clean Signup Rate",
+        "description": "Documented metric: Signups / Visits.",
+        "owner": "owner@example.com",
+        "owner_id": "owner",
+        "approved": true,
+        "favorite": false,
+        "tags": [
+          "governance",
+          "custom"
+        ],
+        "created": "2025-09-01T00:00:00Z",
+        "modified": "2025-09-01T00:00:00Z",
+        "shares": [],
+        "shared_to_count": 0,
+        "data_view_id": "dv_clean_prod_web",
+        "site_title": "Clean Production Web Analytics",
+        "complexity_score": 18.0,
+        "functions_used": [
+          "divide"
+        ],
+        "functions_used_internal": [
+          "divide"
+        ],
+        "nesting_depth": 1,
+        "operator_count": 1,
+        "metric_references": [
+          "metrics/signups",
+          "metrics/visits"
+        ],
+        "segment_references": [],
+        "conditional_count": 0,
+        "formula_summary": "Signups / Visits",
+        "polarity": "positive",
+        "metric_type": "decimal",
+        "precision": 2,
+        "definition_json": "{\"func\": \"divide\", \"col1\": {\"func\": \"metric\", \"name\": \"metrics/signups\"}, \"col2\": {\"func\": \"metric\", \"name\": \"metrics/visits\"}}"
+      },
+      {
+        "metric_id": "calculatedMetrics/cm_clean_engagement_rate",
+        "metric_name": "Cm Clean Engagement Rate",
+        "description": "Documented metric: Engaged / Visits.",
+        "owner": "owner@example.com",
+        "owner_id": "owner",
+        "approved": true,
+        "favorite": false,
+        "tags": [
+          "governance",
+          "custom"
+        ],
+        "created": "2025-09-01T00:00:00Z",
+        "modified": "2025-09-01T00:00:00Z",
+        "shares": [],
+        "shared_to_count": 0,
+        "data_view_id": "dv_clean_prod_web",
+        "site_title": "Clean Production Web Analytics",
+        "complexity_score": 19.0,
+        "functions_used": [
+          "divide"
+        ],
+        "functions_used_internal": [
+          "divide"
+        ],
+        "nesting_depth": 1,
+        "operator_count": 1,
+        "metric_references": [
+          "metrics/engaged",
+          "metrics/visits"
+        ],
+        "segment_references": [],
+        "conditional_count": 0,
+        "formula_summary": "Engaged / Visits",
+        "polarity": "positive",
+        "metric_type": "decimal",
+        "precision": 2,
+        "definition_json": "{\"func\": \"divide\", \"col1\": {\"func\": \"metric\", \"name\": \"metrics/engaged\"}, \"col2\": {\"func\": \"metric\", \"name\": \"metrics/visits\"}}"
+      }
+    ]
+  },
+  "segments": {
+    "summary": {
+      "data_view_id": "dv_clean_prod_web",
+      "total_segments": 8
+    },
+    "segments": [
+      {
+        "segment_id": "segments/seg_clean_01",
+        "segment_name": "Clean Segment 01",
+        "description": "Documented shallow segment 01.",
+        "owner": "owner@example.com",
+        "owner_id": "owner",
+        "approved": true,
+        "favorite": false,
+        "tags": [
+          "governance"
+        ],
+        "created": "2025-09-01T00:00:00Z",
+        "modified": "2025-09-01T00:00:00Z",
+        "shares": [],
+        "shared_to_count": 0,
+        "data_view_id": "dv_clean_prod_web",
+        "site_title": "Clean Production Web Analytics",
+        "complexity_score": 8.0,
+        "container_type": "event",
+        "functions_used": [
+          "container",
+          "streq"
+        ],
+        "functions_used_internal": [
+          "container",
+          "streq"
+        ],
+        "predicate_count": 1,
+        "logic_operator_count": 0,
+        "nesting_depth": 2,
+        "container_count": 1,
+        "dimension_references": [
+          "variables/evar1"
+        ],
+        "metric_references": [],
+        "other_segment_references": [],
+        "definition_summary": "single equality on event",
+        "definition_json": "{\"func\": \"container\", \"context\": \"event\", \"pred\": {\"func\": \"streq\", \"val\": {\"func\": \"attr\", \"name\": \"variables/evar1\"}, \"str\": \"match\"}}"
+      },
+      {
+        "segment_id": "segments/seg_clean_02",
+        "segment_name": "Clean Segment 02",
+        "description": "Documented shallow segment 02.",
+        "owner": "owner@example.com",
+        "owner_id": "owner",
+        "approved": true,
+        "favorite": false,
+        "tags": [
+          "governance"
+        ],
+        "created": "2025-09-01T00:00:00Z",
+        "modified": "2025-09-01T00:00:00Z",
+        "shares": [],
+        "shared_to_count": 0,
+        "data_view_id": "dv_clean_prod_web",
+        "site_title": "Clean Production Web Analytics",
+        "complexity_score": 8.0,
+        "container_type": "event",
+        "functions_used": [
+          "container",
+          "streq"
+        ],
+        "functions_used_internal": [
+          "container",
+          "streq"
+        ],
+        "predicate_count": 1,
+        "logic_operator_count": 0,
+        "nesting_depth": 2,
+        "container_count": 1,
+        "dimension_references": [
+          "variables/evar2"
+        ],
+        "metric_references": [],
+        "other_segment_references": [],
+        "definition_summary": "single equality on event",
+        "definition_json": "{\"func\": \"container\", \"context\": \"event\", \"pred\": {\"func\": \"streq\", \"val\": {\"func\": \"attr\", \"name\": \"variables/evar2\"}, \"str\": \"match\"}}"
+      },
+      {
+        "segment_id": "segments/seg_clean_03",
+        "segment_name": "Clean Segment 03",
+        "description": "Documented shallow segment 03.",
+        "owner": "owner@example.com",
+        "owner_id": "owner",
+        "approved": true,
+        "favorite": false,
+        "tags": [
+          "governance"
+        ],
+        "created": "2025-09-01T00:00:00Z",
+        "modified": "2025-09-01T00:00:00Z",
+        "shares": [],
+        "shared_to_count": 0,
+        "data_view_id": "dv_clean_prod_web",
+        "site_title": "Clean Production Web Analytics",
+        "complexity_score": 8.0,
+        "container_type": "event",
+        "functions_used": [
+          "container",
+          "streq"
+        ],
+        "functions_used_internal": [
+          "container",
+          "streq"
+        ],
+        "predicate_count": 1,
+        "logic_operator_count": 0,
+        "nesting_depth": 2,
+        "container_count": 1,
+        "dimension_references": [
+          "variables/evar3"
+        ],
+        "metric_references": [],
+        "other_segment_references": [],
+        "definition_summary": "single equality on event",
+        "definition_json": "{\"func\": \"container\", \"context\": \"event\", \"pred\": {\"func\": \"streq\", \"val\": {\"func\": \"attr\", \"name\": \"variables/evar3\"}, \"str\": \"match\"}}"
+      },
+      {
+        "segment_id": "segments/seg_clean_04",
+        "segment_name": "Clean Segment 04",
+        "description": "Documented shallow segment 04.",
+        "owner": "owner@example.com",
+        "owner_id": "owner",
+        "approved": true,
+        "favorite": false,
+        "tags": [
+          "governance"
+        ],
+        "created": "2025-09-01T00:00:00Z",
+        "modified": "2025-09-01T00:00:00Z",
+        "shares": [],
+        "shared_to_count": 0,
+        "data_view_id": "dv_clean_prod_web",
+        "site_title": "Clean Production Web Analytics",
+        "complexity_score": 8.0,
+        "container_type": "event",
+        "functions_used": [
+          "container",
+          "streq"
+        ],
+        "functions_used_internal": [
+          "container",
+          "streq"
+        ],
+        "predicate_count": 1,
+        "logic_operator_count": 0,
+        "nesting_depth": 2,
+        "container_count": 1,
+        "dimension_references": [
+          "variables/evar4"
+        ],
+        "metric_references": [],
+        "other_segment_references": [],
+        "definition_summary": "single equality on event",
+        "definition_json": "{\"func\": \"container\", \"context\": \"event\", \"pred\": {\"func\": \"streq\", \"val\": {\"func\": \"attr\", \"name\": \"variables/evar4\"}, \"str\": \"match\"}}"
+      },
+      {
+        "segment_id": "segments/seg_clean_05",
+        "segment_name": "Clean Segment 05",
+        "description": "Documented shallow segment 05.",
+        "owner": "owner@example.com",
+        "owner_id": "owner",
+        "approved": true,
+        "favorite": false,
+        "tags": [
+          "governance"
+        ],
+        "created": "2025-09-01T00:00:00Z",
+        "modified": "2025-09-01T00:00:00Z",
+        "shares": [],
+        "shared_to_count": 0,
+        "data_view_id": "dv_clean_prod_web",
+        "site_title": "Clean Production Web Analytics",
+        "complexity_score": 8.0,
+        "container_type": "event",
+        "functions_used": [
+          "container",
+          "streq"
+        ],
+        "functions_used_internal": [
+          "container",
+          "streq"
+        ],
+        "predicate_count": 1,
+        "logic_operator_count": 0,
+        "nesting_depth": 2,
+        "container_count": 1,
+        "dimension_references": [
+          "variables/evar5"
+        ],
+        "metric_references": [],
+        "other_segment_references": [],
+        "definition_summary": "single equality on event",
+        "definition_json": "{\"func\": \"container\", \"context\": \"event\", \"pred\": {\"func\": \"streq\", \"val\": {\"func\": \"attr\", \"name\": \"variables/evar5\"}, \"str\": \"match\"}}"
+      },
+      {
+        "segment_id": "segments/seg_clean_06",
+        "segment_name": "Clean Segment 06",
+        "description": "Documented shallow segment 06.",
+        "owner": "owner@example.com",
+        "owner_id": "owner",
+        "approved": true,
+        "favorite": false,
+        "tags": [
+          "governance"
+        ],
+        "created": "2025-09-01T00:00:00Z",
+        "modified": "2025-09-01T00:00:00Z",
+        "shares": [],
+        "shared_to_count": 0,
+        "data_view_id": "dv_clean_prod_web",
+        "site_title": "Clean Production Web Analytics",
+        "complexity_score": 8.0,
+        "container_type": "event",
+        "functions_used": [
+          "container",
+          "streq"
+        ],
+        "functions_used_internal": [
+          "container",
+          "streq"
+        ],
+        "predicate_count": 1,
+        "logic_operator_count": 0,
+        "nesting_depth": 2,
+        "container_count": 1,
+        "dimension_references": [
+          "variables/evar6"
+        ],
+        "metric_references": [],
+        "other_segment_references": [],
+        "definition_summary": "single equality on event",
+        "definition_json": "{\"func\": \"container\", \"context\": \"event\", \"pred\": {\"func\": \"streq\", \"val\": {\"func\": \"attr\", \"name\": \"variables/evar6\"}, \"str\": \"match\"}}"
+      },
+      {
+        "segment_id": "segments/seg_clean_07",
+        "segment_name": "Clean Segment 07",
+        "description": "Documented shallow segment 07.",
+        "owner": "owner@example.com",
+        "owner_id": "owner",
+        "approved": true,
+        "favorite": false,
+        "tags": [
+          "governance"
+        ],
+        "created": "2025-09-01T00:00:00Z",
+        "modified": "2025-09-01T00:00:00Z",
+        "shares": [],
+        "shared_to_count": 0,
+        "data_view_id": "dv_clean_prod_web",
+        "site_title": "Clean Production Web Analytics",
+        "complexity_score": 8.0,
+        "container_type": "event",
+        "functions_used": [
+          "container",
+          "streq"
+        ],
+        "functions_used_internal": [
+          "container",
+          "streq"
+        ],
+        "predicate_count": 1,
+        "logic_operator_count": 0,
+        "nesting_depth": 2,
+        "container_count": 1,
+        "dimension_references": [
+          "variables/evar7"
+        ],
+        "metric_references": [],
+        "other_segment_references": [],
+        "definition_summary": "single equality on event",
+        "definition_json": "{\"func\": \"container\", \"context\": \"event\", \"pred\": {\"func\": \"streq\", \"val\": {\"func\": \"attr\", \"name\": \"variables/evar7\"}, \"str\": \"match\"}}"
+      },
+      {
+        "segment_id": "segments/seg_clean_08",
+        "segment_name": "Clean Segment 08",
+        "description": "Documented shallow segment 08.",
+        "owner": "owner@example.com",
+        "owner_id": "owner",
+        "approved": true,
+        "favorite": false,
+        "tags": [
+          "governance"
+        ],
+        "created": "2025-09-01T00:00:00Z",
+        "modified": "2025-09-01T00:00:00Z",
+        "shares": [],
+        "shared_to_count": 0,
+        "data_view_id": "dv_clean_prod_web",
+        "site_title": "Clean Production Web Analytics",
+        "complexity_score": 8.0,
+        "container_type": "event",
+        "functions_used": [
+          "container",
+          "streq"
+        ],
+        "functions_used_internal": [
+          "container",
+          "streq"
+        ],
+        "predicate_count": 1,
+        "logic_operator_count": 0,
+        "nesting_depth": 2,
+        "container_count": 1,
+        "dimension_references": [
+          "variables/evar8"
+        ],
+        "metric_references": [],
+        "other_segment_references": [],
+        "definition_summary": "single equality on event",
+        "definition_json": "{\"func\": \"container\", \"context\": \"event\", \"pred\": {\"func\": \"streq\", \"val\": {\"func\": \"attr\", \"name\": \"variables/evar8\"}, \"str\": \"match\"}}"
+      }
+    ]
+  }
+}
