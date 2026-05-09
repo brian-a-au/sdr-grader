@@ -86,14 +86,15 @@ def test_cli_rejects_invalid_rubric_dir(tmp_path, capsys):
     assert "rubric directory not found" in capsys.readouterr().err
 
 
-def test_cli_rejects_aa_platform_pre_phase_7(tmp_path, capsys):
+def test_cli_rejects_cja_snapshot_with_aa_override(tmp_path, capsys):
+    """A CJA snapshot routed through the AA adapter must fail validation."""
     rc = main([
         str(FIXTURES / "cja_snapshot_messy.json"),
         "--output", str(tmp_path / "out.html"),
         "--platform", "aa",
     ])
     assert rc == RUNTIME_ERROR
-    assert "AA adapter is not implemented" in capsys.readouterr().err
+    assert "report_suite" in capsys.readouterr().err
 
 
 def test_cli_fail_below_returns_grade_below_threshold(tmp_path):

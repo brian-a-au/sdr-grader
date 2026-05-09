@@ -1,0 +1,23 @@
+category: schema_hygiene
+description: AA-only eVar discipline rules — pragmatic thresholds.
+
+rules:
+  - id: AAEVAR-001
+    name: eVars carrying semantically distinct values
+    severity: medium             # demoted from high
+    platforms: [aa]
+    check: aa_evar_distinct_values
+    params: {}
+    rationale: Same as strict.
+    remediation: Same as strict.
+
+  - id: AAEVAR-002
+    name: eVars with conflicting allocation / expiration combinations
+    severity: low                # demoted from medium
+    platforms: [aa]
+    check: aa_evar_allocation_expiration
+    params:
+      bad_combinations:
+        - [linear, hit]          # narrower bad set in pragmatic
+    rationale: Same as strict.
+    remediation: Same as strict.

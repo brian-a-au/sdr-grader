@@ -169,17 +169,20 @@ def _build_parser() -> argparse.ArgumentParser:
 
 
 def _adapt_snapshot(snapshot, *, source: str, platform_override: str | None):
-    """Phase 3 only ships the CJA adapter. Auto-detection lands in Phase 7."""
-    # Lazy import to keep the CLI startup fast.
+    """Detect platform (or use override) and dispatch to the right adapter."""
+    # Lazy imports keep the CLI startup fast.
+    from sdr_grader.adapters.aa import adapt as adapt_aa
     from sdr_grader.adapters.cja import adapt as adapt_cja
+    from sdr_grader.input.detect import detect_platform
 
-    if platform_override == "aa":
-        raise UnknownPlatformError(
-            "AA adapter is not implemented in this release (Phase 7 work item). "
-            "Re-run with a CJA snapshot or omit --platform."
-        )
-    # Without --platform=cja, still default to CJA in Phase 3 — Mode 1 + CJA only.
-    return adapt_cja(snapshot, source=source)
+    platform = platform_override or detect_platform(snapshot)
+    if platform == "cja":
+        return adapt_cja(snapshot, source=source)
+    if platform == "aa":
+        return adapt_aa(snapshot, source=source)
+    raise UnknownPlatformError(
+        f"unknown platform {platform!r}; expected 'cja' or 'aa'"
+    )
 
 
 # ---------------------------------------------------------------------------

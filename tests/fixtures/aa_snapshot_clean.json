@@ -1,0 +1,333 @@
+{
+  "report_suite": {
+    "rsid": "clean.prod",
+    "name": "Clean Production",
+    "currency": "USD",
+    "parent_rsid": null,
+    "timezone": "US/Pacific"
+  },
+  "captured_at": "2026-04-25T09:14:00+00:00",
+  "tool_version": "1.0.0",
+  "dimensions": [
+    {
+      "id": "variables/evar1",
+      "name": "eVar 1",
+      "description": "ok",
+      "type": "string",
+      "category": "Custom",
+      "tags": [
+        "custom"
+      ],
+      "parent": "",
+      "pathable": false,
+      "extra": {
+        "allocation": "most-recent",
+        "expiration": "visit"
+      }
+    },
+    {
+      "id": "variables/evar2",
+      "name": "eVar 2",
+      "description": "ok",
+      "type": "string",
+      "category": "Custom",
+      "tags": [
+        "custom"
+      ],
+      "parent": "",
+      "pathable": false,
+      "extra": {
+        "allocation": "most-recent",
+        "expiration": "visit"
+      }
+    },
+    {
+      "id": "variables/evar3",
+      "name": "eVar 3",
+      "description": "ok",
+      "type": "string",
+      "category": "Custom",
+      "tags": [
+        "custom"
+      ],
+      "parent": "",
+      "pathable": false,
+      "extra": {
+        "allocation": "most-recent",
+        "expiration": "visit"
+      }
+    },
+    {
+      "id": "variables/evar4",
+      "name": "eVar 4",
+      "description": "ok",
+      "type": "string",
+      "category": "Custom",
+      "tags": [
+        "custom"
+      ],
+      "parent": "",
+      "pathable": false,
+      "extra": {
+        "allocation": "most-recent",
+        "expiration": "visit"
+      }
+    },
+    {
+      "id": "variables/evar5",
+      "name": "eVar 5",
+      "description": "ok",
+      "type": "string",
+      "category": "Custom",
+      "tags": [
+        "custom"
+      ],
+      "parent": "",
+      "pathable": false,
+      "extra": {
+        "allocation": "most-recent",
+        "expiration": "visit"
+      }
+    },
+    {
+      "id": "variables/evar6",
+      "name": "eVar 6",
+      "description": "ok",
+      "type": "string",
+      "category": "Custom",
+      "tags": [
+        "custom"
+      ],
+      "parent": "",
+      "pathable": false,
+      "extra": {
+        "allocation": "most-recent",
+        "expiration": "visit"
+      }
+    },
+    {
+      "id": "variables/evar7",
+      "name": "eVar 7",
+      "description": "ok",
+      "type": "string",
+      "category": "Custom",
+      "tags": [
+        "custom"
+      ],
+      "parent": "",
+      "pathable": false,
+      "extra": {
+        "allocation": "most-recent",
+        "expiration": "visit"
+      }
+    },
+    {
+      "id": "variables/evar8",
+      "name": "eVar 8",
+      "description": "ok",
+      "type": "string",
+      "category": "Custom",
+      "tags": [
+        "custom"
+      ],
+      "parent": "",
+      "pathable": false,
+      "extra": {
+        "allocation": "most-recent",
+        "expiration": "visit"
+      }
+    },
+    {
+      "id": "variables/prop1",
+      "name": "Prop 1",
+      "description": "ok",
+      "type": "string",
+      "category": "Content",
+      "tags": [
+        "taxonomy"
+      ],
+      "parent": "",
+      "pathable": true,
+      "extra": {}
+    },
+    {
+      "id": "variables/prop2",
+      "name": "Prop 2",
+      "description": "ok",
+      "type": "string",
+      "category": "Content",
+      "tags": [
+        "taxonomy"
+      ],
+      "parent": "",
+      "pathable": true,
+      "extra": {}
+    },
+    {
+      "id": "variables/prop3",
+      "name": "Prop 3",
+      "description": "ok",
+      "type": "string",
+      "category": "Content",
+      "tags": [
+        "taxonomy"
+      ],
+      "parent": "",
+      "pathable": true,
+      "extra": {}
+    },
+    {
+      "id": "variables/prop4",
+      "name": "Prop 4",
+      "description": "ok",
+      "type": "string",
+      "category": "Content",
+      "tags": [
+        "taxonomy"
+      ],
+      "parent": "",
+      "pathable": true,
+      "extra": {}
+    },
+    {
+      "id": "variables/prop5",
+      "name": "Prop 5",
+      "description": "ok",
+      "type": "string",
+      "category": "Content",
+      "tags": [
+        "taxonomy"
+      ],
+      "parent": "",
+      "pathable": true,
+      "extra": {}
+    }
+  ],
+  "metrics": [
+    {
+      "id": "metrics/event1",
+      "name": "Event 1",
+      "description": "ok",
+      "type": "int",
+      "category": "Conversion",
+      "data_group": "Conversion",
+      "tags": [],
+      "precision": 0,
+      "segmentable": true
+    },
+    {
+      "id": "metrics/event2",
+      "name": "Event 2",
+      "description": "ok",
+      "type": "int",
+      "category": "Conversion",
+      "data_group": "Conversion",
+      "tags": [],
+      "precision": 0,
+      "segmentable": true
+    },
+    {
+      "id": "metrics/event3",
+      "name": "Event 3",
+      "description": "ok",
+      "type": "int",
+      "category": "Conversion",
+      "data_group": "Conversion",
+      "tags": [],
+      "precision": 0,
+      "segmentable": true
+    },
+    {
+      "id": "metrics/event4",
+      "name": "Event 4",
+      "description": "ok",
+      "type": "int",
+      "category": "Conversion",
+      "data_group": "Conversion",
+      "tags": [],
+      "precision": 0,
+      "segmentable": true
+    },
+    {
+      "id": "metrics/event5",
+      "name": "Event 5",
+      "description": "ok",
+      "type": "int",
+      "category": "Conversion",
+      "data_group": "Conversion",
+      "tags": [],
+      "precision": 0,
+      "segmentable": true
+    },
+    {
+      "id": "metrics/event6",
+      "name": "Event 6",
+      "description": "ok",
+      "type": "int",
+      "category": "Conversion",
+      "data_group": "Conversion",
+      "tags": [],
+      "precision": 0,
+      "segmentable": true
+    }
+  ],
+  "calculated_metrics": [
+    {
+      "id": "cm_clean_conversion_rate",
+      "name": "Clean Conversion Rate",
+      "description": "Conversions per visit.",
+      "type": "decimal",
+      "precision": 4,
+      "polarity": "positive",
+      "tags": [],
+      "owner_id": 1,
+      "rsid": "clean.prod",
+      "categories": [
+        "Conversion"
+      ],
+      "definition": {
+        "formula": {
+          "func": "divide",
+          "args": [
+            "metrics/event1",
+            "metrics/event2"
+          ]
+        }
+      },
+      "extra": {}
+    }
+  ],
+  "segments": [
+    {
+      "id": "s_clean_mobile",
+      "name": "Mobile",
+      "description": "Mobile traffic.",
+      "rsid": "clean.prod",
+      "owner_id": 1,
+      "tags": [
+        "governance"
+      ],
+      "compatibility": {},
+      "created": "2025-01-01T00:00:00Z",
+      "modified": "2025-01-01T00:00:00Z",
+      "definition": {
+        "version": [
+          1,
+          0,
+          0
+        ],
+        "container": {
+          "context": "hits",
+          "func": "container",
+          "pred": {
+            "func": "eq",
+            "val": "mobile"
+          }
+        }
+      },
+      "extra": {}
+    }
+  ],
+  "classifications": [],
+  "virtual_report_suites": []
+}

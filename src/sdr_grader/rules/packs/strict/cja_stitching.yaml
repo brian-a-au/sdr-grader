@@ -1,0 +1,21 @@
+category: governance_posture
+description: |
+  CJA-only stitching rules. These ride alongside the platform-agnostic
+  governance rules; they short-circuit on AA snapshots.
+
+rules:
+  - id: CJASTITCH-001
+    name: Stitching configuration has unstitched IDs above threshold
+    severity: high
+    platforms: [cja]
+    check: cja_stitching_unstitched
+    params:
+      max_unstitched_ratio: 0.05
+    rationale: |
+      Unstitched identifiers in a CJA data view fragment cross-device
+      journeys and undercount unique users. Above a small threshold, the
+      fragmentation is enough to mislead retention and cohort analyses.
+    remediation: |
+      Audit the stitching configuration and the field mapping against
+      identity sources; expand the stitching field set or repair upstream
+      identity capture.

@@ -1,0 +1,1161 @@
+{
+  "report_suite": {
+    "rsid": "messy.prod",
+    "name": "Messy Production",
+    "currency": "USD",
+    "parent_rsid": null,
+    "timezone": "US/Pacific"
+  },
+  "captured_at": "2026-04-25T09:14:00+00:00",
+  "tool_version": "1.0.0",
+  "dimensions": [
+    {
+      "id": "variables/evar1",
+      "name": "eVar 1",
+      "description": null,
+      "type": "string",
+      "category": "Custom",
+      "tags": [
+        "custom"
+      ],
+      "parent": "",
+      "pathable": false,
+      "extra": {
+        "allocation": "linear",
+        "expiration": "visitor"
+      }
+    },
+    {
+      "id": "variables/evar2",
+      "name": "eVar 2",
+      "description": null,
+      "type": "string",
+      "category": "Custom",
+      "tags": [],
+      "parent": "",
+      "pathable": false,
+      "extra": {
+        "allocation": "most-recent",
+        "expiration": "visit"
+      }
+    },
+    {
+      "id": "variables/evar3",
+      "name": "eVar 3",
+      "description": null,
+      "type": "string",
+      "category": "Custom",
+      "tags": [],
+      "parent": "",
+      "pathable": false,
+      "extra": {
+        "allocation": "most-recent",
+        "expiration": "visit"
+      }
+    },
+    {
+      "id": "variables/evar4",
+      "name": "eVar 4",
+      "description": null,
+      "type": "string",
+      "category": "Custom",
+      "tags": [
+        "custom"
+      ],
+      "parent": "",
+      "pathable": false,
+      "extra": {
+        "allocation": "most-recent",
+        "expiration": "visit"
+      }
+    },
+    {
+      "id": "variables/evar5",
+      "name": "eVar 5",
+      "description": null,
+      "type": "string",
+      "category": "Custom",
+      "tags": [],
+      "parent": "",
+      "pathable": false,
+      "extra": {
+        "allocation": "most-recent",
+        "expiration": "visit"
+      }
+    },
+    {
+      "id": "variables/evar6",
+      "name": "eVar 6",
+      "description": null,
+      "type": "string",
+      "category": "Custom",
+      "tags": [],
+      "parent": "",
+      "pathable": false,
+      "extra": {
+        "allocation": "most-recent",
+        "expiration": "visitor"
+      }
+    },
+    {
+      "id": "variables/evar7",
+      "name": "eVar 7",
+      "description": null,
+      "type": "string",
+      "category": "Custom",
+      "tags": [
+        "custom"
+      ],
+      "parent": "",
+      "pathable": false,
+      "extra": {
+        "allocation": "most-recent",
+        "expiration": "visit"
+      }
+    },
+    {
+      "id": "variables/evar8",
+      "name": "eVar 8",
+      "description": null,
+      "type": "string",
+      "category": "Custom",
+      "tags": [],
+      "parent": "",
+      "pathable": false,
+      "extra": {
+        "allocation": "linear",
+        "expiration": "visit"
+      }
+    },
+    {
+      "id": "variables/evar9",
+      "name": "eVar 9",
+      "description": null,
+      "type": "string",
+      "category": "Custom",
+      "tags": [],
+      "parent": "",
+      "pathable": false,
+      "extra": {
+        "allocation": "most-recent",
+        "expiration": "visit"
+      }
+    },
+    {
+      "id": "variables/evar10",
+      "name": "eVar 10",
+      "description": null,
+      "type": "string",
+      "category": "Custom",
+      "tags": [
+        "custom"
+      ],
+      "parent": "",
+      "pathable": false,
+      "extra": {
+        "allocation": "most-recent",
+        "expiration": "visit"
+      }
+    },
+    {
+      "id": "variables/evar11",
+      "name": "eVar 11",
+      "description": "eVar 11 description.",
+      "type": "string",
+      "category": "Custom",
+      "tags": [],
+      "parent": "",
+      "pathable": false,
+      "extra": {
+        "allocation": "most-recent",
+        "expiration": "visitor"
+      }
+    },
+    {
+      "id": "variables/evar12",
+      "name": "eVar 12",
+      "description": "eVar 12 description.",
+      "type": "string",
+      "category": "Custom",
+      "tags": [],
+      "parent": "",
+      "pathable": false,
+      "extra": {
+        "allocation": "most-recent",
+        "expiration": "visit"
+      }
+    },
+    {
+      "id": "variables/evar13",
+      "name": "eVar 13",
+      "description": "eVar 13 description.",
+      "type": "string",
+      "category": "Custom",
+      "tags": [
+        "custom"
+      ],
+      "parent": "",
+      "pathable": false,
+      "extra": {
+        "allocation": "most-recent",
+        "expiration": "visit"
+      }
+    },
+    {
+      "id": "variables/evar14",
+      "name": "eVar 14",
+      "description": "eVar 14 description.",
+      "type": "string",
+      "category": "Custom",
+      "tags": [],
+      "parent": "",
+      "pathable": false,
+      "extra": {
+        "allocation": "most-recent",
+        "expiration": "visit"
+      }
+    },
+    {
+      "id": "variables/evar15",
+      "name": "eVar 15",
+      "description": "eVar 15 description.",
+      "type": "string",
+      "category": "Custom",
+      "tags": [],
+      "parent": "",
+      "pathable": false,
+      "extra": {
+        "allocation": "linear",
+        "expiration": "visit"
+      }
+    },
+    {
+      "id": "variables/evar16",
+      "name": "eVar 16",
+      "description": "eVar 16 description.",
+      "type": "string",
+      "category": "Custom",
+      "tags": [
+        "custom"
+      ],
+      "parent": "",
+      "pathable": false,
+      "extra": {
+        "allocation": "most-recent",
+        "expiration": "visitor"
+      }
+    },
+    {
+      "id": "variables/evar17",
+      "name": "eVar 17",
+      "description": "eVar 17 description.",
+      "type": "string",
+      "category": "Custom",
+      "tags": [],
+      "parent": "",
+      "pathable": false,
+      "extra": {
+        "allocation": "most-recent",
+        "expiration": "visit"
+      }
+    },
+    {
+      "id": "variables/evar18",
+      "name": "eVar 18",
+      "description": "eVar 18 description.",
+      "type": "string",
+      "category": "Custom",
+      "tags": [],
+      "parent": "",
+      "pathable": false,
+      "extra": {
+        "allocation": "most-recent",
+        "expiration": "visit"
+      }
+    },
+    {
+      "id": "variables/evar19",
+      "name": "eVar 19",
+      "description": "eVar 19 description.",
+      "type": "string",
+      "category": "Custom",
+      "tags": [
+        "custom"
+      ],
+      "parent": "",
+      "pathable": false,
+      "extra": {
+        "allocation": "most-recent",
+        "expiration": "visit"
+      }
+    },
+    {
+      "id": "variables/evar20",
+      "name": "eVar 20",
+      "description": "eVar 20 description.",
+      "type": "string",
+      "category": "Custom",
+      "tags": [],
+      "parent": "",
+      "pathable": false,
+      "extra": {
+        "allocation": "most-recent",
+        "expiration": "visit"
+      }
+    },
+    {
+      "id": "variables/evar21",
+      "name": "eVar 21",
+      "description": "eVar 21 description.",
+      "type": "string",
+      "category": "Custom",
+      "tags": [],
+      "parent": "",
+      "pathable": false,
+      "extra": {
+        "allocation": "most-recent",
+        "expiration": "visitor"
+      }
+    },
+    {
+      "id": "variables/evar22",
+      "name": "eVar 22",
+      "description": "eVar 22 description.",
+      "type": "string",
+      "category": "Custom",
+      "tags": [
+        "custom"
+      ],
+      "parent": "",
+      "pathable": false,
+      "extra": {
+        "allocation": "linear",
+        "expiration": "visit"
+      }
+    },
+    {
+      "id": "variables/evar23",
+      "name": "eVar 23",
+      "description": "eVar 23 description.",
+      "type": "string",
+      "category": "Custom",
+      "tags": [],
+      "parent": "",
+      "pathable": false,
+      "extra": {
+        "allocation": "most-recent",
+        "expiration": "visit"
+      }
+    },
+    {
+      "id": "variables/evar24",
+      "name": "eVar 24",
+      "description": "eVar 24 description.",
+      "type": "string",
+      "category": "Custom",
+      "tags": [],
+      "parent": "",
+      "pathable": false,
+      "extra": {
+        "allocation": "most-recent",
+        "expiration": "visit"
+      }
+    },
+    {
+      "id": "variables/evar25",
+      "name": "eVar 25",
+      "description": "eVar 25 description.",
+      "type": "string",
+      "category": "Custom",
+      "tags": [
+        "custom"
+      ],
+      "parent": "",
+      "pathable": false,
+      "extra": {
+        "allocation": "most-recent",
+        "expiration": "visit"
+      }
+    },
+    {
+      "id": "variables/evar26",
+      "name": "eVar 26",
+      "description": "eVar 26 description.",
+      "type": "string",
+      "category": "Custom",
+      "tags": [],
+      "parent": "",
+      "pathable": false,
+      "extra": {
+        "allocation": "most-recent",
+        "expiration": "visitor"
+      }
+    },
+    {
+      "id": "variables/evar27",
+      "name": "eVar 27",
+      "description": "eVar 27 description.",
+      "type": "string",
+      "category": "Custom",
+      "tags": [],
+      "parent": "",
+      "pathable": false,
+      "extra": {
+        "allocation": "most-recent",
+        "expiration": "visit"
+      }
+    },
+    {
+      "id": "variables/evar28",
+      "name": "eVar 28",
+      "description": "eVar 28 description.",
+      "type": "string",
+      "category": "Custom",
+      "tags": [
+        "custom"
+      ],
+      "parent": "",
+      "pathable": false,
+      "extra": {
+        "allocation": "most-recent",
+        "expiration": "visit"
+      }
+    },
+    {
+      "id": "variables/evar29",
+      "name": "eVar 29",
+      "description": "eVar 29 description.",
+      "type": "string",
+      "category": "Custom",
+      "tags": [],
+      "parent": "",
+      "pathable": false,
+      "extra": {
+        "allocation": "linear",
+        "expiration": "visit"
+      }
+    },
+    {
+      "id": "variables/evar30",
+      "name": "eVar 30",
+      "description": "eVar 30 description.",
+      "type": "string",
+      "category": "Custom",
+      "tags": [],
+      "parent": "",
+      "pathable": false,
+      "extra": {
+        "allocation": "most-recent",
+        "expiration": "visit"
+      }
+    },
+    {
+      "id": "variables/evar31",
+      "name": "eVar 31",
+      "description": "eVar 31 description.",
+      "type": "string",
+      "category": "Custom",
+      "tags": [
+        "custom"
+      ],
+      "parent": "",
+      "pathable": false,
+      "extra": {
+        "allocation": "most-recent",
+        "expiration": "visitor"
+      }
+    },
+    {
+      "id": "variables/evar32",
+      "name": "eVar 32",
+      "description": "eVar 32 description.",
+      "type": "string",
+      "category": "Custom",
+      "tags": [],
+      "parent": "",
+      "pathable": false,
+      "extra": {
+        "allocation": "most-recent",
+        "expiration": "visit"
+      }
+    },
+    {
+      "id": "variables/evar33",
+      "name": "eVar 33",
+      "description": "eVar 33 description.",
+      "type": "string",
+      "category": "Custom",
+      "tags": [],
+      "parent": "",
+      "pathable": false,
+      "extra": {
+        "allocation": "most-recent",
+        "expiration": "visit"
+      }
+    },
+    {
+      "id": "variables/evar34",
+      "name": "eVar 34",
+      "description": "eVar 34 description.",
+      "type": "string",
+      "category": "Custom",
+      "tags": [
+        "custom"
+      ],
+      "parent": "",
+      "pathable": false,
+      "extra": {
+        "allocation": "most-recent",
+        "expiration": "visit"
+      }
+    },
+    {
+      "id": "variables/evar35",
+      "name": "eVar 35",
+      "description": "eVar 35 description.",
+      "type": "string",
+      "category": "Custom",
+      "tags": [],
+      "parent": "",
+      "pathable": false,
+      "extra": {
+        "allocation": "most-recent",
+        "expiration": "visit"
+      }
+    },
+    {
+      "id": "variables/evar36",
+      "name": "eVar 36",
+      "description": "eVar 36 description.",
+      "type": "string",
+      "category": "Custom",
+      "tags": [],
+      "parent": "",
+      "pathable": false,
+      "extra": {
+        "allocation": "linear",
+        "expiration": "visitor"
+      }
+    },
+    {
+      "id": "variables/evar37",
+      "name": "eVar 37",
+      "description": "eVar 37 description.",
+      "type": "string",
+      "category": "Custom",
+      "tags": [
+        "custom"
+      ],
+      "parent": "",
+      "pathable": false,
+      "extra": {
+        "allocation": "most-recent",
+        "expiration": "visit"
+      }
+    },
+    {
+      "id": "variables/evar38",
+      "name": "eVar 38",
+      "description": "eVar 38 description.",
+      "type": "string",
+      "category": "Custom",
+      "tags": [],
+      "parent": "",
+      "pathable": false,
+      "extra": {
+        "allocation": "most-recent",
+        "expiration": "visit"
+      }
+    },
+    {
+      "id": "variables/evar39",
+      "name": "eVar 39",
+      "description": "eVar 39 description.",
+      "type": "string",
+      "category": "Custom",
+      "tags": [],
+      "parent": "",
+      "pathable": false,
+      "extra": {
+        "allocation": "most-recent",
+        "expiration": "visit"
+      }
+    },
+    {
+      "id": "variables/evar40",
+      "name": "eVar 40",
+      "description": "eVar 40 description.",
+      "type": "string",
+      "category": "Custom",
+      "tags": [
+        "custom"
+      ],
+      "parent": "",
+      "pathable": false,
+      "extra": {
+        "allocation": "most-recent",
+        "expiration": "visit"
+      }
+    },
+    {
+      "id": "variables/prop1",
+      "name": "Prop 1",
+      "description": null,
+      "type": "string",
+      "category": "Content",
+      "tags": [
+        "taxonomy"
+      ],
+      "parent": "",
+      "pathable": true,
+      "extra": {}
+    },
+    {
+      "id": "variables/prop2",
+      "name": "Prop 2",
+      "description": "Prop 2 description.",
+      "type": "string",
+      "category": "Content",
+      "tags": [
+        "taxonomy"
+      ],
+      "parent": "",
+      "pathable": true,
+      "extra": {}
+    },
+    {
+      "id": "variables/prop3",
+      "name": "Prop 3",
+      "description": "Prop 3 description.",
+      "type": "string",
+      "category": "Content",
+      "tags": [
+        "taxonomy"
+      ],
+      "parent": "",
+      "pathable": true,
+      "extra": {}
+    },
+    {
+      "id": "variables/prop4",
+      "name": "Prop 4",
+      "description": "Prop 4 description.",
+      "type": "string",
+      "category": "Content",
+      "tags": [
+        "taxonomy"
+      ],
+      "parent": "",
+      "pathable": true,
+      "extra": {}
+    },
+    {
+      "id": "variables/prop5",
+      "name": "Prop 5",
+      "description": null,
+      "type": "string",
+      "category": "Content",
+      "tags": [
+        "taxonomy"
+      ],
+      "parent": "",
+      "pathable": true,
+      "extra": {}
+    },
+    {
+      "id": "variables/prop6",
+      "name": "Prop 6",
+      "description": "Prop 6 description.",
+      "type": "string",
+      "category": "Content",
+      "tags": [
+        "taxonomy"
+      ],
+      "parent": "",
+      "pathable": true,
+      "extra": {}
+    },
+    {
+      "id": "variables/prop7",
+      "name": "Prop 7",
+      "description": "Prop 7 description.",
+      "type": "string",
+      "category": "Content",
+      "tags": [
+        "taxonomy"
+      ],
+      "parent": "",
+      "pathable": true,
+      "extra": {}
+    },
+    {
+      "id": "variables/prop8",
+      "name": "Prop 8",
+      "description": "Prop 8 description.",
+      "type": "string",
+      "category": "Content",
+      "tags": [
+        "taxonomy"
+      ],
+      "parent": "",
+      "pathable": true,
+      "extra": {}
+    },
+    {
+      "id": "variables/prop9",
+      "name": "Prop 9",
+      "description": null,
+      "type": "string",
+      "category": "Content",
+      "tags": [
+        "taxonomy"
+      ],
+      "parent": "",
+      "pathable": true,
+      "extra": {}
+    },
+    {
+      "id": "variables/prop10",
+      "name": "Prop 10",
+      "description": "Prop 10 description.",
+      "type": "string",
+      "category": "Content",
+      "tags": [
+        "taxonomy"
+      ],
+      "parent": "",
+      "pathable": true,
+      "extra": {}
+    },
+    {
+      "id": "variables/prop11",
+      "name": "Prop 11",
+      "description": "Prop 11 description.",
+      "type": "string",
+      "category": "Content",
+      "tags": [
+        "taxonomy"
+      ],
+      "parent": "",
+      "pathable": true,
+      "extra": {}
+    },
+    {
+      "id": "variables/prop12",
+      "name": "Prop 12",
+      "description": "Prop 12 description.",
+      "type": "string",
+      "category": "Content",
+      "tags": [
+        "taxonomy"
+      ],
+      "parent": "",
+      "pathable": true,
+      "extra": {}
+    },
+    {
+      "id": "variables/prop13",
+      "name": "Prop 13",
+      "description": null,
+      "type": "string",
+      "category": "Content",
+      "tags": [
+        "taxonomy"
+      ],
+      "parent": "",
+      "pathable": true,
+      "extra": {}
+    },
+    {
+      "id": "variables/prop14",
+      "name": "Prop 14",
+      "description": "Prop 14 description.",
+      "type": "string",
+      "category": "Content",
+      "tags": [
+        "taxonomy"
+      ],
+      "parent": "",
+      "pathable": true,
+      "extra": {}
+    },
+    {
+      "id": "variables/prop15",
+      "name": "Prop 15",
+      "description": "Prop 15 description.",
+      "type": "string",
+      "category": "Content",
+      "tags": [
+        "taxonomy"
+      ],
+      "parent": "",
+      "pathable": true,
+      "extra": {}
+    },
+    {
+      "id": "variables/prop16",
+      "name": "Prop 16",
+      "description": "Prop 16 description.",
+      "type": "string",
+      "category": "Content",
+      "tags": [
+        "taxonomy"
+      ],
+      "parent": "",
+      "pathable": true,
+      "extra": {}
+    },
+    {
+      "id": "variables/prop17",
+      "name": "Prop 17",
+      "description": null,
+      "type": "string",
+      "category": "Content",
+      "tags": [
+        "taxonomy"
+      ],
+      "parent": "",
+      "pathable": true,
+      "extra": {}
+    },
+    {
+      "id": "variables/prop18",
+      "name": "Prop 18",
+      "description": "Prop 18 description.",
+      "type": "string",
+      "category": "Content",
+      "tags": [
+        "taxonomy"
+      ],
+      "parent": "",
+      "pathable": true,
+      "extra": {}
+    },
+    {
+      "id": "variables/prop19",
+      "name": "Prop 19",
+      "description": "Prop 19 description.",
+      "type": "string",
+      "category": "Content",
+      "tags": [
+        "taxonomy"
+      ],
+      "parent": "",
+      "pathable": true,
+      "extra": {}
+    },
+    {
+      "id": "variables/prop20",
+      "name": "Prop 20",
+      "description": "Prop 20 description.",
+      "type": "string",
+      "category": "Content",
+      "tags": [
+        "taxonomy"
+      ],
+      "parent": "",
+      "pathable": true,
+      "extra": {}
+    }
+  ],
+  "metrics": [
+    {
+      "id": "metrics/event1",
+      "name": "Event 1",
+      "description": null,
+      "type": "int",
+      "category": "Conversion",
+      "data_group": "Conversion",
+      "tags": [],
+      "precision": 0,
+      "segmentable": true
+    },
+    {
+      "id": "metrics/event2",
+      "name": "Event 2",
+      "description": "Event description.",
+      "type": "int",
+      "category": "Conversion",
+      "data_group": "Conversion",
+      "tags": [],
+      "precision": 0,
+      "segmentable": true
+    },
+    {
+      "id": "metrics/event3",
+      "name": "Event 3",
+      "description": "Event description.",
+      "type": "int",
+      "category": "Conversion",
+      "data_group": "Conversion",
+      "tags": [],
+      "precision": 0,
+      "segmentable": true
+    },
+    {
+      "id": "metrics/event4",
+      "name": "Event 4",
+      "description": null,
+      "type": "int",
+      "category": "Conversion",
+      "data_group": "Conversion",
+      "tags": [],
+      "precision": 0,
+      "segmentable": true
+    },
+    {
+      "id": "metrics/event5",
+      "name": "Event 5",
+      "description": "Event description.",
+      "type": "int",
+      "category": "Conversion",
+      "data_group": "Conversion",
+      "tags": [],
+      "precision": 0,
+      "segmentable": true
+    },
+    {
+      "id": "metrics/event6",
+      "name": "Event 6",
+      "description": "Event description.",
+      "type": "int",
+      "category": "Conversion",
+      "data_group": "Conversion",
+      "tags": [],
+      "precision": 0,
+      "segmentable": true
+    },
+    {
+      "id": "metrics/event7",
+      "name": "Event 7",
+      "description": null,
+      "type": "int",
+      "category": "Conversion",
+      "data_group": "Conversion",
+      "tags": [],
+      "precision": 0,
+      "segmentable": true
+    },
+    {
+      "id": "metrics/event8",
+      "name": "Event 8",
+      "description": "Event description.",
+      "type": "int",
+      "category": "Conversion",
+      "data_group": "Conversion",
+      "tags": [],
+      "precision": 0,
+      "segmentable": true
+    },
+    {
+      "id": "metrics/event9",
+      "name": "Event 9",
+      "description": "Event description.",
+      "type": "int",
+      "category": "Conversion",
+      "data_group": "Conversion",
+      "tags": [],
+      "precision": 0,
+      "segmentable": true
+    },
+    {
+      "id": "metrics/event10",
+      "name": "Event 10",
+      "description": null,
+      "type": "int",
+      "category": "Conversion",
+      "data_group": "Conversion",
+      "tags": [],
+      "precision": 0,
+      "segmentable": true
+    },
+    {
+      "id": "metrics/event11",
+      "name": "Event 11",
+      "description": "Event description.",
+      "type": "int",
+      "category": "Conversion",
+      "data_group": "Conversion",
+      "tags": [],
+      "precision": 0,
+      "segmentable": true
+    },
+    {
+      "id": "metrics/event12",
+      "name": "Event 12",
+      "description": "Event description.",
+      "type": "int",
+      "category": "Conversion",
+      "data_group": "Conversion",
+      "tags": [],
+      "precision": 0,
+      "segmentable": true
+    },
+    {
+      "id": "metrics/event13",
+      "name": "Event 13",
+      "description": null,
+      "type": "int",
+      "category": "Conversion",
+      "data_group": "Conversion",
+      "tags": [],
+      "precision": 0,
+      "segmentable": true
+    },
+    {
+      "id": "metrics/event14",
+      "name": "Event 14",
+      "description": "Event description.",
+      "type": "int",
+      "category": "Conversion",
+      "data_group": "Conversion",
+      "tags": [],
+      "precision": 0,
+      "segmentable": true
+    },
+    {
+      "id": "metrics/event15",
+      "name": "Event 15",
+      "description": "Event description.",
+      "type": "int",
+      "category": "Conversion",
+      "data_group": "Conversion",
+      "tags": [],
+      "precision": 0,
+      "segmentable": true
+    }
+  ],
+  "calculated_metrics": [
+    {
+      "id": "cm_conversion_rate",
+      "name": "Conversion Rate",
+      "description": "Orders / Visits.",
+      "type": "decimal",
+      "precision": 4,
+      "polarity": "positive",
+      "tags": [],
+      "owner_id": 42,
+      "rsid": "messy.prod",
+      "categories": [
+        "Conversion"
+      ],
+      "definition": {
+        "formula": {
+          "func": "divide",
+          "args": [
+            "metrics/orders",
+            "metrics/visits"
+          ]
+        }
+      },
+      "extra": {}
+    },
+    {
+      "id": "cm_revenue_per_visit",
+      "name": "Revenue per Visit",
+      "description": null,
+      "type": "decimal",
+      "precision": 2,
+      "polarity": "positive",
+      "tags": [],
+      "owner_id": 42,
+      "rsid": "messy.prod",
+      "categories": [
+        "Revenue"
+      ],
+      "definition": {
+        "formula": {
+          "func": "divide",
+          "args": [
+            "metrics/revenue",
+            "metrics/visits"
+          ]
+        }
+      },
+      "extra": {}
+    }
+  ],
+  "segments": [
+    {
+      "id": "s_mobile",
+      "name": "Mobile Users",
+      "description": "Mobile device traffic.",
+      "rsid": "messy.prod",
+      "owner_id": 42,
+      "tags": [],
+      "compatibility": {},
+      "created": "2025-01-01T00:00:00Z",
+      "modified": "2025-06-01T00:00:00Z",
+      "definition": {
+        "version": [
+          1,
+          0,
+          0
+        ],
+        "container": {
+          "context": "hits",
+          "func": "container",
+          "pred": {
+            "func": "eq",
+            "val": "mobile"
+          }
+        }
+      },
+      "extra": {}
+    },
+    {
+      "id": "s_returning",
+      "name": "Returning Visitors",
+      "description": null,
+      "rsid": "messy.prod",
+      "owner_id": 42,
+      "tags": [],
+      "compatibility": {},
+      "created": null,
+      "modified": null,
+      "definition": {
+        "version": [
+          1,
+          0,
+          0
+        ],
+        "container": {
+          "context": "visitors",
+          "func": "container",
+          "pred": {
+            "func": "and",
+            "args": [
+              {
+                "func": "container",
+                "context": "visits",
+                "pred": {
+                  "func": "eq",
+                  "val": "v1"
+                }
+              },
+              {
+                "func": "container",
+                "context": "hits",
+                "pred": {
+                  "func": "eq",
+                  "val": "h1"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "extra": {}
+    }
+  ],
+  "classifications": [
+    {
+      "id": "ds_campaigns",
+      "name": "Campaign Metadata",
+      "parent": "variables/evar1",
+      "rsid": "messy.prod",
+      "extra": {}
+    }
+  ],
+  "virtual_report_suites": []
+}
