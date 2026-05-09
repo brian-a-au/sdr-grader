@@ -1,0 +1,22 @@
+category: schema_hygiene
+description: |
+  Schema hygiene rules — completeness and quality of components, IDs,
+  descriptions, and references in the data view.
+
+rules:
+  - id: SCH-003
+    name: Components lacking descriptions
+    severity: medium
+    platforms: [cja, aa]
+    check: missing_descriptions
+    params:
+      threshold: 0.10
+      targets: [metrics, dimensions]
+    rationale: |
+      Descriptions are the primary way new analysts and AI agents understand
+      what a component measures; missing descriptions force readers to infer
+      intent from names alone, which is frequently wrong.
+    remediation: |
+      Generate the list of components missing descriptions via the data view
+      API and populate them. Establish a CI check that fails new components
+      added without descriptions.

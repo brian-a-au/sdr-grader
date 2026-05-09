@@ -1,0 +1,40 @@
+pack: strict
+version: "0.1"
+description: |
+  Strict rubric encoding the opinions of an Adobe Master / CJA Developer about
+  what a high-quality CJA or AA implementation looks like. Phase 3 ships only
+  the schema_hygiene category with a single rule (SCH-003); the remaining
+  categories are weighted to 0 here and filled in by Phases 4-7.
+
+# Category weights sum to 1.0. Categories with weight 0 are excluded from
+# the overall score.
+category_weights:
+  schema_hygiene:        1.00
+  naming_consistency:    0.00
+  segment_complexity:    0.00
+  calc_metric_maint:     0.00
+  attribution_coverage:  0.00
+  governance_posture:    0.00
+
+# Severity weights determine how much each fired rule penalizes the
+# category subtotal.
+severity_weights:
+  critical: 4
+  high:     3
+  medium:   2
+  low:      1
+
+# Letter grade thresholds. Score is 0-100. Bands are descending.
+grade_scale:
+  - { min: 93, grade: "A"  }
+  - { min: 90, grade: "A−" }
+  - { min: 87, grade: "B+" }
+  - { min: 83, grade: "B"  }
+  - { min: 80, grade: "B−" }
+  - { min: 77, grade: "C+" }
+  - { min: 73, grade: "C"  }
+  - { min: 70, grade: "C−" }
+  - { min: 67, grade: "D+" }
+  - { min: 63, grade: "D"  }
+  - { min: 60, grade: "D−" }
+  - { min: 0,  grade: "F"  }
