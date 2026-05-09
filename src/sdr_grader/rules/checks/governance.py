@@ -34,14 +34,14 @@ if TYPE_CHECKING:
 def check_snapshot_history_absent(
     impl: Implementation, ctx: RuleContext
 ) -> list[Finding]:
-    """Fire when no companion snapshots are reported alongside this one.
+    """Fire when no prior snapshots are reported alongside this one.
 
-    The current snapshot doesn't carry an explicit "prior snapshots" pointer,
-    so the rule reads `history_present` from params (default: false) — Phase 8
-    onward, the loader can fill this in from a snapshot directory.
+    Resolution order: ctx.params['history_present'] (pack-level override) ->
+    snapshot metadata 'history_present' / 'History Present' -> assume worst
+    (fire). The directory-mode loader (Phase 8) and CI integrations can inject
+    the metadata flag when they have evidence of history.
     """
-    history_present = bool(ctx.params.get("history_present", False))
-    if history_present:
+    if _signal_present(impl, ctx, "history_present", "History Present"):
         return []
     paragraph = (
         "No prior snapshots of this implementation were detected alongside "
@@ -108,12 +108,12 @@ def check_snapshot_age(
 def check_sdr_doc_absent(
     impl: Implementation, ctx: RuleContext
 ) -> list[Finding]:
-    """Fire when the caller signals there is no SDR doc for this data view.
+    """Fire when no SDR doc is signaled for this data view.
 
-    The snapshot doesn't carry doc evidence directly; the loader / CI gates
-    can inject `sdr_doc_present` when they have it.
+    Resolution order matches GOV-001: ctx.params['sdr_doc_present'] ->
+    snapshot metadata 'sdr_doc_present' / 'SDR Doc Present' -> fire.
     """
-    if bool(ctx.params.get("sdr_doc_present", False)):
+    if _signal_present(impl, ctx, "sdr_doc_present", "SDR Doc Present"):
         return []
     # Default to firing in v0.1; the operator can suppress via .sdr-grader.yaml
     # if they keep their SDR somewhere the grader can't see.
@@ -217,6 +217,23 @@ def check_doc_drift(
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+
+def _signal_present(impl: Implementation, ctx: RuleContext, *keys: str) -> bool:
+    """True when any of the named flags resolves to truthy.
+
+    Param overrides win first (so packs can pin behavior). Then fall back to
+    the snapshot's own metadata, which the loader / CI can populate.
+    """
+    for key in keys:
+        if key in ctx.params:
+            return bool(ctx.params[key])
+    metadata = impl.raw.get("metadata") if isinstance(impl.raw, dict) else None
+    if isinstance(metadata, dict):
+        for key in keys:
+            if metadata.get(key):
+                return True
+    return False
 
 
 def _parse_iso(value: str) -> datetime | None:

@@ -9,8 +9,10 @@ rules:
     severity: high
     platforms: [cja, aa]
     check: snapshot_history_absent
-    params:
-      history_present: false
+    params: {}
+    # The rule reads history_present from snapshot metadata when no override is
+    # set in params. The directory-mode loader and CI integrations can inject
+    # the flag when they have evidence; otherwise the rule fires.
     rationale: |
       Without snapshot history, configuration changes cannot be diffed,
       drift cannot be detected, and audit trails are unavailable for
@@ -38,8 +40,9 @@ rules:
     severity: high
     platforms: [cja, aa]
     check: sdr_doc_absent
-    params:
-      sdr_doc_present: false
+    params: {}
+    # As with GOV-001, the rule reads sdr_doc_present from snapshot metadata
+    # when no override is set in params.
     rationale: |
       Without an SDR, definitions live only in the platform UI, which makes
       peer review and onboarding harder and obscures the &ldquo;why&rdquo;

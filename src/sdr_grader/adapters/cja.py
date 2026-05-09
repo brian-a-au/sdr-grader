@@ -222,18 +222,23 @@ def _calc_metric_from_record(record: dict[str, Any]) -> CalculatedMetric:
 def _extract_attribution(formula: dict[str, Any]) -> tuple[str | None, str | None]:
     """Extract attribution model and allocation from a parsed CJA formula.
 
-    cja_auto_sdr stores these inside `definition_json`. This is a best-effort
-    extraction; rules that need richer attribution analysis can re-parse the
-    raw formula via Implementation.raw.
+    cja_auto_sdr nests these inside `definition_json` in two shapes we've
+    seen — a flat top level (`{attribution, allocation, func: 'divide', ...}`)
+    or under a func dict. Try both. Rules that need richer attribution
+    analysis can re-parse the raw formula via Implementation.raw.
     """
     if not isinstance(formula, dict):
         return None, None
+    attribution_model = (
+        formula.get("attribution")
+        or formula.get("attribution_model")
+        or formula.get("model")
+    )
+    allocation = formula.get("allocation")
     func = formula.get("func")
-    attribution_model = None
-    allocation = None
     if isinstance(func, dict):
-        attribution_model = func.get("attribution") or func.get("model")
-        allocation = func.get("allocation")
+        attribution_model = attribution_model or func.get("attribution") or func.get("model")
+        allocation = allocation or func.get("allocation")
     return (
         str(attribution_model) if attribution_model else None,
         str(allocation) if allocation else None,

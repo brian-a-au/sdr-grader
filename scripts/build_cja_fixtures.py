@@ -398,18 +398,35 @@ def build_clean_snapshot() -> dict[str, Any]:
         "modified": BASE_DATE,
     } for i in range(10)]
 
+    # Cross-reference everything self-consistently:
+    # - calc metrics reference real clean metric IDs (no broken refs)
+    # - calc metrics use neutral names (no revenue/conversion/order tokens)
+    # - calc metrics declare explicit attribution + allocation
+    # - calc metrics reference 5 of 8 segments and segments reference 3 of 5
+    #   calc metrics, so SEG-003 / CALC-005 (50% orphan thresholds) stay quiet
+    clean_metric_ids = [f"metrics/cm_clean_metric_{i+1:02d}" for i in range(12)]
+    clean_segment_ids = [f"segments/seg_clean_{i+1:02d}" for i in range(8)]
+    clean_calc_ids = [f"calculatedMetrics/cm_clean_ratio_{c}" for c in "abcde"]
+
     calc_metrics = []
-    for i, (mid, summary, refs) in enumerate([
-        ("cm_clean_orders_per_visit",   "Orders / Visits",   ["metrics/orders", "metrics/visits"]),
-        ("cm_clean_avg_order_value",    "Revenue / Orders",  ["metrics/revenue", "metrics/orders"]),
-        ("cm_clean_bounce_rate",        "Bounces / Visits",  ["metrics/bounces", "metrics/visits"]),
-        ("cm_clean_signup_rate",        "Signups / Visits",  ["metrics/signups", "metrics/visits"]),
-        ("cm_clean_engagement_rate",    "Engaged / Visits",  ["metrics/engaged", "metrics/visits"]),
+    for i, (mid, summary, num_idx, denom_idx) in enumerate([
+        ("cm_clean_ratio_a", "Metric A / Metric B", 0, 1),
+        ("cm_clean_ratio_b", "Metric C / Metric D", 2, 3),
+        ("cm_clean_ratio_c", "Metric E / Metric F", 4, 5),
+        ("cm_clean_ratio_d", "Metric G / Metric H", 6, 7),
+        ("cm_clean_ratio_e", "Metric I / Metric J", 8, 9),
     ]):
+        refs = [clean_metric_ids[num_idx], clean_metric_ids[denom_idx]]
+        # Each calc metric references a unique clean segment; collectively
+        # 5 of 8 segments are referenced so SEG-003 stays quiet.
+        seg_refs = [clean_segment_ids[i]]
         calc_metrics.append({
             "metric_id": f"calculatedMetrics/{mid}",
             "metric_name": mid.replace("_", " ").title(),
-            "description": f"Documented metric: {summary}.",
+            "description": (
+                f"{summary}. Uses linear attribution per documented governance "
+                "decision."
+            ),
             "owner": "owner@example.com",
             "owner_id": "owner",
             "approved": True,
@@ -427,7 +444,7 @@ def build_clean_snapshot() -> dict[str, Any]:
             "nesting_depth": 1,
             "operator_count": 1,
             "metric_references": refs,
-            "segment_references": [],
+            "segment_references": seg_refs,
             "conditional_count": 0,
             "formula_summary": summary,
             "polarity": "positive",
@@ -435,6 +452,8 @@ def build_clean_snapshot() -> dict[str, Any]:
             "precision": 2,
             "definition_json": json.dumps({
                 "func": "divide",
+                "attribution": "linear",
+                "allocation": "linear",
                 "col1": {"func": "metric", "name": refs[0]},
                 "col2": {"func": "metric", "name": refs[1]},
             }),
@@ -442,6 +461,9 @@ def build_clean_snapshot() -> dict[str, Any]:
 
     segments = []
     for i in range(8):
+        # First three segments reference the first three clean calc metrics so
+        # CALC-005 (>50% orphan calc metrics) doesn't fire — 3 of 5 referenced.
+        seg_metric_refs = [clean_calc_ids[i]] if i < 3 else []
         segments.append({
             "segment_id": f"segments/seg_clean_{i+1:02d}",
             "segment_name": f"Clean Segment {i+1:02d}",
@@ -466,7 +488,7 @@ def build_clean_snapshot() -> dict[str, Any]:
             "nesting_depth": 2,
             "container_count": 1,
             "dimension_references": [f"variables/evar{i + 1}"],
-            "metric_references": [],
+            "metric_references": seg_metric_refs,
             "other_segment_references": [],
             "definition_summary": "single equality on event",
             "definition_json": json.dumps({
@@ -484,6 +506,11 @@ def build_clean_snapshot() -> dict[str, Any]:
             "Total Metrics": len(metrics),
             "Total Dimensions": len(dimensions),
             "Tool Version": TOOL_VERSION,
+            # Governance signals — the loader/CI normally injects these when it
+            # has evidence. The clean fixture states them outright so it grades
+            # well without external context.
+            "history_present": True,
+            "sdr_doc_present": True,
         },
         "data_view": {
             "data_view_id": "dv_clean_prod_web",

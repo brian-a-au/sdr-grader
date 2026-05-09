@@ -5,7 +5,9 @@
     "Data View Name": "Clean Production Web Analytics",
     "Total Metrics": 12,
     "Total Dimensions": 18,
-    "Tool Version": "3.5.17"
+    "Tool Version": "3.5.17",
+    "history_present": true,
+    "sdr_doc_present": true
   },
   "data_view": {
     "data_view_id": "dv_clean_prod_web",
@@ -753,9 +755,9 @@
     },
     "metrics": [
       {
-        "metric_id": "calculatedMetrics/cm_clean_orders_per_visit",
-        "metric_name": "Cm Clean Orders Per Visit",
-        "description": "Documented metric: Orders / Visits.",
+        "metric_id": "calculatedMetrics/cm_clean_ratio_a",
+        "metric_name": "Cm Clean Ratio A",
+        "description": "Metric A / Metric B. Uses linear attribution per documented governance decision.",
         "owner": "owner@example.com",
         "owner_id": "owner",
         "approved": true,
@@ -780,21 +782,23 @@
         "nesting_depth": 1,
         "operator_count": 1,
         "metric_references": [
-          "metrics/orders",
-          "metrics/visits"
+          "metrics/cm_clean_metric_01",
+          "metrics/cm_clean_metric_02"
         ],
-        "segment_references": [],
+        "segment_references": [
+          "segments/seg_clean_01"
+        ],
         "conditional_count": 0,
-        "formula_summary": "Orders / Visits",
+        "formula_summary": "Metric A / Metric B",
         "polarity": "positive",
         "metric_type": "decimal",
         "precision": 2,
-        "definition_json": "{\"func\": \"divide\", \"col1\": {\"func\": \"metric\", \"name\": \"metrics/orders\"}, \"col2\": {\"func\": \"metric\", \"name\": \"metrics/visits\"}}"
+        "definition_json": "{\"func\": \"divide\", \"attribution\": \"linear\", \"allocation\": \"linear\", \"col1\": {\"func\": \"metric\", \"name\": \"metrics/cm_clean_metric_01\"}, \"col2\": {\"func\": \"metric\", \"name\": \"metrics/cm_clean_metric_02\"}}"
       },
       {
-        "metric_id": "calculatedMetrics/cm_clean_avg_order_value",
-        "metric_name": "Cm Clean Avg Order Value",
-        "description": "Documented metric: Revenue / Orders.",
+        "metric_id": "calculatedMetrics/cm_clean_ratio_b",
+        "metric_name": "Cm Clean Ratio B",
+        "description": "Metric C / Metric D. Uses linear attribution per documented governance decision.",
         "owner": "owner@example.com",
         "owner_id": "owner",
         "approved": true,
@@ -819,21 +823,23 @@
         "nesting_depth": 1,
         "operator_count": 1,
         "metric_references": [
-          "metrics/revenue",
-          "metrics/orders"
+          "metrics/cm_clean_metric_03",
+          "metrics/cm_clean_metric_04"
         ],
-        "segment_references": [],
+        "segment_references": [
+          "segments/seg_clean_02"
+        ],
         "conditional_count": 0,
-        "formula_summary": "Revenue / Orders",
+        "formula_summary": "Metric C / Metric D",
         "polarity": "positive",
         "metric_type": "decimal",
         "precision": 2,
-        "definition_json": "{\"func\": \"divide\", \"col1\": {\"func\": \"metric\", \"name\": \"metrics/revenue\"}, \"col2\": {\"func\": \"metric\", \"name\": \"metrics/orders\"}}"
+        "definition_json": "{\"func\": \"divide\", \"attribution\": \"linear\", \"allocation\": \"linear\", \"col1\": {\"func\": \"metric\", \"name\": \"metrics/cm_clean_metric_03\"}, \"col2\": {\"func\": \"metric\", \"name\": \"metrics/cm_clean_metric_04\"}}"
       },
       {
-        "metric_id": "calculatedMetrics/cm_clean_bounce_rate",
-        "metric_name": "Cm Clean Bounce Rate",
-        "description": "Documented metric: Bounces / Visits.",
+        "metric_id": "calculatedMetrics/cm_clean_ratio_c",
+        "metric_name": "Cm Clean Ratio C",
+        "description": "Metric E / Metric F. Uses linear attribution per documented governance decision.",
         "owner": "owner@example.com",
         "owner_id": "owner",
         "approved": true,
@@ -858,21 +864,23 @@
         "nesting_depth": 1,
         "operator_count": 1,
         "metric_references": [
-          "metrics/bounces",
-          "metrics/visits"
+          "metrics/cm_clean_metric_05",
+          "metrics/cm_clean_metric_06"
         ],
-        "segment_references": [],
+        "segment_references": [
+          "segments/seg_clean_03"
+        ],
         "conditional_count": 0,
-        "formula_summary": "Bounces / Visits",
+        "formula_summary": "Metric E / Metric F",
         "polarity": "positive",
         "metric_type": "decimal",
         "precision": 2,
-        "definition_json": "{\"func\": \"divide\", \"col1\": {\"func\": \"metric\", \"name\": \"metrics/bounces\"}, \"col2\": {\"func\": \"metric\", \"name\": \"metrics/visits\"}}"
+        "definition_json": "{\"func\": \"divide\", \"attribution\": \"linear\", \"allocation\": \"linear\", \"col1\": {\"func\": \"metric\", \"name\": \"metrics/cm_clean_metric_05\"}, \"col2\": {\"func\": \"metric\", \"name\": \"metrics/cm_clean_metric_06\"}}"
       },
       {
-        "metric_id": "calculatedMetrics/cm_clean_signup_rate",
-        "metric_name": "Cm Clean Signup Rate",
-        "description": "Documented metric: Signups / Visits.",
+        "metric_id": "calculatedMetrics/cm_clean_ratio_d",
+        "metric_name": "Cm Clean Ratio D",
+        "description": "Metric G / Metric H. Uses linear attribution per documented governance decision.",
         "owner": "owner@example.com",
         "owner_id": "owner",
         "approved": true,
@@ -897,21 +905,23 @@
         "nesting_depth": 1,
         "operator_count": 1,
         "metric_references": [
-          "metrics/signups",
-          "metrics/visits"
+          "metrics/cm_clean_metric_07",
+          "metrics/cm_clean_metric_08"
         ],
-        "segment_references": [],
+        "segment_references": [
+          "segments/seg_clean_04"
+        ],
         "conditional_count": 0,
-        "formula_summary": "Signups / Visits",
+        "formula_summary": "Metric G / Metric H",
         "polarity": "positive",
         "metric_type": "decimal",
         "precision": 2,
-        "definition_json": "{\"func\": \"divide\", \"col1\": {\"func\": \"metric\", \"name\": \"metrics/signups\"}, \"col2\": {\"func\": \"metric\", \"name\": \"metrics/visits\"}}"
+        "definition_json": "{\"func\": \"divide\", \"attribution\": \"linear\", \"allocation\": \"linear\", \"col1\": {\"func\": \"metric\", \"name\": \"metrics/cm_clean_metric_07\"}, \"col2\": {\"func\": \"metric\", \"name\": \"metrics/cm_clean_metric_08\"}}"
       },
       {
-        "metric_id": "calculatedMetrics/cm_clean_engagement_rate",
-        "metric_name": "Cm Clean Engagement Rate",
-        "description": "Documented metric: Engaged / Visits.",
+        "metric_id": "calculatedMetrics/cm_clean_ratio_e",
+        "metric_name": "Cm Clean Ratio E",
+        "description": "Metric I / Metric J. Uses linear attribution per documented governance decision.",
         "owner": "owner@example.com",
         "owner_id": "owner",
         "approved": true,
@@ -936,16 +946,18 @@
         "nesting_depth": 1,
         "operator_count": 1,
         "metric_references": [
-          "metrics/engaged",
-          "metrics/visits"
+          "metrics/cm_clean_metric_09",
+          "metrics/cm_clean_metric_10"
         ],
-        "segment_references": [],
+        "segment_references": [
+          "segments/seg_clean_05"
+        ],
         "conditional_count": 0,
-        "formula_summary": "Engaged / Visits",
+        "formula_summary": "Metric I / Metric J",
         "polarity": "positive",
         "metric_type": "decimal",
         "precision": 2,
-        "definition_json": "{\"func\": \"divide\", \"col1\": {\"func\": \"metric\", \"name\": \"metrics/engaged\"}, \"col2\": {\"func\": \"metric\", \"name\": \"metrics/visits\"}}"
+        "definition_json": "{\"func\": \"divide\", \"attribution\": \"linear\", \"allocation\": \"linear\", \"col1\": {\"func\": \"metric\", \"name\": \"metrics/cm_clean_metric_09\"}, \"col2\": {\"func\": \"metric\", \"name\": \"metrics/cm_clean_metric_10\"}}"
       }
     ]
   },
@@ -989,7 +1001,9 @@
         "dimension_references": [
           "variables/evar1"
         ],
-        "metric_references": [],
+        "metric_references": [
+          "calculatedMetrics/cm_clean_ratio_a"
+        ],
         "other_segment_references": [],
         "definition_summary": "single equality on event",
         "definition_json": "{\"func\": \"container\", \"context\": \"event\", \"pred\": {\"func\": \"streq\", \"val\": {\"func\": \"attr\", \"name\": \"variables/evar1\"}, \"str\": \"match\"}}"
@@ -1028,7 +1042,9 @@
         "dimension_references": [
           "variables/evar2"
         ],
-        "metric_references": [],
+        "metric_references": [
+          "calculatedMetrics/cm_clean_ratio_b"
+        ],
         "other_segment_references": [],
         "definition_summary": "single equality on event",
         "definition_json": "{\"func\": \"container\", \"context\": \"event\", \"pred\": {\"func\": \"streq\", \"val\": {\"func\": \"attr\", \"name\": \"variables/evar2\"}, \"str\": \"match\"}}"
@@ -1067,7 +1083,9 @@
         "dimension_references": [
           "variables/evar3"
         ],
-        "metric_references": [],
+        "metric_references": [
+          "calculatedMetrics/cm_clean_ratio_c"
+        ],
         "other_segment_references": [],
         "definition_summary": "single equality on event",
         "definition_json": "{\"func\": \"container\", \"context\": \"event\", \"pred\": {\"func\": \"streq\", \"val\": {\"func\": \"attr\", \"name\": \"variables/evar3\"}, \"str\": \"match\"}}"
