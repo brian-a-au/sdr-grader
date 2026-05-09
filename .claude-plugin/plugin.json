@@ -1,0 +1,13 @@
+{
+  "$schema": "https://claude.ai/schemas/plugin.json",
+  "name": "sdr-grader",
+  "version": "1.0.0",
+  "description": "Follow-up question support for sdr-grader's --json grade output. Filter findings, look up remediations, and compare two grades from inside Claude Code.",
+  "author": {
+    "name": "Brian Au",
+    "url": "https://github.com/brian-a-au/sdr-grader"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/brian-a-au/sdr-grader",
+  "skills": ["skills/sdr-grader"]
+}

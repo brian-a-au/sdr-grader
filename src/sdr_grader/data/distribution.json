@@ -1,0 +1,18 @@
+{
+  "version": "0.1",
+  "description": "Reference distribution percentiles used by the renderer's distribution-context section. Replace with real leaderboard data once the opt-in submission service ships (SPEC §8 deferred items).",
+  "n_instances": 142,
+  "overall": {
+    "median": 67,
+    "p25": 54,
+    "p75": 79
+  },
+  "categories": {
+    "schema_hygiene": {"median": 71},
+    "naming_consistency": {"median": 73},
+    "segment_complexity": {"median": 77},
+    "calc_metric_maint": {"median": 72},
+    "attribution_coverage": {"median": 68},
+    "governance_posture": {"median": 60}
+  }
+}

@@ -80,3 +80,9 @@ class Implementation:
     calculated_metrics: list[CalculatedMetric]
     derived_fields: list[Component]
     raw: dict[str, Any]
+    # Optional supplementary inputs (Launch property exports, Workspace project
+    # exports, AEP governance API outputs, etc.) keyed by user-supplied name.
+    # Rules read from this when the appropriate key is present; absent keys
+    # are simply skipped so rules that need supplementary data can opt-in
+    # gracefully.
+    supplementary_data: dict[str, Any] = field(default_factory=dict)

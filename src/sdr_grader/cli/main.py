@@ -79,7 +79,16 @@ def main(argv: list[str] | None = None) -> int:
         print(f"error: {exc}", file=sys.stderr)
         return RUNTIME_ERROR
 
+    try:
+        _attach_extra_inputs(impl, args.extra_input)
+    except InvalidSnapshotError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return RUNTIME_ERROR
+
     report = grade(impl, rubric, suppression=suppression)
+    report = _maybe_attach_distribution(report, args)
+    if report is None:
+        return RUNTIME_ERROR
     html = render(report)
     output_path = Path(args.output) if args.output else _default_output_path(report)
     try:
@@ -192,6 +201,25 @@ def _build_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument(
+        "--distribution-data",
+        help=(
+            "Path to a distribution data JSON (percentile reference for the "
+            "report's distribution charts). Use 'bundled' for the packaged "
+            "default; omit to skip the distribution section."
+        ),
+    )
+    parser.add_argument(
+        "--extra-input",
+        action="append",
+        default=[],
+        help=(
+            "Attach a supplementary JSON input under the given key. Format: "
+            "KEY=PATH. Repeat to attach multiple "
+            "(--extra-input launch=launch.json --extra-input workspace=ws.json). "
+            "Available to rules via Implementation.supplementary_data[KEY]."
+        ),
+    )
+    parser.add_argument(
         "--fail-below",
         help="Exit code 2 if the overall grade falls below this letter (e.g. 'B-').",
     )
@@ -201,6 +229,79 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Suppress informational stderr output.",
     )
     return parser
+
+
+# ---------------------------------------------------------------------------
+# Supplementary inputs
+# ---------------------------------------------------------------------------
+
+
+def _attach_extra_inputs(impl, raw_specs: list[str]) -> None:
+    """Parse --extra-input KEY=PATH specs and merge into supplementary_data."""
+    if not raw_specs:
+        return
+    import json as _json
+
+    for spec in raw_specs:
+        if "=" not in spec:
+            raise InvalidSnapshotError(
+                f"--extra-input expected KEY=PATH, got {spec!r}"
+            )
+        key, _, path_str = spec.partition("=")
+        key = key.strip()
+        if not key:
+            raise InvalidSnapshotError(
+                f"--extra-input has empty KEY in {spec!r}"
+            )
+        path = Path(path_str.strip())
+        if not path.is_file():
+            raise InvalidSnapshotError(
+                f"--extra-input {key}: file not found at {path}"
+            )
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError as exc:
+            raise InvalidSnapshotError(
+                f"--extra-input {key}: could not read {path}: {exc}"
+            ) from exc
+        try:
+            payload = _json.loads(text)
+        except _json.JSONDecodeError as exc:
+            raise InvalidSnapshotError(
+                f"--extra-input {key}: not valid JSON: {exc}"
+            ) from exc
+        if key in impl.supplementary_data:
+            raise InvalidSnapshotError(
+                f"--extra-input {key}: duplicate key (already attached)"
+            )
+        impl.supplementary_data[key] = payload
+
+
+# ---------------------------------------------------------------------------
+# Distribution context
+# ---------------------------------------------------------------------------
+
+
+def _maybe_attach_distribution(report, args):
+    """If --distribution-data was supplied, attach a Distribution block."""
+    if not args.distribution_data:
+        return report
+    from dataclasses import replace as _replace
+
+    from sdr_grader.core.exceptions import InvalidSnapshotError as _ISE
+    from sdr_grader.render.distribution import (
+        BUNDLED_PATH,
+        build_distribution,
+        load_distribution_data,
+    )
+
+    path = None if args.distribution_data == "bundled" else args.distribution_data
+    try:
+        data = load_distribution_data(path or BUNDLED_PATH)
+    except _ISE as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return None
+    return _replace(report, distribution=build_distribution(report, data))
 
 
 # ---------------------------------------------------------------------------

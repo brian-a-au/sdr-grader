@@ -1,6 +1,6 @@
 [project]
 name = "sdr-grader"
-version = "0.0.0"
+version = "1.0.0"
 description = "Deterministic, rule-based linter for Adobe Customer Journey Analytics and Adobe Analytics implementations."
 readme = "README.md"
 license = { text = "MIT" }
@@ -64,6 +64,9 @@ ignore = []
 "src/sdr_grader/render/renderer.py" = ["E501"]
 "src/sdr_grader/trend/renderer.py" = ["E501"]
 "tests/fixtures/demo_report.py" = ["E501"]
+# Bundled Claude skill helper: long format strings inside the helper are
+# fine — the script ships verbatim as part of the skill bundle.
+"skills/**" = ["E501"]
 # Rule check modules: finding paragraphs and pluralization expressions naturally
 # overflow 100 chars because findings are user-facing prose. The wrapping that
 # would satisfy the linter just makes them harder to read.

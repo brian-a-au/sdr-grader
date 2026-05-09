@@ -74,6 +74,36 @@ if platform == "your_platform":
     return adapt(snapshot, source=source)
 ```
 
+## Supplementary inputs (Launch / Workspace / AEP exports)
+
+Some rule packs need data the snapshot doesn't carry — Launch property
+exports, Workspace project exports, AEP governance API outputs, etc.
+Rather than building a dedicated adapter for each, attach those files
+through the `--extra-input KEY=PATH` flag. The CLI parses each spec,
+loads the JSON, and stores it in `Implementation.supplementary_data[KEY]`.
+
+```bash
+sdr-grader snapshot.json \
+  --extra-input launch=launch_property.json \
+  --extra-input workspace=workspace_export.json
+```
+
+Rules opt in by reading `impl.supplementary_data.get("launch")` and
+returning empty when the key is absent, so a rule that needs Launch
+data quietly does nothing on snapshots that don't supply it.
+
+```python
+@register_check("launch_required_data_elements")
+def check_launch_required_data_elements(impl, ctx) -> list[Finding]:
+    launch = impl.supplementary_data.get("launch")
+    if not isinstance(launch, dict):
+        return []  # rule is opt-in via --extra-input launch=…
+    # … walk the Launch export and emit findings …
+```
+
+The shape of each supplementary input is determined by the upstream
+exporter; document it next to the rule that consumes it.
+
 ## Testing
 
 Mirror `tests/test_adapters_cja.py` / `tests/test_adapters_aa.py`. Cover
