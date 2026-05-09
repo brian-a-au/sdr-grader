@@ -1,0 +1,75 @@
+category: naming_consistency
+description: |
+  Naming consistency rules — prefix conventions, allowed characters, casing,
+  and synonym discipline across components.
+
+rules:
+  - id: NAME-001
+    name: Custom dimension prefix consistency
+    severity: low
+    platforms: [cja, aa]
+    check: prefix_consistency
+    params:
+      target: dimensions
+      tag_filter: custom
+      min_consistency: 0.80
+    rationale: |
+      Inconsistent prefixes signal that multiple implementers worked without
+      a shared convention. They make schema browsing harder and complicate
+      downstream tooling that expects naming patterns.
+    remediation: |
+      Pick a convention, document it in the SDR, and rename outliers via the
+      platform UI or API.
+
+  - id: NAME-002
+    name: No whitespace or special characters in component IDs
+    severity: low
+    platforms: [cja, aa]
+    check: regex_match_id
+    params:
+      pattern: '^[A-Za-z0-9_/.\-]+$'
+      targets: [metrics, dimensions, derived_fields, calculated_metrics, segments]
+    rationale: |
+      Whitespace or unusual characters in IDs break tooling that splits on
+      whitespace, embeds IDs in URLs, or stores them as filename fragments.
+    remediation: |
+      Rename the component via the platform API. Use only ASCII letters,
+      digits, underscore, hyphen, period, and forward slash.
+
+  - id: NAME-003
+    name: Component name casing consistency
+    severity: low
+    platforms: [cja, aa]
+    check: casing_consistency
+    params:
+      target: dimensions
+      tag_filter: custom
+      min_consistency: 0.80
+    rationale: |
+      Mixed casing styles (camelCase + snake_case + Title Case in the same
+      schema) produce friction in copy-paste workflows and signal a lack of
+      shared convention across implementers.
+    remediation: |
+      Adopt a single casing convention and rename outliers. Add a CI check
+      that flags new components introduced in a different style.
+
+  - id: NAME-004
+    name: Semantic synonym mixing
+    severity: medium
+    platforms: [cja, aa]
+    check: semantic_consistency
+    params:
+      synonym_groups:
+        - [user, visitor]
+        - [page, screen]
+        - [session, visit]
+        - [product, item, sku]
+        - [customer, member, subscriber]
+    rationale: |
+      Inconsistent vocabulary forces analysts to learn each team's idiolect
+      and causes downstream tooling and segmentation to drift apart over
+      time.
+    remediation: |
+      Pick one term per concept, document it, and rename existing components
+      to align. The losing synonyms should be deprecated, not silently kept
+      around.

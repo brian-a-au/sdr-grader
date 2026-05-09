@@ -4,6 +4,37 @@ description: |
   descriptions, and references in the data view.
 
 rules:
+  - id: SCH-001
+    name: Duplicate component names within the same component type
+    severity: medium
+    platforms: [cja, aa]
+    check: duplicate_component_names
+    params:
+      targets: [metrics, dimensions, derived_fields]
+    rationale: |
+      When two components share a name, downstream tooling and humans pick
+      different ones in different reports, surfacing as &ldquo;the dashboards
+      disagree&rdquo; complaints from executives.
+    remediation: |
+      Rename one of the duplicates with a more specific qualifier and update
+      any segments, calculated metrics, or projects that reference the old
+      name.
+
+  - id: SCH-002
+    name: Components referenced but not defined
+    severity: high
+    platforms: [cja, aa]
+    check: broken_references
+    params:
+      show_top: 10
+    rationale: |
+      Broken references are usually a symptom of components renamed or
+      deleted without updating their consumers. They produce silent zeros
+      or runtime errors depending on the consumer.
+    remediation: |
+      Re-create the missing component, or update the segment / calculated
+      metric to point at the current canonical equivalent.
+
   - id: SCH-003
     name: Components lacking descriptions
     severity: medium
@@ -20,3 +51,44 @@ rules:
       Generate the list of components missing descriptions via the data view
       API and populate them. Establish a CI check that fails new components
       added without descriptions.
+
+  - id: SCH-004
+    name: Type-name mismatches
+    severity: low
+    platforms: [cja, aa]
+    check: type_name_mismatch
+    params: {}
+    rationale: |
+      A metric named with a rate / percent / ratio token but stored as an
+      integer rounds to whole numbers and reports 0% or 100% in most cells.
+    remediation: |
+      Either rename the metric to clarify it is a count, or change the
+      underlying data type to a decimal/float and recompute.
+
+  - id: SCH-005
+    name: Deprecated components still in use
+    severity: low
+    platforms: [cja, aa]
+    check: deprecated_components
+    params: {}
+    rationale: |
+      Components marked as deprecated by tag or naming convention should
+      have no live consumers; otherwise the deprecation is announced but
+      not actually completed.
+    remediation: |
+      Migrate consumers to the supported replacement, then archive the
+      deprecated component or remove the deprecated marker if it was
+      misapplied.
+
+  - id: SCH-006
+    name: Cardinality concerns
+    severity: medium
+    platforms: [cja, aa]
+    check: cardinality_concerns
+    params: {}
+    rationale: |
+      Dimensions defined as low-cardinality types but ingesting high
+      cardinality values blow up storage and slow down queries.
+    remediation: |
+      Audit the dimension's source schema and either constrain the value
+      space upstream or migrate to an appropriate high-cardinality type.

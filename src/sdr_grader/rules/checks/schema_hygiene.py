@@ -1,14 +1,29 @@
-"""Schema hygiene checks.
+"""Schema hygiene checks (SCH-001..SCH-006).
 
-Phase 3 implements just SCH-003 (missing descriptions) end-to-end.
-SCH-001/002/004/005/006 land in Phase 4.
+Phase 3 shipped SCH-003 alone end-to-end. Phase 4 fills in the rest of the
+category. Each rule is registered by its `check:` name in the YAML rubric;
+the YAML names and Python function names are intentionally decoupled so a
+single function can serve multiple rule definitions if needed.
 """
 
 from __future__ import annotations
 
+import re
+from collections import defaultdict
 from typing import TYPE_CHECKING
 
 from sdr_grader.render import Finding, FindingBlock
+from sdr_grader.rules.checks._helpers import (
+    all_component_ids,
+    all_components,
+    all_segment_ids,
+    category_display,
+    collect_referenced_ids,
+    compact,
+    join_with_and,
+    pct,
+    platform_noun,
+)
 from sdr_grader.rules.registry import register_check
 
 if TYPE_CHECKING:
@@ -16,17 +31,16 @@ if TYPE_CHECKING:
     from sdr_grader.rules.engine import RuleContext
 
 
+# ---------------------------------------------------------------------------
+# SCH-003: missing descriptions (Phase 3, kept here)
+# ---------------------------------------------------------------------------
+
+
 @register_check("missing_descriptions")
 def check_missing_descriptions(
     impl: Implementation, ctx: RuleContext
 ) -> list[Finding]:
-    """Fire when the rate of components missing descriptions exceeds threshold.
-
-    Params:
-        threshold: float in 0..1, defaults to 0.10.
-        targets: list of attribute names on Implementation to check.
-                 Defaults to ["metrics", "dimensions", "derived_fields"].
-    """
+    """Fire when the rate of components missing descriptions exceeds threshold."""
     threshold = float(ctx.params.get("threshold", 0.10))
     targets: list[str] = list(
         ctx.params.get("targets", ["metrics", "dimensions", "derived_fields"])
@@ -41,62 +55,263 @@ def check_missing_descriptions(
         missing = sum(1 for c in components if not c.description)
         breakdown.append((target, missing, total))
 
-    over_threshold = [
-        (target, missing, total)
-        for target, missing, total in breakdown
-        if total > 0 and (missing / total) > threshold
-    ]
-    if not over_threshold:
+    over = [(t, m, n) for t, m, n in breakdown if n > 0 and (m / n) > threshold]
+    if not over:
         return []
 
-    total_missing = sum(missing for _, missing, _ in over_threshold)
-    parts = [f"{missing} {_human_target(target)}" for target, missing, _ in over_threshold]
-    parts_str = _join_with_and(parts)
-
+    total_missing = sum(m for _, m, _ in over)
+    parts_str = join_with_and([f"{m} {_human_target(t)}" for t, m, _ in over])
     paragraph = (
-        f"{parts_str} in this {_platform_noun(impl.platform)} have empty "
+        f"{parts_str} in this {platform_noun(impl.platform)} have empty "
         '<span class="mono">description</span> fields. Descriptions are the '
         "primary way new analysts and AI agents understand what a component "
         "measures; missing descriptions force readers to infer intent from "
         "names alone, which is frequently wrong."
     )
-
-    distribution_lines = [
-        f"{_human_target(target).title()}: {missing} of {total} missing "
-        f"({_pct(missing, total)}%)."
-        for target, missing, total in over_threshold
-    ]
-    distribution = (
-        " ".join(distribution_lines)
-        + f" The rubric threshold is {_pct_from_fraction(threshold)}%."
-    )
-
-    body: list[FindingBlock] = [
-        FindingBlock(kind="paragraph", html=paragraph),
-        FindingBlock(kind="section", label="Distribution", body_html=distribution),
-    ]
-    if ctx.remediation:
-        body.append(
-            FindingBlock(
-                kind="section",
-                label="How to remediate",
-                body_html=_format_text(ctx.remediation),
-            )
-        )
-
+    distribution = " ".join(
+        f"{_human_target(t).title()}: {m} of {n} missing ({pct(m, n)}%)."
+        for t, m, n in over
+    ) + f" The rubric threshold is {round(threshold * 100)}%."
     return [
-        Finding(
-            id=ctx.rule_id,
-            severity=ctx.severity,  # type: ignore[arg-type]
-            category=_category_display(ctx.category),
+        _make_finding(
+            ctx,
             title=f"{total_missing} components lack descriptions",
-            body=body,
+            paragraph=paragraph,
+            distribution=distribution,
         )
     ]
 
 
 # ---------------------------------------------------------------------------
-# Helpers (kept private; rules should compose pure logic, not share UI helpers)
+# SCH-001: duplicate component names within the same component type
+# ---------------------------------------------------------------------------
+
+
+@register_check("duplicate_component_names")
+def check_duplicate_component_names(
+    impl: Implementation, ctx: RuleContext
+) -> list[Finding]:
+    """Fire when components within the same type share a `name` value."""
+    targets: list[str] = list(
+        ctx.params.get("targets", ["metrics", "dimensions", "derived_fields"])
+    )
+    duplicates: list[tuple[str, str, list[str]]] = []  # (target, name, component_ids)
+    for target in targets:
+        components = getattr(impl, target, None) or []
+        groups: dict[str, list[str]] = defaultdict(list)
+        for c in components:
+            groups[c.name.strip().lower()].append(c.id)
+        for normalized, ids in groups.items():
+            if len(ids) > 1:
+                duplicates.append((target, normalized, sorted(ids)))
+
+    if not duplicates:
+        return []
+
+    duplicates.sort(key=lambda d: (d[0], d[1]))
+    items = [
+        f"{_human_target(target)}: {name!r} shared by {len(ids)} components ({', '.join(ids)})"
+        for target, name, ids in duplicates
+    ]
+    paragraph = (
+        f"{len(duplicates)} component name{'s are' if len(duplicates) != 1 else ' is'} "
+        "shared across multiple distinct components. Duplicate names produce subtly "
+        "different numbers in different reports and surface as &ldquo;the dashboards "
+        "disagree&rdquo; complaints from executives."
+    )
+    return [
+        _make_finding(
+            ctx,
+            title=(
+                f"{len(duplicates)} duplicate component "
+                f"{'names' if len(duplicates) != 1 else 'name'}"
+            ),
+            paragraph=paragraph,
+            extra_blocks=[FindingBlock(kind="components", items=items)],
+        )
+    ]
+
+
+# ---------------------------------------------------------------------------
+# SCH-002: broken references (segments / calc metrics referencing missing IDs)
+# ---------------------------------------------------------------------------
+
+
+@register_check("broken_references")
+def check_broken_references(
+    impl: Implementation, ctx: RuleContext
+) -> list[Finding]:
+    """Fire when segments or calc metrics reference IDs that don't exist."""
+    component_ids = all_component_ids(impl)
+    segment_ids = all_segment_ids(impl)
+    calc_ids = {cm.id for cm in impl.calculated_metrics}
+    known = component_ids | segment_ids | calc_ids
+
+    broken: list[tuple[str, str, str]] = []  # (referrer_type, referrer_id, missing_ref)
+    for seg in impl.segments:
+        for ref in seg.references:
+            if ref not in known:
+                broken.append(("segment", seg.id, ref))
+    for cm in impl.calculated_metrics:
+        for ref in cm.references:
+            if ref not in known:
+                broken.append(("calc_metric", cm.id, ref))
+
+    if not broken:
+        return []
+
+    total = len(broken)
+    threshold = int(ctx.params.get("show_top", 10))
+    sample = broken[:threshold]
+    items = [
+        f"{ref_type} {referrer} -> missing {missing}"
+        for ref_type, referrer, missing in sample
+    ]
+    suffix = "" if total <= threshold else f" (showing first {threshold} of {total})"
+    paragraph = (
+        f"{total} reference{'s are' if total != 1 else ' is'} broken — "
+        "segments or calculated metrics point at component IDs that don't "
+        f"exist in this {platform_noun(impl.platform)}. Broken references "
+        "are usually a symptom of components renamed or deleted without "
+        "updating their consumers."
+    )
+    return [
+        _make_finding(
+            ctx,
+            title=f"{total} broken reference{'s' if total != 1 else ''}{suffix}",
+            paragraph=paragraph,
+            extra_blocks=[FindingBlock(kind="components", items=items)],
+        )
+    ]
+
+
+# ---------------------------------------------------------------------------
+# SCH-004: type-name mismatches
+# ---------------------------------------------------------------------------
+
+
+_RATE_NAME_RE = re.compile(r"\b(rate|pct|percent|ratio|share)\b", re.IGNORECASE)
+_INTEGER_TYPES = {"integer", "int", "long"}
+
+
+@register_check("type_name_mismatch")
+def check_type_name_mismatch(
+    impl: Implementation, ctx: RuleContext
+) -> list[Finding]:
+    """Fire when a metric's name suggests a rate/percent but data_type is integer.
+
+    Best-effort heuristic — naming conventions vary, so this is conservative.
+    """
+    suspicious: list[tuple[str, str, str]] = []  # (id, name, data_type)
+    for m in impl.metrics:
+        if not m.data_type:
+            continue
+        if m.data_type.lower() not in _INTEGER_TYPES:
+            continue
+        if _RATE_NAME_RE.search(m.name) or _RATE_NAME_RE.search(m.id):
+            suspicious.append((m.id, m.name, m.data_type))
+
+    if not suspicious:
+        return []
+
+    items = [f"{mid}: name={name!r}, data_type={dtype}" for mid, name, dtype in suspicious]
+    plural = len(suspicious) != 1
+    paragraph = (
+        f"{len(suspicious)} metric{'s have names' if plural else ' has a name'} "
+        "implying a rate, percentage, or ratio (which should be a "
+        "decimal/float) but the underlying <span class=\"mono\">dataType</span> "
+        "is an integer. The metric will round to whole numbers and report 0% "
+        "or 100% in most cells."
+    )
+    title = f"{len(suspicious)} metric type-name mismatch{'es' if plural else ''}"
+    return [
+        _make_finding(
+            ctx,
+            title=title,
+            paragraph=paragraph,
+            extra_blocks=[FindingBlock(kind="components", items=items)],
+        )
+    ]
+
+
+# ---------------------------------------------------------------------------
+# SCH-005: deprecated/unused components
+# ---------------------------------------------------------------------------
+
+
+_DEPRECATED_RE = re.compile(
+    r"\b(deprecated|legacy|old|deleteme|do[_\s]?not[_\s]?use|v0|tmp|temp)\b",
+    re.IGNORECASE,
+)
+_DEPRECATED_TAGS = {"deprecated", "legacy", "deleteme", "do_not_use"}
+
+
+@register_check("deprecated_components")
+def check_deprecated_components(
+    impl: Implementation, ctx: RuleContext
+) -> list[Finding]:
+    """Fire when components appear deprecated by name/tag yet remain active.
+
+    A component is "deprecated and active" when it has a deprecated marker
+    (tag or name pattern) but is still referenced by something or has been
+    modified within the last `stale_days` (defaults to 90).
+    """
+    referenced = collect_referenced_ids(impl)
+    deprecated_active: list[str] = []
+    for c in all_components(impl):
+        if not _looks_deprecated(c.id, c.name, c.tags):
+            continue
+        if c.id in referenced:
+            deprecated_active.append(c.id)
+
+    if not deprecated_active:
+        return []
+
+    items = sorted(deprecated_active)
+    paragraph = (
+        f"{len(items)} component{'s are' if len(items) != 1 else ' is'} marked "
+        "as deprecated (by tag or name) yet still referenced by segments or "
+        "calculated metrics in this implementation. Deprecation hasn't "
+        "actually completed — consumers are still hitting the old definitions."
+    )
+    return [
+        _make_finding(
+            ctx,
+            title=f"{len(items)} deprecated component{'s' if len(items) != 1 else ''} still in use",
+            paragraph=paragraph,
+            extra_blocks=[FindingBlock(kind="components", items=items[:25])],
+        )
+    ]
+
+
+def _looks_deprecated(component_id: str, name: str, tags: list[str]) -> bool:
+    if any(t.lower() in _DEPRECATED_TAGS for t in tags):
+        return True
+    return bool(_DEPRECATED_RE.search(name) or _DEPRECATED_RE.search(component_id))
+
+
+# ---------------------------------------------------------------------------
+# SCH-006: cardinality concerns (stub for v0.1)
+# ---------------------------------------------------------------------------
+
+
+@register_check("cardinality_concerns")
+def check_cardinality_concerns(
+    impl: Implementation, ctx: RuleContext
+) -> list[Finding]:
+    """Fire when dimensions show suspicious cardinality patterns.
+
+    cja_auto_sdr does not currently expose cardinality estimates in its JSON
+    output. Until the upstream ships them, this rule is a no-op so the rubric
+    can declare the intent; it never fires today.
+
+    Tracked in SPEC §13 open question 5.
+    """
+    return []
+
+
+# ---------------------------------------------------------------------------
+# Shared helpers (private)
 # ---------------------------------------------------------------------------
 
 
@@ -108,34 +323,31 @@ def _human_target(target: str) -> str:
     }.get(target, target.replace("_", " "))
 
 
-def _platform_noun(platform: str) -> str:
-    return {"cja": "data view", "aa": "report suite"}.get(platform, "instance")
-
-
-def _category_display(slug: str) -> str:
-    return slug.replace("_", " ")
-
-
-def _pct(numerator: int, denominator: int) -> int:
-    if denominator <= 0:
-        return 0
-    return round(numerator / denominator * 100)
-
-
-def _pct_from_fraction(fraction: float) -> int:
-    return round(fraction * 100)
-
-
-def _join_with_and(parts: list[str]) -> str:
-    if not parts:
-        return ""
-    if len(parts) == 1:
-        return parts[0]
-    if len(parts) == 2:
-        return f"{parts[0]} and {parts[1]}"
-    return f"{', '.join(parts[:-1])}, and {parts[-1]}"
-
-
-def _format_text(text: str) -> str:
-    """Convert a YAML-loaded multi-line string into a single-paragraph HTML body."""
-    return " ".join(text.split())
+def _make_finding(
+    ctx: RuleContext,
+    *,
+    title: str,
+    paragraph: str,
+    distribution: str | None = None,
+    extra_blocks: list[FindingBlock] | None = None,
+) -> Finding:
+    body: list[FindingBlock] = [FindingBlock(kind="paragraph", html=paragraph)]
+    if distribution is not None:
+        body.append(FindingBlock(kind="section", label="Distribution", body_html=distribution))
+    if extra_blocks:
+        body.extend(extra_blocks)
+    if ctx.remediation:
+        body.append(
+            FindingBlock(
+                kind="section",
+                label="How to remediate",
+                body_html=compact(ctx.remediation),
+            )
+        )
+    return Finding(
+        id=ctx.rule_id,
+        severity=ctx.severity,  # type: ignore[arg-type]
+        category=category_display(ctx.category),
+        title=title,
+        body=body,
+    )
