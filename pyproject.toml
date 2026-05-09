@@ -35,6 +35,7 @@ packages = ["src/sdr_grader"]
 [tool.pytest.ini_options]
 minversion = "8.0"
 testpaths = ["tests"]
+pythonpath = ["tests"]
 addopts = "-ra"
 
 [tool.ruff]
@@ -53,3 +54,9 @@ ignore = []
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["B"]
+# Renderer literals (SVG markup, long content strings, embedded HTML) are part
+# of the locked visual contract (SPEC §3). Keeping them on one line preserves
+# readability against the rendered HTML structure.
+"src/sdr_grader/render/svg.py" = ["E501"]
+"src/sdr_grader/render/renderer.py" = ["E501"]
+"tests/fixtures/demo_report.py" = ["E501"]

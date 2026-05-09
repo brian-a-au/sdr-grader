@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ report.id }} — {{ report.instance_name }}</title>
+<style>{{ css }}</style>
+</head>
+<body>
+<main class="page">
+
+  {# ---------- Eyebrow + Title ---------- #}
+  <div class="eyebrow">{{ report.id }}</div>
+  <h1>{{ report.instance_name }}</h1>
+
+  {# ---------- Metadata strip ---------- #}
+  <div class="meta-strip">
+    <div class="item grade-cell">
+      <span class="label">Grade</span>
+      <span class="value">{{ report.grade }}</span>
+    </div>
+    <div class="item">
+      <span class="label">Overall</span>
+      <span class="value">{{ report.overall_pct }}%</span>
+    </div>
+    <div class="item">
+      <span class="label">Components</span>
+      <span class="value">{{ report.components_evaluated }} evaluated</span>
+    </div>
+    <div class="item">
+      <span class="label">Adapter</span>
+      <span class="value">{{ report.adapter.platform }} · {{ report.adapter.version }}</span>
+    </div>
+    <div class="item">
+      <span class="label">Rubric</span>
+      <span class="value">{{ report.rubric.pack }}@{{ report.rubric.version }}</span>
+    </div>
+    <div class="item">
+      <span class="label">Generated</span>
+      <span class="value">{{ report.generated_at_human }}</span>
+    </div>
+  </div>
+
+  {# ---------- On this page ---------- #}
+  <nav class="toc">
+    <span class="label">On this page</span>
+    <a href="#tldr">Summary</a>
+    <a href="#categories">Category scores</a>
+    <a href="#remediations">Top remediations</a>
+    <a href="#findings">All findings</a>
+    {% if report.distribution %}<a href="#distribution">Distribution context</a>{% endif %}
+    <a href="#methodology">Methodology</a>
+  </nav>
+
+  {# ---------- TL;DR ---------- #}
+  <section id="tldr">
+    <div class="tldr">Summary</div>
+    <p class="tldr-body">{{ report.tldr_html | safe }}</p>
+  </section>
+
+  {# ---------- Category scores ---------- #}
+  <section id="categories">
+    <h2>Category scores</h2>
+    <div class="section-rule"></div>
+
+    <div class="category-grid">
+      {% for cat in report.categories %}
+      <div class="cat">
+        <div class="name">{{ cat.name }}</div>
+        <div class="score">
+          <span class="pct">{{ cat.pct }}%</span>
+          <span class="sub">{{ cat.grade }}</span>
+        </div>
+        <div class="bar{% if cat.pct < 60 %} crit{% elif cat.pct < 70 %} warn{% endif %}">
+          <span style="width:{{ cat.pct }}%"></span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  {# ---------- Top remediations ---------- #}
+  <section id="remediations">
+    <h2>Top remediations</h2>
+    <div class="section-rule"></div>
+
+    <ol class="remediations">
+      {% for r in report.remediations %}
+      <li>
+        <span class="text">
+          {{ r.text }}
+          {% if r.refs %}<span class="ref">{{ r.refs | join(' · ') }}</span>{% endif %}
+        </span>
+        <span class="impact">+{{ r.impact_pts }} pts overall</span>
+      </li>
+      {% endfor %}
+    </ol>
+  </section>
+
+  {# ---------- All findings ---------- #}
+  <section id="findings">
+    <h2>All findings</h2>
+    <div class="section-rule"></div>
+
+    {% for f in report.findings %}
+    <article class="finding" id="finding-{{ f.id | lower }}">
+      <div class="finding-head">
+        <span class="finding-id">{{ f.id }}</span>
+        <span class="sev {{ f.severity_class }}">{{ f.severity_label }}</span>
+        <span class="finding-cat">{{ f.category }}</span>
+      </div>
+      <h3 class="finding-title">{{ f.title }}</h3>
+      <div class="finding-body">
+        {% for block in f.body %}
+          {% if block.kind == 'paragraph' %}
+            <p>{{ block.html | safe }}</p>
+          {% elif block.kind == 'section' %}
+            <div class="finding-section-label">{{ block.label }}</div>
+            {% if block.body_html %}<p>{{ block.body_html | safe }}</p>{% endif %}
+          {% elif block.kind == 'components' %}
+            <div class="finding-section-label">Affected components ({{ block['items'] | length }})</div>
+<pre class="components-list">{% for line in block['items'] %}{{ line }}
+{% endfor %}</pre>
+          {% elif block.kind == 'code' %}
+<pre class="code">{{ block.text }}</pre>
+          {% endif %}
+        {% endfor %}
+      </div>
+      {% if f.actions %}
+      <div class="finding-actions">
+        {% for a in f.actions %}<a href="{{ a.href }}">{{ a.label }}</a>{% endfor %}
+      </div>
+      {% endif %}
+    </article>
+    {% endfor %}
+  </section>
+
+  {# ---------- Distribution ---------- #}
+  {% if report.distribution %}
+  <section id="distribution">
+    <h2>Distribution context</h2>
+    <div class="section-rule"></div>
+    <div class="dist">
+      {% for chart in report.distribution.charts %}
+      <div class="row">
+        <div class="label">{{ chart.label }}</div>
+        {{ chart.svg | safe }}
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {# ---------- Methodology ---------- #}
+  <section id="methodology">
+    <h2>Methodology</h2>
+    <div class="section-rule"></div>
+
+    <div class="finding-body" style="max-width: 720px;">
+      {% for p in report.methodology.paragraphs %}
+        <p>{{ p | safe }}</p>
+      {% endfor %}
+
+      {% if report.methodology.skipped %}
+      <div class="finding-section-label">Skipped rules</div>
+      <div class="skipped">
+        <strong>{{ report.methodology.skipped | length }} rules skipped during this run:</strong>
+        <ul>
+          {% for s in report.methodology.skipped %}
+          <li><span class="mono">{{ s.ids | join(' · ') }}</span> — {{ s.reason }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+    </div>
+  </section>
+
+  {# ---------- Provenance ---------- #}
+  <div class="provenance">
+    Generated by <a href="{{ report.tool_url }}">sdr-grader v{{ report.tool_version }}</a>
+    against snapshot <span class="mono">{{ report.generated_at_iso }}</span>.
+    Rubric: <span class="mono">{{ report.rubric.pack }}@{{ report.rubric.version }}</span>.
+    Adapter: <span class="mono">{{ report.adapter.tool }}@{{ report.adapter.version }}</span>.
+    {{ report.components_evaluated }} components evaluated; {{ report.components_skipped }} components skipped
+    {% if report.components_skipped_reason %}(reason: {{ report.components_skipped_reason }}){% endif %}.
+    Source: <a href="{{ report.tool_url }}">{{ report.tool_url | replace('https://', '') }}</a>.
+  </div>
+
+</main>
+</body>
+</html>
