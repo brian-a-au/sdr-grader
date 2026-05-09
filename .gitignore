@@ -1,0 +1,57 @@
+# Local reference artifacts (kept in working directory, not tracked).
+# These are the inputs the SPEC describes — the visual contract reference and
+# the spec itself. Phase 1 will copy them into src/sdr_grader/render/ paths.
+/render.py
+/report.css
+/report.html.j2
+/sample-report.html
+/templated-report.html
+/SPEC.md
+
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+*.egg
+MANIFEST
+
+# uv / virtualenvs
+.venv/
+venv/
+env/
+
+# Testing
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+.tox/
+
+# Linters / type checkers
+.ruff_cache/
+.mypy_cache/
+.pyre/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Local-only generated artifacts
+/grade-*.html
+/grade-*.json
+
+# Environment
+.env
+.env.local
