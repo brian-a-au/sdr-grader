@@ -1,0 +1,75 @@
+"""Renderer regression tests.
+
+The renderer's output is the visual contract (SPEC §3). These tests guard:
+
+1. **Structural integrity**: expected sections, finding/category counts.
+2. **Determinism**: same input -> byte-identical output, twice in a row.
+3. **Golden file**: rendered output matches examples/templated-report.html
+   exactly. Any visual change must be a deliberate, reviewed regeneration of
+   the golden via scripts/generate_examples.py.
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+from fixtures.demo_report import build_demo_report
+from sdr_grader.render import render
+
+GOLDEN = Path(__file__).parent.parent / "examples" / "templated-report.html"
+
+EXPECTED_SECTIONS = [
+    'id="tldr"',
+    'id="categories"',
+    'id="remediations"',
+    'id="findings"',
+    'id="distribution"',
+    'id="methodology"',
+]
+
+
+def test_render_contains_all_sections():
+    html = render(build_demo_report())
+    for marker in EXPECTED_SECTIONS:
+        assert marker in html, f"expected section marker {marker!r} missing from rendered HTML"
+
+
+def test_render_contains_six_findings():
+    html = render(build_demo_report())
+    assert html.count('class="finding"') == 6
+
+
+def test_render_contains_six_categories():
+    report = build_demo_report()
+    assert len(report.categories) == 6
+    html = render(report)
+    for category in report.categories:
+        assert category.name in html
+
+
+def test_render_is_self_contained():
+    html = render(build_demo_report())
+    assert "<link rel=\"stylesheet\"" not in html
+    assert "<script" not in html
+    assert "cdn." not in html
+
+
+def test_render_is_deterministic():
+    a = render(build_demo_report())
+    b = render(build_demo_report())
+    assert a == b, "renderer must produce byte-identical output for identical input"
+
+
+def test_render_matches_golden():
+    """Output must match examples/templated-report.html byte-for-byte.
+
+    If this fails after an intentional template change, regenerate the golden:
+        uv run python scripts/generate_examples.py
+    Then review the diff in `examples/templated-report.html` before committing.
+    """
+    actual = render(build_demo_report())
+    expected = GOLDEN.read_text(encoding="utf-8")
+    assert actual == expected, (
+        "rendered output drifted from examples/templated-report.html. "
+        "Regenerate via: uv run python scripts/generate_examples.py"
+    )
