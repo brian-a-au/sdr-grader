@@ -1,20 +1,18 @@
 pack: strict
-version: "0.3"
+version: "0.4"
 description: |
   Strict rubric encoding the opinions of an Adobe Master / CJA Developer about
-  what a high-quality CJA or AA implementation looks like. Phase 5 brings
-  governance_posture and segment_complexity online; calc_metric_maint and
-  attribution_coverage land in the next iteration.
+  what a high-quality CJA or AA implementation looks like. All six v0.1
+  categories are now active; weights match the SPEC §6 reference distribution.
 
-# Category weights sum to 1.0. Categories with weight 0 are excluded from
-# the overall score.
+# Category weights sum to 1.0.
 category_weights:
-  schema_hygiene:        0.30
-  naming_consistency:    0.20
-  segment_complexity:    0.20
-  calc_metric_maint:     0.00
-  attribution_coverage:  0.00
-  governance_posture:    0.30
+  schema_hygiene:        0.15
+  naming_consistency:    0.10
+  segment_complexity:    0.15
+  calc_metric_maint:     0.20
+  attribution_coverage:  0.15
+  governance_posture:    0.25
 
 # Severity weights determine how much each fired rule penalizes its
 # category subtotal.

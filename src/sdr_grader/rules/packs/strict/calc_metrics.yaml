@@ -1,0 +1,115 @@
+category: calc_metric_maint
+description: |
+  Calculated metric maintainability rules — descriptions, references,
+  complexity, attribution variety, and near-duplicate detection.
+
+rules:
+  - id: CALC-001
+    name: Calculated metrics lacking descriptions
+    severity: medium
+    platforms: [cja, aa]
+    check: calc_metrics_missing_descriptions
+    params:
+      threshold: 0.20
+    rationale: |
+      Calculated metrics carry definitional choices (attribution, allocation,
+      formula assumptions) that are invisible from the formula alone.
+    remediation: |
+      Add concise descriptions explaining what the metric measures, when to
+      use it, and which attribution / allocation choices were made.
+
+  - id: CALC-002
+    name: Formula references nonexistent components
+    severity: medium
+    platforms: [cja, aa]
+    check: calc_formula_broken_refs
+    params: {}
+    rationale: |
+      A formula pointing at deleted or renamed components produces silent
+      zeros or runtime errors depending on the consumer.
+    remediation: |
+      Update the formula to reference the current canonical component or
+      retire the calculated metric.
+
+  - id: CALC-003
+    name: Formula complexity score exceeds threshold
+    severity: low
+    platforms: [cja, aa]
+    check: calc_complexity_threshold
+    params:
+      max_complexity: 75
+    rationale: |
+      High-complexity formulas are hard to review and easy to miscalibrate.
+      Beyond a certain threshold, the formula stops being self-documenting.
+    remediation: |
+      Decompose the metric into intermediate calculated metrics whose names
+      describe what each step measures.
+
+  - id: CALC-004
+    name: Excessive attribution model variety
+    severity: high
+    platforms: [cja, aa]
+    check: attribution_model_variety
+    params:
+      max_distinct: 4
+    rationale: |
+      Each additional attribution model in active use is a tax on analysts
+      who must remember which metric uses which logic.
+    remediation: |
+      Standardize on a smaller set of attribution models, document the
+      choice in the SDR, and migrate or retire outliers.
+
+  - id: CALC-005
+    name: Orphan calculated metrics
+    severity: medium
+    platforms: [cja, aa]
+    check: orphan_calc_metrics
+    params:
+      threshold: 0.50
+    rationale: |
+      Orphan calculated metrics accumulate until consolidation becomes
+      prohibitively expensive.
+    remediation: |
+      Audit Workspace projects and dashboards, then archive metrics with
+      no live consumers.
+
+  - id: CALC-014
+    name: Near-duplicate calculated metrics
+    severity: high
+    platforms: [cja, aa]
+    check: calc_near_duplicates
+    params:
+      min_similarity: 0.85
+    rationale: |
+      Near-duplicates produce subtly different numbers in different reports
+      and surface as &ldquo;the dashboards disagree&rdquo; complaints from
+      executives.
+    remediation: |
+      Designate one canonical metric per concept, document its choices, and
+      deprecate the others by tagging them with a sunset date.
+
+  - id: CALC-015
+    name: Identical formula text across distinct calculated metrics
+    severity: medium
+    platforms: [cja, aa]
+    check: calc_identical_formula_text
+    params: {}
+    rationale: |
+      Identical formulas are a red flag for accidental copy-paste rather
+      than intentional duplication.
+    remediation: |
+      Pick one canonical metric, redirect consumers, and archive the
+      duplicates.
+
+  - id: CALC-022
+    name: Calc metrics with deprecated allocations
+    severity: low
+    platforms: [cja, aa]
+    check: calc_deprecated_allocations
+    params: {}
+    rationale: |
+      Deprecated allocations may behave unpredictably or be removed in a
+      future platform release.
+    remediation: |
+      Migrate to the current allocation values and update the SDR to record
+      the change.

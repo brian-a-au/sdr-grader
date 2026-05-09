@@ -1,0 +1,50 @@
+category: attribution_coverage
+description: |
+  Attribution coverage rules — flag undocumented last-touch defaults,
+  metrics with no attribution model specified, and inconsistent choices
+  across similar metrics.
+
+rules:
+  - id: ATTR-001
+    name: Revenue / conversion metrics defaulting to last-touch without rationale
+    severity: medium
+    platforms: [cja, aa]
+    check: attribution_default_last_touch
+    params: {}
+    rationale: |
+      Last-touch is appropriate for some use cases but should be a
+      deliberate choice, not a silent default for revenue or conversion
+      metrics.
+    remediation: |
+      Either change the attribution model to one appropriate for the
+      metric's intended use, or document in the metric description why
+      last-touch is the correct choice.
+
+  - id: ATTR-002
+    name: Calc metrics with attribution model not specified
+    severity: medium
+    platforms: [cja, aa]
+    check: attribution_missing
+    params:
+      threshold: 0.30
+    rationale: |
+      The platform falls back to its default model when none is specified,
+      which is silent until a stakeholder asks why two metrics that look
+      similar disagree.
+    remediation: |
+      Set the attribution model explicitly on every calculated metric.
+
+  - id: ATTR-003
+    name: Inconsistent attribution choices across similar metrics
+    severity: low
+    platforms: [cja, aa]
+    check: attribution_inconsistency
+    params: {}
+    rationale: |
+      Calculated metrics over the same input references but with different
+      attribution models drift apart in dashboards and produce
+      hard-to-explain divergences.
+    remediation: |
+      Pick one attribution model per concept, document the choice, and
+      either migrate the outliers or rename them to make the alternate
+      attribution explicit.
