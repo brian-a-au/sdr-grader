@@ -299,15 +299,53 @@ def _looks_deprecated(component_id: str, name: str, tags: list[str]) -> bool:
 def check_cardinality_concerns(
     impl: Implementation, ctx: RuleContext
 ) -> list[Finding]:
-    """Fire when dimensions show suspicious cardinality patterns.
+    """Fire when dimensions look low-cardinality by name but report many values.
 
-    cja_auto_sdr does not currently expose cardinality estimates in its JSON
-    output. Until the upstream ships them, this rule is a no-op so the rubric
-    can declare the intent; it never fires today.
+    Reads per-dimension distinct-value counts from
+    impl.supplementary_data['cardinality'] when present (a mapping of
+    component_id -> int). Operators populate it via --extra-input
+    cardinality=PATH where PATH is a JSON object like
+    {"variables/evar1": 142}.
 
-    Tracked in SPEC §13 open question 5.
+    Without that data, the rule is a no-op so it doesn't false-positive.
     """
-    return []
+    cardinalities = impl.supplementary_data.get("cardinality") or {}
+    if not isinstance(cardinalities, dict) or not cardinalities:
+        return []
+    low_cardinality_cap = int(ctx.params.get("low_cardinality_cap", 10))
+    keywords = {
+        s.lower() for s in (
+            ctx.params.get("low_cardinality_keywords") or
+            ["boolean", "bool", "flag", "status", "type", "tier"]
+        )
+    }
+    suspects: list[tuple[str, str, int]] = []
+    for d in impl.dimensions:
+        n = cardinalities.get(d.id)
+        if not isinstance(n, int) or n <= low_cardinality_cap:
+            continue
+        haystack = f"{d.name} {d.data_type or ''}".lower()
+        if not any(k in haystack for k in keywords):
+            continue
+        suspects.append((d.id, d.name, n))
+
+    if not suspects:
+        return []
+    items = [f"{cid}  name={name!r}  distinct={n}" for cid, name, n in suspects[:25]]
+    paragraph = (
+        f"{len(suspects)} dimension{'s look' if len(suspects) != 1 else ' looks'} "
+        "low-cardinality by name but reports more than "
+        f"{low_cardinality_cap} distinct values. Either the schema is wrong, "
+        "or upstream is leaking values that should be filtered out before ingest."
+    )
+    return [
+        _make_finding(
+            ctx,
+            title=f"{len(suspects)} cardinality concern{'s' if len(suspects) != 1 else ''}",
+            paragraph=paragraph,
+            extra_blocks=[FindingBlock(kind="components", items=items)],
+        )
+    ]
 
 
 # ---------------------------------------------------------------------------

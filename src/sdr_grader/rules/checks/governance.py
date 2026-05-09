@@ -205,13 +205,74 @@ def check_missing_tags(
 def check_doc_drift(
     impl: Implementation, ctx: RuleContext
 ) -> list[Finding]:
-    """Fire when a high rate of components were modified recently without
-    corresponding doc updates.
+    """Fire when components were modified after the last documented SDR update.
 
-    The snapshot doesn't carry doc-update timestamps; the rule is a no-op
-    until upstream (cja_auto_sdr SDR diff feature) supplies the data.
+    Inputs (in priority order):
+    - ctx.params['last_sdr_update_at']: ISO date the SDR was last updated.
+    - impl.supplementary_data['sdr']['last_updated_at']: same, sourced from
+      a Wiki / Confluence / Notion export attached via --extra-input sdr=PATH.
+    - impl.raw['metadata']['SDR Last Updated']: same, when upstream supplies it.
+
+    Without any of those, the rule is a no-op so it doesn't false-positive.
     """
-    return []
+    threshold = float(ctx.params.get("threshold", 0.20))
+    last_doc_iso = (
+        ctx.params.get("last_sdr_update_at")
+        or _supplementary_value(impl, "sdr", "last_updated_at")
+        or (
+            impl.raw.get("metadata", {}).get("SDR Last Updated")
+            if isinstance(impl.raw, dict)
+            else None
+        )
+    )
+    if not last_doc_iso:
+        return []
+    last_doc = _parse_iso(str(last_doc_iso))
+    if last_doc is None:
+        return []
+    components = all_components(impl)
+    if not components:
+        return []
+    drifted: list[str] = []
+    for c in components:
+        if not c.modified_at:
+            continue
+        modified = _parse_iso(c.modified_at)
+        if modified is None:
+            continue
+        if modified > last_doc:
+            drifted.append(c.id)
+    if not drifted:
+        return []
+    rate = len(drifted) / len(components)
+    if rate <= threshold:
+        return []
+    paragraph = (
+        f"{len(drifted)} of {len(components)} components ({pct(len(drifted), len(components))}%) "
+        f"have been modified since the SDR was last updated ({last_doc.date()}). "
+        "Documentation drift accumulates fast — once analysts learn to ignore "
+        "the SDR, you can't easily get them to start trusting it again."
+    )
+    return [
+        _make_finding(
+            ctx,
+            title=f"{len(drifted)} components modified since last SDR update",
+            paragraph=paragraph,
+            extra_blocks=[FindingBlock(kind="components", items=sorted(drifted)[:25])],
+        )
+    ]
+
+
+def _supplementary_value(impl: Implementation, *keys: str):
+    """Walk impl.supplementary_data following keys; return None if any miss."""
+    cursor = impl.supplementary_data
+    for k in keys:
+        if not isinstance(cursor, dict):
+            return None
+        cursor = cursor.get(k)
+        if cursor is None:
+            return None
+    return cursor
 
 
 # ---------------------------------------------------------------------------

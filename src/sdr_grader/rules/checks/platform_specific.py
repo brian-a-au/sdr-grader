@@ -28,13 +28,46 @@ if TYPE_CHECKING:
 def check_aa_evar_distinct_values(
     impl: Implementation, ctx: RuleContext
 ) -> list[Finding]:
-    """Cardinality/correlation analysis is out of scope for v0.1.
+    """Fire on eVars carrying many distinct values (a high-cardinality smell).
 
-    Requires per-eVar value distributions which neither cja_auto_sdr nor
-    aa_auto_sdr ships in their JSON output today. Tracked under SPEC §13
-    open questions; implement when upstream supplies cardinality.
+    Reads per-eVar distinct-value counts from
+    impl.supplementary_data['cardinality'] when present (mapping of
+    component_id -> int). Operators populate it via --extra-input
+    cardinality=PATH; the same key is shared with SCH-006.
+
+    Without cardinality data, the rule is a no-op.
     """
-    return []
+    if impl.platform != "aa":
+        return []
+    cardinalities = impl.supplementary_data.get("cardinality") or {}
+    if not isinstance(cardinalities, dict) or not cardinalities:
+        return []
+    cap = int(ctx.params.get("max_distinct", 10000))
+    suspects: list[tuple[str, str, int]] = []
+    for d in impl.dimensions:
+        if not d.id.startswith("variables/evar"):
+            continue
+        n = cardinalities.get(d.id)
+        if not isinstance(n, int) or n <= cap:
+            continue
+        suspects.append((d.id, d.name, n))
+    if not suspects:
+        return []
+    items = [f"{eid}  name={name!r}  distinct={n}" for eid, name, n in suspects[:25]]
+    paragraph = (
+        f"{len(suspects)} eVar{'s carry' if len(suspects) != 1 else ' carries'} "
+        f"more than {cap} distinct values. High cardinality on a single eVar "
+        "usually means it's mixing semantically distinct domains; the eVar "
+        "should be split."
+    )
+    return [
+        _make_finding(
+            ctx,
+            title=f"{len(suspects)} high-cardinality eVar{'s' if len(suspects) != 1 else ''}",
+            paragraph=paragraph,
+            extra_blocks=[FindingBlock(kind="components", items=items)],
+        )
+    ]
 
 
 # ---------------------------------------------------------------------------
@@ -108,11 +141,49 @@ def _norm(value) -> str:
 def check_cja_stitching_unstitched(
     impl: Implementation, ctx: RuleContext
 ) -> list[Finding]:
-    """Stitching configuration is not present in cja_auto_sdr's JSON today.
+    """Fire when stitching reports a high unstitched-IDs ratio.
 
-    Implement when upstream exposes stitching metadata on the data view.
+    Reads stitching state from impl.supplementary_data['stitching'] (a JSON
+    object like {"unstitched_ratio": 0.12}) or from
+    impl.raw['data_view']['stitching']['unstitched_ratio'] when upstream
+    eventually exposes it. Operators attach it via --extra-input
+    stitching=PATH.
+
+    Without that data the rule is a no-op.
     """
-    return []
+    if impl.platform != "cja":
+        return []
+    cap = float(ctx.params.get("max_unstitched_ratio", 0.05))
+    ratio = None
+    supp = impl.supplementary_data.get("stitching")
+    if isinstance(supp, dict):
+        ratio = supp.get("unstitched_ratio")
+    if ratio is None and isinstance(impl.raw, dict):
+        dv = impl.raw.get("data_view")
+        if isinstance(dv, dict):
+            stitch = dv.get("stitching")
+            if isinstance(stitch, dict):
+                ratio = stitch.get("unstitched_ratio")
+    try:
+        ratio_value = float(ratio) if ratio is not None else None
+    except (TypeError, ValueError):
+        ratio_value = None
+    if ratio_value is None or ratio_value <= cap:
+        return []
+    paragraph = (
+        f"Stitching reports {round(ratio_value * 100, 1)}% of identifiers "
+        f"unstitched; the rubric flags above {round(cap * 100, 1)}%. "
+        "Unstitched IDs fragment cross-device journeys and undercount unique "
+        "users — retention and cohort analyses become unreliable above a "
+        "small threshold."
+    )
+    return [
+        _make_finding(
+            ctx,
+            title=f"Stitching: {round(ratio_value * 100, 1)}% unstitched IDs",
+            paragraph=paragraph,
+        )
+    ]
 
 
 # ---------------------------------------------------------------------------

@@ -1,0 +1,27 @@
+category: governance_posture
+description: |
+  Launch property governance rules — opt-in via
+  `--extra-input launch=path/to/launch_export.json`. Rules read from
+  Implementation.supplementary_data['launch'] and stay quiet otherwise.
+  Demonstrates the supplementary-input extension pattern (SPEC §8 deferred
+  items: optional rubric packs that consume additional inputs).
+
+rules:
+  - id: LAUNCH-001
+    name: Required Launch data elements present
+    severity: high
+    platforms: [cja, aa]
+    check: launch_required_data_elements
+    params:
+      required:
+        - page_name
+        - page_url
+        - user_id
+        - environment
+    rationale: |
+      Downstream tags depend on a baseline of data elements being defined on
+      the Launch property. Missing elements produce empty values in the
+      analytics layer that are easy to miss and hard to backfill.
+    remediation: |
+      Define the missing data elements on the Launch property; map them to
+      the appropriate dataLayer / cookie / DOM source in the Launch UI.

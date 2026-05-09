@@ -71,4 +71,5 @@ def _import_all_checks() -> None:
         platform_specific,
         schema_hygiene,
         segments,
+        supplementary,
     )

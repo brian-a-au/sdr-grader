@@ -1,0 +1,17 @@
+category: governance_posture
+description: |
+  Launch property governance — pragmatic. Same opt-in pattern as strict,
+  smaller required set + lower severity.
+
+rules:
+  - id: LAUNCH-001
+    name: Required Launch data elements present
+    severity: medium             # demoted from high
+    platforms: [cja, aa]
+    check: launch_required_data_elements
+    params:
+      required:
+        - page_name
+        - user_id
+    rationale: Same as strict.
+    remediation: Same as strict.

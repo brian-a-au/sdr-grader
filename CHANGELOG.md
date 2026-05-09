@@ -61,15 +61,44 @@ question support.
   reviewable artifact. The full commit graph from scaffold to 1.0.0 is
   visible in the git history.
 
+### Active when supplementary data is supplied
+
+These rules previously shipped as no-ops; they now read from
+`Implementation.supplementary_data` (populated via `--extra-input KEY=PATH`)
+and fire when the operator attaches the relevant evidence:
+
+- `GOV-006` doc_drift — reads `last_sdr_update_at` (param), or
+  `supplementary_data['sdr']['last_updated_at']`, or
+  `metadata['SDR Last Updated']`. Fires when too many components were
+  modified since the SDR was last updated.
+- `SCH-006` cardinality_concerns — reads
+  `supplementary_data['cardinality']` (a `component_id -> int` map).
+  Fires when low-cardinality-named dimensions report many distinct
+  values.
+- `AAEVAR-001` aa_evar_distinct_values — reads the same
+  `supplementary_data['cardinality']` map; fires on AA eVars carrying
+  more than `max_distinct` values.
+- `CJASTITCH-001` cja_stitching_unstitched — reads
+  `supplementary_data['stitching']['unstitched_ratio']`, or the same
+  field nested in `impl.raw['data_view']['stitching']` when upstream
+  exposes it.
+
+The `LAUNCH-001` demo rule (`launch_required_data_elements`) is the
+canonical worked example of consuming `--extra-input launch=PATH`.
+
 ### Known limitations
 
-- Several rules ship as documented no-ops awaiting upstream signals:
-  `SCH-006` (cardinality), `GOV-006` (doc/code drift),
-  `AAEVAR-001` (eVar value distinctness), `CJASTITCH-001` (stitching
-  metadata), and the deprecated-allocation set in `CALC-022` is empty
-  by default.
+- `CALC-022` (deprecated allocations) ships an empty default set;
+  fires only when operators supply concrete deprecated allocation
+  values via params.
 - `cja_auto_sdr` / `aa_auto_sdr` are required to produce the JSON
   snapshots the grader consumes; they are separate projects.
-- The bundled `data/distribution.json` ships seed percentile data;
-  real leaderboard data requires the opt-in submission service tracked
-  in the SPEC's deferred work.
+- The bundled `data/distribution.json` ships seed percentile data.
+  `scripts/aggregate_distributions.py` lets teams build their own
+  internal leaderboards from a directory of grade JSONs;
+  `--distribution-data PATH` plugs the result into the report. A
+  centralized opt-in submission service is out of scope for this repo.
+- Phase 10 README screenshots require manual capture (open
+  `examples/grade-messy.html` in a browser and screenshot the page).
+  Embedded SVG sparklines + the inlined CSS make the report itself a
+  high-fidelity preview when rendered.

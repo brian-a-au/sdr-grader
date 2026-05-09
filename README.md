@@ -79,6 +79,46 @@ needs a stable ordering. See `examples/trend-example.html`.
 - **JSON output** at `--json PATH` — machine-readable representation of
   the same Report. Suitable for CI dashboards and leaderboards.
 
+## Supplementary inputs
+
+Rules can consume data the snapshot itself doesn't carry — Launch
+property exports, AEP cardinality summaries, stitching health metrics,
+SDR-doc timestamps. Attach those JSON files via `--extra-input KEY=PATH`
+(repeatable):
+
+```bash
+sdr-grader snapshot.json \
+  --extra-input launch=launch_property.json \
+  --extra-input cardinality=evar_cardinality.json \
+  --extra-input stitching=stitching_status.json \
+  --extra-input sdr=sdr_metadata.json
+```
+
+Rules opt in by reading `impl.supplementary_data[KEY]`; absent keys are
+silently skipped, so a rule that needs Launch data simply doesn't fire
+on snapshots that don't supply it. See
+[docs/ADAPTER_GUIDE.md](docs/ADAPTER_GUIDE.md) for the full extension
+pattern. `LAUNCH-001` in
+`src/sdr_grader/rules/checks/supplementary.py` is the worked example.
+
+## Internal leaderboards
+
+The bundled `src/sdr_grader/data/distribution.json` is seed percentile
+data. Teams that grade many implementations internally can build their
+own reference distribution:
+
+```bash
+# Run the grader on every implementation, collect the JSON outputs.
+sdr-grader prod_us.json --json grades/prod_us.json --output /dev/null
+sdr-grader prod_eu.json --json grades/prod_eu.json --output /dev/null
+
+# Aggregate into a distribution.json.
+python scripts/aggregate_distributions.py grades/ -o distribution.json
+
+# Use it as the reference for new grades.
+sdr-grader new_snapshot.json --distribution-data distribution.json
+```
+
 ## Tuning rules per project
 
 Drop a `.sdr-grader.yaml` in your working directory to suppress noisy
