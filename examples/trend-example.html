@@ -1,0 +1,612 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>SDR Grade Trend — Production Web Analytics</title>
+<style>
+/* ---------- Reset & base ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  font-family: "Charter", "Iowan Old Style", "Source Serif Pro", Georgia, "Times New Roman", serif;
+  font-size: 16px;
+  line-height: 1.55;
+  color: #1a1a1a;
+  background: #fafaf7;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+.ui {
+  font-family: "Söhne", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+.mono {
+  font-family: "JetBrains Mono", "SF Mono", "Menlo", "Consolas", monospace;
+}
+
+/* ---------- Layout ---------- */
+.page {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 56px 48px 96px;
+}
+@media (max-width: 720px) {
+  .page { padding: 32px 20px 64px; }
+}
+
+/* ---------- Eyebrow + Title ---------- */
+.eyebrow {
+  font-family: "Söhne", "Inter", system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #6b6b66;
+  margin-bottom: 12px;
+}
+h1 {
+  font-family: "Charter", "Iowan Old Style", Georgia, serif;
+  font-weight: 500;
+  font-size: 36px;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  margin: 0 0 24px 0;
+}
+
+/* ---------- Metadata strip ---------- */
+.meta-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 28px;
+  padding: 16px 0;
+  border-top: 1px solid #2a2a2a;
+  border-bottom: 1px solid #d8d6cf;
+  margin-bottom: 40px;
+  font-family: "Söhne", "Inter", system-ui, sans-serif;
+  font-size: 13px;
+}
+.meta-strip .item { display: flex; flex-direction: column; gap: 2px; }
+.meta-strip .label {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #8a8a82;
+  font-weight: 500;
+}
+.meta-strip .value { font-size: 14px; color: #1a1a1a; font-weight: 500; }
+.meta-strip .grade-cell .value {
+  font-family: "Charter", Georgia, serif;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+/* ---------- On this page ---------- */
+nav.toc {
+  font-family: "Söhne", "Inter", system-ui, sans-serif;
+  font-size: 12px;
+  color: #6b6b66;
+  margin-bottom: 56px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #ece9e0;
+}
+nav.toc .label {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-right: 14px;
+  color: #8a8a82;
+}
+nav.toc a {
+  color: #1a1a1a;
+  text-decoration: none;
+  margin-right: 18px;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.15s;
+}
+nav.toc a:hover { border-bottom-color: #1a1a1a; }
+
+/* ---------- TL;DR ---------- */
+.tldr {
+  font-family: "Söhne", "Inter", system-ui, sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #8a8a82;
+  font-weight: 500;
+  margin-bottom: 12px;
+}
+.tldr-body {
+  font-size: 17px;
+  line-height: 1.6;
+  color: #2a2a2a;
+  margin-bottom: 56px;
+  max-width: 640px;
+}
+.tldr-body strong { color: #1a1a1a; font-weight: 500; }
+
+/* ---------- Section headings ---------- */
+h2 {
+  font-family: "Charter", Georgia, serif;
+  font-weight: 500;
+  font-size: 22px;
+  letter-spacing: -0.005em;
+  margin: 0 0 4px 0;
+  padding-top: 24px;
+}
+.section-rule { height: 1px; background: #2a2a2a; margin: 0 0 28px 0; }
+section { margin-bottom: 56px; }
+
+/* ---------- Category grid ---------- */
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1px;
+  background: #d8d6cf;
+  border: 1px solid #d8d6cf;
+  margin-bottom: 8px;
+}
+.cat {
+  background: #fafaf7;
+  padding: 18px 20px;
+  font-family: "Söhne", "Inter", system-ui, sans-serif;
+}
+.cat .name {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #6b6b66;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+.cat .score { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+.cat .pct {
+  font-family: "Charter", Georgia, serif;
+  font-size: 28px;
+  font-weight: 500;
+  line-height: 1;
+  color: #1a1a1a;
+}
+.cat .sub { font-size: 13px; color: #6b6b66; font-weight: 500; }
+.cat .bar { height: 3px; background: #ece9e0; position: relative; overflow: hidden; }
+.cat .bar > span { display: block; height: 100%; background: #1a1a1a; }
+.cat .bar.warn > span { background: #b8651a; }
+.cat .bar.crit > span { background: #8b2a1f; }
+
+/* ---------- Remediations ---------- */
+ol.remediations { list-style: none; counter-reset: rem; padding: 0; margin: 0; }
+ol.remediations li {
+  counter-increment: rem;
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  gap: 16px;
+  align-items: baseline;
+  padding: 16px 0;
+  border-bottom: 1px solid #ece9e0;
+}
+ol.remediations li:last-child { border-bottom: 0; }
+ol.remediations li::before {
+  content: counter(rem, decimal-leading-zero);
+  font-family: "Söhne", "Inter", system-ui, sans-serif;
+  font-size: 11px;
+  color: #8a8a82;
+  letter-spacing: 0.06em;
+}
+ol.remediations .text { font-size: 16px; line-height: 1.5; color: #1a1a1a; }
+ol.remediations .text .ref {
+  font-family: "Söhne", "Inter", system-ui, sans-serif;
+  font-size: 11px;
+  color: #6b6b66;
+  letter-spacing: 0.04em;
+  margin-left: 6px;
+}
+ol.remediations .impact {
+  font-family: "Söhne", "Inter", system-ui, sans-serif;
+  font-size: 12px;
+  color: #2a5934;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+/* ---------- Findings ---------- */
+.finding { padding: 24px 0; border-bottom: 1px solid #ece9e0; }
+.finding:first-of-type { border-top: 1px solid #ece9e0; }
+.finding-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 12px;
+  font-family: "Söhne", "Inter", system-ui, sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+.finding-id {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  color: #6b6b66;
+  font-weight: 500;
+}
+.sev {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  font-weight: 600;
+  border: 1px solid currentColor;
+}
+.sev.crit { color: #8b2a1f; }
+.sev.high { color: #b8651a; }
+.sev.med { color: #6b6b1a; }
+.sev.low { color: #4a4a4a; }
+.finding-cat { color: #8a8a82; font-size: 11px; letter-spacing: 0.06em; }
+.finding-title {
+  font-family: "Charter", Georgia, serif;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.35;
+  margin: 0 0 12px 0;
+  color: #1a1a1a;
+}
+.finding-body { font-size: 15px; line-height: 1.6; color: #2a2a2a; max-width: 640px; }
+.finding-body p { margin: 0 0 12px 0; }
+.finding-body p:last-child { margin-bottom: 0; }
+.finding-section-label {
+  font-family: "Söhne", "Inter", system-ui, sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #8a8a82;
+  font-weight: 500;
+  margin: 16px 0 6px 0;
+}
+.components-list {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 13px;
+  color: #2a2a2a;
+  line-height: 1.7;
+  background: #f3f1e8;
+  padding: 12px 16px;
+  border-left: 2px solid #c9c5b6;
+  margin: 0;
+  white-space: pre;
+  overflow-x: auto;
+}
+pre.code {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 12.5px;
+  line-height: 1.55;
+  background: #f3f1e8;
+  padding: 14px 16px;
+  border-left: 2px solid #c9c5b6;
+  overflow-x: auto;
+  margin: 8px 0 0 0;
+  color: #2a2a2a;
+}
+.finding-actions {
+  margin-top: 14px;
+  font-family: "Söhne", "Inter", system-ui, sans-serif;
+  font-size: 12px;
+  color: #6b6b66;
+}
+.finding-actions a {
+  color: #6b6b66;
+  text-decoration: none;
+  border-bottom: 1px solid #d8d6cf;
+  margin-right: 18px;
+  padding-bottom: 1px;
+}
+.finding-actions a:hover { color: #1a1a1a; border-bottom-color: #1a1a1a; }
+
+/* ---------- Distribution ---------- */
+.dist {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px 48px;
+  font-family: "Söhne", "Inter", system-ui, sans-serif;
+  font-size: 13px;
+}
+@media (max-width: 600px) { .dist { grid-template-columns: 1fr; } }
+.dist .row { display: flex; flex-direction: column; gap: 10px; }
+.dist .label {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #8a8a82;
+  font-weight: 500;
+}
+.dist svg { display: block; }
+
+/* ---------- Skipped ---------- */
+.skipped {
+  background: #f3f1e8;
+  padding: 18px 22px;
+  font-family: "Söhne", "Inter", system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #4a4a4a;
+  border-left: 2px solid #c9c5b6;
+}
+.skipped strong { font-weight: 500; color: #1a1a1a; }
+.skipped ul { margin: 8px 0 0 0; padding-left: 18px; }
+.skipped li { margin-bottom: 4px; }
+
+/* ---------- Provenance ---------- */
+.provenance {
+  margin-top: 80px;
+  padding-top: 24px;
+  border-top: 1px solid #d8d6cf;
+  font-family: "Söhne", "Inter", system-ui, sans-serif;
+  font-size: 12px;
+  line-height: 1.7;
+  color: #6b6b66;
+}
+.provenance a { color: #6b6b66; text-decoration: underline; text-decoration-color: #d8d6cf; }
+.provenance a:hover { color: #1a1a1a; }
+
+/* ---------- Print ---------- */
+@media print {
+  body { background: #fff; }
+  .page { max-width: none; padding: 0.6in; }
+  .finding { break-inside: avoid; }
+  .cat { break-inside: avoid; }
+  nav.toc { display: none; }
+  .finding-actions { display: none; }
+}
+
+
+/* --- trend-specific additions --- */
+.trend-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; margin: 24px 0; }
+.trend-card { padding: 16px 20px; background: #f3f1ea; border-radius: 6px; }
+.trend-card h3 { margin: 0 0 4px 0; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: #6b6b66; font-family: 'Söhne', 'Inter', sans-serif; font-weight: 500; }
+.trend-card .latest { font-family: 'Charter','Iowan Old Style','Source Serif Pro',Georgia,serif; font-size: 22px; color: #1a1a1a; font-weight: 600; }
+.trend-card .delta { font-family: 'Söhne', 'Inter', sans-serif; font-size: 11px; margin-left: 8px; }
+.trend-card .delta.trend-up { color: #355c2c; }
+.trend-card .delta.trend-down { color: #8b2a1f; }
+.trend-card .delta.trend-flat { color: #6b6b66; }
+.trend-card svg { width: 100%; height: auto; margin-top: 8px; }
+.trend-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-family: 'Söhne', 'Inter', sans-serif; font-size: 13px; }
+.trend-table th, .trend-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #ece9e0; }
+.trend-table th { color: #6b6b66; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; font-size: 11px; }
+.trend-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.trend-table td.grade { font-family: 'Charter','Iowan Old Style','Source Serif Pro',Georgia,serif; font-weight: 600; }
+.churn { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 16px 0; }
+.churn h3 { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: #6b6b66; font-family: 'Söhne', 'Inter', sans-serif; font-weight: 500; }
+.churn ul { padding-left: 20px; margin: 8px 0; }
+.churn .empty { color: #8a8a82; font-style: italic; font-size: 13px; }
+
+</style>
+</head>
+<body>
+<main class="report">
+  <header class="report-header">
+    <div class="header-row">
+      <div>
+        <p class="kicker">SDR grade trend</p>
+        <h1 class="instance-name">Production Web Analytics</h1>
+        <p class="instance-meta">
+          <span class="mono">CJA · dv_messy_prod_web</span>
+          ·
+          4 snapshots
+          from 2025-12-01 to 2026-04-25
+        </p>
+      </div>
+      <div class="grade-block">
+        <div class="grade-letter">F</div>
+        <div class="grade-pct">
+          54%
+          <span class="delta trend-flat">
+            0 pts vs first
+          </span>
+        </div>
+        <div class="grade-meta">strict@0.4</div>
+      </div>
+    </div>
+  </header>
+
+  <section id="overall-trajectory">
+    <h2>Overall trajectory</h2>
+    <svg viewBox="0 0 480 80" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Trend sparkline"><rect x="0" y="0" width="480" height="80" fill="none"/><line x1="8" y1="72" x2="472" y2="72" stroke="#d8d6cf"/><polyline fill="none" stroke="#8b2a1f" stroke-width="1.6" points="8.0,37.4 162.7,37.4 317.3,37.4 472.0,37.4"/><circle cx="8.0" cy="37.4" r="2" fill="#8a8a82"/><circle cx="472.0" cy="37.4" r="3" fill="#8b2a1f"/></svg>
+  </section>
+
+  <section id="categories" class="trend-grid">
+    
+    <div class="trend-card">
+      <h3>Schema hygiene</h3>
+      <div>
+        <span class="latest">69%</span>
+        <span class="delta trend-flat">
+          0
+        </span>
+      </div>
+      <svg viewBox="0 0 180 44" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Trend sparkline"><rect x="0" y="0" width="180" height="44" fill="none"/><line x1="8" y1="36" x2="172" y2="36" stroke="#d8d6cf"/><polyline fill="none" stroke="#b8651a" stroke-width="1.6" points="8.0,16.7 62.7,16.7 117.3,16.7 172.0,16.7"/><circle cx="8.0" cy="16.7" r="2" fill="#8a8a82"/><circle cx="172.0" cy="16.7" r="3" fill="#b8651a"/></svg>
+    </div>
+    
+    <div class="trend-card">
+      <h3>Naming</h3>
+      <div>
+        <span class="latest">100%</span>
+        <span class="delta trend-flat">
+          0
+        </span>
+      </div>
+      <svg viewBox="0 0 180 44" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Trend sparkline"><rect x="0" y="0" width="180" height="44" fill="none"/><line x1="8" y1="36" x2="172" y2="36" stroke="#d8d6cf"/><polyline fill="none" stroke="#1a1a1a" stroke-width="1.6" points="8.0,8.0 62.7,8.0 117.3,8.0 172.0,8.0"/><circle cx="8.0" cy="8.0" r="2" fill="#8a8a82"/><circle cx="172.0" cy="8.0" r="3" fill="#1a1a1a"/></svg>
+    </div>
+    
+    <div class="trend-card">
+      <h3>Seg. complexity</h3>
+      <div>
+        <span class="latest">50%</span>
+        <span class="delta trend-flat">
+          0
+        </span>
+      </div>
+      <svg viewBox="0 0 180 44" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Trend sparkline"><rect x="0" y="0" width="180" height="44" fill="none"/><line x1="8" y1="36" x2="172" y2="36" stroke="#d8d6cf"/><polyline fill="none" stroke="#8b2a1f" stroke-width="1.6" points="8.0,22.0 62.7,22.0 117.3,22.0 172.0,22.0"/><circle cx="8.0" cy="22.0" r="2" fill="#8a8a82"/><circle cx="172.0" cy="22.0" r="3" fill="#8b2a1f"/></svg>
+    </div>
+    
+    <div class="trend-card">
+      <h3>Calc. metric maint.</h3>
+      <div>
+        <span class="latest">44%</span>
+        <span class="delta trend-flat">
+          0
+        </span>
+      </div>
+      <svg viewBox="0 0 180 44" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Trend sparkline"><rect x="0" y="0" width="180" height="44" fill="none"/><line x1="8" y1="36" x2="172" y2="36" stroke="#d8d6cf"/><polyline fill="none" stroke="#8b2a1f" stroke-width="1.6" points="8.0,23.7 62.7,23.7 117.3,23.7 172.0,23.7"/><circle cx="8.0" cy="23.7" r="2" fill="#8a8a82"/><circle cx="172.0" cy="23.7" r="3" fill="#8b2a1f"/></svg>
+    </div>
+    
+    <div class="trend-card">
+      <h3>Attribution</h3>
+      <div>
+        <span class="latest">20%</span>
+        <span class="delta trend-flat">
+          0
+        </span>
+      </div>
+      <svg viewBox="0 0 180 44" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Trend sparkline"><rect x="0" y="0" width="180" height="44" fill="none"/><line x1="8" y1="36" x2="172" y2="36" stroke="#d8d6cf"/><polyline fill="none" stroke="#8b2a1f" stroke-width="1.6" points="8.0,30.4 62.7,30.4 117.3,30.4 172.0,30.4"/><circle cx="8.0" cy="30.4" r="2" fill="#8a8a82"/><circle cx="172.0" cy="30.4" r="3" fill="#8b2a1f"/></svg>
+    </div>
+    
+    <div class="trend-card">
+      <h3>Governance</h3>
+      <div>
+        <span class="latest">56%</span>
+        <span class="delta trend-flat">
+          0
+        </span>
+      </div>
+      <svg viewBox="0 0 180 44" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Trend sparkline"><rect x="0" y="0" width="180" height="44" fill="none"/><line x1="8" y1="36" x2="172" y2="36" stroke="#d8d6cf"/><polyline fill="none" stroke="#8b2a1f" stroke-width="1.6" points="8.0,20.3 62.7,20.3 117.3,20.3 172.0,20.3"/><circle cx="8.0" cy="20.3" r="2" fill="#8a8a82"/><circle cx="172.0" cy="20.3" r="3" fill="#8b2a1f"/></svg>
+    </div>
+    
+  </section>
+
+  <section id="snapshots">
+    <h2>Snapshots</h2>
+    <table class="trend-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Grade</th>
+          <th class="num">Overall</th>
+          <th class="num">Findings</th>
+          
+          <th class="num">Schema hygiene</th>
+          
+          <th class="num">Naming</th>
+          
+          <th class="num">Seg. complexity</th>
+          
+          <th class="num">Calc. metric maint.</th>
+          
+          <th class="num">Attribution</th>
+          
+          <th class="num">Governance</th>
+          
+        </tr>
+      </thead>
+      <tbody>
+        
+        <tr>
+          <td class="mono">2025-12-01</td>
+          <td class="grade">F</td>
+          <td class="num">54%</td>
+          <td class="num">14</td>
+          
+          <td class="num">69%</td>
+          
+          <td class="num">100%</td>
+          
+          <td class="num">50%</td>
+          
+          <td class="num">44%</td>
+          
+          <td class="num">20%</td>
+          
+          <td class="num">56%</td>
+          
+        </tr>
+        
+        <tr>
+          <td class="mono">2026-01-15</td>
+          <td class="grade">F</td>
+          <td class="num">54%</td>
+          <td class="num">14</td>
+          
+          <td class="num">69%</td>
+          
+          <td class="num">100%</td>
+          
+          <td class="num">50%</td>
+          
+          <td class="num">44%</td>
+          
+          <td class="num">20%</td>
+          
+          <td class="num">56%</td>
+          
+        </tr>
+        
+        <tr>
+          <td class="mono">2026-03-01</td>
+          <td class="grade">F</td>
+          <td class="num">54%</td>
+          <td class="num">14</td>
+          
+          <td class="num">69%</td>
+          
+          <td class="num">100%</td>
+          
+          <td class="num">50%</td>
+          
+          <td class="num">44%</td>
+          
+          <td class="num">20%</td>
+          
+          <td class="num">56%</td>
+          
+        </tr>
+        
+        <tr>
+          <td class="mono">2026-04-25</td>
+          <td class="grade">F</td>
+          <td class="num">54%</td>
+          <td class="num">14</td>
+          
+          <td class="num">69%</td>
+          
+          <td class="num">100%</td>
+          
+          <td class="num">50%</td>
+          
+          <td class="num">44%</td>
+          
+          <td class="num">20%</td>
+          
+          <td class="num">56%</td>
+          
+        </tr>
+        
+      </tbody>
+    </table>
+  </section>
+
+  <section id="churn">
+    <h2>Findings churn (first vs latest)</h2>
+    <div class="churn">
+      <div>
+        <h3>Appeared</h3>
+        
+        <p class="empty">No new findings since the first snapshot.</p>
+        
+      </div>
+      <div>
+        <h3>Resolved</h3>
+        
+        <p class="empty">No findings have been resolved since the first snapshot.</p>
+        
+      </div>
+    </div>
+  </section>
+</main>
+</body>
+</html>

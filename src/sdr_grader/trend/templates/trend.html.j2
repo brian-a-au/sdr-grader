@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>SDR Grade Trend — {{ trend.instance_name }}</title>
+<style>
+{{ css }}
+</style>
+</head>
+<body>
+<main class="report">
+  <header class="report-header">
+    <div class="header-row">
+      <div>
+        <p class="kicker">SDR grade trend</p>
+        <h1 class="instance-name">{{ trend.instance_name }}</h1>
+        <p class="instance-meta">
+          <span class="mono">{{ trend.platform }} · {{ trend.instance_id }}</span>
+          ·
+          {{ trend.snapshot_count }} snapshot{% if trend.snapshot_count != 1 %}s{% endif %}
+          from {{ trend.first_iso }} to {{ trend.latest_iso }}
+        </p>
+      </div>
+      <div class="grade-block">
+        <div class="grade-letter">{{ trend.overall_latest_grade }}</div>
+        <div class="grade-pct">
+          {{ trend.overall_latest }}%
+          <span class="delta {{ trend.delta_class }}">
+            {% if trend.overall_delta > 0 %}+{% endif %}{{ trend.overall_delta }} pts vs first
+          </span>
+        </div>
+        <div class="grade-meta">{{ trend.pack }}@{{ trend.pack_version }}</div>
+      </div>
+    </div>
+  </header>
+
+  <section id="overall-trajectory">
+    <h2>Overall trajectory</h2>
+    {{ trend.overall_sparkline | safe }}
+  </section>
+
+  <section id="categories" class="trend-grid">
+    {% for trace in trend.category_traces %}
+    <div class="trend-card">
+      <h3>{{ trace.display }}</h3>
+      <div>
+        <span class="latest">{{ trace.latest_pct }}%</span>
+        <span class="delta {{ trace.delta_class }}">
+          {% if trace.delta > 0 %}+{% endif %}{{ trace.delta }}
+        </span>
+      </div>
+      {{ trace.sparkline | safe }}
+    </div>
+    {% endfor %}
+  </section>
+
+  <section id="snapshots">
+    <h2>Snapshots</h2>
+    <table class="trend-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Grade</th>
+          <th class="num">Overall</th>
+          <th class="num">Findings</th>
+          {% for cat in trend.category_traces %}
+          <th class="num">{{ cat.display }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in trend.rows %}
+        <tr>
+          <td class="mono">{{ row.iso }}</td>
+          <td class="grade">{{ row.grade }}</td>
+          <td class="num">{{ row.overall_pct }}%</td>
+          <td class="num">{{ row.finding_count }}</td>
+          {% for cat in row.categories %}
+          <td class="num">{{ cat.pct }}%</td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section id="churn">
+    <h2>Findings churn (first vs latest)</h2>
+    <div class="churn">
+      <div>
+        <h3>Appeared</h3>
+        {% if trend.appeared_findings %}
+        <ul>
+          {% for fid in trend.appeared_findings %}
+          <li class="mono">{{ fid }}</li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="empty">No new findings since the first snapshot.</p>
+        {% endif %}
+      </div>
+      <div>
+        <h3>Resolved</h3>
+        {% if trend.disappeared_findings %}
+        <ul>
+          {% for fid in trend.disappeared_findings %}
+          <li class="mono">{{ fid }}</li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="empty">No findings have been resolved since the first snapshot.</p>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+</main>
+</body>
+</html>

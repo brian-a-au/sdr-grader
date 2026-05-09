@@ -56,9 +56,20 @@ For CI integration with `--fail-below`, see
 | File       | `sdr-grader path/to/snapshot.json`               |
 | Directory  | `sdr-grader path/to/snapshots/` (picks latest)   |
 |            | `sdr-grader path/to/snapshots/ --at 2026-04-01`  |
+| Trend      | `sdr-grader path/to/snapshots/ --trend`          |
 | Shell-out  | `sdr-grader --dataview dv_prod_web`              |
 |            | `sdr-grader --rsid prod_us`                      |
 | Stdin      | `… | sdr-grader -`                              |
+
+## Trend reports
+
+Pointed at a directory of timestamped snapshots, `--trend` grades each one
+chronologically and renders a single self-contained HTML showing the
+trajectory of the overall grade plus per-category sparklines and a
+findings churn summary (which rules appeared and disappeared since the
+first snapshot). Snapshots whose filenames don't carry a parseable
+timestamp (e.g. `snapshot_2026-04-25.json`) are skipped — the trend
+needs a stable ordering. See `examples/trend-example.html`.
 
 ## Output
 

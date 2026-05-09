@@ -39,22 +39,9 @@ def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
 
-    try:
-        snapshot, source = _load_snapshot_for_args(args)
-    except InvalidSnapshotError as exc:
-        print(f"error: {exc}", file=sys.stderr)
-        return RUNTIME_ERROR
-
-    try:
-        impl = _adapt_snapshot(snapshot, source=source, platform_override=args.platform)
-    except (InvalidSnapshotError, UnknownPlatformError) as exc:
-        print(f"error: {exc}", file=sys.stderr)
-        return RUNTIME_ERROR
-
     rubric_dir = _resolve_rubric_dir(args)
     if rubric_dir is None:
         return RUNTIME_ERROR
-
     try:
         rubric = load_rubric(rubric_dir)
     except RubricValidationError as exc:
@@ -71,12 +58,26 @@ def main(argv: list[str] | None = None) -> int:
             return RUNTIME_ERROR
     else:
         suppression_path = Path(DEFAULT_SUPPRESSION_FILENAME)
-
     try:
         suppression = load_suppression(suppression_path)
     except RubricValidationError as exc:
         print(f"rubric error: {exc}", file=sys.stderr)
         return RUBRIC_VALIDATION_FAILURE
+
+    if args.trend:
+        return _run_trend(args, rubric, suppression)
+
+    try:
+        snapshot, source = _load_snapshot_for_args(args)
+    except InvalidSnapshotError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return RUNTIME_ERROR
+
+    try:
+        impl = _adapt_snapshot(snapshot, source=source, platform_override=args.platform)
+    except (InvalidSnapshotError, UnknownPlatformError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return RUNTIME_ERROR
 
     report = grade(impl, rubric, suppression=suppression)
     html = render(report)
@@ -153,6 +154,14 @@ def _build_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument(
+        "--trend",
+        action="store_true",
+        help=(
+            "Used with a snapshot directory: grade every dated snapshot and "
+            "render a trend report instead of grading a single snapshot."
+        ),
+    )
+    parser.add_argument(
         "--rubric",
         help="Path to a rubric pack directory. Overrides --pack if both are set.",
     )
@@ -192,6 +201,63 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Suppress informational stderr output.",
     )
     return parser
+
+
+# ---------------------------------------------------------------------------
+# Trend mode
+# ---------------------------------------------------------------------------
+
+
+def _run_trend(args, rubric, suppression) -> int:
+    """Drive the trend pipeline. Requires snapshot to be a directory path."""
+    from sdr_grader.core.exceptions import InvalidSnapshotError as _ISE
+    from sdr_grader.trend import build_trend_report, render_trend
+
+    if not args.snapshot:
+        print(
+            "error: --trend requires a snapshot directory path", file=sys.stderr
+        )
+        return RUNTIME_ERROR
+    directory = Path(args.snapshot)
+    if not directory.is_dir():
+        print(
+            f"error: --trend requires a directory; {directory} is not one",
+            file=sys.stderr,
+        )
+        return RUNTIME_ERROR
+    try:
+        trend = build_trend_report(
+            directory,
+            rubric,
+            suppression=suppression,
+            platform_override=args.platform,
+        )
+    except _ISE as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return RUNTIME_ERROR
+
+    html = render_trend(trend)
+    output_path = (
+        Path(args.output)
+        if args.output
+        else Path(f"trend-{trend.instance_id}-{trend.latest.timestamp:%Y%m%d}.html")
+    )
+    try:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(html, encoding="utf-8")
+    except OSError as exc:
+        print(f"error: could not write trend output {output_path}: {exc}", file=sys.stderr)
+        return RUNTIME_ERROR
+
+    if not args.quiet:
+        latest = trend.latest.report
+        print(
+            f"Wrote {output_path}: trend over {len(trend.points)} snapshots, "
+            f"latest grade {latest.grade} ({latest.overall_pct}%) for "
+            f"{trend.instance_id}",
+            file=sys.stderr,
+        )
+    return SUCCESS
 
 
 # ---------------------------------------------------------------------------

@@ -62,6 +62,7 @@ ignore = []
 # readability against the rendered HTML structure.
 "src/sdr_grader/render/svg.py" = ["E501"]
 "src/sdr_grader/render/renderer.py" = ["E501"]
+"src/sdr_grader/trend/renderer.py" = ["E501"]
 "tests/fixtures/demo_report.py" = ["E501"]
 # Rule check modules: finding paragraphs and pluralization expressions naturally
 # overflow 100 chars because findings are user-facing prose. The wrapping that
