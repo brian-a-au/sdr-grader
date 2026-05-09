@@ -1,14 +1,13 @@
 """Command-line entry point.
 
-Phase 3 wires only Mode 1 (snapshot file path). Modes 2-4 (directory,
-shell-out, stdin) land in Phase 8 (SPEC §7). Exit codes mirror cja_auto_sdr
-per SPEC §7.
+All four input modes land here (SPEC §7): snapshot file, snapshot
+directory, shell-out to cja_auto_sdr / aa_auto_sdr, and stdin. Exit
+codes mirror cja_auto_sdr.
 """
 
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 from pathlib import Path
 
@@ -24,6 +23,8 @@ from sdr_grader.core.exceptions import (
     UnknownPlatformError,
 )
 from sdr_grader.core.grader import grade
+from sdr_grader.input.loader import STDIN_TOKEN, load_snapshot
+from sdr_grader.input.shell_out import shell_aa, shell_cja
 from sdr_grader.render import render
 from sdr_grader.rules.rubric import load_rubric
 from sdr_grader.rules.suppression import (
@@ -39,22 +40,13 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     try:
-        snapshot_text = Path(args.snapshot).read_text(encoding="utf-8")
-    except FileNotFoundError:
-        print(f"error: snapshot file not found: {args.snapshot}", file=sys.stderr)
-        return RUNTIME_ERROR
-    except OSError as exc:
-        print(f"error: could not read snapshot {args.snapshot}: {exc}", file=sys.stderr)
+        snapshot, source = _load_snapshot_for_args(args)
+    except InvalidSnapshotError as exc:
+        print(f"error: {exc}", file=sys.stderr)
         return RUNTIME_ERROR
 
     try:
-        snapshot = json.loads(snapshot_text)
-    except json.JSONDecodeError as exc:
-        print(f"error: snapshot is not valid JSON: {exc}", file=sys.stderr)
-        return RUNTIME_ERROR
-
-    try:
-        impl = _adapt_snapshot(snapshot, source=args.snapshot, platform_override=args.platform)
+        impl = _adapt_snapshot(snapshot, source=source, platform_override=args.platform)
     except (InvalidSnapshotError, UnknownPlatformError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return RUNTIME_ERROR
@@ -124,7 +116,26 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "snapshot",
-        help="Path to a snapshot JSON file produced by cja_auto_sdr or aa_auto_sdr.",
+        nargs="?",
+        help=(
+            "Path to a snapshot JSON file or directory; '-' for stdin. "
+            "Omit when using --dataview or --rsid."
+        ),
+    )
+    parser.add_argument(
+        "--dataview",
+        help="Shell out to cja_auto_sdr against the given Data View ID (Mode 3).",
+    )
+    parser.add_argument(
+        "--rsid",
+        help="Shell out to aa_auto_sdr against the given Report Suite ID (Mode 3).",
+    )
+    parser.add_argument(
+        "--at",
+        help=(
+            "Used with a snapshot directory: pick the snapshot closest to "
+            "(but not after) this ISO-8601 timestamp."
+        ),
     )
     parser.add_argument(
         "--rubric",
@@ -161,6 +172,38 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Suppress informational stderr output.",
     )
     return parser
+
+
+# ---------------------------------------------------------------------------
+# Input-mode dispatch
+# ---------------------------------------------------------------------------
+
+
+def _load_snapshot_for_args(args) -> tuple[dict, str]:
+    """Pick the right input mode from CLI args and return (snapshot, source)."""
+    explicit_modes = sum(
+        1 for v in (args.snapshot, args.dataview, args.rsid) if v
+    )
+    if explicit_modes == 0:
+        raise InvalidSnapshotError(
+            "no input specified; pass a snapshot path, '-' for stdin, "
+            "or --dataview / --rsid to shell out."
+        )
+    if explicit_modes > 1:
+        raise InvalidSnapshotError(
+            "multiple input modes specified; pick one of "
+            "snapshot / --dataview / --rsid."
+        )
+    if args.dataview:
+        return shell_cja(args.dataview)
+    if args.rsid:
+        return shell_aa(args.rsid)
+    # Mode 1, 2, or 4 — handled by the loader.
+    if args.snapshot != STDIN_TOKEN and not Path(args.snapshot).exists():
+        # Preserve the historical "snapshot file not found" message for the
+        # explicit-file failure mode.
+        raise InvalidSnapshotError(f"snapshot file not found: {args.snapshot}")
+    return load_snapshot(args.snapshot, at=args.at)
 
 
 # ---------------------------------------------------------------------------
