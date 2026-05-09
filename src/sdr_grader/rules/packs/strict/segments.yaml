@@ -1,0 +1,103 @@
+category: segment_complexity
+description: |
+  Segment complexity rules — count, container discipline, references,
+  nesting, and duplicates.
+
+rules:
+  - id: SEG-001
+    name: Total segment count exceeds reasonable bound
+    severity: low
+    platforms: [cja, aa]
+    check: segment_count_cap
+    params:
+      max_segments: 200
+    rationale: |
+      Beyond a few hundred segments, the segment library becomes a
+      graveyard: nobody can find the right segment, so they create a new
+      one, and the cycle compounds.
+    remediation: |
+      Audit segment usage, archive orphan segments, and consolidate
+      near-duplicates.
+
+  - id: SEG-002
+    name: Container type mixing within a single segment
+    severity: medium
+    platforms: [cja, aa]
+    check: container_mixing
+    params: {}
+    rationale: |
+      Mixed containers (event / session / person) obscure intent and
+      produce surprising population differences from segments that look
+      superficially similar.
+    remediation: |
+      Decompose the segment into composed sub-segments, one per container
+      level, and combine them at the surface segment.
+
+  - id: SEG-003
+    name: Orphan segments
+    severity: high
+    platforms: [cja, aa]
+    check: orphan_segments
+    params:
+      threshold: 0.50
+    rationale: |
+      Orphan segments accumulate until nobody can tell which are still in
+      use. Without ongoing pruning, every audit reopens the same questions.
+    remediation: |
+      Audit segment usage in Workspace projects and dashboards, then
+      archive segments with no live consumers.
+
+  - id: SEG-004
+    name: Circular segment references
+    severity: medium
+    platforms: [cja, aa]
+    check: circular_segments
+    params: {}
+    rationale: |
+      Circular references break linear evaluation and produce inconsistent
+      populations between platform UI and exports.
+    remediation: |
+      Refactor the involved segments to share a common building-block
+      sub-segment instead of mutually referencing each other.
+
+  - id: SEG-005
+    name: Segments lacking descriptions
+    severity: low
+    platforms: [cja, aa]
+    check: segments_missing_descriptions
+    params:
+      threshold: 0.30
+    rationale: |
+      Segment intent is exactly the kind of audience-defining decision
+      that must be documented; future analysts inherit the segment without
+      the conversation that produced it.
+    remediation: |
+      Add concise descriptions explaining who the segment captures and
+      why.
+
+  - id: SEG-006
+    name: Duplicate segment definitions
+    severity: high
+    platforms: [cja, aa]
+    check: duplicate_segments
+    params: {}
+    rationale: |
+      Duplicate segments fragment the audience library and make
+      consolidation harder.
+    remediation: |
+      Designate one canonical segment per audience, redirect consumers,
+      and archive the others.
+
+  - id: SEG-007
+    name: Nesting depth exceeds threshold
+    severity: medium
+    platforms: [cja, aa]
+    check: segment_nesting_depth
+    params:
+      max_depth: 4
+    rationale: |
+      Deep nesting makes intent illegible — small definitional changes
+      have unpredictable population effects.
+    remediation: |
+      Decompose the segment into composed sub-segments named for what
+      each layer captures.

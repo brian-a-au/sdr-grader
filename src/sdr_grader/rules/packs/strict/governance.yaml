@@ -1,0 +1,92 @@
+category: governance_posture
+description: |
+  Governance posture rules — snapshot history, ownership, tagging, and
+  documentation discipline.
+
+rules:
+  - id: GOV-001
+    name: No snapshot history detected
+    severity: high
+    platforms: [cja, aa]
+    check: snapshot_history_absent
+    params:
+      history_present: false
+    rationale: |
+      Without snapshot history, configuration changes cannot be diffed,
+      drift cannot be detected, and audit trails are unavailable for
+      compliance review.
+    remediation: |
+      Establish a snapshot directory in version control and schedule
+      regular runs of cja_auto_sdr / aa_auto_sdr to populate it.
+
+  - id: GOV-002
+    name: Snapshot exists but is stale
+    severity: medium
+    platforms: [cja, aa]
+    check: snapshot_age
+    params:
+      max_age_days: 90
+    rationale: |
+      Stale snapshots are unreliable as audit baselines because the live
+      implementation has likely drifted from them.
+    remediation: |
+      Refresh the snapshot via cja_auto_sdr / aa_auto_sdr and re-run the
+      grader.
+
+  - id: GOV-003
+    name: No SDR documentation detected
+    severity: high
+    platforms: [cja, aa]
+    check: sdr_doc_absent
+    params:
+      sdr_doc_present: false
+    rationale: |
+      Without an SDR, definitions live only in the platform UI, which makes
+      peer review and onboarding harder and obscures the &ldquo;why&rdquo;
+      behind component choices.
+    remediation: |
+      Generate the SDR via cja_auto_sdr / aa_auto_sdr and commit it
+      alongside this snapshot. Suppress this rule via .sdr-grader.yaml if
+      the SDR lives somewhere the grader cannot see.
+
+  - id: GOV-004
+    name: Components missing owner attribution
+    severity: medium
+    platforms: [cja, aa]
+    check: missing_owners
+    params:
+      threshold: 0.10
+    rationale: |
+      When a component has no owner, there is no clear person to ask for
+      context, sign off on changes, or maintain its documentation.
+    remediation: |
+      Populate the owner field via the platform API. Adopt a convention
+      that new components must have an owner before publication.
+
+  - id: GOV-005
+    name: Components missing tags
+    severity: low
+    platforms: [cja, aa]
+    check: missing_tags
+    params:
+      threshold: 0.50
+    rationale: |
+      Tags are the cheapest way to keep schema browsing tractable as the
+      data view grows; without them, finding components by purpose
+      requires reading every name.
+    remediation: |
+      Adopt a small, documented tag taxonomy and apply it via the
+      platform API.
+
+  - id: GOV-006
+    name: Components modified without documentation update
+    severity: medium
+    platforms: [cja, aa]
+    check: doc_drift
+    params: {}
+    rationale: |
+      A high rate of modifications without corresponding documentation
+      updates is a leading indicator of a data view drifting from its SDR.
+    remediation: |
+      Establish a CI gate that requires SDR updates when components are
+      modified above a churn threshold.

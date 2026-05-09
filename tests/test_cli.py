@@ -107,12 +107,14 @@ def test_cli_fail_below_returns_grade_below_threshold(tmp_path):
 
 
 def test_cli_fail_below_passes_when_grade_meets_threshold(tmp_path):
-    # Clean snapshot scores 100 -> meets any threshold.
+    # Clean fixture grades C; D is below it, so the threshold is met.
+    # External-context rules (GOV-001/003) fire even on the clean fixture
+    # because the loader can't prove history / SDR presence yet.
     rc = main([
         str(FIXTURES / "cja_snapshot_clean.json"),
         "--output", str(tmp_path / "out.html"),
         "--quiet",
-        "--fail-below", "B",
+        "--fail-below", "D",
     ])
     assert rc == SUCCESS
 
