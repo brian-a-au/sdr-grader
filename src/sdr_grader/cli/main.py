@@ -26,6 +26,10 @@ from sdr_grader.core.exceptions import (
 from sdr_grader.core.grader import grade
 from sdr_grader.render import render
 from sdr_grader.rules.rubric import load_rubric
+from sdr_grader.rules.suppression import (
+    DEFAULT_SUPPRESSION_FILENAME,
+    load_suppression,
+)
 
 BUNDLED_PACKS_DIR = Path(__file__).resolve().parent.parent / "rules" / "packs"
 
@@ -65,7 +69,24 @@ def main(argv: list[str] | None = None) -> int:
         print(f"rubric error: {exc}", file=sys.stderr)
         return RUBRIC_VALIDATION_FAILURE
 
-    report = grade(impl, rubric)
+    if args.suppress_config:
+        suppression_path = Path(args.suppress_config)
+        if not suppression_path.exists():
+            print(
+                f"error: suppression config not found: {suppression_path}",
+                file=sys.stderr,
+            )
+            return RUNTIME_ERROR
+    else:
+        suppression_path = Path(DEFAULT_SUPPRESSION_FILENAME)
+
+    try:
+        suppression = load_suppression(suppression_path)
+    except RubricValidationError as exc:
+        print(f"rubric error: {exc}", file=sys.stderr)
+        return RUBRIC_VALIDATION_FAILURE
+
+    report = grade(impl, rubric, suppression=suppression)
     html = render(report)
     output_path = Path(args.output) if args.output else _default_output_path(report)
     try:
@@ -122,6 +143,13 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--output",
         help="HTML output path. Default: ./grade-{generated_at}.html.",
+    )
+    parser.add_argument(
+        "--suppress-config",
+        help=(
+            "Path to a project-level suppression YAML. "
+            "Default: ./.sdr-grader.yaml if present."
+        ),
     )
     parser.add_argument(
         "--fail-below",

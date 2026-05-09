@@ -1,0 +1,80 @@
+category: calc_metric_maint
+description: Pragmatic calc metric rules — same IDs as strict, looser thresholds.
+
+rules:
+  - id: CALC-001
+    name: Calculated metrics lacking descriptions
+    severity: low                # demoted from medium
+    platforms: [cja, aa]
+    check: calc_metrics_missing_descriptions
+    params:
+      threshold: 0.40            # 40% vs strict 20%
+    rationale: Same as strict.
+    remediation: Same as strict.
+
+  - id: CALC-002
+    name: Formula references nonexistent components
+    severity: medium
+    platforms: [cja, aa]
+    check: calc_formula_broken_refs
+    params: {}
+    rationale: Same as strict.
+    remediation: Same as strict.
+
+  - id: CALC-003
+    name: Formula complexity score exceeds threshold
+    severity: low
+    platforms: [cja, aa]
+    check: calc_complexity_threshold
+    params:
+      max_complexity: 90         # 90 vs strict 75
+    rationale: Same as strict.
+    remediation: Same as strict.
+
+  - id: CALC-004
+    name: Excessive attribution model variety
+    severity: medium             # demoted from high
+    platforms: [cja, aa]
+    check: attribution_model_variety
+    params:
+      max_distinct: 6            # 6 vs strict 4
+    rationale: Same as strict.
+    remediation: Same as strict.
+
+  - id: CALC-005
+    name: Orphan calculated metrics
+    severity: low                # demoted from medium
+    platforms: [cja, aa]
+    check: orphan_calc_metrics
+    params:
+      threshold: 0.75            # 75% vs strict 50%
+    rationale: Same as strict.
+    remediation: Same as strict.
+
+  - id: CALC-014
+    name: Near-duplicate calculated metrics
+    severity: medium             # demoted from high
+    platforms: [cja, aa]
+    check: calc_near_duplicates
+    params:
+      min_similarity: 0.95       # 0.95 vs strict 0.85
+    rationale: Same as strict.
+    remediation: Same as strict.
+
+  - id: CALC-015
+    name: Identical formula text across distinct calculated metrics
+    severity: low                # demoted from medium
+    platforms: [cja, aa]
+    check: calc_identical_formula_text
+    params: {}
+    rationale: Same as strict.
+    remediation: Same as strict.
+
+  - id: CALC-022
+    name: Calc metrics with deprecated allocations
+    severity: low
+    platforms: [cja, aa]
+    check: calc_deprecated_allocations
+    params: {}
+    rationale: Same as strict.
+    remediation: Same as strict.

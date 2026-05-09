@@ -1,0 +1,62 @@
+category: schema_hygiene
+description: |
+  Schema hygiene rules — pragmatic thresholds (looser than strict).
+
+rules:
+  - id: SCH-001
+    name: Duplicate component names within the same component type
+    severity: medium
+    platforms: [cja, aa]
+    check: duplicate_component_names
+    params:
+      targets: [metrics, dimensions, derived_fields]
+    rationale: Same as strict.
+    remediation: Same as strict.
+
+  - id: SCH-002
+    name: Components referenced but not defined
+    severity: high
+    platforms: [cja, aa]
+    check: broken_references
+    params:
+      show_top: 10
+    rationale: Same as strict.
+    remediation: Same as strict.
+
+  - id: SCH-003
+    name: Components lacking descriptions
+    severity: low                # severity demoted in pragmatic
+    platforms: [cja, aa]
+    check: missing_descriptions
+    params:
+      threshold: 0.25            # 25% vs strict 10%
+      targets: [metrics, dimensions]
+    rationale: Same as strict.
+    remediation: Same as strict.
+
+  - id: SCH-004
+    name: Type-name mismatches
+    severity: low
+    platforms: [cja, aa]
+    check: type_name_mismatch
+    params: {}
+    rationale: Same as strict.
+    remediation: Same as strict.
+
+  - id: SCH-005
+    name: Deprecated components still in use
+    severity: low
+    platforms: [cja, aa]
+    check: deprecated_components
+    params: {}
+    rationale: Same as strict.
+    remediation: Same as strict.
+
+  - id: SCH-006
+    name: Cardinality concerns
+    severity: low                # demoted from medium in strict
+    platforms: [cja, aa]
+    check: cardinality_concerns
+    params: {}
+    rationale: Same as strict.
+    remediation: Same as strict.

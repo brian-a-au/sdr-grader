@@ -28,12 +28,19 @@ from sdr_grader.render import (
     Methodology,
     Remediation,
     Report,
+    SkippedRules,
 )
 from sdr_grader.render import (
     Rubric as RenderRubric,
 )
 from sdr_grader.rules.engine import run_rules
 from sdr_grader.rules.rubric import Rubric, RuleDefinition
+from sdr_grader.rules.suppression import (
+    Suppression,
+    apply_to_findings,
+    apply_to_rubric,
+    summarize_suppressed,
+)
 
 TOP_REMEDIATIONS = 5
 SEVERITY_TO_IMPACT_PTS = {"critical": 10, "high": 5, "medium": 3, "low": 1}
@@ -47,9 +54,18 @@ _PLATFORM_NOUN = {"cja": "data view", "aa": "report suite"}
 _PLATFORM_TOOL = {"cja": "cja_auto_sdr", "aa": "aa_auto_sdr"}
 
 
-def grade(impl: Implementation, rubric: Rubric) -> Report:
+def grade(
+    impl: Implementation,
+    rubric: Rubric,
+    suppression: Suppression | None = None,
+) -> Report:
     """Run the rubric over an Implementation and return a render-ready Report."""
-    findings = run_rules(impl, rubric)
+    if suppression is not None:
+        rubric = apply_to_rubric(rubric, suppression)
+    raw_findings = run_rules(impl, rubric)
+    findings = (
+        apply_to_findings(raw_findings, suppression) if suppression else raw_findings
+    )
     result = compute_grade(rubric, findings)
 
     generated_at = _resolve_generated_at(impl.snapshot_taken_at)
@@ -77,7 +93,7 @@ def grade(impl: Implementation, rubric: Rubric) -> Report:
         categories=[_render_category(cs) for cs in result.categories],
         remediations=_derive_remediations(rules_by_id, findings),
         findings=_sort_findings(findings),
-        methodology=_build_methodology(rubric, result, findings),
+        methodology=_build_methodology(rubric, result, findings, suppression),
         distribution=None,  # leaderboard data is a v0.4 concern (SPEC §8)
     )
 
@@ -163,7 +179,10 @@ def _build_tldr(impl: Implementation, rubric: Rubric, result: GradeResult) -> st
 
 
 def _build_methodology(
-    rubric: Rubric, result: GradeResult, findings: list[Finding]
+    rubric: Rubric,
+    result: GradeResult,
+    findings: list[Finding],
+    suppression: Suppression | None = None,
 ) -> Methodology:
     rule_count = len(rubric.rules)
     fired_count = len({f.id for f in findings})
@@ -190,7 +209,11 @@ def _build_methodology(
             'reweighted via a project-level <span class="mono">.sdr-grader.yaml</span>.'
         ),
     ]
-    return Methodology(paragraphs=paragraphs, skipped=[])
+    skipped: list[SkippedRules] = []
+    if suppression:
+        for summary in summarize_suppressed(suppression):
+            skipped.append(SkippedRules(ids=summary.ids, reason=summary.reason))
+    return Methodology(paragraphs=paragraphs, skipped=skipped)
 
 
 # ---------------------------------------------------------------------------

@@ -1,0 +1,50 @@
+category: naming_consistency
+description: Pragmatic naming rules — same IDs as strict, looser thresholds.
+
+rules:
+  - id: NAME-001
+    name: Custom dimension prefix consistency
+    severity: low
+    platforms: [cja, aa]
+    check: prefix_consistency
+    params:
+      target: dimensions
+      tag_filter: custom
+      min_consistency: 0.60      # 60% vs strict 80%
+    rationale: Same as strict.
+    remediation: Same as strict.
+
+  - id: NAME-002
+    name: No whitespace or special characters in component IDs
+    severity: low
+    platforms: [cja, aa]
+    check: regex_match_id
+    params:
+      pattern: '^[A-Za-z0-9_/.\- ]+$'   # spaces tolerated in pragmatic
+      targets: [metrics, dimensions, derived_fields, calculated_metrics, segments]
+    rationale: Same as strict.
+    remediation: Same as strict.
+
+  - id: NAME-003
+    name: Component name casing consistency
+    severity: low
+    platforms: [cja, aa]
+    check: casing_consistency
+    params:
+      target: dimensions
+      tag_filter: custom
+      min_consistency: 0.60
+    rationale: Same as strict.
+    remediation: Same as strict.
+
+  - id: NAME-004
+    name: Semantic synonym mixing
+    severity: low                # demoted from medium
+    platforms: [cja, aa]
+    check: semantic_consistency
+    params:
+      synonym_groups:
+        - [user, visitor]
+        - [page, screen]
+    rationale: Same as strict.
+    remediation: Same as strict.

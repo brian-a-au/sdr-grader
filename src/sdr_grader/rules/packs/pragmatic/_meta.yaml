@@ -1,0 +1,35 @@
+pack: pragmatic
+version: "0.1"
+description: |
+  Pragmatic rubric — same rule IDs as strict, looser thresholds. Suitable
+  for teams that want a sanity check rather than an audit. The category
+  weights are the same SPEC §6 reference distribution.
+
+category_weights:
+  schema_hygiene:        0.15
+  naming_consistency:    0.10
+  segment_complexity:    0.15
+  calc_metric_maint:     0.20
+  attribution_coverage:  0.15
+  governance_posture:    0.25
+
+severity_weights:
+  critical: 4
+  high:     3
+  medium:   2
+  low:      1
+
+# Same letter grade thresholds as strict; the looser checks ride on top.
+grade_scale:
+  - { min: 93, grade: "A"  }
+  - { min: 90, grade: "A−" }
+  - { min: 87, grade: "B+" }
+  - { min: 83, grade: "B"  }
+  - { min: 80, grade: "B−" }
+  - { min: 77, grade: "C+" }
+  - { min: 73, grade: "C"  }
+  - { min: 70, grade: "C−" }
+  - { min: 67, grade: "D+" }
+  - { min: 63, grade: "D"  }
+  - { min: 60, grade: "D−" }
+  - { min: 0,  grade: "F"  }

@@ -1,0 +1,31 @@
+category: attribution_coverage
+description: Pragmatic attribution rules — same IDs as strict, looser thresholds.
+
+rules:
+  - id: ATTR-001
+    name: Revenue / conversion metrics defaulting to last-touch without rationale
+    severity: low                # demoted from medium
+    platforms: [cja, aa]
+    check: attribution_default_last_touch
+    params: {}
+    rationale: Same as strict.
+    remediation: Same as strict.
+
+  - id: ATTR-002
+    name: Calc metrics with attribution model not specified
+    severity: low                # demoted from medium
+    platforms: [cja, aa]
+    check: attribution_missing
+    params:
+      threshold: 0.50            # 50% vs strict 30%
+    rationale: Same as strict.
+    remediation: Same as strict.
+
+  - id: ATTR-003
+    name: Inconsistent attribution choices across similar metrics
+    severity: low
+    platforms: [cja, aa]
+    check: attribution_inconsistency
+    params: {}
+    rationale: Same as strict.
+    remediation: Same as strict.

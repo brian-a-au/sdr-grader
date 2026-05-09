@@ -1,0 +1,62 @@
+category: governance_posture
+description: Pragmatic governance rules — same IDs as strict, looser thresholds.
+
+rules:
+  - id: GOV-001
+    name: No snapshot history detected
+    severity: medium             # demoted from high
+    platforms: [cja, aa]
+    check: snapshot_history_absent
+    params:
+      history_present: true      # default to assuming history exists in pragmatic
+    rationale: Same as strict.
+    remediation: Same as strict.
+
+  - id: GOV-002
+    name: Snapshot exists but is stale
+    severity: low                # demoted from medium
+    platforms: [cja, aa]
+    check: snapshot_age
+    params:
+      max_age_days: 180          # 180 vs strict 90
+    rationale: Same as strict.
+    remediation: Same as strict.
+
+  - id: GOV-003
+    name: No SDR documentation detected
+    severity: medium             # demoted from high
+    platforms: [cja, aa]
+    check: sdr_doc_absent
+    params:
+      sdr_doc_present: true      # default to assuming SDR exists in pragmatic
+    rationale: Same as strict.
+    remediation: Same as strict.
+
+  - id: GOV-004
+    name: Components missing owner attribution
+    severity: low                # demoted from medium
+    platforms: [cja, aa]
+    check: missing_owners
+    params:
+      threshold: 0.30            # 30% vs strict 10%
+    rationale: Same as strict.
+    remediation: Same as strict.
+
+  - id: GOV-005
+    name: Components missing tags
+    severity: low
+    platforms: [cja, aa]
+    check: missing_tags
+    params:
+      threshold: 0.80            # 80% vs strict 50%
+    rationale: Same as strict.
+    remediation: Same as strict.
+
+  - id: GOV-006
+    name: Components modified without documentation update
+    severity: low                # demoted from medium
+    platforms: [cja, aa]
+    check: doc_drift
+    params: {}
+    rationale: Same as strict.
+    remediation: Same as strict.
