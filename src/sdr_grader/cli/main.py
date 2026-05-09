@@ -88,6 +88,21 @@ def main(argv: list[str] | None = None) -> int:
         print(f"error: could not write output {output_path}: {exc}", file=sys.stderr)
         return RUNTIME_ERROR
 
+    if args.json_output:
+        import json as _json
+
+        from sdr_grader.render.json_output import report_to_dict
+        json_path = Path(args.json_output)
+        try:
+            json_path.parent.mkdir(parents=True, exist_ok=True)
+            json_path.write_text(
+                _json.dumps(report_to_dict(report), indent=2, ensure_ascii=False) + "\n",
+                encoding="utf-8",
+            )
+        except OSError as exc:
+            print(f"error: could not write JSON {json_path}: {exc}", file=sys.stderr)
+            return RUNTIME_ERROR
+
     if not args.quiet:
         print(
             f"Wrote {output_path}: grade {report.grade} "
@@ -154,6 +169,11 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--output",
         help="HTML output path. Default: ./grade-{generated_at}.html.",
+    )
+    parser.add_argument(
+        "--json",
+        dest="json_output",
+        help="Also emit a machine-readable JSON representation to PATH.",
     )
     parser.add_argument(
         "--suppress-config",

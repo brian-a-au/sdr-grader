@@ -133,6 +133,26 @@ def test_cli_invalid_rubric_yaml_returns_validation_failure(tmp_path, capsys):
     assert "rubric error" in capsys.readouterr().err
 
 
+def test_cli_json_output_writes_machine_readable_report(tmp_path):
+    import json
+
+    output = tmp_path / "out.html"
+    json_path = tmp_path / "out.json"
+    rc = main([
+        str(FIXTURES / "cja_snapshot_messy.json"),
+        "--output", str(output),
+        "--json", str(json_path),
+        "--quiet",
+    ])
+    assert rc == SUCCESS
+    data = json.loads(json_path.read_text(encoding="utf-8"))
+    assert data["grade"]
+    assert isinstance(data["overall_pct"], int)
+    assert isinstance(data["findings"], list)
+    assert {"name", "pct", "grade"} <= set(data["categories"][0].keys())
+    assert data["generated_at"].endswith("Z")
+
+
 def test_cli_run_is_deterministic(tmp_path):
     """Running twice on the same input must produce byte-identical output."""
     out_a = tmp_path / "a.html"
