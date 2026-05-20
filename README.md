@@ -1,5 +1,12 @@
 # sdr-grader
 
+[![Tests](https://github.com/brian-a-au/sdr-grader/actions/workflows/test.yml/badge.svg)](https://github.com/brian-a-au/sdr-grader/actions/workflows/test.yml)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Last Commit](https://img.shields.io/github/last-commit/brian-a-au/sdr-grader)](https://github.com/brian-a-au/sdr-grader/commits/main)
+
 A deterministic, rule-based linter for Adobe Customer Journey Analytics
 (CJA) and Adobe Analytics (AA) implementations. It consumes JSON
 snapshots from [`cja_auto_sdr`](https://github.com/brian-a-au/cja_auto_sdr)
