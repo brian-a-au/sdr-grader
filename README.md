@@ -87,9 +87,6 @@ aa_auto_sdr prod_us --format json --output - | \
   sdr-grader - --output grade.html
 ```
 
-For CI integration with `--fail-below`, see
-[docs/CI_INTEGRATION.md](docs/CI_INTEGRATION.md).
-
 ## Input modes
 
 | Mode | Invocation | When to use |
@@ -104,13 +101,12 @@ For CI integration with `--fail-below`, see
 
 ## Trend reports
 
-Pointed at a directory of timestamped snapshots, `--trend` grades each one
-chronologically and renders a single self-contained HTML showing the
-trajectory of the overall grade plus per-category sparklines and a
-findings churn summary (which rules appeared and disappeared since the
-first snapshot). Snapshots whose filenames don't carry a parseable
-timestamp (e.g. `snapshot_2026-04-25.json`) are skipped — the trend
-needs a stable ordering. See `examples/trend-example.html`.
+Pointed at a directory of timestamped snapshots, `--trend` grades each
+one chronologically and renders a single self-contained HTML with the
+overall trajectory, per-category sparklines, and a findings-churn
+summary. See [docs/TREND_REPORTS.md](docs/TREND_REPORTS.md) for the
+filename conventions and flag interactions, or
+`examples/trend-example.html` for a rendered sample.
 
 ## Output
 
@@ -122,77 +118,34 @@ needs a stable ordering. See `examples/trend-example.html`.
 
 ## Supplementary inputs
 
-Some rules need data the snapshot itself doesn't carry. Attach
-arbitrary JSON files at run time with `--extra-input KEY=PATH`
-(repeatable):
-
-```bash
-sdr-grader snapshot.json --extra-input KEY=path/to/data.json
-```
-
-The CLI loads each file and stores it under
-`Implementation.supplementary_data[KEY]`. The key name and the JSON
-shape are the *rule's* contract — there is no built-in exporter that
-produces these files. Operators supply whatever JSON the rule's
-docstring asks for.
-
-Rules opt in by reading the key they need and staying silent when it's
-absent, so an opt-in rule simply doesn't fire on snapshots that don't
-attach it. `LAUNCH-001` in
-`src/sdr_grader/rules/checks/supplementary.py` is the worked example
-(its docstring documents the expected JSON shape). See
-[docs/ADAPTER_GUIDE.md](docs/ADAPTER_GUIDE.md) for the extension
-pattern.
+Some rules grade against data the snapshot itself doesn't carry.
+Attach JSON at run time with `--extra-input KEY=PATH` (repeatable);
+rules read their key from `Implementation.supplementary_data` and stay
+silent when it's absent. See
+[docs/SUPPLEMENTARY_INPUTS.md](docs/SUPPLEMENTARY_INPUTS.md).
 
 ## Internal leaderboards
 
-The bundled `src/sdr_grader/data/distribution.json` is seed percentile
-data. Teams that grade many implementations internally can build their
-own reference distribution:
-
-```bash
-# Run the grader on every implementation, collect the JSON outputs.
-sdr-grader prod_us.json --json grades/prod_us.json --output /dev/null
-sdr-grader prod_eu.json --json grades/prod_eu.json --output /dev/null
-
-# Aggregate into a distribution.json.
-python scripts/aggregate_distributions.py grades/ -o distribution.json
-
-# Use it as the reference for new grades.
-sdr-grader new_snapshot.json --distribution-data distribution.json
-```
+Teams grading many implementations can build their own percentile
+reference from collected `--json` outputs and pass it back as
+`--distribution-data` to render comparative context in the report. See
+[docs/LEADERBOARDS.md](docs/LEADERBOARDS.md).
 
 ## Tuning rules per project
 
 Drop a `.sdr-grader.yaml` in your working directory to suppress noisy
-rules, override severities, or rebalance category weights for your
-context:
-
-```yaml
-suppress:
-  - rule: NAME-002
-    reason: "We use legacy IDs with hyphens; agreed by team."
-
-severity_overrides:
-  CALC-014: medium
-
-category_weights:
-  governance_posture: 0.30
-```
-
-The grader auto-discovers the file. Suppressions show up in the
-rendered report's methodology section with their reasons attached.
-
-## Requirements
-
-- Python 3.11+
-- [uv](https://docs.astral.sh/uv/) for dependency management
+rules, override severities, or rebalance category weights. The grader
+auto-discovers the file; suppressions show up in the rendered report's
+methodology section with their reasons attached. See
+[docs/PROJECT_CONFIG.md](docs/PROJECT_CONFIG.md) for the full schema.
 
 ## Develop
 
+Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/).
+
 ```bash
 uv sync                # set up environment
-uv run pytest          # run tests (140+)
+uv run pytest          # run the test suite
 uv run ruff check      # lint
 uv run python scripts/generate_examples.py   # regenerate examples/
 ```
@@ -202,4 +155,8 @@ uv run python scripts/generate_examples.py   # regenerate examples/
 - [docs/RUBRIC_FORMAT.md](docs/RUBRIC_FORMAT.md) — YAML rubric schema
 - [docs/CHECK_FUNCTION_GUIDE.md](docs/CHECK_FUNCTION_GUIDE.md) — adding a new check
 - [docs/ADAPTER_GUIDE.md](docs/ADAPTER_GUIDE.md) — adding a new platform
+- [docs/PROJECT_CONFIG.md](docs/PROJECT_CONFIG.md) — `.sdr-grader.yaml` schema
+- [docs/SUPPLEMENTARY_INPUTS.md](docs/SUPPLEMENTARY_INPUTS.md) — `--extra-input` mechanism
+- [docs/TREND_REPORTS.md](docs/TREND_REPORTS.md) — `--trend` usage and conventions
+- [docs/LEADERBOARDS.md](docs/LEADERBOARDS.md) — building a distribution reference
 - [docs/CI_INTEGRATION.md](docs/CI_INTEGRATION.md) — using `--fail-below` in CI
