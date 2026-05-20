@@ -147,13 +147,29 @@ reference from collected `--json` outputs and pass it back as
 `--distribution-data` to render comparative context in the report. See
 [docs/LEADERBOARDS.md](docs/LEADERBOARDS.md).
 
-## Tuning rules per project
+## Customizing the rubric
 
-Drop a `.sdr-grader.yaml` in your working directory to suppress noisy
-rules, override severities, or rebalance category weights. The grader
-auto-discovers the file; suppressions show up in the rendered report's
-methodology section with their reasons attached. See
-[docs/PROJECT_CONFIG.md](docs/PROJECT_CONFIG.md) for the full schema.
+Every layer is tunable: silence a single rule, fork a pack to shift
+thresholds, write a new check function, or add a whole new platform.
+The lightest mechanism that works is usually a `.sdr-grader.yaml`
+suppression — but heavier moves (forking a pack, adding rules) are
+supported and documented. See [docs/CUSTOMIZATION.md](docs/CUSTOMIZATION.md)
+for the full customization spectrum and which mechanism fits which need.
+
+## Claude Code skill
+
+The repo ships a Claude Code skill bundle at
+[`skills/sdr-grader/`](skills/sdr-grader/) for asking follow-up
+questions about a `sdr-grader --json` output without re-running the
+grader — filter findings by severity / category / rule, pull up the
+body and remediation for one rule, or diff two grades from different
+snapshot dates. Install as a plugin (`/plugin install
+brian-a-au/sdr-grader`) or as a personal skill; the bundled helper
+script also runs as plain Python with no extra dependencies. See
+[`skills/sdr-grader/README.md`](skills/sdr-grader/README.md) for
+install and usage details, or
+[`skills/sdr-grader/SKILL.md`](skills/sdr-grader/SKILL.md) for the
+trigger phrases and helper command reference.
 
 ## Develop
 
@@ -168,6 +184,7 @@ uv run python scripts/generate_examples.py   # regenerate examples/
 
 ## Documentation
 
+- [docs/CUSTOMIZATION.md](docs/CUSTOMIZATION.md) — picking the right customization mechanism
 - [docs/RUBRIC_FORMAT.md](docs/RUBRIC_FORMAT.md) — YAML rubric schema
 - [docs/CHECK_FUNCTION_GUIDE.md](docs/CHECK_FUNCTION_GUIDE.md) — adding a new check
 - [docs/ADAPTER_GUIDE.md](docs/ADAPTER_GUIDE.md) — adding a new platform
@@ -176,3 +193,4 @@ uv run python scripts/generate_examples.py   # regenerate examples/
 - [docs/TREND_REPORTS.md](docs/TREND_REPORTS.md) — `--trend` usage and conventions
 - [docs/LEADERBOARDS.md](docs/LEADERBOARDS.md) — building a distribution reference
 - [docs/CI_INTEGRATION.md](docs/CI_INTEGRATION.md) — using `--fail-below` in CI
+- [skills/sdr-grader/README.md](skills/sdr-grader/README.md) — Claude Code skill bundle for grade follow-up Q&A
