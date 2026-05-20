@@ -99,6 +99,14 @@ aa_auto_sdr prod_us --format json --output - | \
 |            | `sdr-grader --rsid prod_us`                      | Same idea against AA via `aa_auto_sdr`. Requires `aa_auto_sdr` on `PATH`. |
 | Stdin      | `… \| sdr-grader -`                              | Stream JSON in from another tool without touching disk — pairs with `cja_auto_sdr … --output -` for ephemeral CI runs. |
 
+One run grades one platform. CJA and AA snapshots are not mixed: the
+platform is auto-detected per snapshot from its JSON shape, and the
+normalized model holds exactly one platform. In single-file or
+directory mode, only one snapshot is graded per invocation (siblings
+in a directory are ignored). In `--trend` mode, the runner explicitly
+errors out (`snapshots in {dir} mix platforms …`) on a mismatch — keep
+CJA and AA snapshots in separate folders.
+
 ## Output
 
 - **HTML report card** at `--output PATH` (default
