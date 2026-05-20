@@ -35,6 +35,41 @@ rubrics. See [Supplementary inputs](#supplementary-inputs) for the
 attachment mechanism and [docs/RUBRIC_FORMAT.md](docs/RUBRIC_FORMAT.md)
 for the pack format.
 
+## How it grades
+
+A grade run is a one-way pipeline — no LLMs, no model calls, just a
+small amount of pure Python over typed data:
+
+1. **Adapt** — the platform adapter (`adapters/cja.py` or
+   `adapters/aa.py`) normalizes the JSON snapshot into an
+   `Implementation` (metrics, dimensions, segments, calculated metrics,
+   governance signals).
+2. **Run rules** — the engine loops over every rule in the active
+   rubric pack and calls its registered Python check function; each
+   check returns zero or more `Finding`s.
+3. **Score** — for each non-zero-weight category the subtotal is
+   `round((1 − fired_severity / total_severity) × 100)`, where the
+   severity weights come from the pack's `_meta.yaml`. The overall
+   score is the category-weighted average, rounded.
+4. **Letter** — the score maps to a letter via the rubric's
+   descending `grade_scale` bands.
+
+Because the rubric (category weights, severity weights, grade bands,
+rule list) is data, swapping packs swaps the opinion without changing
+a line of grader code. The scoring algorithm itself is in
+[`src/sdr_grader/core/grade_calc.py`](src/sdr_grader/core/grade_calc.py).
+
+Deeper reading:
+
+- [docs/RUBRIC_FORMAT.md](docs/RUBRIC_FORMAT.md) — the full pack
+  schema (weights, severities, grade bands, rule shape) and how to fork.
+- [docs/CHECK_FUNCTION_GUIDE.md](docs/CHECK_FUNCTION_GUIDE.md) —
+  writing a new check function and registering it.
+- [docs/ADAPTER_GUIDE.md](docs/ADAPTER_GUIDE.md) — wiring a new
+  platform into the pipeline.
+- [docs/CI_INTEGRATION.md](docs/CI_INTEGRATION.md) — gating
+  pull requests on `--fail-below`.
+
 ## Quickstart
 
 ```bash
