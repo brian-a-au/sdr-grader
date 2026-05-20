@@ -37,8 +37,7 @@ for the pack format.
 
 ## How it grades
 
-A grade run is a one-way pipeline — no LLMs, no model calls, just a
-small amount of pure Python over typed data:
+A grade run is a one-way pipeline over typed data:
 
 1. **Adapt** — the platform adapter (`adapters/cja.py` or
    `adapters/aa.py`) normalizes the JSON snapshot into an
