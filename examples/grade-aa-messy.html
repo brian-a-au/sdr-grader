@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SDR-2026-0101-MESSY-PROD — Messy Production</title>
+<style>/* ---------- Reset & base ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  font-family: "Charter", "Iowan Old Style", "Source Serif Pro", Georgia, "Times New Roman", serif;
+  font-size: 16px;
+  line-height: 1.55;
+  color: #1a1a1a;
+  background: #fafaf7;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+.ui {
+  font-family: "Söhne", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+.mono {
+  font-family: "JetBrains Mono", "SF Mono", "Menlo", "Consolas", monospace;
+}
+
+/* ---------- Layout ---------- */
+.page {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 56px 48px 96px;
+}
+@media (max-width: 720px) {
+  .page { padding: 32px 20px 64px; }
+}
+
+/* ---------- Eyebrow + Title ---------- */
+.eyebrow {
+  font-family: "Söhne", "Inter", system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #6b6b66;
+  margin-bottom: 12px;
+}
+h1 {
+  font-family: "Charter", "Iowan Old Style", Georgia, serif;
+  font-weight: 500;
+  font-size: 36px;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  margin: 0 0 24px 0;
+}
+
+/* ---------- Metadata strip ---------- */
+.meta-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 28px;
+  padding: 16px 0;
+  border-top: 1px solid #2a2a2a;
+  border-bottom: 1px solid #d8d6cf;
+  margin-bottom: 40px;
+  font-family: "Söhne", "Inter", system-ui, sans-serif;
+  font-size: 13px;
+}
+.meta-strip .item { display: flex; flex-direction: column; gap: 2px; }
+.meta-strip .label {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #8a8a82;
+  font-weight: 500;
+}
+.meta-strip .value { font-size: 14px; color: #1a1a1a; font-weight: 500; }
+.meta-strip .grade-cell .value {
+  font-family: "Charter", Georgia, serif;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+/* ---------- On this page ---------- */
+nav.toc {
+  font-family: "Söhne", "Inter", system-ui, sans-serif;
+  font-size: 12px;
+  color: #6b6b66;
+  margin-bottom: 56px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #ece9e0;
+}
+nav.toc .label {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-right: 14px;
+  color: #8a8a82;
+}
+nav.toc a {
+  color: #1a1a1a;
+  text-decoration: none;
+  margin-right: 18px;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.15s;
+}
+nav.toc a:hover { border-bottom-color: #1a1a1a; }
+
+/* ---------- TL;DR ---------- */
+.tldr {
+  font-family: "Söhne", "Inter", system-ui, sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #8a8a82;
+  font-weight: 500;
+  margin-bottom: 12px;
+}
+.tldr-body {
+  font-size: 17px;
+  line-height: 1.6;
+  color: #2a2a2a;
+  margin-bottom: 56px;
+  max-width: 640px;
+}
+.tldr-body strong { color: #1a1a1a; font-weight: 500; }
+
+/* ---------- Section headings ---------- */
+h2 {
+  font-family: "Charter", Georgia, serif;
+  font-weight: 500;
+  font-size: 22px;
+  letter-spacing: -0.005em;
+  margin: 0 0 4px 0;
+  padding-top: 24px;
+}
+.section-rule { height: 1px; background: #2a2a2a; margin: 0 0 28px 0; }
+section { margin-bottom: 56px; }
+
+/* ---------- Category grid ---------- */
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1px;
+  background: #d8d6cf;
+  border: 1px solid #d8d6cf;
+  margin-bottom: 8px;
+}
+.cat {
+  background: #fafaf7;
+  padding: 18px 20px;
+  font-family: "Söhne", "Inter", system-ui, sans-serif;
+}
+.cat .name {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #6b6b66;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+.cat .score { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+.cat .pct {
+  font-family: "Charter", Georgia, serif;
+  font-size: 28px;
+  font-weight: 500;
+  line-height: 1;
+  color: #1a1a1a;
+}
+.cat .sub { font-size: 13px; color: #6b6b66; font-weight: 500; }
+.cat .bar { height: 3px; background: #ece9e0; position: relative; overflow: hidden; }
+.cat .bar > span { display: block; height: 100%; background: #1a1a1a; }
+.cat .bar.warn > span { background: #b8651a; }
+.cat .bar.crit > span { background: #8b2a1f; }
+
+/* ---------- Remediations ---------- */
+ol.remediations { list-style: none; counter-reset: rem; padding: 0; margin: 0; }
+ol.remediations li {
+  counter-increment: rem;
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  gap: 16px;
+  align-items: baseline;
+  padding: 16px 0;
+  border-bottom: 1px solid #ece9e0;
+}
+ol.remediations li:last-child { border-bottom: 0; }
+ol.remediations li::before {
+  content: counter(rem, decimal-leading-zero);
+  font-family: "Söhne", "Inter", system-ui, sans-serif;
+  font-size: 11px;
+  color: #8a8a82;
+  letter-spacing: 0.06em;
+}
+ol.remediations .text { font-size: 16px; line-height: 1.5; color: #1a1a1a; }
+ol.remediations .text .ref {
+  font-family: "Söhne", "Inter", system-ui, sans-serif;
+  font-size: 11px;
+  color: #6b6b66;
+  letter-spacing: 0.04em;
+  margin-left: 6px;
+}
+ol.remediations .impact {
+  font-family: "Söhne", "Inter", system-ui, sans-serif;
+  font-size: 12px;
+  color: #2a5934;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+/* ---------- Findings ---------- */
+.finding { padding: 24px 0; border-bottom: 1px solid #ece9e0; }
+.finding:first-of-type { border-top: 1px solid #ece9e0; }
+.finding-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 12px;
+  font-family: "Söhne", "Inter", system-ui, sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+.finding-id {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  color: #6b6b66;
+  font-weight: 500;
+}
+.sev {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  font-weight: 600;
+  border: 1px solid currentColor;
+}
+.sev.crit { color: #8b2a1f; }
+.sev.high { color: #b8651a; }
+.sev.med { color: #6b6b1a; }
+.sev.low { color: #4a4a4a; }
+.finding-cat { color: #8a8a82; font-size: 11px; letter-spacing: 0.06em; }
+.finding-title {
+  font-family: "Charter", Georgia, serif;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.35;
+  margin: 0 0 12px 0;
+  color: #1a1a1a;
+}
+.finding-body { font-size: 15px; line-height: 1.6; color: #2a2a2a; max-width: 640px; }
+.finding-body p { margin: 0 0 12px 0; }
+.finding-body p:last-child { margin-bottom: 0; }
+.finding-section-label {
+  font-family: "Söhne", "Inter", system-ui, sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #8a8a82;
+  font-weight: 500;
+  margin: 16px 0 6px 0;
+}
+.components-list {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 13px;
+  color: #2a2a2a;
+  line-height: 1.7;
+  background: #f3f1e8;
+  padding: 12px 16px;
+  border-left: 2px solid #c9c5b6;
+  margin: 0;
+  white-space: pre;
+  overflow-x: auto;
+}
+pre.code {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 12.5px;
+  line-height: 1.55;
+  background: #f3f1e8;
+  padding: 14px 16px;
+  border-left: 2px solid #c9c5b6;
+  overflow-x: auto;
+  margin: 8px 0 0 0;
+  color: #2a2a2a;
+}
+.finding-actions {
+  margin-top: 14px;
+  font-family: "Söhne", "Inter", system-ui, sans-serif;
+  font-size: 12px;
+  color: #6b6b66;
+}
+.finding-actions a {
+  color: #6b6b66;
+  text-decoration: none;
+  border-bottom: 1px solid #d8d6cf;
+  margin-right: 18px;
+  padding-bottom: 1px;
+}
+.finding-actions a:hover { color: #1a1a1a; border-bottom-color: #1a1a1a; }
+
+/* ---------- Distribution ---------- */
+.dist {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px 48px;
+  font-family: "Söhne", "Inter", system-ui, sans-serif;
+  font-size: 13px;
+}
+@media (max-width: 600px) { .dist { grid-template-columns: 1fr; } }
+.dist .row { display: flex; flex-direction: column; gap: 10px; }
+.dist .label {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #8a8a82;
+  font-weight: 500;
+}
+.dist svg { display: block; }
+
+/* ---------- Skipped ---------- */
+.skipped {
+  background: #f3f1e8;
+  padding: 18px 22px;
+  font-family: "Söhne", "Inter", system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #4a4a4a;
+  border-left: 2px solid #c9c5b6;
+}
+.skipped strong { font-weight: 500; color: #1a1a1a; }
+.skipped ul { margin: 8px 0 0 0; padding-left: 18px; }
+.skipped li { margin-bottom: 4px; }
+
+/* ---------- Provenance ---------- */
+.provenance {
+  margin-top: 80px;
+  padding-top: 24px;
+  border-top: 1px solid #d8d6cf;
+  font-family: "Söhne", "Inter", system-ui, sans-serif;
+  font-size: 12px;
+  line-height: 1.7;
+  color: #6b6b66;
+}
+.provenance a { color: #6b6b66; text-decoration: underline; text-decoration-color: #d8d6cf; }
+.provenance a:hover { color: #1a1a1a; }
+
+/* ---------- Print ---------- */
+@media print {
+  body { background: #fff; }
+  .page { max-width: none; padding: 0.6in; }
+  .finding { break-inside: avoid; }
+  .cat { break-inside: avoid; }
+  nav.toc { display: none; }
+  .finding-actions { display: none; }
+}
+</style>
+</head>
+<body>
+<main class="page">
+
+  
+  <div class="eyebrow">SDR-2026-0101-MESSY-PROD</div>
+  <h1>Messy Production</h1>
+
+  
+  <div class="meta-strip">
+    <div class="item grade-cell">
+      <span class="label">Grade</span>
+      <span class="value">F</span>
+    </div>
+    <div class="item">
+      <span class="label">Overall</span>
+      <span class="value">39%</span>
+    </div>
+    <div class="item">
+      <span class="label">Components</span>
+      <span class="value">75 evaluated</span>
+    </div>
+    <div class="item">
+      <span class="label">Adapter</span>
+      <span class="value">AA · 1.0.0</span>
+    </div>
+    <div class="item">
+      <span class="label">Rubric</span>
+      <span class="value">strict@0.4</span>
+    </div>
+    <div class="item">
+      <span class="label">Generated</span>
+      <span class="value">Jan 01 2026 · 00:00 UTC</span>
+    </div>
+  </div>
+
+  
+  <nav class="toc">
+    <span class="label">On this page</span>
+    <a href="#tldr">Summary</a>
+    <a href="#categories">Category scores</a>
+    <a href="#remediations">Top remediations</a>
+    <a href="#findings">All findings</a>
+    
+    <a href="#methodology">Methodology</a>
+  </nav>
+
+  
+  <section id="tldr">
+    <div class="tldr">Summary</div>
+    <p class="tldr-body">This implementation graded <strong>F</strong> (39%). The grader evaluated 75 components in this report suite using the <span class="mono">strict@0.4</span> rubric pack. The largest gap is in <strong>governance posture</strong> (18%); 4 of 5 rules in that category fired.</p>
+  </section>
+
+  
+  <section id="categories">
+    <h2>Category scores</h2>
+    <div class="section-rule"></div>
+
+    <div class="category-grid">
+      
+      <div class="cat">
+        <div class="name">schema hygiene</div>
+        <div class="score">
+          <span class="pct">44%</span>
+          <span class="sub">F</span>
+        </div>
+        <div class="bar crit">
+          <span style="width:44%"></span>
+        </div>
+      </div>
+      
+      <div class="cat">
+        <div class="name">naming consistency</div>
+        <div class="score">
+          <span class="pct">60%</span>
+          <span class="sub">D−</span>
+        </div>
+        <div class="bar warn">
+          <span style="width:60%"></span>
+        </div>
+      </div>
+      
+      <div class="cat">
+        <div class="name">segment complexity</div>
+        <div class="score">
+          <span class="pct">43%</span>
+          <span class="sub">F</span>
+        </div>
+        <div class="bar crit">
+          <span style="width:43%"></span>
+        </div>
+      </div>
+      
+      <div class="cat">
+        <div class="name">calc metric maint</div>
+        <div class="score">
+          <span class="pct">60%</span>
+          <span class="sub">D−</span>
+        </div>
+        <div class="bar warn">
+          <span style="width:60%"></span>
+        </div>
+      </div>
+      
+      <div class="cat">
+        <div class="name">attribution coverage</div>
+        <div class="score">
+          <span class="pct">20%</span>
+          <span class="sub">F</span>
+        </div>
+        <div class="bar crit">
+          <span style="width:20%"></span>
+        </div>
+      </div>
+      
+      <div class="cat">
+        <div class="name">governance posture</div>
+        <div class="score">
+          <span class="pct">18%</span>
+          <span class="sub">F</span>
+        </div>
+        <div class="bar crit">
+          <span style="width:18%"></span>
+        </div>
+      </div>
+      
+    </div>
+  </section>
+
+  
+  <section id="remediations">
+    <h2>Top remediations</h2>
+    <div class="section-rule"></div>
+
+    <ol class="remediations">
+      
+      <li>
+        <span class="text">
+          Establish a snapshot directory in version control and schedule regular runs of cja_auto_sdr / aa_auto_sdr to populate it.
+          <span class="ref">GOV-001</span>
+        </span>
+        <span class="impact">+5 pts overall</span>
+      </li>
+      
+      <li>
+        <span class="text">
+          Generate the SDR via cja_auto_sdr / aa_auto_sdr and commit it alongside this snapshot. Suppress this rule via .sdr-grader.yaml if the SDR lives somewhere the grader cannot see.
+          <span class="ref">GOV-003</span>
+        </span>
+        <span class="impact">+5 pts overall</span>
+      </li>
+      
+      <li>
+        <span class="text">
+          Re-create the missing component, or update the segment / calculated metric to point at the current canonical equivalent.
+          <span class="ref">SCH-002</span>
+        </span>
+        <span class="impact">+5 pts overall</span>
+      </li>
+      
+      <li>
+        <span class="text">
+          Audit segment usage in Workspace projects and dashboards, then archive segments with no live consumers.
+          <span class="ref">SEG-003</span>
+        </span>
+        <span class="impact">+5 pts overall</span>
+      </li>
+      
+      <li>
+        <span class="text">
+          Either change the attribution model to one appropriate for the metric's intended use, or document in the metric description why last-touch is the correct choice.
+          <span class="ref">ATTR-001</span>
+        </span>
+        <span class="impact">+3 pts overall</span>
+      </li>
+      
+    </ol>
+  </section>
+
+  
+  <section id="findings">
+    <h2>All findings</h2>
+    <div class="section-rule"></div>
+
+    
+    <article class="finding" id="finding-gov-001">
+      <div class="finding-head">
+        <span class="finding-id">GOV-001</span>
+        <span class="sev high">High</span>
+        <span class="finding-cat">governance posture</span>
+      </div>
+      <h3 class="finding-title">No snapshot history detected for this data view</h3>
+      <div class="finding-body">
+        
+          
+            <p>No prior snapshots of this implementation were detected alongside the input. Without snapshot history, configuration changes cannot be diffed, drift cannot be detected, and audit trails are unavailable for compliance review.</p>
+          
+        
+          
+            <div class="finding-section-label">How to remediate</div>
+            <p>Establish a snapshot directory in version control and schedule regular runs of cja_auto_sdr / aa_auto_sdr to populate it.</p>
+          
+        
+      </div>
+      
+    </article>
+    
+    <article class="finding" id="finding-gov-003">
+      <div class="finding-head">
+        <span class="finding-id">GOV-003</span>
+        <span class="sev high">High</span>
+        <span class="finding-cat">governance posture</span>
+      </div>
+      <h3 class="finding-title">No SDR documentation detected</h3>
+      <div class="finding-body">
+        
+          
+            <p>No Solution Design Reference (SDR) document was supplied alongside this snapshot. Without an SDR, definitions live only in the platform UI, which makes peer review and onboarding harder and obscures the &ldquo;why&rdquo; behind component choices.</p>
+          
+        
+          
+            <div class="finding-section-label">How to remediate</div>
+            <p>Generate the SDR via cja_auto_sdr / aa_auto_sdr and commit it alongside this snapshot. Suppress this rule via .sdr-grader.yaml if the SDR lives somewhere the grader cannot see.</p>
+          
+        
+      </div>
+      
+    </article>
+    
+    <article class="finding" id="finding-sch-002">
+      <div class="finding-head">
+        <span class="finding-id">SCH-002</span>
+        <span class="sev high">High</span>
+        <span class="finding-cat">schema hygiene</span>
+      </div>
+      <h3 class="finding-title">4 broken references</h3>
+      <div class="finding-body">
+        
+          
+            <p>4 references are broken — segments or calculated metrics point at component IDs that don't exist in this report suite. Broken references are usually a symptom of components renamed or deleted without updating their consumers.</p>
+          
+        
+          
+            <div class="finding-section-label">Affected components (4)</div>
+<pre class="components-list">calc_metric cm_conversion_rate -> missing metrics/orders
+calc_metric cm_conversion_rate -> missing metrics/visits
+calc_metric cm_revenue_per_visit -> missing metrics/revenue
+calc_metric cm_revenue_per_visit -> missing metrics/visits
+</pre>
+          
+        
+          
+            <div class="finding-section-label">How to remediate</div>
+            <p>Re-create the missing component, or update the segment / calculated metric to point at the current canonical equivalent.</p>
+          
+        
+      </div>
+      
+    </article>
+    
+    <article class="finding" id="finding-seg-003">
+      <div class="finding-head">
+        <span class="finding-id">SEG-003</span>
+        <span class="sev high">High</span>
+        <span class="finding-cat">segment complexity</span>
+      </div>
+      <h3 class="finding-title">2 orphan segments</h3>
+      <div class="finding-body">
+        
+          
+            <p>2 of 2 segments (100%) are not referenced by any other segment or calculated metric in this snapshot. Orphan segments accumulate until nobody can tell which are still in use.</p>
+          
+        
+          
+            <div class="finding-section-label">Affected components (2)</div>
+<pre class="components-list">s_mobile
+s_returning
+</pre>
+          
+        
+          
+            <div class="finding-section-label">How to remediate</div>
+            <p>Audit segment usage in Workspace projects and dashboards, then archive segments with no live consumers.</p>
+          
+        
+      </div>
+      
+    </article>
+    
+    <article class="finding" id="finding-attr-001">
+      <div class="finding-head">
+        <span class="finding-id">ATTR-001</span>
+        <span class="sev med">Medium</span>
+        <span class="finding-cat">attribution coverage</span>
+      </div>
+      <h3 class="finding-title">2 undocumented last-touch metrics</h3>
+      <div class="finding-body">
+        
+          
+            <p>2 revenue / conversion metrics default to last-touch attribution without a documented rationale. Last-touch is appropriate for some use cases but should be a deliberate choice, not a silent default.</p>
+          
+        
+          
+            <div class="finding-section-label">Affected components (2)</div>
+<pre class="components-list">cm_conversion_rate  attribution=—
+cm_revenue_per_visit  attribution=—
+</pre>
+          
+        
+          
+            <div class="finding-section-label">How to remediate</div>
+            <p>Either change the attribution model to one appropriate for the metric's intended use, or document in the metric description why last-touch is the correct choice.</p>
+          
+        
+      </div>
+      
+    </article>
+    
+    <article class="finding" id="finding-attr-002">
+      <div class="finding-head">
+        <span class="finding-id">ATTR-002</span>
+        <span class="sev med">Medium</span>
+        <span class="finding-cat">attribution coverage</span>
+      </div>
+      <h3 class="finding-title">2 calc metrics lack explicit attribution</h3>
+      <div class="finding-body">
+        
+          
+            <p>2 of 2 calculated metrics (100%) have no attribution model specified. The platform falls back to its default model, which is silent until a stakeholder asks why two metrics that look similar disagree.</p>
+          
+        
+          
+            <div class="finding-section-label">How to remediate</div>
+            <p>Set the attribution model explicitly on every calculated metric.</p>
+          
+        
+      </div>
+      
+    </article>
+    
+    <article class="finding" id="finding-calc-001">
+      <div class="finding-head">
+        <span class="finding-id">CALC-001</span>
+        <span class="sev med">Medium</span>
+        <span class="finding-cat">calc metric maint</span>
+      </div>
+      <h3 class="finding-title">1 calculated metrics lack descriptions</h3>
+      <div class="finding-body">
+        
+          
+            <p>1 of 2 calculated metrics (50%) lack descriptions. Calculated metrics carry definitional choices (attribution, allocation, formula assumptions) that are invisible from the formula alone.</p>
+          
+        
+          
+            <div class="finding-section-label">How to remediate</div>
+            <p>Add concise descriptions explaining what the metric measures, when to use it, and which attribution / allocation choices were made.</p>
+          
+        
+      </div>
+      
+    </article>
+    
+    <article class="finding" id="finding-calc-002">
+      <div class="finding-head">
+        <span class="finding-id">CALC-002</span>
+        <span class="sev med">Medium</span>
+        <span class="finding-cat">calc metric maint</span>
+      </div>
+      <h3 class="finding-title">4 broken calculated metric references</h3>
+      <div class="finding-body">
+        
+          
+            <p>4 calculated metric references are broken — the formula points at components, segments, or other calculated metrics that don't exist in this snapshot.</p>
+          
+        
+          
+            <div class="finding-section-label">Affected components (4)</div>
+<pre class="components-list">cm_conversion_rate -> metrics/orders
+cm_conversion_rate -> metrics/visits
+cm_revenue_per_visit -> metrics/revenue
+cm_revenue_per_visit -> metrics/visits
+</pre>
+          
+        
+          
+            <div class="finding-section-label">How to remediate</div>
+            <p>Update the formula to reference the current canonical component or retire the calculated metric.</p>
+          
+        
+      </div>
+      
+    </article>
+    
+    <article class="finding" id="finding-calc-005">
+      <div class="finding-head">
+        <span class="finding-id">CALC-005</span>
+        <span class="sev med">Medium</span>
+        <span class="finding-cat">calc metric maint</span>
+      </div>
+      <h3 class="finding-title">2 orphan calculated metrics</h3>
+      <div class="finding-body">
+        
+          
+            <p>2 of 2 calculated metrics (100%) are not referenced by any other calculated metric or segment in this snapshot. Orphans accumulate until consolidation becomes prohibitively expensive.</p>
+          
+        
+          
+            <div class="finding-section-label">Affected components (2)</div>
+<pre class="components-list">cm_conversion_rate
+cm_revenue_per_visit
+</pre>
+          
+        
+          
+            <div class="finding-section-label">How to remediate</div>
+            <p>Audit Workspace projects and dashboards, then archive metrics with no live consumers.</p>
+          
+        
+      </div>
+      
+    </article>
+    
+    <article class="finding" id="finding-gov-004">
+      <div class="finding-head">
+        <span class="finding-id">GOV-004</span>
+        <span class="sev med">Medium</span>
+        <span class="finding-cat">governance posture</span>
+      </div>
+      <h3 class="finding-title">75 components lack owner attribution</h3>
+      <div class="finding-body">
+        
+          
+            <p>75 of 75 components (100%) have no owner attribution. When a component has no owner, there is no clear person to ask for context, sign off on changes, or maintain its documentation.</p>
+          
+        
+          
+            <div class="finding-section-label">How to remediate</div>
+            <p>Populate the owner field via the platform API. Adopt a convention that new components must have an owner before publication.</p>
+          
+        
+      </div>
+      
+    </article>
+    
+    <article class="finding" id="finding-name-004">
+      <div class="finding-head">
+        <span class="finding-id">NAME-004</span>
+        <span class="sev med">Medium</span>
+        <span class="finding-cat">naming consistency</span>
+      </div>
+      <h3 class="finding-title">Mixed synonym usage in 1 group</h3>
+      <div class="finding-body">
+        
+          
+            <p>1 synonym group appears in component names with multiple terms in active use. Inconsistent vocabulary forces analysts to learn each team's idiolect; downstream tooling and segmentation drift apart over time.</p>
+          
+        
+          
+            <div class="finding-section-label">Affected components (1)</div>
+<pre class="components-list">[user, visitor] -> user: 1, visitor: 1
+</pre>
+          
+        
+          
+            <div class="finding-section-label">How to remediate</div>
+            <p>Pick one term per concept, document it, and rename existing components to align. The losing synonyms should be deprecated, not silently kept around.</p>
+          
+        
+      </div>
+      
+    </article>
+    
+    <article class="finding" id="finding-sch-003">
+      <div class="finding-head">
+        <span class="finding-id">SCH-003</span>
+        <span class="sev med">Medium</span>
+        <span class="finding-cat">schema hygiene</span>
+      </div>
+      <h3 class="finding-title">20 components lack descriptions</h3>
+      <div class="finding-body">
+        
+          
+            <p>5 metrics and 15 dimensions in this report suite have empty <span class="mono">description</span> fields. Descriptions are the primary way new analysts and AI agents understand what a component measures; missing descriptions force readers to infer intent from names alone, which is frequently wrong.</p>
+          
+        
+          
+            <div class="finding-section-label">Distribution</div>
+            <p>Metrics: 5 of 15 missing (33%). Dimensions: 15 of 60 missing (25%). The rubric threshold is 10%.</p>
+          
+        
+          
+            <div class="finding-section-label">How to remediate</div>
+            <p>Generate the list of components missing descriptions via the data view API and populate them. Establish a CI check that fails new components added without descriptions.</p>
+          
+        
+      </div>
+      
+    </article>
+    
+    <article class="finding" id="finding-seg-002">
+      <div class="finding-head">
+        <span class="finding-id">SEG-002</span>
+        <span class="sev med">Medium</span>
+        <span class="finding-cat">segment complexity</span>
+      </div>
+      <h3 class="finding-title">1 segment mix container types</h3>
+      <div class="finding-body">
+        
+          
+            <p>1 segment mixes container types (event / session / person) within a single definition. Mixed containers obscure intent and produce surprising population differences from segments that look superficially similar.</p>
+          
+        
+          
+            <div class="finding-section-label">Affected components (1)</div>
+<pre class="components-list">s_returning  containers: visitors, visits, hits  depth: 6
+</pre>
+          
+        
+          
+            <div class="finding-section-label">How to remediate</div>
+            <p>Decompose the segment into composed sub-segments, one per container level, and combine them at the surface segment.</p>
+          
+        
+      </div>
+      
+    </article>
+    
+    <article class="finding" id="finding-seg-007">
+      <div class="finding-head">
+        <span class="finding-id">SEG-007</span>
+        <span class="sev med">Medium</span>
+        <span class="finding-cat">segment complexity</span>
+      </div>
+      <h3 class="finding-title">1 segment exceed nesting threshold</h3>
+      <div class="finding-body">
+        
+          
+            <p>1 segment exceeds the nesting depth threshold of 4. Deep nesting makes intent illegible — small definitional changes have unpredictable population effects.</p>
+          
+        
+          
+            <div class="finding-section-label">Affected components (1)</div>
+<pre class="components-list">s_returning  depth: 6  containers: visitors, visits, hits
+</pre>
+          
+        
+          
+            <div class="finding-section-label">How to remediate</div>
+            <p>Decompose the segment into composed sub-segments named for what each layer captures.</p>
+          
+        
+      </div>
+      
+    </article>
+    
+    <article class="finding" id="finding-gov-005">
+      <div class="finding-head">
+        <span class="finding-id">GOV-005</span>
+        <span class="sev low">Low</span>
+        <span class="finding-cat">governance posture</span>
+      </div>
+      <h3 class="finding-title">41 components lack tags</h3>
+      <div class="finding-body">
+        
+          
+            <p>41 of 75 components (55%) have no tags. Tags are the cheapest way to keep schema browsing tractable as the data view grows; without them, finding components by purpose requires reading every name.</p>
+          
+        
+          
+            <div class="finding-section-label">How to remediate</div>
+            <p>Adopt a small, documented tag taxonomy and apply it via the platform API.</p>
+          
+        
+      </div>
+      
+    </article>
+    
+    <article class="finding" id="finding-seg-005">
+      <div class="finding-head">
+        <span class="finding-id">SEG-005</span>
+        <span class="sev low">Low</span>
+        <span class="finding-cat">segment complexity</span>
+      </div>
+      <h3 class="finding-title">1 segment lacks descriptions</h3>
+      <div class="finding-body">
+        
+          
+            <p>1 of 2 segments (50%) lack descriptions. Segment intent is exactly the kind of audience-defining decision that must be documented.</p>
+          
+        
+          
+            <div class="finding-section-label">How to remediate</div>
+            <p>Add concise descriptions explaining who the segment captures and why.</p>
+          
+        
+      </div>
+      
+    </article>
+    
+  </section>
+
+  
+  
+
+  
+  <section id="methodology">
+    <h2>Methodology</h2>
+    <div class="section-rule"></div>
+
+    <div class="finding-body" style="max-width: 720px;">
+      
+        <p>This grade was produced by <span class="mono">sdr-grader</span> using the <span class="mono">strict@0.4</span> rubric pack. The rubric encodes 31 rules across 6 active categories; 16 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.</p>
+      
+        <p>The grader is rule-based and deterministic — the same input always produces the same grade. Findings are auditable: every rule's source YAML is linked from its finding, and rules can be suppressed or reweighted via a project-level <span class="mono">.sdr-grader.yaml</span>.</p>
+      
+
+      
+    </div>
+  </section>
+
+  
+  <div class="provenance">
+    Generated by <a href="https://github.com/brian-a-au/sdr-grader">sdr-grader v0.3.1</a>
+    against snapshot <span class="mono">2026-01-01T00:00:00Z</span>.
+    Rubric: <span class="mono">strict@0.4</span>.
+    Adapter: <span class="mono">aa_auto_sdr@1.0.0</span>.
+    75 components evaluated; 0 components skipped
+    .
+    Source: <a href="https://github.com/brian-a-au/sdr-grader">github.com/brian-a-au/sdr-grader</a>.
+  </div>
+
+</main>
+</body>
+</html>
