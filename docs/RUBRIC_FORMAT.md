@@ -27,7 +27,7 @@ The grader globs `*.yaml` in the pack directory; files starting with
 
 ```yaml
 pack: strict
-version: "0.4"
+version: "1.0"
 description: |
   Strict rubric encoding the opinions of an Adobe Master / CJA Developer
   about what a high-quality CJA or AA implementation looks like.
@@ -78,7 +78,8 @@ rules:
     platforms: [cja, aa]            # which platforms this rule applies to
     check: missing_descriptions     # name of registered check function
     params:
-      threshold: 0.10
+      threshold: 0.35               # calibrated against the corpus —
+                                    # see docs/threshold_calibration.md
       targets: [metrics, dimensions]
     rationale: |
       Descriptions are the primary way new analysts and AI agents understand

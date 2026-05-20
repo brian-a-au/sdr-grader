@@ -1,13 +1,15 @@
 # Calibration corpus
 
-The default rubric thresholds (`pragmatic` and `strict` packs) ship with
-defensible defaults but no data behind every number. The calibration
-corpus is how those numbers become falsifiable: real production SDR
-snapshots across AA + CJA tenants, anonymized, with a manifest that
-captures cohort metadata. `scripts/calibrate_thresholds.py` consumes the
-corpus and emits per-rule ratio distributions; the chosen thresholds
-land in `docs/threshold_calibration.md` with a per-rule confidence
-column.
+The default `strict` and `pragmatic` thresholds shipped in v1.0 are
+calibrated against a corpus of 108 real CJA + AA production snapshots —
+see [`threshold_calibration.md`](threshold_calibration.md) for the
+per-rule distributions and confidence ratings behind each threshold.
+
+This doc covers how the corpus is assembled and how to extend it.
+`scripts/calibrate_thresholds.py` consumes the corpus and (re)generates
+`threshold_calibration.md`; if you've added new snapshots or new rules
+that need calibrating, re-run that script and commit the regenerated
+file alongside any threshold changes.
 
 The corpus itself is **never committed**. Real SDRs carry tenant-
 identifying material even after sanitization (component naming
