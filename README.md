@@ -59,27 +59,17 @@ rule list) is data, swapping packs swaps the opinion without changing
 a line of grader code. The scoring algorithm itself is in
 [`src/sdr_grader/core/grade_calc.py`](src/sdr_grader/core/grade_calc.py).
 
-Deeper reading:
-
-- [docs/RUBRIC_FORMAT.md](docs/RUBRIC_FORMAT.md) — the full pack
-  schema (weights, severities, grade bands, rule shape) and how to fork.
-- [docs/CHECK_FUNCTION_GUIDE.md](docs/CHECK_FUNCTION_GUIDE.md) —
-  writing a new check function and registering it.
-- [docs/ADAPTER_GUIDE.md](docs/ADAPTER_GUIDE.md) — wiring a new
-  platform into the pipeline.
-- [docs/CI_INTEGRATION.md](docs/CI_INTEGRATION.md) — gating
-  pull requests on `--fail-below`.
-
 ## Quickstart
 
 ```bash
 # 1. Install (uv tool, pipx, or any other Python installer).
 uv tool install sdr-grader
 
-# 2. Generate a snapshot of your data view (or report suite).
-cja_auto_sdr dv_prod_web --format json --output snapshot.json
+# 2. Generate a snapshot of your data view (CJA) or report suite (AA).
+cja_auto_sdr dv_prod_web --format json --output snapshot.json   # CJA
+aa_auto_sdr  prod_us      --format json --output snapshot.json   # AA
 
-# 3. Grade it.
+# 3. Grade it (platform auto-detected from the snapshot).
 sdr-grader snapshot.json --output grade.html
 
 # 4. Open the report.
@@ -89,7 +79,12 @@ open grade.html  # macOS; xdg-open on Linux
 Or pipe directly without writing a file to disk:
 
 ```bash
+# CJA
 cja_auto_sdr dv_prod_web --format json --output - | \
+  sdr-grader - --output grade.html
+
+# AA
+aa_auto_sdr prod_us --format json --output - | \
   sdr-grader - --output grade.html
 ```
 
