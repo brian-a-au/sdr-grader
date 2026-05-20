@@ -70,11 +70,3 @@ rules:
     rationale: Same as strict.
     remediation: Same as strict.
 
-  - id: CALC-022
-    name: Calc metrics with deprecated allocations
-    severity: low
-    platforms: [cja, aa]
-    check: calc_deprecated_allocations
-    params: {}
-    rationale: Same as strict.
-    remediation: Same as strict.

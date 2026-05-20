@@ -4,19 +4,6 @@ description: |
   schema_hygiene rules; they short-circuit on CJA snapshots.
 
 rules:
-  - id: AAEVAR-001
-    name: eVars carrying semantically distinct values
-    severity: high
-    platforms: [aa]
-    check: aa_evar_distinct_values
-    params: {}
-    rationale: |
-      eVars that mix unrelated value semantics (e.g. campaign codes mixed
-      with user IDs) blow up cardinality and produce unusable analyses.
-    remediation: |
-      Split the eVar into separate variables, one per semantic domain, and
-      migrate consumers.
-
   - id: AAEVAR-002
     name: eVars with conflicting allocation / expiration combinations
     severity: medium

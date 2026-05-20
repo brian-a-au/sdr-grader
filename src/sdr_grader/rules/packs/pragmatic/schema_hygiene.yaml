@@ -52,11 +52,3 @@ rules:
     rationale: Same as strict.
     remediation: Same as strict.
 
-  - id: SCH-006
-    name: Cardinality concerns
-    severity: low                # demoted from medium in strict
-    platforms: [cja, aa]
-    check: cardinality_concerns
-    params: {}
-    rationale: Same as strict.
-    remediation: Same as strict.

@@ -80,15 +80,3 @@ rules:
       deprecated component or remove the deprecated marker if it was
       misapplied.
 
-  - id: SCH-006
-    name: Cardinality concerns
-    severity: medium
-    platforms: [cja, aa]
-    check: cardinality_concerns
-    params: {}
-    rationale: |
-      Dimensions defined as low-cardinality types but ingesting high
-      cardinality values blow up storage and slow down queries.
-    remediation: |
-      Audit the dimension's source schema and either constrain the value
-      space upstream or migrate to an appropriate high-cardinality type.

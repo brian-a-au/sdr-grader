@@ -81,15 +81,3 @@ rules:
       Adopt a small, documented tag taxonomy and apply it via the
       platform API.
 
-  - id: GOV-006
-    name: Components modified without documentation update
-    severity: medium
-    platforms: [cja, aa]
-    check: doc_drift
-    params: {}
-    rationale: |
-      A high rate of modifications without corresponding documentation
-      updates is a leading indicator of a data view drifting from its SDR.
-    remediation: |
-      Establish a CI gate that requires SDR updates when components are
-      modified above a churn threshold.

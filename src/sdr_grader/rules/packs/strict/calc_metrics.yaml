@@ -101,15 +101,3 @@ rules:
       Pick one canonical metric, redirect consumers, and archive the
       duplicates.
 
-  - id: CALC-022
-    name: Calc metrics with deprecated allocations
-    severity: low
-    platforms: [cja, aa]
-    check: calc_deprecated_allocations
-    params: {}
-    rationale: |
-      Deprecated allocations may behave unpredictably or be removed in a
-      future platform release.
-    remediation: |
-      Migrate to the current allocation values and update the SDR to record
-      the change.

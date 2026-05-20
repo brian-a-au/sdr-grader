@@ -14,9 +14,12 @@ question support.
 - **Deterministic, rule-based linter** for Adobe CJA and AA implementations.
   Reads `cja_auto_sdr` / `aa_auto_sdr` JSON snapshots; emits a single
   self-contained HTML report card and a parallel machine-readable JSON.
-- **37 rules across 6 categories**: schema hygiene, naming consistency,
+- **32 rules across 6 categories**: schema hygiene, naming consistency,
   segment complexity, calc metric maintainability, attribution coverage,
-  governance posture — plus platform-specific AAEVAR / CJASTITCH rules.
+  governance posture — plus a platform-specific AAEVAR rule. Every rule
+  grades against data the snapshot itself carries; rules that required
+  external evidence (Launch exports, cardinality, stitching, SDR docs)
+  are not part of the default packs.
 - **Two bundled rubric packs**: `strict` (master-cert-grade thresholds)
   and `pragmatic` (sanity-check thresholds, same rule IDs).
 - **Four input modes**: file path, snapshot directory (with
@@ -31,10 +34,11 @@ question support.
 - **Project-level suppression**: `.sdr-grader.yaml` lets operators
   suppress rules, override severities, and rebalance category weights.
   Skipped rules surface in the rendered methodology section.
-- **Supplementary inputs**: `--extra-input KEY=PATH` attaches additional
-  JSON exports (Launch property, Workspace project, AEP governance) to
-  `Implementation.supplementary_data`. Rules opt in by reading the key
-  they need, so they stay quiet on snapshots that don't supply it.
+- **Supplementary inputs**: `--extra-input KEY=PATH` attaches arbitrary
+  JSON files under `Implementation.supplementary_data[KEY]`. The shape
+  and key are entirely the rule's contract; the default packs don't
+  consume them. Operators who want to grade external evidence write a
+  custom rubric pack that targets the registered check functions.
 - **JSON output**: `--json PATH` writes the full Report data structure
   for CI dashboards and downstream tooling. Datetimes normalize to UTC
   ISO-8601 with `Z` suffix.
@@ -61,36 +65,32 @@ question support.
   reviewable artifact. The full commit graph from scaffold to 1.0.0 is
   visible in the git history.
 
-### Active when supplementary data is supplied
+### Registered but not in the default packs
 
-These rules previously shipped as no-ops; they now read from
-`Implementation.supplementary_data` (populated via `--extra-input KEY=PATH`)
-and fire when the operator attaches the relevant evidence:
+These check functions are registered and tested, but the default
+`strict` / `pragmatic` packs don't reference them — they require
+evidence the snapshot itself doesn't carry. Operators with that
+evidence can include them in a custom rubric pack:
 
-- `GOV-006` doc_drift — reads `last_sdr_update_at` (param), or
+- `doc_drift` (formerly `GOV-006`) — reads `last_sdr_update_at` (param),
   `supplementary_data['sdr']['last_updated_at']`, or
-  `metadata['SDR Last Updated']`. Fires when too many components were
-  modified since the SDR was last updated.
-- `SCH-006` cardinality_concerns — reads
+  `metadata['SDR Last Updated']`.
+- `cardinality_concerns` (formerly `SCH-006`) — reads
   `supplementary_data['cardinality']` (a `component_id -> int` map).
-  Fires when low-cardinality-named dimensions report many distinct
-  values.
-- `AAEVAR-001` aa_evar_distinct_values — reads the same
-  `supplementary_data['cardinality']` map; fires on AA eVars carrying
-  more than `max_distinct` values.
-- `CJASTITCH-001` cja_stitching_unstitched — reads
-  `supplementary_data['stitching']['unstitched_ratio']`, or the same
-  field nested in `impl.raw['data_view']['stitching']` when upstream
-  exposes it.
-
-The `LAUNCH-001` demo rule (`launch_required_data_elements`) is the
-canonical worked example of consuming `--extra-input launch=PATH`.
+- `aa_evar_distinct_values` (formerly `AAEVAR-001`) — reads the same
+  `supplementary_data['cardinality']` map.
+- `cja_stitching_unstitched` (formerly `CJASTITCH-001`) — reads
+  `supplementary_data['stitching']['unstitched_ratio']` or the same
+  field nested in `impl.raw['data_view']['stitching']`.
+- `launch_required_data_elements` (formerly `LAUNCH-001`) — reads
+  `supplementary_data['launch']`; the canonical worked example for the
+  `--extra-input` extension pattern.
+- `calc_deprecated_allocations` (formerly `CALC-022`) — needs a
+  concrete `deprecated_allocations` set via params; default ships
+  placeholder values.
 
 ### Known limitations
 
-- `CALC-022` (deprecated allocations) ships an empty default set;
-  fires only when operators supply concrete deprecated allocation
-  values via params.
 - `cja_auto_sdr` / `aa_auto_sdr` are required to produce the JSON
   snapshots the grader consumes; they are separate projects.
 - The bundled `data/distribution.json` ships seed percentile data.
