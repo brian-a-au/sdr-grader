@@ -12,7 +12,7 @@ the right mechanism so you don't reach for the heaviest tool first.
 | Silence a rule you accept (with a reason on the report) | `.sdr-grader.yaml` `suppress:`             | One YAML entry   |
 | Demote a rule's severity for your context              | `.sdr-grader.yaml` `severity_overrides:`   | One YAML entry   |
 | Rebalance category weights                             | `.sdr-grader.yaml` `category_weights:`     | One YAML entry   |
-| Change a rule's threshold (e.g. `max_segments`)        | Fork the rubric pack, edit `params:`       | New pack dir     |
+| Change a rule's threshold (e.g. `max_depth`, `threshold`) | Fork the rubric pack, edit `params:`    | New pack dir     |
 | Add a brand-new rule                                   | New check function + YAML entry            | Python + YAML    |
 | Grade against data the snapshot doesn't carry          | `--extra-input KEY=PATH` + opt-in rule     | One CLI flag     |
 | Support a new platform                                 | New adapter                                | New module       |
@@ -46,9 +46,10 @@ validation rules.
 ### What `.sdr-grader.yaml` does not do today
 
 It does not override a rule's `params:` (thresholds, allowed lists).
-Changing `max_segments` from 200 to 350, or relaxing `min_consistency`
-from 0.80 to 0.65, currently requires forking the pack. Tracked for
-a future release; in the meantime, fork the pack and pin the version.
+Tightening `SEG-007`'s `max_depth` from 5 to 3, or relaxing
+`NAME-003`'s `min_consistency` from 0.80 to 0.65, currently requires
+forking the pack. Tracked for a future release; in the meantime, fork
+the pack and pin the version.
 
 ## Forking a rubric pack
 
