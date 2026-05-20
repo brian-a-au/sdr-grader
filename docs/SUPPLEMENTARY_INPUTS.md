@@ -1,9 +1,30 @@
 # Supplementary inputs (`--extra-input`)
 
-Some rules grade against data that the snapshot itself doesn't carry —
-external evidence the operator has but the auto-SDR exporters don't
-collect. The `--extra-input` mechanism lets you attach that JSON at
-run time without modifying the snapshot or forking the adapter.
+Rules can optionally grade against data the snapshot doesn't carry by
+reading from `Implementation.supplementary_data`. Operators feed that
+map via `--extra-input KEY=PATH` (repeatable); rules whose key is
+absent stay silent, so attaching extra inputs only matters for rules
+that ask for them.
+
+Most runs don't need this flag. Reach for it when a specific rule in
+your rubric pack documents a key it expects — and skip it otherwise.
+
+## Opt-in by absence
+
+A supplementary-input rule reads the key it needs and stays silent if
+the key is missing:
+
+```python
+launch = impl.supplementary_data.get("launch")
+if not isinstance(launch, dict):
+    return []
+```
+
+So an opt-in rule simply doesn't fire on snapshots that don't attach
+its key. There's no error, no warning, no penalty in the score — it's
+as if the rule wasn't in the pack for that run. This lets the same
+rubric pack run across snapshots with and without supplementary data
+without changes.
 
 ## Usage
 
@@ -26,30 +47,14 @@ shape of the JSON is the *rule's* contract.
 
 ## There are no built-in exporters
 
-Nothing in `sdr-grader` produces these files for you. The operator
-supplies whatever JSON the rule's docstring asks for, sourcing it from
-whatever tool naturally exports that data (a Launch API export, an AEP
-profile-store query, a custom SDR pipeline, a hand-edited file).
+Nothing in `sdr-grader` produces these files for you. When a rule
+asks for a key, the operator supplies whatever JSON the rule's
+docstring describes, sourcing it from whatever tool naturally exports
+that data (a Launch API export, an AEP profile-store query, a custom
+SDR pipeline, a hand-edited file).
 
 This is intentional. The grader stays a pure linter; the data-fetch
 problem belongs upstream.
-
-## Opt-in by absence
-
-A supplementary-input rule reads the key it needs and stays silent if
-the key is missing:
-
-```python
-launch = impl.supplementary_data.get("launch")
-if not isinstance(launch, dict):
-    return []
-```
-
-So an opt-in rule simply doesn't fire on snapshots that don't attach
-its key. There's no error, no warning, no penalty in the score — it's
-as if the rule wasn't in the pack for that run. This lets the same
-rubric pack run across snapshots with and without supplementary data
-without changes.
 
 ## Worked example: `LAUNCH-001`
 

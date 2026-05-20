@@ -111,8 +111,8 @@ Sample report cards (rendered from the bundled fixtures):
 
 |         | Clean (A) | Messy (F) |
 |---------|-----------|-----------|
-| **CJA** | [examples/grade-cja-clean.html](examples/grade-cja-clean.html) | [examples/grade-cja-messy.html](examples/grade-cja-messy.html) |
-| **AA**  | [examples/grade-aa-clean.html](examples/grade-aa-clean.html)   | [examples/grade-aa-messy.html](examples/grade-aa-messy.html)   |
+| **CJA** | [examples/grade-cja-clean.html](https://raw.githack.com/brian-a-au/sdr-grader/main/examples/grade-cja-clean.html) | [examples/grade-cja-messy.html](https://raw.githack.com/brian-a-au/sdr-grader/main/examples/grade-cja-messy.html) |
+| **AA**  | [examples/grade-aa-clean.html](https://raw.githack.com/brian-a-au/sdr-grader/main/examples/grade-aa-clean.html)   | [examples/grade-aa-messy.html](https://raw.githack.com/brian-a-au/sdr-grader/main/examples/grade-aa-messy.html)   |
 
 ## Trend reports
 
