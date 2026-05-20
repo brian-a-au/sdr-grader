@@ -18,8 +18,8 @@ LLMs, no API calls — same input + same rubric always yields the same grade.
 
 `sdr-grader` ships two rubric packs:
 
-- **`strict`** — master-cert-grade opinion; tight thresholds. Reflects
-  what a senior consultant would flag.
+- **`strict`** — master-cert-grade opinion; tight thresholds. For teams
+  who want every finding the rubric can produce.
 - **`pragmatic`** — looser thresholds, same rule IDs. For teams who want
   a sanity check rather than an audit.
 
