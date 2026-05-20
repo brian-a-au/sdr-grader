@@ -99,6 +99,14 @@ aa_auto_sdr prod_us --format json --output - | \
 |            | `sdr-grader --rsid prod_us`                      | Same idea against AA via `aa_auto_sdr`. Requires `aa_auto_sdr` on `PATH`. |
 | Stdin      | `… \| sdr-grader -`                              | Stream JSON in from another tool without touching disk — pairs with `cja_auto_sdr … --output -` for ephemeral CI runs. |
 
+## Output
+
+- **HTML report card** at `--output PATH` (default
+  `grade-{timestamp}.html`) — single self-contained file, no external
+  CSS/JS, prints in black-and-white, screenshots cleanly into decks.
+- **JSON output** at `--json PATH` — machine-readable representation of
+  the same Report. Suitable for CI dashboards and leaderboards.
+
 ## Trend reports
 
 Pointed at a directory of timestamped snapshots, `--trend` grades each
@@ -107,14 +115,6 @@ overall trajectory, per-category sparklines, and a findings-churn
 summary. See [docs/TREND_REPORTS.md](docs/TREND_REPORTS.md) for the
 filename conventions and flag interactions, or
 `examples/trend-example.html` for a rendered sample.
-
-## Output
-
-- **HTML report card** at `--output PATH` (default
-  `grade-{timestamp}.html`) — single self-contained file, no external
-  CSS/JS, prints in black-and-white, screenshots cleanly into decks.
-- **JSON output** at `--json PATH` — machine-readable representation of
-  the same Report. Suitable for CI dashboards and leaderboards.
 
 ## Supplementary inputs
 
