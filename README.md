@@ -23,16 +23,17 @@ LLMs, no API calls — same input + same rubric always yields the same grade.
 - **`pragmatic`** — looser thresholds, same rule IDs. For teams who want
   a sanity check rather than an audit.
 
-Both packs cover six categories — schema hygiene, naming consistency,
-segment complexity, calculated metric maintainability, attribution
-coverage, and governance posture — and only contain rules that grade
-against data the snapshot itself carries. Rules that would require
-external evidence (Launch exports, cardinality counts, stitching
-metrics, SDR-doc timestamps) are not part of the default packs; their
-check functions stay registered for operators who want to wire them
-into a custom rubric. See
-[docs/RUBRIC_FORMAT.md](docs/RUBRIC_FORMAT.md) for the format and how
-to fork.
+Both packs cover the same six categories — schema hygiene, naming
+consistency, segment complexity, calculated metric maintainability,
+attribution coverage, and governance posture — and share the same
+rule IDs; `pragmatic` just loosens thresholds and demotes severities.
+Every rule in the default packs grades against data the snapshot
+itself carries, so out-of-the-box runs need no extra files. A few
+additional check functions ship registered but unwired — they read
+JSON the operator attaches at run time and are intended for forked
+rubrics. See [Supplementary inputs](#supplementary-inputs) for the
+attachment mechanism and [docs/RUBRIC_FORMAT.md](docs/RUBRIC_FORMAT.md)
+for the pack format.
 
 ## Quickstart
 

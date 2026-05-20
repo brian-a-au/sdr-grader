@@ -67,8 +67,7 @@ directly via Read or jq and synthesize the answer in prose.
 
 - Severity ordering: `critical > high > medium > low`. The helper
   recognizes any of these as `--severity` values.
-- Rule prefixes: `SCH`, `NAME`, `SEG`, `CALC`, `ATTR`, `GOV` (platform-
-  agnostic) plus `AAEVAR`, `CJASTITCH` (platform-specific).
+- Rule prefixes: `SCH`, `NAME`, `SEG`, `CALC`, `ATTR`, `GOV`.
 - The `methodology.skipped` block lists rules suppressed by
   `.sdr-grader.yaml` with their reasons; surface those when explaining
   why a rule that "should have fired" is silent.

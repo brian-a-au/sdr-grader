@@ -68,7 +68,6 @@ def _import_all_checks() -> None:
         calc_metrics,
         governance,
         naming,
-        platform_specific,
         schema_hygiene,
         segments,
         supplementary,

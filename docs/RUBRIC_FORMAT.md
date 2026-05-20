@@ -105,17 +105,16 @@ loud by design: a malformed rubric should never silently degrade.
 ## Multiple platforms
 
 The `platforms` field lists which platforms a rule applies to. Most
-rules are `[cja, aa]`. Platform-specific rules (`AAEVAR-*`, `CJASTITCH-*`)
-opt into a single platform; the engine skips them when the snapshot's
-platform doesn't match.
+rules are `[cja, aa]`. A rule that only makes sense for one platform
+opts into a single platform via `platforms: [aa]` or `[cja]`; the
+engine skips it when the snapshot's platform doesn't match.
 
 ## Rule IDs
 
-Convention: `<CATEGORY-PREFIX>-<NUMBER>`. The strict pack uses
-`SCH`, `NAME`, `SEG`, `CALC`, `ATTR`, `GOV` plus the platform-specific
-`AAEVAR` and `CJASTITCH`. Forked packs are free to introduce new
-prefixes; just keep IDs stable so the JSON output remains comparable
-across runs and packs.
+Convention: `<CATEGORY-PREFIX>-<NUMBER>`. The default packs use
+`SCH`, `NAME`, `SEG`, `CALC`, `ATTR`, and `GOV`. Forked packs are free
+to introduce new prefixes; just keep IDs stable so the JSON output
+remains comparable across runs and packs.
 
 ## Forking guidance
 
