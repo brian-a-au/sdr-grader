@@ -107,6 +107,13 @@ aa_auto_sdr prod_us --format json --output - | \
 - **JSON output** at `--json PATH` — machine-readable representation of
   the same Report. Suitable for CI dashboards and leaderboards.
 
+Sample report cards (rendered from the bundled fixtures):
+
+|         | Clean (A) | Messy (F) |
+|---------|-----------|-----------|
+| **CJA** | [examples/grade-cja-clean.html](examples/grade-cja-clean.html) | [examples/grade-cja-messy.html](examples/grade-cja-messy.html) |
+| **AA**  | [examples/grade-aa-clean.html](examples/grade-aa-clean.html)   | [examples/grade-aa-messy.html](examples/grade-aa-messy.html)   |
+
 ## Trend reports
 
 Pointed at a directory of timestamped snapshots, `--trend` grades each
