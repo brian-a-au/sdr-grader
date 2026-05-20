@@ -184,13 +184,24 @@ uv run python scripts/generate_examples.py   # regenerate examples/
 
 ## Documentation
 
+Start here:
+
 - [docs/CUSTOMIZATION.md](docs/CUSTOMIZATION.md) — picking the right customization mechanism
-- [docs/RUBRIC_FORMAT.md](docs/RUBRIC_FORMAT.md) — YAML rubric schema
-- [docs/CHECK_FUNCTION_GUIDE.md](docs/CHECK_FUNCTION_GUIDE.md) — adding a new check
+
+Customizing the rubric:
+
 - [docs/ADAPTER_GUIDE.md](docs/ADAPTER_GUIDE.md) — adding a new platform
+- [docs/CHECK_FUNCTION_GUIDE.md](docs/CHECK_FUNCTION_GUIDE.md) — adding a new check
 - [docs/PROJECT_CONFIG.md](docs/PROJECT_CONFIG.md) — `.sdr-grader.yaml` schema
+- [docs/RUBRIC_FORMAT.md](docs/RUBRIC_FORMAT.md) — YAML rubric schema
 - [docs/SUPPLEMENTARY_INPUTS.md](docs/SUPPLEMENTARY_INPUTS.md) — `--extra-input` mechanism
-- [docs/TREND_REPORTS.md](docs/TREND_REPORTS.md) — `--trend` usage and conventions
-- [docs/LEADERBOARDS.md](docs/LEADERBOARDS.md) — building a distribution reference
+
+Running and reporting:
+
 - [docs/CI_INTEGRATION.md](docs/CI_INTEGRATION.md) — using `--fail-below` in CI
+- [docs/LEADERBOARDS.md](docs/LEADERBOARDS.md) — building a distribution reference
+- [docs/TREND_REPORTS.md](docs/TREND_REPORTS.md) — `--trend` usage and conventions
+
+Tooling:
+
 - [skills/sdr-grader/README.md](skills/sdr-grader/README.md) — Claude Code skill bundle for grade follow-up Q&A
