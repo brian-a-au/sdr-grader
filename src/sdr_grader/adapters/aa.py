@@ -179,8 +179,17 @@ def _calc_from_record(record: Any) -> CalculatedMetric:
     )
 
 
+_AA_REF_PREFIXES = ("metrics/", "variables/", "segments/", "calculatedMetrics/")
+
+
 def _extract_aa_calc_refs(formula: Any) -> list[str]:
-    """Walk an AA calc-metric formula and collect any metrics/* args."""
+    """Walk an AA calc-metric formula and collect referenced component IDs.
+
+    Recognized prefixes: metrics/, variables/, segments/, calculatedMetrics/.
+    The cross-reference IDs let orphan checks see calc-metric→segment and
+    calc-metric→calc-metric links instead of treating every component as
+    unreferenced.
+    """
     refs: list[str] = []
     seen: set[str] = set()
 
@@ -189,7 +198,7 @@ def _extract_aa_calc_refs(formula: Any) -> list[str]:
             args = node.get("args")
             if isinstance(args, list):
                 for arg in args:
-                    if isinstance(arg, str) and arg.startswith(("metrics/", "variables/")):
+                    if isinstance(arg, str) and arg.startswith(_AA_REF_PREFIXES):
                         if arg not in seen:
                             seen.add(arg)
                             refs.append(arg)

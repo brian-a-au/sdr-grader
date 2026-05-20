@@ -366,11 +366,11 @@ pre.code {
   <div class="meta-strip">
     <div class="item grade-cell">
       <span class="label">Grade</span>
-      <span class="value">D</span>
+      <span class="value">A</span>
     </div>
     <div class="item">
       <span class="label">Overall</span>
-      <span class="value">64%</span>
+      <span class="value">100%</span>
     </div>
     <div class="item">
       <span class="label">Components</span>
@@ -404,7 +404,7 @@ pre.code {
   
   <section id="tldr">
     <div class="tldr">Summary</div>
-    <p class="tldr-body">This implementation graded <strong>D</strong> (64%). The grader evaluated 19 components in this report suite using the <span class="mono">strict@0.4</span> rubric pack. The largest gap is in <strong>attribution coverage</strong> (20%); 2 of 3 rules in that category fired.</p>
+    <p class="tldr-body">This implementation graded <strong>A</strong> (100%). The grader evaluated 19 components in this report suite using the <span class="mono">strict@0.4</span> rubric pack.</p>
   </section>
 
   
@@ -439,44 +439,44 @@ pre.code {
       <div class="cat">
         <div class="name">segment complexity</div>
         <div class="score">
-          <span class="pct">79%</span>
-          <span class="sub">C+</span>
+          <span class="pct">100%</span>
+          <span class="sub">A</span>
         </div>
         <div class="bar">
-          <span style="width:79%"></span>
+          <span style="width:100%"></span>
         </div>
       </div>
       
       <div class="cat">
         <div class="name">calc metric maint</div>
         <div class="score">
-          <span class="pct">87%</span>
-          <span class="sub">B+</span>
+          <span class="pct">100%</span>
+          <span class="sub">A</span>
         </div>
         <div class="bar">
-          <span style="width:87%"></span>
+          <span style="width:100%"></span>
         </div>
       </div>
       
       <div class="cat">
         <div class="name">attribution coverage</div>
         <div class="score">
-          <span class="pct">20%</span>
-          <span class="sub">F</span>
+          <span class="pct">100%</span>
+          <span class="sub">A</span>
         </div>
-        <div class="bar crit">
-          <span style="width:20%"></span>
+        <div class="bar">
+          <span style="width:100%"></span>
         </div>
       </div>
       
       <div class="cat">
         <div class="name">governance posture</div>
         <div class="score">
-          <span class="pct">27%</span>
-          <span class="sub">F</span>
+          <span class="pct">100%</span>
+          <span class="sub">A</span>
         </div>
-        <div class="bar crit">
-          <span style="width:27%"></span>
+        <div class="bar">
+          <span style="width:100%"></span>
         </div>
       </div>
       
@@ -490,46 +490,6 @@ pre.code {
 
     <ol class="remediations">
       
-      <li>
-        <span class="text">
-          Establish a snapshot directory in version control and schedule regular runs of cja_auto_sdr / aa_auto_sdr to populate it.
-          <span class="ref">GOV-001</span>
-        </span>
-        <span class="impact">+5 pts overall</span>
-      </li>
-      
-      <li>
-        <span class="text">
-          Generate the SDR via cja_auto_sdr / aa_auto_sdr and commit it alongside this snapshot. Suppress this rule via .sdr-grader.yaml if the SDR lives somewhere the grader cannot see.
-          <span class="ref">GOV-003</span>
-        </span>
-        <span class="impact">+5 pts overall</span>
-      </li>
-      
-      <li>
-        <span class="text">
-          Audit segment usage in Workspace projects and dashboards, then archive segments with no live consumers.
-          <span class="ref">SEG-003</span>
-        </span>
-        <span class="impact">+5 pts overall</span>
-      </li>
-      
-      <li>
-        <span class="text">
-          Either change the attribution model to one appropriate for the metric's intended use, or document in the metric description why last-touch is the correct choice.
-          <span class="ref">ATTR-001</span>
-        </span>
-        <span class="impact">+3 pts overall</span>
-      </li>
-      
-      <li>
-        <span class="text">
-          Set the attribution model explicitly on every calculated metric.
-          <span class="ref">ATTR-002</span>
-        </span>
-        <span class="impact">+3 pts overall</span>
-      </li>
-      
     </ol>
   </section>
 
@@ -538,178 +498,6 @@ pre.code {
     <h2>All findings</h2>
     <div class="section-rule"></div>
 
-    
-    <article class="finding" id="finding-gov-001">
-      <div class="finding-head">
-        <span class="finding-id">GOV-001</span>
-        <span class="sev high">High</span>
-        <span class="finding-cat">governance posture</span>
-      </div>
-      <h3 class="finding-title">No snapshot history detected for this data view</h3>
-      <div class="finding-body">
-        
-          
-            <p>No prior snapshots of this implementation were detected alongside the input. Without snapshot history, configuration changes cannot be diffed, drift cannot be detected, and audit trails are unavailable for compliance review.</p>
-          
-        
-          
-            <div class="finding-section-label">How to remediate</div>
-            <p>Establish a snapshot directory in version control and schedule regular runs of cja_auto_sdr / aa_auto_sdr to populate it.</p>
-          
-        
-      </div>
-      
-    </article>
-    
-    <article class="finding" id="finding-gov-003">
-      <div class="finding-head">
-        <span class="finding-id">GOV-003</span>
-        <span class="sev high">High</span>
-        <span class="finding-cat">governance posture</span>
-      </div>
-      <h3 class="finding-title">No SDR documentation detected</h3>
-      <div class="finding-body">
-        
-          
-            <p>No Solution Design Reference (SDR) document was supplied alongside this snapshot. Without an SDR, definitions live only in the platform UI, which makes peer review and onboarding harder and obscures the &ldquo;why&rdquo; behind component choices.</p>
-          
-        
-          
-            <div class="finding-section-label">How to remediate</div>
-            <p>Generate the SDR via cja_auto_sdr / aa_auto_sdr and commit it alongside this snapshot. Suppress this rule via .sdr-grader.yaml if the SDR lives somewhere the grader cannot see.</p>
-          
-        
-      </div>
-      
-    </article>
-    
-    <article class="finding" id="finding-seg-003">
-      <div class="finding-head">
-        <span class="finding-id">SEG-003</span>
-        <span class="sev high">High</span>
-        <span class="finding-cat">segment complexity</span>
-      </div>
-      <h3 class="finding-title">1 orphan segment</h3>
-      <div class="finding-body">
-        
-          
-            <p>1 of 1 segments (100%) are not referenced by any other segment or calculated metric in this snapshot. Orphan segments accumulate until nobody can tell which are still in use.</p>
-          
-        
-          
-            <div class="finding-section-label">Affected components (1)</div>
-<pre class="components-list">s_clean_mobile
-</pre>
-          
-        
-          
-            <div class="finding-section-label">How to remediate</div>
-            <p>Audit segment usage in Workspace projects and dashboards, then archive segments with no live consumers.</p>
-          
-        
-      </div>
-      
-    </article>
-    
-    <article class="finding" id="finding-attr-001">
-      <div class="finding-head">
-        <span class="finding-id">ATTR-001</span>
-        <span class="sev med">Medium</span>
-        <span class="finding-cat">attribution coverage</span>
-      </div>
-      <h3 class="finding-title">1 undocumented last-touch metric</h3>
-      <div class="finding-body">
-        
-          
-            <p>1 revenue / conversion metric defaults to last-touch attribution without a documented rationale. Last-touch is appropriate for some use cases but should be a deliberate choice, not a silent default.</p>
-          
-        
-          
-            <div class="finding-section-label">Affected components (1)</div>
-<pre class="components-list">cm_clean_conversion_rate  attribution=—
-</pre>
-          
-        
-          
-            <div class="finding-section-label">How to remediate</div>
-            <p>Either change the attribution model to one appropriate for the metric's intended use, or document in the metric description why last-touch is the correct choice.</p>
-          
-        
-      </div>
-      
-    </article>
-    
-    <article class="finding" id="finding-attr-002">
-      <div class="finding-head">
-        <span class="finding-id">ATTR-002</span>
-        <span class="sev med">Medium</span>
-        <span class="finding-cat">attribution coverage</span>
-      </div>
-      <h3 class="finding-title">1 calc metric lacks explicit attribution</h3>
-      <div class="finding-body">
-        
-          
-            <p>1 of 1 calculated metrics (100%) have no attribution model specified. The platform falls back to its default model, which is silent until a stakeholder asks why two metrics that look similar disagree.</p>
-          
-        
-          
-            <div class="finding-section-label">How to remediate</div>
-            <p>Set the attribution model explicitly on every calculated metric.</p>
-          
-        
-      </div>
-      
-    </article>
-    
-    <article class="finding" id="finding-calc-005">
-      <div class="finding-head">
-        <span class="finding-id">CALC-005</span>
-        <span class="sev med">Medium</span>
-        <span class="finding-cat">calc metric maint</span>
-      </div>
-      <h3 class="finding-title">1 orphan calculated metric</h3>
-      <div class="finding-body">
-        
-          
-            <p>1 of 1 calculated metrics (100%) are not referenced by any other calculated metric or segment in this snapshot. Orphans accumulate until consolidation becomes prohibitively expensive.</p>
-          
-        
-          
-            <div class="finding-section-label">Affected components (1)</div>
-<pre class="components-list">cm_clean_conversion_rate
-</pre>
-          
-        
-          
-            <div class="finding-section-label">How to remediate</div>
-            <p>Audit Workspace projects and dashboards, then archive metrics with no live consumers.</p>
-          
-        
-      </div>
-      
-    </article>
-    
-    <article class="finding" id="finding-gov-004">
-      <div class="finding-head">
-        <span class="finding-id">GOV-004</span>
-        <span class="sev med">Medium</span>
-        <span class="finding-cat">governance posture</span>
-      </div>
-      <h3 class="finding-title">19 components lack owner attribution</h3>
-      <div class="finding-body">
-        
-          
-            <p>19 of 19 components (100%) have no owner attribution. When a component has no owner, there is no clear person to ask for context, sign off on changes, or maintain its documentation.</p>
-          
-        
-          
-            <div class="finding-section-label">How to remediate</div>
-            <p>Populate the owner field via the platform API. Adopt a convention that new components must have an owner before publication.</p>
-          
-        
-      </div>
-      
-    </article>
     
   </section>
 
@@ -723,7 +511,7 @@ pre.code {
 
     <div class="finding-body" style="max-width: 720px;">
       
-        <p>This grade was produced by <span class="mono">sdr-grader</span> using the <span class="mono">strict@0.4</span> rubric pack. The rubric encodes 31 rules across 6 active categories; 7 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.</p>
+        <p>This grade was produced by <span class="mono">sdr-grader</span> using the <span class="mono">strict@0.4</span> rubric pack. The rubric encodes 31 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.</p>
       
         <p>The grader is rule-based and deterministic — the same input always produces the same grade. Findings are auditable: every rule's source YAML is linked from its finding, and rules can be suppressed or reweighted via a project-level <span class="mono">.sdr-grader.yaml</span>.</p>
       

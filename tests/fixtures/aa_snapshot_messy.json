@@ -20,6 +20,7 @@
       ],
       "parent": "",
       "pathable": false,
+      "owner_id": null,
       "extra": {
         "allocation": "linear",
         "expiration": "visitor"
@@ -34,6 +35,7 @@
       "tags": [],
       "parent": "",
       "pathable": false,
+      "owner_id": null,
       "extra": {
         "allocation": "most-recent",
         "expiration": "visit"
@@ -48,6 +50,7 @@
       "tags": [],
       "parent": "",
       "pathable": false,
+      "owner_id": null,
       "extra": {
         "allocation": "most-recent",
         "expiration": "visit"
@@ -64,6 +67,7 @@
       ],
       "parent": "",
       "pathable": false,
+      "owner_id": null,
       "extra": {
         "allocation": "most-recent",
         "expiration": "visit"
@@ -78,6 +82,7 @@
       "tags": [],
       "parent": "",
       "pathable": false,
+      "owner_id": null,
       "extra": {
         "allocation": "most-recent",
         "expiration": "visit"
@@ -92,6 +97,7 @@
       "tags": [],
       "parent": "",
       "pathable": false,
+      "owner_id": null,
       "extra": {
         "allocation": "most-recent",
         "expiration": "visitor"
@@ -108,6 +114,7 @@
       ],
       "parent": "",
       "pathable": false,
+      "owner_id": null,
       "extra": {
         "allocation": "most-recent",
         "expiration": "visit"
@@ -122,6 +129,7 @@
       "tags": [],
       "parent": "",
       "pathable": false,
+      "owner_id": null,
       "extra": {
         "allocation": "linear",
         "expiration": "visit"
@@ -136,6 +144,7 @@
       "tags": [],
       "parent": "",
       "pathable": false,
+      "owner_id": null,
       "extra": {
         "allocation": "most-recent",
         "expiration": "visit"
@@ -152,6 +161,7 @@
       ],
       "parent": "",
       "pathable": false,
+      "owner_id": null,
       "extra": {
         "allocation": "most-recent",
         "expiration": "visit"
@@ -166,6 +176,7 @@
       "tags": [],
       "parent": "",
       "pathable": false,
+      "owner_id": null,
       "extra": {
         "allocation": "most-recent",
         "expiration": "visitor"
@@ -180,6 +191,7 @@
       "tags": [],
       "parent": "",
       "pathable": false,
+      "owner_id": null,
       "extra": {
         "allocation": "most-recent",
         "expiration": "visit"
@@ -196,6 +208,7 @@
       ],
       "parent": "",
       "pathable": false,
+      "owner_id": null,
       "extra": {
         "allocation": "most-recent",
         "expiration": "visit"
@@ -210,6 +223,7 @@
       "tags": [],
       "parent": "",
       "pathable": false,
+      "owner_id": null,
       "extra": {
         "allocation": "most-recent",
         "expiration": "visit"
@@ -224,6 +238,7 @@
       "tags": [],
       "parent": "",
       "pathable": false,
+      "owner_id": null,
       "extra": {
         "allocation": "linear",
         "expiration": "visit"
@@ -240,6 +255,7 @@
       ],
       "parent": "",
       "pathable": false,
+      "owner_id": null,
       "extra": {
         "allocation": "most-recent",
         "expiration": "visitor"
@@ -254,6 +270,7 @@
       "tags": [],
       "parent": "",
       "pathable": false,
+      "owner_id": null,
       "extra": {
         "allocation": "most-recent",
         "expiration": "visit"
@@ -268,6 +285,7 @@
       "tags": [],
       "parent": "",
       "pathable": false,
+      "owner_id": null,
       "extra": {
         "allocation": "most-recent",
         "expiration": "visit"
@@ -284,6 +302,7 @@
       ],
       "parent": "",
       "pathable": false,
+      "owner_id": null,
       "extra": {
         "allocation": "most-recent",
         "expiration": "visit"
@@ -298,6 +317,7 @@
       "tags": [],
       "parent": "",
       "pathable": false,
+      "owner_id": null,
       "extra": {
         "allocation": "most-recent",
         "expiration": "visit"
@@ -312,6 +332,7 @@
       "tags": [],
       "parent": "",
       "pathable": false,
+      "owner_id": null,
       "extra": {
         "allocation": "most-recent",
         "expiration": "visitor"
@@ -328,6 +349,7 @@
       ],
       "parent": "",
       "pathable": false,
+      "owner_id": null,
       "extra": {
         "allocation": "linear",
         "expiration": "visit"
@@ -342,6 +364,7 @@
       "tags": [],
       "parent": "",
       "pathable": false,
+      "owner_id": null,
       "extra": {
         "allocation": "most-recent",
         "expiration": "visit"
@@ -356,6 +379,7 @@
       "tags": [],
       "parent": "",
       "pathable": false,
+      "owner_id": null,
       "extra": {
         "allocation": "most-recent",
         "expiration": "visit"
@@ -372,6 +396,7 @@
       ],
       "parent": "",
       "pathable": false,
+      "owner_id": null,
       "extra": {
         "allocation": "most-recent",
         "expiration": "visit"
@@ -386,6 +411,7 @@
       "tags": [],
       "parent": "",
       "pathable": false,
+      "owner_id": null,
       "extra": {
         "allocation": "most-recent",
         "expiration": "visitor"
@@ -400,6 +426,7 @@
       "tags": [],
       "parent": "",
       "pathable": false,
+      "owner_id": null,
       "extra": {
         "allocation": "most-recent",
         "expiration": "visit"
@@ -416,6 +443,7 @@
       ],
       "parent": "",
       "pathable": false,
+      "owner_id": null,
       "extra": {
         "allocation": "most-recent",
         "expiration": "visit"
@@ -430,6 +458,7 @@
       "tags": [],
       "parent": "",
       "pathable": false,
+      "owner_id": null,
       "extra": {
         "allocation": "linear",
         "expiration": "visit"
@@ -444,6 +473,7 @@
       "tags": [],
       "parent": "",
       "pathable": false,
+      "owner_id": null,
       "extra": {
         "allocation": "most-recent",
         "expiration": "visit"
@@ -460,6 +490,7 @@
       ],
       "parent": "",
       "pathable": false,
+      "owner_id": null,
       "extra": {
         "allocation": "most-recent",
         "expiration": "visitor"
@@ -474,6 +505,7 @@
       "tags": [],
       "parent": "",
       "pathable": false,
+      "owner_id": null,
       "extra": {
         "allocation": "most-recent",
         "expiration": "visit"
@@ -488,6 +520,7 @@
       "tags": [],
       "parent": "",
       "pathable": false,
+      "owner_id": null,
       "extra": {
         "allocation": "most-recent",
         "expiration": "visit"
@@ -504,6 +537,7 @@
       ],
       "parent": "",
       "pathable": false,
+      "owner_id": null,
       "extra": {
         "allocation": "most-recent",
         "expiration": "visit"
@@ -518,6 +552,7 @@
       "tags": [],
       "parent": "",
       "pathable": false,
+      "owner_id": null,
       "extra": {
         "allocation": "most-recent",
         "expiration": "visit"
@@ -532,6 +567,7 @@
       "tags": [],
       "parent": "",
       "pathable": false,
+      "owner_id": null,
       "extra": {
         "allocation": "linear",
         "expiration": "visitor"
@@ -548,6 +584,7 @@
       ],
       "parent": "",
       "pathable": false,
+      "owner_id": null,
       "extra": {
         "allocation": "most-recent",
         "expiration": "visit"
@@ -562,6 +599,7 @@
       "tags": [],
       "parent": "",
       "pathable": false,
+      "owner_id": null,
       "extra": {
         "allocation": "most-recent",
         "expiration": "visit"
@@ -576,6 +614,7 @@
       "tags": [],
       "parent": "",
       "pathable": false,
+      "owner_id": null,
       "extra": {
         "allocation": "most-recent",
         "expiration": "visit"
@@ -592,6 +631,7 @@
       ],
       "parent": "",
       "pathable": false,
+      "owner_id": null,
       "extra": {
         "allocation": "most-recent",
         "expiration": "visit"
@@ -608,6 +648,7 @@
       ],
       "parent": "",
       "pathable": true,
+      "owner_id": null,
       "extra": {}
     },
     {
@@ -621,6 +662,7 @@
       ],
       "parent": "",
       "pathable": true,
+      "owner_id": null,
       "extra": {}
     },
     {
@@ -634,6 +676,7 @@
       ],
       "parent": "",
       "pathable": true,
+      "owner_id": null,
       "extra": {}
     },
     {
@@ -647,6 +690,7 @@
       ],
       "parent": "",
       "pathable": true,
+      "owner_id": null,
       "extra": {}
     },
     {
@@ -660,6 +704,7 @@
       ],
       "parent": "",
       "pathable": true,
+      "owner_id": null,
       "extra": {}
     },
     {
@@ -673,6 +718,7 @@
       ],
       "parent": "",
       "pathable": true,
+      "owner_id": null,
       "extra": {}
     },
     {
@@ -686,6 +732,7 @@
       ],
       "parent": "",
       "pathable": true,
+      "owner_id": null,
       "extra": {}
     },
     {
@@ -699,6 +746,7 @@
       ],
       "parent": "",
       "pathable": true,
+      "owner_id": null,
       "extra": {}
     },
     {
@@ -712,6 +760,7 @@
       ],
       "parent": "",
       "pathable": true,
+      "owner_id": null,
       "extra": {}
     },
     {
@@ -725,6 +774,7 @@
       ],
       "parent": "",
       "pathable": true,
+      "owner_id": null,
       "extra": {}
     },
     {
@@ -738,6 +788,7 @@
       ],
       "parent": "",
       "pathable": true,
+      "owner_id": null,
       "extra": {}
     },
     {
@@ -751,6 +802,7 @@
       ],
       "parent": "",
       "pathable": true,
+      "owner_id": null,
       "extra": {}
     },
     {
@@ -764,6 +816,7 @@
       ],
       "parent": "",
       "pathable": true,
+      "owner_id": null,
       "extra": {}
     },
     {
@@ -777,6 +830,7 @@
       ],
       "parent": "",
       "pathable": true,
+      "owner_id": null,
       "extra": {}
     },
     {
@@ -790,6 +844,7 @@
       ],
       "parent": "",
       "pathable": true,
+      "owner_id": null,
       "extra": {}
     },
     {
@@ -803,6 +858,7 @@
       ],
       "parent": "",
       "pathable": true,
+      "owner_id": null,
       "extra": {}
     },
     {
@@ -816,6 +872,7 @@
       ],
       "parent": "",
       "pathable": true,
+      "owner_id": null,
       "extra": {}
     },
     {
@@ -829,6 +886,7 @@
       ],
       "parent": "",
       "pathable": true,
+      "owner_id": null,
       "extra": {}
     },
     {
@@ -842,6 +900,7 @@
       ],
       "parent": "",
       "pathable": true,
+      "owner_id": null,
       "extra": {}
     },
     {
@@ -855,6 +914,7 @@
       ],
       "parent": "",
       "pathable": true,
+      "owner_id": null,
       "extra": {}
     }
   ],
@@ -868,7 +928,8 @@
       "data_group": "Conversion",
       "tags": [],
       "precision": 0,
-      "segmentable": true
+      "segmentable": true,
+      "owner_id": null
     },
     {
       "id": "metrics/event2",
@@ -879,7 +940,8 @@
       "data_group": "Conversion",
       "tags": [],
       "precision": 0,
-      "segmentable": true
+      "segmentable": true,
+      "owner_id": null
     },
     {
       "id": "metrics/event3",
@@ -890,7 +952,8 @@
       "data_group": "Conversion",
       "tags": [],
       "precision": 0,
-      "segmentable": true
+      "segmentable": true,
+      "owner_id": null
     },
     {
       "id": "metrics/event4",
@@ -901,7 +964,8 @@
       "data_group": "Conversion",
       "tags": [],
       "precision": 0,
-      "segmentable": true
+      "segmentable": true,
+      "owner_id": null
     },
     {
       "id": "metrics/event5",
@@ -912,7 +976,8 @@
       "data_group": "Conversion",
       "tags": [],
       "precision": 0,
-      "segmentable": true
+      "segmentable": true,
+      "owner_id": null
     },
     {
       "id": "metrics/event6",
@@ -923,7 +988,8 @@
       "data_group": "Conversion",
       "tags": [],
       "precision": 0,
-      "segmentable": true
+      "segmentable": true,
+      "owner_id": null
     },
     {
       "id": "metrics/event7",
@@ -934,7 +1000,8 @@
       "data_group": "Conversion",
       "tags": [],
       "precision": 0,
-      "segmentable": true
+      "segmentable": true,
+      "owner_id": null
     },
     {
       "id": "metrics/event8",
@@ -945,7 +1012,8 @@
       "data_group": "Conversion",
       "tags": [],
       "precision": 0,
-      "segmentable": true
+      "segmentable": true,
+      "owner_id": null
     },
     {
       "id": "metrics/event9",
@@ -956,7 +1024,8 @@
       "data_group": "Conversion",
       "tags": [],
       "precision": 0,
-      "segmentable": true
+      "segmentable": true,
+      "owner_id": null
     },
     {
       "id": "metrics/event10",
@@ -967,7 +1036,8 @@
       "data_group": "Conversion",
       "tags": [],
       "precision": 0,
-      "segmentable": true
+      "segmentable": true,
+      "owner_id": null
     },
     {
       "id": "metrics/event11",
@@ -978,7 +1048,8 @@
       "data_group": "Conversion",
       "tags": [],
       "precision": 0,
-      "segmentable": true
+      "segmentable": true,
+      "owner_id": null
     },
     {
       "id": "metrics/event12",
@@ -989,7 +1060,8 @@
       "data_group": "Conversion",
       "tags": [],
       "precision": 0,
-      "segmentable": true
+      "segmentable": true,
+      "owner_id": null
     },
     {
       "id": "metrics/event13",
@@ -1000,7 +1072,8 @@
       "data_group": "Conversion",
       "tags": [],
       "precision": 0,
-      "segmentable": true
+      "segmentable": true,
+      "owner_id": null
     },
     {
       "id": "metrics/event14",
@@ -1011,7 +1084,8 @@
       "data_group": "Conversion",
       "tags": [],
       "precision": 0,
-      "segmentable": true
+      "segmentable": true,
+      "owner_id": null
     },
     {
       "id": "metrics/event15",
@@ -1022,7 +1096,8 @@
       "data_group": "Conversion",
       "tags": [],
       "precision": 0,
-      "segmentable": true
+      "segmentable": true,
+      "owner_id": null
     }
   ],
   "calculated_metrics": [

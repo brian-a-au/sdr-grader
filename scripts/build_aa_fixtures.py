@@ -23,7 +23,8 @@ TOOL_VERSION = "1.0.0"
 
 
 def _evar(idx: int, *, description: str | None, allocation: str = "most-recent",
-          expiration: str = "visit", tags: list[str] | None = None) -> dict[str, Any]:
+          expiration: str = "visit", tags: list[str] | None = None,
+          owner_id: int | None = None) -> dict[str, Any]:
     return {
         "id": f"variables/evar{idx}",
         "name": f"eVar {idx}",
@@ -33,11 +34,13 @@ def _evar(idx: int, *, description: str | None, allocation: str = "most-recent",
         "tags": tags or [],
         "parent": "",
         "pathable": False,
+        "owner_id": owner_id,
         "extra": {"allocation": allocation, "expiration": expiration},
     }
 
 
-def _prop(idx: int, *, description: str | None) -> dict[str, Any]:
+def _prop(idx: int, *, description: str | None,
+          owner_id: int | None = None) -> dict[str, Any]:
     return {
         "id": f"variables/prop{idx}",
         "name": f"Prop {idx}",
@@ -47,11 +50,13 @@ def _prop(idx: int, *, description: str | None) -> dict[str, Any]:
         "tags": ["taxonomy"],
         "parent": "",
         "pathable": True,
+        "owner_id": owner_id,
         "extra": {},
     }
 
 
-def _event(idx: int, *, description: str | None) -> dict[str, Any]:
+def _event(idx: int, *, description: str | None,
+           owner_id: int | None = None) -> dict[str, Any]:
     return {
         "id": f"metrics/event{idx}",
         "name": f"Event {idx}",
@@ -62,6 +67,7 @@ def _event(idx: int, *, description: str | None) -> dict[str, Any]:
         "tags": [],
         "precision": 0,
         "segmentable": True,
+        "owner_id": owner_id,
     }
 
 
@@ -183,27 +189,65 @@ def build_messy_aa_snapshot() -> dict[str, Any]:
 
 
 def build_clean_aa_snapshot() -> dict[str, Any]:
-    evars = [_evar(i + 1, description="ok", tags=["custom"]) for i in range(8)]
-    props = [_prop(i + 1, description="ok") for i in range(5)]
-    events = [_event(i + 1, description="ok") for i in range(6)]
-    calc_metrics = [{
-        "id": "cm_clean_conversion_rate",
-        "name": "Clean Conversion Rate",
-        "description": "Conversions per visit.",
-        "type": "decimal",
-        "precision": 4,
-        "polarity": "positive",
-        "tags": [],
-        "owner_id": 1,
-        "rsid": "clean.prod",
-        "categories": ["Conversion"],
-        "definition": {"formula": {"func": "divide", "args": ["metrics/event1", "metrics/event2"]}},
-        "extra": {},
-    }]
+    evars = [
+        _evar(i + 1, description=f"Documented eVar {i+1}.", tags=["custom"], owner_id=1)
+        for i in range(8)
+    ]
+    props = [
+        _prop(i + 1, description=f"Documented Prop {i+1}.", owner_id=1)
+        for i in range(5)
+    ]
+    events = [
+        _event(i + 1, description=f"Documented event {i+1}.", owner_id=1)
+        for i in range(6)
+    ]
+
+    # Five calc metrics, neutral names (no revenue/conversion/order tokens),
+    # explicit attribution declared. The last three reference earlier calc
+    # metrics + segments so orphan rates land under the 50% thresholds.
+    clean_segment_ids = [f"segments/seg_clean_{i+1:02d}" for i in range(8)]
+    clean_calc_ids = [f"calculatedMetrics/cm_clean_ratio_{c}" for c in "abcde"]
+
+    # Cross-references collectively reach 4/5 calc metrics and 5/8 segments
+    # so CALC-005 / SEG-003 (50% orphan thresholds) stay quiet. Only
+    # cm_clean_ratio_e is orphan by design (top-of-graph aggregator).
+    calc_specs = [
+        ("a", "Metric A / Metric B", ["metrics/event1", "metrics/event2"], []),
+        ("b", "Ratio A scaled",      ["metrics/event3", clean_calc_ids[0]], [clean_segment_ids[0]]),
+        ("c", "Metric D / Metric E", ["metrics/event4", "metrics/event5"], [clean_segment_ids[1]]),
+        ("d", "Ratio C scaled",      ["metrics/event6", clean_calc_ids[2]], [clean_segment_ids[2]]),
+        ("e", "Cross blend",         clean_calc_ids[:4],                    clean_segment_ids[3:5]),
+    ]
+    calc_metrics: list[dict[str, Any]] = []
+    for letter, summary, refs, seg_refs in calc_specs:
+        formula_args = list(refs) + list(seg_refs)
+        calc_metrics.append({
+            "id": f"calculatedMetrics/cm_clean_ratio_{letter}",
+            "name": f"Clean Ratio {letter.upper()}",
+            "description": (
+                f"{summary}. Uses linear attribution per documented governance "
+                "decision."
+            ),
+            "type": "decimal",
+            "precision": 4,
+            "polarity": "positive",
+            "tags": ["governance"],
+            "owner_id": 1,
+            "rsid": "clean.prod",
+            "categories": ["Engagement"],
+            "attribution": "linear",
+            "allocation": "linear",
+            "definition": {"formula": {"func": "divide", "args": formula_args}},
+            "extra": {},
+        })
+
+    # Eight segments, all owned and described. The first three are
+    # referenced by calc metrics above so SEG-003 (50% orphan threshold)
+    # stays quiet.
     segments = [{
-        "id": "s_clean_mobile",
-        "name": "Mobile",
-        "description": "Mobile traffic.",
+        "id": f"segments/seg_clean_{i+1:02d}",
+        "name": f"Clean Segment {i+1:02d}",
+        "description": f"Documented shallow segment {i+1:02d}.",
         "rsid": "clean.prod",
         "owner_id": 1,
         "tags": ["governance"],
@@ -212,10 +256,15 @@ def build_clean_aa_snapshot() -> dict[str, Any]:
         "modified": "2025-01-01T00:00:00Z",
         "definition": {
             "version": [1, 0, 0],
-            "container": {"context": "hits", "func": "container", "pred": {"func": "eq", "val": "mobile"}},
+            "container": {
+                "context": "hits",
+                "func": "container",
+                "pred": {"func": "eq", "val": f"value-{i+1}"},
+            },
         },
         "extra": {},
-    }]
+    } for i in range(8)]
+
     return {
         "report_suite": {
             "rsid": "clean.prod",
@@ -226,6 +275,12 @@ def build_clean_aa_snapshot() -> dict[str, Any]:
         },
         "captured_at": "2026-04-25T09:14:00+00:00",
         "tool_version": TOOL_VERSION,
+        # Governance signals — match the CJA clean fixture so out-of-the-box
+        # runs grade well without external context attached.
+        "metadata": {
+            "history_present": True,
+            "sdr_doc_present": True,
+        },
         "dimensions": [*evars, *props],
         "metrics": events,
         "calculated_metrics": calc_metrics,

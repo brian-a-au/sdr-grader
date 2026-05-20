@@ -8,11 +8,15 @@
   },
   "captured_at": "2026-04-25T09:14:00+00:00",
   "tool_version": "1.0.0",
+  "metadata": {
+    "history_present": true,
+    "sdr_doc_present": true
+  },
   "dimensions": [
     {
       "id": "variables/evar1",
       "name": "eVar 1",
-      "description": "ok",
+      "description": "Documented eVar 1.",
       "type": "string",
       "category": "Custom",
       "tags": [
@@ -20,6 +24,7 @@
       ],
       "parent": "",
       "pathable": false,
+      "owner_id": 1,
       "extra": {
         "allocation": "most-recent",
         "expiration": "visit"
@@ -28,7 +33,7 @@
     {
       "id": "variables/evar2",
       "name": "eVar 2",
-      "description": "ok",
+      "description": "Documented eVar 2.",
       "type": "string",
       "category": "Custom",
       "tags": [
@@ -36,6 +41,7 @@
       ],
       "parent": "",
       "pathable": false,
+      "owner_id": 1,
       "extra": {
         "allocation": "most-recent",
         "expiration": "visit"
@@ -44,7 +50,7 @@
     {
       "id": "variables/evar3",
       "name": "eVar 3",
-      "description": "ok",
+      "description": "Documented eVar 3.",
       "type": "string",
       "category": "Custom",
       "tags": [
@@ -52,6 +58,7 @@
       ],
       "parent": "",
       "pathable": false,
+      "owner_id": 1,
       "extra": {
         "allocation": "most-recent",
         "expiration": "visit"
@@ -60,7 +67,7 @@
     {
       "id": "variables/evar4",
       "name": "eVar 4",
-      "description": "ok",
+      "description": "Documented eVar 4.",
       "type": "string",
       "category": "Custom",
       "tags": [
@@ -68,6 +75,7 @@
       ],
       "parent": "",
       "pathable": false,
+      "owner_id": 1,
       "extra": {
         "allocation": "most-recent",
         "expiration": "visit"
@@ -76,7 +84,7 @@
     {
       "id": "variables/evar5",
       "name": "eVar 5",
-      "description": "ok",
+      "description": "Documented eVar 5.",
       "type": "string",
       "category": "Custom",
       "tags": [
@@ -84,6 +92,7 @@
       ],
       "parent": "",
       "pathable": false,
+      "owner_id": 1,
       "extra": {
         "allocation": "most-recent",
         "expiration": "visit"
@@ -92,7 +101,7 @@
     {
       "id": "variables/evar6",
       "name": "eVar 6",
-      "description": "ok",
+      "description": "Documented eVar 6.",
       "type": "string",
       "category": "Custom",
       "tags": [
@@ -100,6 +109,7 @@
       ],
       "parent": "",
       "pathable": false,
+      "owner_id": 1,
       "extra": {
         "allocation": "most-recent",
         "expiration": "visit"
@@ -108,7 +118,7 @@
     {
       "id": "variables/evar7",
       "name": "eVar 7",
-      "description": "ok",
+      "description": "Documented eVar 7.",
       "type": "string",
       "category": "Custom",
       "tags": [
@@ -116,6 +126,7 @@
       ],
       "parent": "",
       "pathable": false,
+      "owner_id": 1,
       "extra": {
         "allocation": "most-recent",
         "expiration": "visit"
@@ -124,7 +135,7 @@
     {
       "id": "variables/evar8",
       "name": "eVar 8",
-      "description": "ok",
+      "description": "Documented eVar 8.",
       "type": "string",
       "category": "Custom",
       "tags": [
@@ -132,6 +143,7 @@
       ],
       "parent": "",
       "pathable": false,
+      "owner_id": 1,
       "extra": {
         "allocation": "most-recent",
         "expiration": "visit"
@@ -140,7 +152,7 @@
     {
       "id": "variables/prop1",
       "name": "Prop 1",
-      "description": "ok",
+      "description": "Documented Prop 1.",
       "type": "string",
       "category": "Content",
       "tags": [
@@ -148,12 +160,13 @@
       ],
       "parent": "",
       "pathable": true,
+      "owner_id": 1,
       "extra": {}
     },
     {
       "id": "variables/prop2",
       "name": "Prop 2",
-      "description": "ok",
+      "description": "Documented Prop 2.",
       "type": "string",
       "category": "Content",
       "tags": [
@@ -161,12 +174,13 @@
       ],
       "parent": "",
       "pathable": true,
+      "owner_id": 1,
       "extra": {}
     },
     {
       "id": "variables/prop3",
       "name": "Prop 3",
-      "description": "ok",
+      "description": "Documented Prop 3.",
       "type": "string",
       "category": "Content",
       "tags": [
@@ -174,12 +188,13 @@
       ],
       "parent": "",
       "pathable": true,
+      "owner_id": 1,
       "extra": {}
     },
     {
       "id": "variables/prop4",
       "name": "Prop 4",
-      "description": "ok",
+      "description": "Documented Prop 4.",
       "type": "string",
       "category": "Content",
       "tags": [
@@ -187,12 +202,13 @@
       ],
       "parent": "",
       "pathable": true,
+      "owner_id": 1,
       "extra": {}
     },
     {
       "id": "variables/prop5",
       "name": "Prop 5",
-      "description": "ok",
+      "description": "Documented Prop 5.",
       "type": "string",
       "category": "Content",
       "tags": [
@@ -200,6 +216,7 @@
       ],
       "parent": "",
       "pathable": true,
+      "owner_id": 1,
       "extra": {}
     }
   ],
@@ -207,84 +224,94 @@
     {
       "id": "metrics/event1",
       "name": "Event 1",
-      "description": "ok",
+      "description": "Documented event 1.",
       "type": "int",
       "category": "Conversion",
       "data_group": "Conversion",
       "tags": [],
       "precision": 0,
-      "segmentable": true
+      "segmentable": true,
+      "owner_id": 1
     },
     {
       "id": "metrics/event2",
       "name": "Event 2",
-      "description": "ok",
+      "description": "Documented event 2.",
       "type": "int",
       "category": "Conversion",
       "data_group": "Conversion",
       "tags": [],
       "precision": 0,
-      "segmentable": true
+      "segmentable": true,
+      "owner_id": 1
     },
     {
       "id": "metrics/event3",
       "name": "Event 3",
-      "description": "ok",
+      "description": "Documented event 3.",
       "type": "int",
       "category": "Conversion",
       "data_group": "Conversion",
       "tags": [],
       "precision": 0,
-      "segmentable": true
+      "segmentable": true,
+      "owner_id": 1
     },
     {
       "id": "metrics/event4",
       "name": "Event 4",
-      "description": "ok",
+      "description": "Documented event 4.",
       "type": "int",
       "category": "Conversion",
       "data_group": "Conversion",
       "tags": [],
       "precision": 0,
-      "segmentable": true
+      "segmentable": true,
+      "owner_id": 1
     },
     {
       "id": "metrics/event5",
       "name": "Event 5",
-      "description": "ok",
+      "description": "Documented event 5.",
       "type": "int",
       "category": "Conversion",
       "data_group": "Conversion",
       "tags": [],
       "precision": 0,
-      "segmentable": true
+      "segmentable": true,
+      "owner_id": 1
     },
     {
       "id": "metrics/event6",
       "name": "Event 6",
-      "description": "ok",
+      "description": "Documented event 6.",
       "type": "int",
       "category": "Conversion",
       "data_group": "Conversion",
       "tags": [],
       "precision": 0,
-      "segmentable": true
+      "segmentable": true,
+      "owner_id": 1
     }
   ],
   "calculated_metrics": [
     {
-      "id": "cm_clean_conversion_rate",
-      "name": "Clean Conversion Rate",
-      "description": "Conversions per visit.",
+      "id": "calculatedMetrics/cm_clean_ratio_a",
+      "name": "Clean Ratio A",
+      "description": "Metric A / Metric B. Uses linear attribution per documented governance decision.",
       "type": "decimal",
       "precision": 4,
       "polarity": "positive",
-      "tags": [],
+      "tags": [
+        "governance"
+      ],
       "owner_id": 1,
       "rsid": "clean.prod",
       "categories": [
-        "Conversion"
+        "Engagement"
       ],
+      "attribution": "linear",
+      "allocation": "linear",
       "definition": {
         "formula": {
           "func": "divide",
@@ -295,13 +322,132 @@
         }
       },
       "extra": {}
+    },
+    {
+      "id": "calculatedMetrics/cm_clean_ratio_b",
+      "name": "Clean Ratio B",
+      "description": "Ratio A scaled. Uses linear attribution per documented governance decision.",
+      "type": "decimal",
+      "precision": 4,
+      "polarity": "positive",
+      "tags": [
+        "governance"
+      ],
+      "owner_id": 1,
+      "rsid": "clean.prod",
+      "categories": [
+        "Engagement"
+      ],
+      "attribution": "linear",
+      "allocation": "linear",
+      "definition": {
+        "formula": {
+          "func": "divide",
+          "args": [
+            "metrics/event3",
+            "calculatedMetrics/cm_clean_ratio_a",
+            "segments/seg_clean_01"
+          ]
+        }
+      },
+      "extra": {}
+    },
+    {
+      "id": "calculatedMetrics/cm_clean_ratio_c",
+      "name": "Clean Ratio C",
+      "description": "Metric D / Metric E. Uses linear attribution per documented governance decision.",
+      "type": "decimal",
+      "precision": 4,
+      "polarity": "positive",
+      "tags": [
+        "governance"
+      ],
+      "owner_id": 1,
+      "rsid": "clean.prod",
+      "categories": [
+        "Engagement"
+      ],
+      "attribution": "linear",
+      "allocation": "linear",
+      "definition": {
+        "formula": {
+          "func": "divide",
+          "args": [
+            "metrics/event4",
+            "metrics/event5",
+            "segments/seg_clean_02"
+          ]
+        }
+      },
+      "extra": {}
+    },
+    {
+      "id": "calculatedMetrics/cm_clean_ratio_d",
+      "name": "Clean Ratio D",
+      "description": "Ratio C scaled. Uses linear attribution per documented governance decision.",
+      "type": "decimal",
+      "precision": 4,
+      "polarity": "positive",
+      "tags": [
+        "governance"
+      ],
+      "owner_id": 1,
+      "rsid": "clean.prod",
+      "categories": [
+        "Engagement"
+      ],
+      "attribution": "linear",
+      "allocation": "linear",
+      "definition": {
+        "formula": {
+          "func": "divide",
+          "args": [
+            "metrics/event6",
+            "calculatedMetrics/cm_clean_ratio_c",
+            "segments/seg_clean_03"
+          ]
+        }
+      },
+      "extra": {}
+    },
+    {
+      "id": "calculatedMetrics/cm_clean_ratio_e",
+      "name": "Clean Ratio E",
+      "description": "Cross blend. Uses linear attribution per documented governance decision.",
+      "type": "decimal",
+      "precision": 4,
+      "polarity": "positive",
+      "tags": [
+        "governance"
+      ],
+      "owner_id": 1,
+      "rsid": "clean.prod",
+      "categories": [
+        "Engagement"
+      ],
+      "attribution": "linear",
+      "allocation": "linear",
+      "definition": {
+        "formula": {
+          "func": "divide",
+          "args": [
+            "calculatedMetrics/cm_clean_ratio_a",
+            "calculatedMetrics/cm_clean_ratio_b",
+            "calculatedMetrics/cm_clean_ratio_c",
+            "calculatedMetrics/cm_clean_ratio_d",
+            "segments/seg_clean_04",
+            "segments/seg_clean_05"
+          ]
+        }
+      },
+      "extra": {}
     }
   ],
   "segments": [
     {
-      "id": "s_clean_mobile",
-      "name": "Mobile",
-      "description": "Mobile traffic.",
+      "id": "segments/seg_clean_01",
+      "name": "Clean Segment 01",
+      "description": "Documented shallow segment 01.",
       "rsid": "clean.prod",
       "owner_id": 1,
       "tags": [
@@ -321,7 +467,210 @@
           "func": "container",
           "pred": {
             "func": "eq",
-            "val": "mobile"
+            "val": "value-1"
+          }
+        }
+      },
+      "extra": {}
+    },
+    {
+      "id": "segments/seg_clean_02",
+      "name": "Clean Segment 02",
+      "description": "Documented shallow segment 02.",
+      "rsid": "clean.prod",
+      "owner_id": 1,
+      "tags": [
+        "governance"
+      ],
+      "compatibility": {},
+      "created": "2025-01-01T00:00:00Z",
+      "modified": "2025-01-01T00:00:00Z",
+      "definition": {
+        "version": [
+          1,
+          0,
+          0
+        ],
+        "container": {
+          "context": "hits",
+          "func": "container",
+          "pred": {
+            "func": "eq",
+            "val": "value-2"
+          }
+        }
+      },
+      "extra": {}
+    },
+    {
+      "id": "segments/seg_clean_03",
+      "name": "Clean Segment 03",
+      "description": "Documented shallow segment 03.",
+      "rsid": "clean.prod",
+      "owner_id": 1,
+      "tags": [
+        "governance"
+      ],
+      "compatibility": {},
+      "created": "2025-01-01T00:00:00Z",
+      "modified": "2025-01-01T00:00:00Z",
+      "definition": {
+        "version": [
+          1,
+          0,
+          0
+        ],
+        "container": {
+          "context": "hits",
+          "func": "container",
+          "pred": {
+            "func": "eq",
+            "val": "value-3"
+          }
+        }
+      },
+      "extra": {}
+    },
+    {
+      "id": "segments/seg_clean_04",
+      "name": "Clean Segment 04",
+      "description": "Documented shallow segment 04.",
+      "rsid": "clean.prod",
+      "owner_id": 1,
+      "tags": [
+        "governance"
+      ],
+      "compatibility": {},
+      "created": "2025-01-01T00:00:00Z",
+      "modified": "2025-01-01T00:00:00Z",
+      "definition": {
+        "version": [
+          1,
+          0,
+          0
+        ],
+        "container": {
+          "context": "hits",
+          "func": "container",
+          "pred": {
+            "func": "eq",
+            "val": "value-4"
+          }
+        }
+      },
+      "extra": {}
+    },
+    {
+      "id": "segments/seg_clean_05",
+      "name": "Clean Segment 05",
+      "description": "Documented shallow segment 05.",
+      "rsid": "clean.prod",
+      "owner_id": 1,
+      "tags": [
+        "governance"
+      ],
+      "compatibility": {},
+      "created": "2025-01-01T00:00:00Z",
+      "modified": "2025-01-01T00:00:00Z",
+      "definition": {
+        "version": [
+          1,
+          0,
+          0
+        ],
+        "container": {
+          "context": "hits",
+          "func": "container",
+          "pred": {
+            "func": "eq",
+            "val": "value-5"
+          }
+        }
+      },
+      "extra": {}
+    },
+    {
+      "id": "segments/seg_clean_06",
+      "name": "Clean Segment 06",
+      "description": "Documented shallow segment 06.",
+      "rsid": "clean.prod",
+      "owner_id": 1,
+      "tags": [
+        "governance"
+      ],
+      "compatibility": {},
+      "created": "2025-01-01T00:00:00Z",
+      "modified": "2025-01-01T00:00:00Z",
+      "definition": {
+        "version": [
+          1,
+          0,
+          0
+        ],
+        "container": {
+          "context": "hits",
+          "func": "container",
+          "pred": {
+            "func": "eq",
+            "val": "value-6"
+          }
+        }
+      },
+      "extra": {}
+    },
+    {
+      "id": "segments/seg_clean_07",
+      "name": "Clean Segment 07",
+      "description": "Documented shallow segment 07.",
+      "rsid": "clean.prod",
+      "owner_id": 1,
+      "tags": [
+        "governance"
+      ],
+      "compatibility": {},
+      "created": "2025-01-01T00:00:00Z",
+      "modified": "2025-01-01T00:00:00Z",
+      "definition": {
+        "version": [
+          1,
+          0,
+          0
+        ],
+        "container": {
+          "context": "hits",
+          "func": "container",
+          "pred": {
+            "func": "eq",
+            "val": "value-7"
+          }
+        }
+      },
+      "extra": {}
+    },
+    {
+      "id": "segments/seg_clean_08",
+      "name": "Clean Segment 08",
+      "description": "Documented shallow segment 08.",
+      "rsid": "clean.prod",
+      "owner_id": 1,
+      "tags": [
+        "governance"
+      ],
+      "compatibility": {},
+      "created": "2025-01-01T00:00:00Z",
+      "modified": "2025-01-01T00:00:00Z",
+      "definition": {
+        "version": [
+          1,
+          0,
+          0
+        ],
+        "container": {
+          "context": "hits",
+          "func": "container",
+          "pred": {
+            "func": "eq",
+            "val": "value-8"
           }
         }
       },
