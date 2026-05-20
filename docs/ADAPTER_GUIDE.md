@@ -74,35 +74,40 @@ if platform == "your_platform":
     return adapt(snapshot, source=source)
 ```
 
-## Supplementary inputs (Launch / Workspace / AEP exports)
+## Supplementary inputs
 
-Some rule packs need data the snapshot doesn't carry — Launch property
-exports, Workspace project exports, AEP governance API outputs, etc.
-Rather than building a dedicated adapter for each, attach those files
-through the `--extra-input KEY=PATH` flag. The CLI parses each spec,
-loads the JSON, and stores it in `Implementation.supplementary_data[KEY]`.
+Some rules need data the snapshot itself doesn't carry. Rather than
+building a dedicated adapter for each side input, the CLI accepts
+arbitrary JSON files attached at run time:
 
 ```bash
-sdr-grader snapshot.json \
-  --extra-input launch=launch_property.json \
-  --extra-input workspace=workspace_export.json
+sdr-grader snapshot.json --extra-input KEY=PATH
 ```
 
-Rules opt in by reading `impl.supplementary_data.get("launch")` and
-returning empty when the key is absent, so a rule that needs Launch
-data quietly does nothing on snapshots that don't supply it.
+The CLI parses each spec, loads the JSON, and stores it under
+`Implementation.supplementary_data[KEY]`. The key name and the JSON
+shape are entirely the rule's contract — there is no schema, no
+adapter, and no built-in exporter that produces these files. Operators
+supply whatever JSON the rule's docstring asks for.
+
+Rules opt in by reading the key they need and returning empty when it's
+absent, so an opt-in rule stays silent on snapshots that don't attach
+it:
 
 ```python
-@register_check("launch_required_data_elements")
-def check_launch_required_data_elements(impl, ctx) -> list[Finding]:
-    launch = impl.supplementary_data.get("launch")
-    if not isinstance(launch, dict):
-        return []  # rule is opt-in via --extra-input launch=…
-    # … walk the Launch export and emit findings …
+@register_check("my_supplementary_check")
+def check_my_supplementary_check(impl, ctx) -> list[Finding]:
+    data = impl.supplementary_data.get("my_key")
+    if not isinstance(data, dict):
+        return []  # rule is opt-in; key not attached -> no findings
+    # … inspect `data` and emit findings …
 ```
 
-The shape of each supplementary input is determined by the upstream
-exporter; document it next to the rule that consumes it.
+For a worked example, see `LAUNCH-001`
+(`launch_required_data_elements` in
+`src/sdr_grader/rules/checks/supplementary.py`). Its docstring
+documents the JSON shape it expects and is the template to follow when
+adding new supplementary-input rules.
 
 ## Testing
 

@@ -57,15 +57,15 @@ For CI integration with `--fail-below`, see
 
 ## Input modes
 
-| Mode | Invocation                                             |
-|------|--------------------------------------------------------|
-| File       | `sdr-grader path/to/snapshot.json`               |
-| Directory  | `sdr-grader path/to/snapshots/` (picks latest)   |
-|            | `sdr-grader path/to/snapshots/ --at 2026-04-01`  |
-| Trend      | `sdr-grader path/to/snapshots/ --trend`          |
-| Shell-out  | `sdr-grader --dataview dv_prod_web`              |
-|            | `sdr-grader --rsid prod_us`                      |
-| Stdin      | `… | sdr-grader -`                              |
+| Mode | Invocation | When to use |
+|------|------------|-------------|
+| File       | `sdr-grader path/to/snapshot.json`               | One-off grade of a single snapshot you already have on disk. |
+| Directory  | `sdr-grader path/to/snapshots/`                  | Point at a folder of dated snapshots; picks the most recent by filename timestamp (falls back to mtime). |
+|            | `sdr-grader path/to/snapshots/ --at 2026-04-01`  | Same folder, but grade the snapshot closest to (and not after) the given ISO-8601 date — useful for retro grading or reproducing a prior report. |
+| Trend      | `sdr-grader path/to/snapshots/ --trend`          | Grade every dated snapshot in the folder and emit a single trend HTML with sparklines and findings churn. |
+| Shell-out  | `sdr-grader --dataview dv_prod_web`              | Pull a fresh CJA snapshot live via `cja_auto_sdr` and grade it in one shot — no intermediate file. Requires `cja_auto_sdr` on `PATH`. |
+|            | `sdr-grader --rsid prod_us`                      | Same idea against AA via `aa_auto_sdr`. Requires `aa_auto_sdr` on `PATH`. |
+| Stdin      | `… \| sdr-grader -`                              | Stream JSON in from another tool without touching disk — pairs with `cja_auto_sdr … --output -` for ephemeral CI runs. |
 
 ## Trend reports
 
@@ -87,25 +87,27 @@ needs a stable ordering. See `examples/trend-example.html`.
 
 ## Supplementary inputs
 
-Rules can consume data the snapshot itself doesn't carry — Launch
-property exports, AEP cardinality summaries, stitching health metrics,
-SDR-doc timestamps. Attach those JSON files via `--extra-input KEY=PATH`
+Some rules need data the snapshot itself doesn't carry. Attach
+arbitrary JSON files at run time with `--extra-input KEY=PATH`
 (repeatable):
 
 ```bash
-sdr-grader snapshot.json \
-  --extra-input launch=launch_property.json \
-  --extra-input cardinality=evar_cardinality.json \
-  --extra-input stitching=stitching_status.json \
-  --extra-input sdr=sdr_metadata.json
+sdr-grader snapshot.json --extra-input KEY=path/to/data.json
 ```
 
-Rules opt in by reading `impl.supplementary_data[KEY]`; absent keys are
-silently skipped, so a rule that needs Launch data simply doesn't fire
-on snapshots that don't supply it. See
-[docs/ADAPTER_GUIDE.md](docs/ADAPTER_GUIDE.md) for the full extension
-pattern. `LAUNCH-001` in
-`src/sdr_grader/rules/checks/supplementary.py` is the worked example.
+The CLI loads each file and stores it under
+`Implementation.supplementary_data[KEY]`. The key name and the JSON
+shape are the *rule's* contract — there is no built-in exporter that
+produces these files. Operators supply whatever JSON the rule's
+docstring asks for.
+
+Rules opt in by reading the key they need and staying silent when it's
+absent, so an opt-in rule simply doesn't fire on snapshots that don't
+attach it. `LAUNCH-001` in
+`src/sdr_grader/rules/checks/supplementary.py` is the worked example
+(its docstring documents the expected JSON shape). See
+[docs/ADAPTER_GUIDE.md](docs/ADAPTER_GUIDE.md) for the extension
+pattern.
 
 ## Internal leaderboards
 
