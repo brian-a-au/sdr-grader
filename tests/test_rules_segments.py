@@ -1,4 +1,4 @@
-"""Tests for segment_complexity rules (SEG-001..SEG-007)."""
+"""Tests for segment_complexity rules (SEG-002..SEG-007)."""
 
 from __future__ import annotations
 
@@ -8,24 +8,9 @@ from sdr_grader.rules.checks.segments import (
     check_container_mixing,
     check_duplicate_segments,
     check_orphan_segments,
-    check_segment_count_cap,
     check_segment_nesting_depth,
     check_segments_missing_descriptions,
 )
-
-
-# SEG-001
-def test_segment_count_quiet_under_cap():
-    segs = [segment(f"segments/s_{i}") for i in range(10)]
-    findings = check_segment_count_cap(impl(segments=segs), ctx("SEG-001", max_segments=200))
-    assert findings == []
-
-
-def test_segment_count_fires_over_cap():
-    segs = [segment(f"segments/s_{i}") for i in range(150)]
-    findings = check_segment_count_cap(impl(segments=segs), ctx("SEG-001", max_segments=100))
-    assert len(findings) == 1
-    assert "150" in findings[0].title
 
 
 # SEG-002

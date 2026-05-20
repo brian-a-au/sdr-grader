@@ -41,7 +41,7 @@ rules:
     platforms: [cja, aa]
     check: missing_descriptions
     params:
-      threshold: 0.10
+      threshold: 0.35           # calibrated p75 across 108-snapshot corpus
       targets: [metrics, dimensions]
     rationale: |
       Descriptions are the primary way new analysts and AI agents understand

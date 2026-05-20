@@ -25,7 +25,7 @@ def test_cli_runs_against_messy_fixture_and_writes_html(tmp_path, capsys):
     html = output.read_text(encoding="utf-8")
     assert "<!doctype html>" in html.lower()
     assert "SCH-003" in html
-    assert "89 components lack descriptions" in html
+    assert "170 components lack descriptions" in html
     assert "Production Web Analytics" in html
     err = capsys.readouterr().err
     # stderr summary mentions the grade letter and the instance.
@@ -178,5 +178,5 @@ def test_cli_finding_count_drops_when_descriptions_filled_in(tmp_path, _changed_
     rc = main([str(_changed_snapshot_path), "--output", str(output), "--quiet"])
     assert rc == SUCCESS
     html = output.read_text(encoding="utf-8")
-    # The finding count is 88 now (one fewer); rule still fires.
-    assert "88 components lack descriptions" in html
+    # The finding count is 169 now (one fewer); rule still fires.
+    assert "169 components lack descriptions" in html

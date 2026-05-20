@@ -29,7 +29,7 @@ rules:
     platforms: [cja, aa]
     check: missing_descriptions
     params:
-      threshold: 0.25            # 25% vs strict 10%
+      threshold: 0.51            # calibrated p95 across 108-snapshot corpus
       targets: [metrics, dimensions]
     rationale: Same as strict.
     remediation: Same as strict.

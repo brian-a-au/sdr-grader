@@ -4,11 +4,12 @@ description: Pragmatic calc metric rules — same IDs as strict, looser threshol
 rules:
   - id: CALC-001
     name: Calculated metrics lacking descriptions
-    severity: low                # demoted from medium
+    severity: low
     platforms: [cja, aa]
     check: calc_metrics_missing_descriptions
     params:
-      threshold: 0.40            # 40% vs strict 20%
+      threshold: 1.00           # pragmatic: fire only when every calc
+                                # metric lacks a description
     rationale: Same as strict.
     remediation: Same as strict.
 
@@ -27,29 +28,11 @@ rules:
     platforms: [cja, aa]
     check: calc_complexity_threshold
     params:
-      max_complexity: 90         # 90 vs strict 75
+      max_complexity: 30        # calibrated p95 across calc-metric-bearing snapshots
     rationale: Same as strict.
     remediation: Same as strict.
 
-  - id: CALC-004
-    name: Excessive attribution model variety
-    severity: medium             # demoted from high
-    platforms: [cja, aa]
-    check: attribution_model_variety
-    params:
-      max_distinct: 6            # 6 vs strict 4
-    rationale: Same as strict.
-    remediation: Same as strict.
-
-  - id: CALC-005
-    name: Orphan calculated metrics
-    severity: low                # demoted from medium
-    platforms: [cja, aa]
-    check: orphan_calc_metrics
-    params:
-      threshold: 0.75            # 75% vs strict 50%
-    rationale: Same as strict.
-    remediation: Same as strict.
+  # CALC-005 unwired: see strict pack note.
 
   - id: CALC-014
     name: Near-duplicate calculated metrics

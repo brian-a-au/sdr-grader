@@ -2,16 +2,6 @@ category: segment_complexity
 description: Pragmatic segment rules — same IDs as strict, looser thresholds.
 
 rules:
-  - id: SEG-001
-    name: Total segment count exceeds reasonable bound
-    severity: low
-    platforms: [cja, aa]
-    check: segment_count_cap
-    params:
-      max_segments: 500          # 500 vs strict 200
-    rationale: Same as strict.
-    remediation: Same as strict.
-
   - id: SEG-002
     name: Container type mixing within a single segment
     severity: low                # demoted from medium
@@ -21,15 +11,7 @@ rules:
     rationale: Same as strict.
     remediation: Same as strict.
 
-  - id: SEG-003
-    name: Orphan segments
-    severity: medium             # demoted from high
-    platforms: [cja, aa]
-    check: orphan_segments
-    params:
-      threshold: 0.75            # 75% vs strict 50%
-    rationale: Same as strict.
-    remediation: Same as strict.
+  # SEG-003 unwired: see strict pack note.
 
   - id: SEG-004
     name: Circular segment references
@@ -46,7 +28,9 @@ rules:
     platforms: [cja, aa]
     check: segments_missing_descriptions
     params:
-      threshold: 0.50            # 50% vs strict 30%
+      threshold: 1.00           # pragmatic: fire only when every segment
+                                # lacks a description (no signal in p95
+                                # of real corpus to support anything tighter)
     rationale: Same as strict.
     remediation: Same as strict.
 
@@ -65,6 +49,6 @@ rules:
     platforms: [cja, aa]
     check: segment_nesting_depth
     params:
-      max_depth: 6               # 6 vs strict 4
+      max_depth: 7              # calibrated p90 across segment-bearing snapshots
     rationale: Same as strict.
     remediation: Same as strict.

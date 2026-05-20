@@ -228,7 +228,9 @@
       "type": "int",
       "category": "Conversion",
       "data_group": "Conversion",
-      "tags": [],
+      "tags": [
+        "event"
+      ],
       "precision": 0,
       "segmentable": true,
       "owner_id": 1
@@ -240,7 +242,9 @@
       "type": "int",
       "category": "Conversion",
       "data_group": "Conversion",
-      "tags": [],
+      "tags": [
+        "event"
+      ],
       "precision": 0,
       "segmentable": true,
       "owner_id": 1
@@ -252,7 +256,9 @@
       "type": "int",
       "category": "Conversion",
       "data_group": "Conversion",
-      "tags": [],
+      "tags": [
+        "event"
+      ],
       "precision": 0,
       "segmentable": true,
       "owner_id": 1
@@ -264,7 +270,9 @@
       "type": "int",
       "category": "Conversion",
       "data_group": "Conversion",
-      "tags": [],
+      "tags": [
+        "event"
+      ],
       "precision": 0,
       "segmentable": true,
       "owner_id": 1
@@ -276,7 +284,9 @@
       "type": "int",
       "category": "Conversion",
       "data_group": "Conversion",
-      "tags": [],
+      "tags": [
+        "event"
+      ],
       "precision": 0,
       "segmentable": true,
       "owner_id": 1
@@ -288,7 +298,9 @@
       "type": "int",
       "category": "Conversion",
       "data_group": "Conversion",
-      "tags": [],
+      "tags": [
+        "event"
+      ],
       "precision": 0,
       "segmentable": true,
       "owner_id": 1

@@ -79,15 +79,16 @@ def build_dimensions(count: int, missing_descriptions: int) -> list[dict[str, An
     return out
 
 
-def build_derived_fields(count: int) -> dict[str, Any]:
+def build_derived_fields(count: int, missing_descriptions: int = 0) -> dict[str, Any]:
     fields = []
     for i in range(count):
         idx = i + 1
+        has_desc = i >= missing_descriptions
         fields.append({
             "component_id": f"derived/df_field_{idx:03d}",
             "component_name": f"Derived Field {idx:03d}",
             "component_type": "derived_field",
-            "description": f"Auto-generated derived field {idx:03d}.",
+            "description": f"Auto-generated derived field {idx:03d}." if has_desc else "",
             "complexity_score": 10.0 + (idx % 30),
             "functions_used": ["concat"],
             "branch_count": 1,
@@ -546,9 +547,12 @@ def build_clean_snapshot() -> dict[str, Any]:
 
 
 def build_messy_snapshot() -> dict[str, Any]:
-    metrics = build_metrics(count=142, missing_descriptions=38)
-    dimensions = build_dimensions(count=203, missing_descriptions=51)
-    derived = build_derived_fields(count=142)
+    # Component-level missing-description counts are tuned so the overall
+    # rate lands above the calibrated SCH-003 strict threshold (0.35) but
+    # below the pragmatic threshold (0.51). 220/487 ≈ 45%.
+    metrics = build_metrics(count=142, missing_descriptions=70)
+    dimensions = build_dimensions(count=203, missing_descriptions=100)
+    derived = build_derived_fields(count=142, missing_descriptions=50)
     calc_metrics = build_calculated_metrics()
     segments = build_segments()
 

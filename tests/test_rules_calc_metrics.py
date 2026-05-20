@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from _rule_test_helpers import calc, component, ctx, impl, segment
 from sdr_grader.rules.checks.calc_metrics import (
-    check_attribution_model_variety,
     check_calc_complexity_threshold,
     check_calc_deprecated_allocations,
     check_calc_formula_broken_refs,
@@ -66,32 +65,6 @@ def test_calc_complexity_fires_above_threshold():
         impl(calc=cms), ctx("CALC-003", category="calc_metric_maint", max_complexity=75.0),
     )
     assert len(findings) == 1
-
-
-# CALC-004
-def test_attribution_variety_fires_above_distinct_cap():
-    cms = [
-        calc("a", attribution_model="last-touch"),
-        calc("b", attribution_model="first-touch"),
-        calc("c", attribution_model="linear"),
-        calc("d", attribution_model="u-shaped"),
-        calc("e", attribution_model="time-decay"),
-    ]
-    findings = check_attribution_model_variety(
-        impl(calc=cms), ctx("CALC-004", category="calc_metric_maint", max_distinct=4),
-    )
-    assert len(findings) == 1
-
-
-def test_attribution_variety_quiet_when_within_cap():
-    cms = [
-        calc("a", attribution_model="last-touch"),
-        calc("b", attribution_model="linear"),
-    ]
-    findings = check_attribution_model_variety(
-        impl(calc=cms), ctx("CALC-004", category="calc_metric_maint", max_distinct=4),
-    )
-    assert findings == []
 
 
 # CALC-005

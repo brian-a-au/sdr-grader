@@ -1,4 +1,4 @@
-"""Segment complexity checks (SEG-001..SEG-007)."""
+"""Segment complexity checks (SEG-002..SEG-007)."""
 
 from __future__ import annotations
 
@@ -16,30 +16,6 @@ from sdr_grader.rules.registry import register_check
 if TYPE_CHECKING:
     from sdr_grader.core.models import Implementation, Segment
     from sdr_grader.rules.engine import RuleContext
-
-
-# ---------------------------------------------------------------------------
-# SEG-001: total segment count
-# ---------------------------------------------------------------------------
-
-
-@register_check("segment_count_cap")
-def check_segment_count_cap(
-    impl: Implementation, ctx: RuleContext
-) -> list[Finding]:
-    cap = int(ctx.params.get("max_segments", 200))
-    total = len(impl.segments)
-    if total <= cap:
-        return []
-    paragraph = (
-        f"This implementation has {total} segments, exceeding the rubric "
-        f"cap of {cap}. Beyond a few hundred segments, the segment library "
-        "becomes a graveyard: nobody can find the right segment, so they "
-        "create a new one, and the cycle compounds."
-    )
-    return [
-        _make_finding(ctx, title=f"{total} segments defined (cap: {cap})", paragraph=paragraph)
-    ]
 
 
 # ---------------------------------------------------------------------------

@@ -170,7 +170,7 @@
     {
       "id": "variables/evar11",
       "name": "eVar 11",
-      "description": "eVar 11 description.",
+      "description": null,
       "type": "string",
       "category": "Custom",
       "tags": [],
@@ -185,7 +185,7 @@
     {
       "id": "variables/evar12",
       "name": "eVar 12",
-      "description": "eVar 12 description.",
+      "description": null,
       "type": "string",
       "category": "Custom",
       "tags": [],
@@ -200,7 +200,7 @@
     {
       "id": "variables/evar13",
       "name": "eVar 13",
-      "description": "eVar 13 description.",
+      "description": null,
       "type": "string",
       "category": "Custom",
       "tags": [
@@ -217,7 +217,7 @@
     {
       "id": "variables/evar14",
       "name": "eVar 14",
-      "description": "eVar 14 description.",
+      "description": null,
       "type": "string",
       "category": "Custom",
       "tags": [],
@@ -232,7 +232,7 @@
     {
       "id": "variables/evar15",
       "name": "eVar 15",
-      "description": "eVar 15 description.",
+      "description": null,
       "type": "string",
       "category": "Custom",
       "tags": [],
@@ -247,7 +247,7 @@
     {
       "id": "variables/evar16",
       "name": "eVar 16",
-      "description": "eVar 16 description.",
+      "description": null,
       "type": "string",
       "category": "Custom",
       "tags": [
@@ -264,7 +264,7 @@
     {
       "id": "variables/evar17",
       "name": "eVar 17",
-      "description": "eVar 17 description.",
+      "description": null,
       "type": "string",
       "category": "Custom",
       "tags": [],
@@ -279,7 +279,7 @@
     {
       "id": "variables/evar18",
       "name": "eVar 18",
-      "description": "eVar 18 description.",
+      "description": null,
       "type": "string",
       "category": "Custom",
       "tags": [],
@@ -294,7 +294,7 @@
     {
       "id": "variables/evar19",
       "name": "eVar 19",
-      "description": "eVar 19 description.",
+      "description": null,
       "type": "string",
       "category": "Custom",
       "tags": [
@@ -311,7 +311,7 @@
     {
       "id": "variables/evar20",
       "name": "eVar 20",
-      "description": "eVar 20 description.",
+      "description": null,
       "type": "string",
       "category": "Custom",
       "tags": [],
@@ -326,7 +326,7 @@
     {
       "id": "variables/evar21",
       "name": "eVar 21",
-      "description": "eVar 21 description.",
+      "description": null,
       "type": "string",
       "category": "Custom",
       "tags": [],
@@ -341,7 +341,7 @@
     {
       "id": "variables/evar22",
       "name": "eVar 22",
-      "description": "eVar 22 description.",
+      "description": null,
       "type": "string",
       "category": "Custom",
       "tags": [
@@ -654,7 +654,7 @@
     {
       "id": "variables/prop2",
       "name": "Prop 2",
-      "description": "Prop 2 description.",
+      "description": null,
       "type": "string",
       "category": "Content",
       "tags": [
@@ -668,7 +668,7 @@
     {
       "id": "variables/prop3",
       "name": "Prop 3",
-      "description": "Prop 3 description.",
+      "description": null,
       "type": "string",
       "category": "Content",
       "tags": [
@@ -682,7 +682,7 @@
     {
       "id": "variables/prop4",
       "name": "Prop 4",
-      "description": "Prop 4 description.",
+      "description": null,
       "type": "string",
       "category": "Content",
       "tags": [
@@ -710,7 +710,7 @@
     {
       "id": "variables/prop6",
       "name": "Prop 6",
-      "description": "Prop 6 description.",
+      "description": null,
       "type": "string",
       "category": "Content",
       "tags": [
@@ -724,7 +724,7 @@
     {
       "id": "variables/prop7",
       "name": "Prop 7",
-      "description": "Prop 7 description.",
+      "description": null,
       "type": "string",
       "category": "Content",
       "tags": [
@@ -738,7 +738,7 @@
     {
       "id": "variables/prop8",
       "name": "Prop 8",
-      "description": "Prop 8 description.",
+      "description": null,
       "type": "string",
       "category": "Content",
       "tags": [
@@ -766,7 +766,7 @@
     {
       "id": "variables/prop10",
       "name": "Prop 10",
-      "description": "Prop 10 description.",
+      "description": null,
       "type": "string",
       "category": "Content",
       "tags": [
@@ -780,7 +780,7 @@
     {
       "id": "variables/prop11",
       "name": "Prop 11",
-      "description": "Prop 11 description.",
+      "description": null,
       "type": "string",
       "category": "Content",
       "tags": [
@@ -808,7 +808,7 @@
     {
       "id": "variables/prop13",
       "name": "Prop 13",
-      "description": null,
+      "description": "Prop 13 description.",
       "type": "string",
       "category": "Content",
       "tags": [
@@ -864,7 +864,7 @@
     {
       "id": "variables/prop17",
       "name": "Prop 17",
-      "description": null,
+      "description": "Prop 17 description.",
       "type": "string",
       "category": "Content",
       "tags": [
@@ -934,7 +934,7 @@
     {
       "id": "metrics/event2",
       "name": "Event 2",
-      "description": "Event description.",
+      "description": null,
       "type": "int",
       "category": "Conversion",
       "data_group": "Conversion",
@@ -946,7 +946,7 @@
     {
       "id": "metrics/event3",
       "name": "Event 3",
-      "description": "Event description.",
+      "description": null,
       "type": "int",
       "category": "Conversion",
       "data_group": "Conversion",
@@ -970,7 +970,7 @@
     {
       "id": "metrics/event5",
       "name": "Event 5",
-      "description": "Event description.",
+      "description": null,
       "type": "int",
       "category": "Conversion",
       "data_group": "Conversion",
@@ -982,7 +982,7 @@
     {
       "id": "metrics/event6",
       "name": "Event 6",
-      "description": "Event description.",
+      "description": null,
       "type": "int",
       "category": "Conversion",
       "data_group": "Conversion",
@@ -1006,7 +1006,7 @@
     {
       "id": "metrics/event8",
       "name": "Event 8",
-      "description": "Event description.",
+      "description": null,
       "type": "int",
       "category": "Conversion",
       "data_group": "Conversion",
@@ -1018,7 +1018,7 @@
     {
       "id": "metrics/event9",
       "name": "Event 9",
-      "description": "Event description.",
+      "description": null,
       "type": "int",
       "category": "Conversion",
       "data_group": "Conversion",
@@ -1030,7 +1030,7 @@
     {
       "id": "metrics/event10",
       "name": "Event 10",
-      "description": null,
+      "description": "Event description.",
       "type": "int",
       "category": "Conversion",
       "data_group": "Conversion",
@@ -1066,7 +1066,7 @@
     {
       "id": "metrics/event13",
       "name": "Event 13",
-      "description": null,
+      "description": "Event description.",
       "type": "int",
       "category": "Conversion",
       "data_group": "Conversion",
