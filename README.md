@@ -118,10 +118,11 @@ filename conventions and flag interactions, or
 
 ## Supplementary inputs
 
-Some rules grade against data the snapshot itself doesn't carry.
-Attach JSON at run time with `--extra-input KEY=PATH` (repeatable);
-rules read their key from `Implementation.supplementary_data` and stay
-silent when it's absent. See
+Rules can optionally grade against data the snapshot doesn't carry
+by reading from `Implementation.supplementary_data`. Operators feed
+that map via `--extra-input KEY=PATH` (repeatable); rules whose key
+is absent stay silent, so attaching extra inputs only matters for
+rules that ask for them. See
 [docs/SUPPLEMENTARY_INPUTS.md](docs/SUPPLEMENTARY_INPUTS.md).
 
 ## Internal leaderboards
