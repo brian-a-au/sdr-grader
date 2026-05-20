@@ -196,6 +196,13 @@ Customizing the rubric:
 - [docs/RUBRIC_FORMAT.md](docs/RUBRIC_FORMAT.md) — YAML rubric schema
 - [docs/SUPPLEMENTARY_INPUTS.md](docs/SUPPLEMENTARY_INPUTS.md) — `--extra-input` mechanism
 
+Calibration:
+
+- [docs/CALIBRATION_CORPUS.md](docs/CALIBRATION_CORPUS.md) — how the
+  108-snapshot corpus behind the default thresholds is assembled
+- [docs/threshold_calibration.md](docs/threshold_calibration.md) —
+  per-rule distributions + confidence ratings (auto-generated)
+
 Running and reporting:
 
 - [docs/CI_INTEGRATION.md](docs/CI_INTEGRATION.md) — using `--fail-below` in CI

@@ -1,5 +1,5 @@
 pack: pragmatic
-version: "0.1"
+version: "1.0"
 description: |
   Pragmatic rubric — same rule IDs as strict, looser thresholds. Suitable
   for teams that want a sanity check rather than an audit. The category

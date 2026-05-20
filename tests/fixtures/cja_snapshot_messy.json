@@ -529,7 +529,7 @@
       "name": "Metric 039",
       "type": "currency",
       "title": "Metric 039",
-      "description": "Auto-generated metric 039.",
+      "description": "-",
       "dataType": "decimal",
       "precision": 2,
       "owner": "r.kim+5@example.com",
@@ -542,7 +542,7 @@
       "name": "Metric 040",
       "type": "int",
       "title": "Metric 040",
-      "description": "Auto-generated metric 040.",
+      "description": "-",
       "dataType": "integer",
       "precision": 0,
       "owner": "r.kim+1@example.com",
@@ -557,7 +557,7 @@
       "name": "Metric 041",
       "type": "int",
       "title": "Metric 041",
-      "description": "Auto-generated metric 041.",
+      "description": "-",
       "dataType": "integer",
       "precision": 0,
       "owner": "r.kim+2@example.com",
@@ -570,7 +570,7 @@
       "name": "Metric 042",
       "type": "currency",
       "title": "Metric 042",
-      "description": "Auto-generated metric 042.",
+      "description": "-",
       "dataType": "decimal",
       "precision": 2,
       "owner": "r.kim+3@example.com",
@@ -583,7 +583,7 @@
       "name": "Metric 043",
       "type": "int",
       "title": "Metric 043",
-      "description": "Auto-generated metric 043.",
+      "description": "-",
       "dataType": "integer",
       "precision": 0,
       "owner": "r.kim+4@example.com",
@@ -596,7 +596,7 @@
       "name": "Metric 044",
       "type": "int",
       "title": "Metric 044",
-      "description": "Auto-generated metric 044.",
+      "description": "-",
       "dataType": "integer",
       "precision": 0,
       "owner": "r.kim+5@example.com",
@@ -611,7 +611,7 @@
       "name": "Metric 045",
       "type": "currency",
       "title": "Metric 045",
-      "description": "Auto-generated metric 045.",
+      "description": "-",
       "dataType": "decimal",
       "precision": 2,
       "owner": "r.kim+1@example.com",
@@ -624,7 +624,7 @@
       "name": "Metric 046",
       "type": "int",
       "title": "Metric 046",
-      "description": "Auto-generated metric 046.",
+      "description": "-",
       "dataType": "integer",
       "precision": 0,
       "owner": "r.kim+2@example.com",
@@ -637,7 +637,7 @@
       "name": "Metric 047",
       "type": "int",
       "title": "Metric 047",
-      "description": "Auto-generated metric 047.",
+      "description": "-",
       "dataType": "integer",
       "precision": 0,
       "owner": "r.kim+3@example.com",
@@ -650,7 +650,7 @@
       "name": "Metric 048",
       "type": "currency",
       "title": "Metric 048",
-      "description": "Auto-generated metric 048.",
+      "description": "-",
       "dataType": "decimal",
       "precision": 2,
       "owner": "r.kim+4@example.com",
@@ -665,7 +665,7 @@
       "name": "Metric 049",
       "type": "int",
       "title": "Metric 049",
-      "description": "Auto-generated metric 049.",
+      "description": "-",
       "dataType": "integer",
       "precision": 0,
       "owner": "r.kim+5@example.com",
@@ -678,7 +678,7 @@
       "name": "Metric 050",
       "type": "int",
       "title": "Metric 050",
-      "description": "Auto-generated metric 050.",
+      "description": "-",
       "dataType": "integer",
       "precision": 0,
       "owner": "r.kim+1@example.com",
@@ -691,7 +691,7 @@
       "name": "Metric 051",
       "type": "currency",
       "title": "Metric 051",
-      "description": "Auto-generated metric 051.",
+      "description": "-",
       "dataType": "decimal",
       "precision": 2,
       "owner": "r.kim+2@example.com",
@@ -704,7 +704,7 @@
       "name": "Metric 052",
       "type": "int",
       "title": "Metric 052",
-      "description": "Auto-generated metric 052.",
+      "description": "-",
       "dataType": "integer",
       "precision": 0,
       "owner": "r.kim+3@example.com",
@@ -719,7 +719,7 @@
       "name": "Metric 053",
       "type": "int",
       "title": "Metric 053",
-      "description": "Auto-generated metric 053.",
+      "description": "-",
       "dataType": "integer",
       "precision": 0,
       "owner": "r.kim+4@example.com",
@@ -732,7 +732,7 @@
       "name": "Metric 054",
       "type": "currency",
       "title": "Metric 054",
-      "description": "Auto-generated metric 054.",
+      "description": "-",
       "dataType": "decimal",
       "precision": 2,
       "owner": "r.kim+5@example.com",
@@ -745,7 +745,7 @@
       "name": "Metric 055",
       "type": "int",
       "title": "Metric 055",
-      "description": "Auto-generated metric 055.",
+      "description": "-",
       "dataType": "integer",
       "precision": 0,
       "owner": "r.kim+1@example.com",
@@ -758,7 +758,7 @@
       "name": "Metric 056",
       "type": "int",
       "title": "Metric 056",
-      "description": "Auto-generated metric 056.",
+      "description": "-",
       "dataType": "integer",
       "precision": 0,
       "owner": "r.kim+2@example.com",
@@ -773,7 +773,7 @@
       "name": "Metric 057",
       "type": "currency",
       "title": "Metric 057",
-      "description": "Auto-generated metric 057.",
+      "description": "-",
       "dataType": "decimal",
       "precision": 2,
       "owner": "r.kim+3@example.com",
@@ -786,7 +786,7 @@
       "name": "Metric 058",
       "type": "int",
       "title": "Metric 058",
-      "description": "Auto-generated metric 058.",
+      "description": "-",
       "dataType": "integer",
       "precision": 0,
       "owner": "r.kim+4@example.com",
@@ -799,7 +799,7 @@
       "name": "Metric 059",
       "type": "int",
       "title": "Metric 059",
-      "description": "Auto-generated metric 059.",
+      "description": "-",
       "dataType": "integer",
       "precision": 0,
       "owner": "r.kim+5@example.com",
@@ -812,7 +812,7 @@
       "name": "Metric 060",
       "type": "currency",
       "title": "Metric 060",
-      "description": "Auto-generated metric 060.",
+      "description": "-",
       "dataType": "decimal",
       "precision": 2,
       "owner": "r.kim+1@example.com",
@@ -827,7 +827,7 @@
       "name": "Metric 061",
       "type": "int",
       "title": "Metric 061",
-      "description": "Auto-generated metric 061.",
+      "description": "-",
       "dataType": "integer",
       "precision": 0,
       "owner": "r.kim+2@example.com",
@@ -840,7 +840,7 @@
       "name": "Metric 062",
       "type": "int",
       "title": "Metric 062",
-      "description": "Auto-generated metric 062.",
+      "description": "-",
       "dataType": "integer",
       "precision": 0,
       "owner": "r.kim+3@example.com",
@@ -853,7 +853,7 @@
       "name": "Metric 063",
       "type": "currency",
       "title": "Metric 063",
-      "description": "Auto-generated metric 063.",
+      "description": "-",
       "dataType": "decimal",
       "precision": 2,
       "owner": "r.kim+4@example.com",
@@ -866,7 +866,7 @@
       "name": "Metric 064",
       "type": "int",
       "title": "Metric 064",
-      "description": "Auto-generated metric 064.",
+      "description": "-",
       "dataType": "integer",
       "precision": 0,
       "owner": "r.kim+5@example.com",
@@ -881,7 +881,7 @@
       "name": "Metric 065",
       "type": "int",
       "title": "Metric 065",
-      "description": "Auto-generated metric 065.",
+      "description": "-",
       "dataType": "integer",
       "precision": 0,
       "owner": "r.kim+1@example.com",
@@ -894,7 +894,7 @@
       "name": "Metric 066",
       "type": "currency",
       "title": "Metric 066",
-      "description": "Auto-generated metric 066.",
+      "description": "-",
       "dataType": "decimal",
       "precision": 2,
       "owner": "r.kim+2@example.com",
@@ -907,7 +907,7 @@
       "name": "Metric 067",
       "type": "int",
       "title": "Metric 067",
-      "description": "Auto-generated metric 067.",
+      "description": "-",
       "dataType": "integer",
       "precision": 0,
       "owner": "r.kim+3@example.com",
@@ -920,7 +920,7 @@
       "name": "Metric 068",
       "type": "int",
       "title": "Metric 068",
-      "description": "Auto-generated metric 068.",
+      "description": "-",
       "dataType": "integer",
       "precision": 0,
       "owner": "r.kim+4@example.com",
@@ -935,7 +935,7 @@
       "name": "Metric 069",
       "type": "currency",
       "title": "Metric 069",
-      "description": "Auto-generated metric 069.",
+      "description": "-",
       "dataType": "decimal",
       "precision": 2,
       "owner": "r.kim+5@example.com",
@@ -948,7 +948,7 @@
       "name": "Metric 070",
       "type": "int",
       "title": "Metric 070",
-      "description": "Auto-generated metric 070.",
+      "description": "-",
       "dataType": "integer",
       "precision": 0,
       "owner": "r.kim+1@example.com",
@@ -2571,7 +2571,7 @@
       "name": "Dimension 052",
       "type": "string",
       "title": "Dimension 052",
-      "description": "Auto-generated dimension 052.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+4@example.com",
       "tags": [
@@ -2585,7 +2585,7 @@
       "name": "Dimension 053",
       "type": "string",
       "title": "Dimension 053",
-      "description": "Auto-generated dimension 053.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+5@example.com",
       "tags": [],
@@ -2597,7 +2597,7 @@
       "name": "Dimension 054",
       "type": "string",
       "title": "Dimension 054",
-      "description": "Auto-generated dimension 054.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+6@example.com",
       "tags": [],
@@ -2609,7 +2609,7 @@
       "name": "Dimension 055",
       "type": "string",
       "title": "Dimension 055",
-      "description": "Auto-generated dimension 055.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+7@example.com",
       "tags": [],
@@ -2621,7 +2621,7 @@
       "name": "Dimension 056",
       "type": "string",
       "title": "Dimension 056",
-      "description": "Auto-generated dimension 056.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+1@example.com",
       "tags": [
@@ -2635,7 +2635,7 @@
       "name": "Dimension 057",
       "type": "string",
       "title": "Dimension 057",
-      "description": "Auto-generated dimension 057.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+2@example.com",
       "tags": [],
@@ -2647,7 +2647,7 @@
       "name": "Dimension 058",
       "type": "string",
       "title": "Dimension 058",
-      "description": "Auto-generated dimension 058.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+3@example.com",
       "tags": [],
@@ -2659,7 +2659,7 @@
       "name": "Dimension 059",
       "type": "string",
       "title": "Dimension 059",
-      "description": "Auto-generated dimension 059.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+4@example.com",
       "tags": [],
@@ -2671,7 +2671,7 @@
       "name": "Dimension 060",
       "type": "string",
       "title": "Dimension 060",
-      "description": "Auto-generated dimension 060.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+5@example.com",
       "tags": [
@@ -2685,7 +2685,7 @@
       "name": "Dimension 061",
       "type": "string",
       "title": "Dimension 061",
-      "description": "Auto-generated dimension 061.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+6@example.com",
       "tags": [],
@@ -2697,7 +2697,7 @@
       "name": "Dimension 062",
       "type": "string",
       "title": "Dimension 062",
-      "description": "Auto-generated dimension 062.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+7@example.com",
       "tags": [],
@@ -2709,7 +2709,7 @@
       "name": "Dimension 063",
       "type": "string",
       "title": "Dimension 063",
-      "description": "Auto-generated dimension 063.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+1@example.com",
       "tags": [],
@@ -2721,7 +2721,7 @@
       "name": "Dimension 064",
       "type": "string",
       "title": "Dimension 064",
-      "description": "Auto-generated dimension 064.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+2@example.com",
       "tags": [
@@ -2735,7 +2735,7 @@
       "name": "Dimension 065",
       "type": "string",
       "title": "Dimension 065",
-      "description": "Auto-generated dimension 065.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+3@example.com",
       "tags": [],
@@ -2747,7 +2747,7 @@
       "name": "Dimension 066",
       "type": "string",
       "title": "Dimension 066",
-      "description": "Auto-generated dimension 066.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+4@example.com",
       "tags": [],
@@ -2759,7 +2759,7 @@
       "name": "Dimension 067",
       "type": "string",
       "title": "Dimension 067",
-      "description": "Auto-generated dimension 067.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+5@example.com",
       "tags": [],
@@ -2771,7 +2771,7 @@
       "name": "Dimension 068",
       "type": "string",
       "title": "Dimension 068",
-      "description": "Auto-generated dimension 068.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+6@example.com",
       "tags": [
@@ -2785,7 +2785,7 @@
       "name": "Dimension 069",
       "type": "string",
       "title": "Dimension 069",
-      "description": "Auto-generated dimension 069.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+7@example.com",
       "tags": [],
@@ -2797,7 +2797,7 @@
       "name": "Dimension 070",
       "type": "string",
       "title": "Dimension 070",
-      "description": "Auto-generated dimension 070.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+1@example.com",
       "tags": [],
@@ -2809,7 +2809,7 @@
       "name": "Dimension 071",
       "type": "string",
       "title": "Dimension 071",
-      "description": "Auto-generated dimension 071.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+2@example.com",
       "tags": [],
@@ -2821,7 +2821,7 @@
       "name": "Dimension 072",
       "type": "string",
       "title": "Dimension 072",
-      "description": "Auto-generated dimension 072.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+3@example.com",
       "tags": [
@@ -2835,7 +2835,7 @@
       "name": "Dimension 073",
       "type": "string",
       "title": "Dimension 073",
-      "description": "Auto-generated dimension 073.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+4@example.com",
       "tags": [],
@@ -2847,7 +2847,7 @@
       "name": "Dimension 074",
       "type": "string",
       "title": "Dimension 074",
-      "description": "Auto-generated dimension 074.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+5@example.com",
       "tags": [],
@@ -2859,7 +2859,7 @@
       "name": "Dimension 075",
       "type": "string",
       "title": "Dimension 075",
-      "description": "Auto-generated dimension 075.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+6@example.com",
       "tags": [],
@@ -2871,7 +2871,7 @@
       "name": "Dimension 076",
       "type": "string",
       "title": "Dimension 076",
-      "description": "Auto-generated dimension 076.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+7@example.com",
       "tags": [
@@ -2885,7 +2885,7 @@
       "name": "Dimension 077",
       "type": "string",
       "title": "Dimension 077",
-      "description": "Auto-generated dimension 077.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+1@example.com",
       "tags": [],
@@ -2897,7 +2897,7 @@
       "name": "Dimension 078",
       "type": "string",
       "title": "Dimension 078",
-      "description": "Auto-generated dimension 078.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+2@example.com",
       "tags": [],
@@ -2909,7 +2909,7 @@
       "name": "Dimension 079",
       "type": "string",
       "title": "Dimension 079",
-      "description": "Auto-generated dimension 079.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+3@example.com",
       "tags": [],
@@ -2921,7 +2921,7 @@
       "name": "Dimension 080",
       "type": "string",
       "title": "Dimension 080",
-      "description": "Auto-generated dimension 080.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+4@example.com",
       "tags": [
@@ -2935,7 +2935,7 @@
       "name": "Dimension 081",
       "type": "string",
       "title": "Dimension 081",
-      "description": "Auto-generated dimension 081.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+5@example.com",
       "tags": [],
@@ -2947,7 +2947,7 @@
       "name": "Dimension 082",
       "type": "string",
       "title": "Dimension 082",
-      "description": "Auto-generated dimension 082.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+6@example.com",
       "tags": [],
@@ -2959,7 +2959,7 @@
       "name": "Dimension 083",
       "type": "string",
       "title": "Dimension 083",
-      "description": "Auto-generated dimension 083.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+7@example.com",
       "tags": [],
@@ -2971,7 +2971,7 @@
       "name": "Dimension 084",
       "type": "string",
       "title": "Dimension 084",
-      "description": "Auto-generated dimension 084.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+1@example.com",
       "tags": [
@@ -2985,7 +2985,7 @@
       "name": "Dimension 085",
       "type": "string",
       "title": "Dimension 085",
-      "description": "Auto-generated dimension 085.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+2@example.com",
       "tags": [],
@@ -2997,7 +2997,7 @@
       "name": "Dimension 086",
       "type": "string",
       "title": "Dimension 086",
-      "description": "Auto-generated dimension 086.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+3@example.com",
       "tags": [],
@@ -3009,7 +3009,7 @@
       "name": "Dimension 087",
       "type": "string",
       "title": "Dimension 087",
-      "description": "Auto-generated dimension 087.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+4@example.com",
       "tags": [],
@@ -3021,7 +3021,7 @@
       "name": "Dimension 088",
       "type": "string",
       "title": "Dimension 088",
-      "description": "Auto-generated dimension 088.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+5@example.com",
       "tags": [
@@ -3035,7 +3035,7 @@
       "name": "Dimension 089",
       "type": "string",
       "title": "Dimension 089",
-      "description": "Auto-generated dimension 089.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+6@example.com",
       "tags": [],
@@ -3047,7 +3047,7 @@
       "name": "Dimension 090",
       "type": "string",
       "title": "Dimension 090",
-      "description": "Auto-generated dimension 090.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+7@example.com",
       "tags": [],
@@ -3059,7 +3059,7 @@
       "name": "Dimension 091",
       "type": "string",
       "title": "Dimension 091",
-      "description": "Auto-generated dimension 091.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+1@example.com",
       "tags": [],
@@ -3071,7 +3071,7 @@
       "name": "Dimension 092",
       "type": "string",
       "title": "Dimension 092",
-      "description": "Auto-generated dimension 092.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+2@example.com",
       "tags": [
@@ -3085,7 +3085,7 @@
       "name": "Dimension 093",
       "type": "string",
       "title": "Dimension 093",
-      "description": "Auto-generated dimension 093.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+3@example.com",
       "tags": [],
@@ -3097,7 +3097,7 @@
       "name": "Dimension 094",
       "type": "string",
       "title": "Dimension 094",
-      "description": "Auto-generated dimension 094.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+4@example.com",
       "tags": [],
@@ -3109,7 +3109,7 @@
       "name": "Dimension 095",
       "type": "string",
       "title": "Dimension 095",
-      "description": "Auto-generated dimension 095.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+5@example.com",
       "tags": [],
@@ -3121,7 +3121,7 @@
       "name": "Dimension 096",
       "type": "string",
       "title": "Dimension 096",
-      "description": "Auto-generated dimension 096.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+6@example.com",
       "tags": [
@@ -3135,7 +3135,7 @@
       "name": "Dimension 097",
       "type": "string",
       "title": "Dimension 097",
-      "description": "Auto-generated dimension 097.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+7@example.com",
       "tags": [],
@@ -3147,7 +3147,7 @@
       "name": "Dimension 098",
       "type": "string",
       "title": "Dimension 098",
-      "description": "Auto-generated dimension 098.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+1@example.com",
       "tags": [],
@@ -3159,7 +3159,7 @@
       "name": "Dimension 099",
       "type": "string",
       "title": "Dimension 099",
-      "description": "Auto-generated dimension 099.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+2@example.com",
       "tags": [],
@@ -3171,7 +3171,7 @@
       "name": "Dimension 100",
       "type": "string",
       "title": "Dimension 100",
-      "description": "Auto-generated dimension 100.",
+      "description": "-",
       "dataType": "string",
       "owner": "a.patel+3@example.com",
       "tags": [
@@ -4478,7 +4478,7 @@
         "component_id": "derived/df_field_001",
         "component_name": "Derived Field 001",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 001.",
+        "description": "",
         "complexity_score": 11.0,
         "functions_used": [
           "concat"
@@ -4505,7 +4505,7 @@
         "component_id": "derived/df_field_002",
         "component_name": "Derived Field 002",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 002.",
+        "description": "",
         "complexity_score": 12.0,
         "functions_used": [
           "concat"
@@ -4532,7 +4532,7 @@
         "component_id": "derived/df_field_003",
         "component_name": "Derived Field 003",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 003.",
+        "description": "",
         "complexity_score": 13.0,
         "functions_used": [
           "concat"
@@ -4559,7 +4559,7 @@
         "component_id": "derived/df_field_004",
         "component_name": "Derived Field 004",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 004.",
+        "description": "",
         "complexity_score": 14.0,
         "functions_used": [
           "concat"
@@ -4586,7 +4586,7 @@
         "component_id": "derived/df_field_005",
         "component_name": "Derived Field 005",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 005.",
+        "description": "",
         "complexity_score": 15.0,
         "functions_used": [
           "concat"
@@ -4613,7 +4613,7 @@
         "component_id": "derived/df_field_006",
         "component_name": "Derived Field 006",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 006.",
+        "description": "",
         "complexity_score": 16.0,
         "functions_used": [
           "concat"
@@ -4640,7 +4640,7 @@
         "component_id": "derived/df_field_007",
         "component_name": "Derived Field 007",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 007.",
+        "description": "",
         "complexity_score": 17.0,
         "functions_used": [
           "concat"
@@ -4667,7 +4667,7 @@
         "component_id": "derived/df_field_008",
         "component_name": "Derived Field 008",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 008.",
+        "description": "",
         "complexity_score": 18.0,
         "functions_used": [
           "concat"
@@ -4694,7 +4694,7 @@
         "component_id": "derived/df_field_009",
         "component_name": "Derived Field 009",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 009.",
+        "description": "",
         "complexity_score": 19.0,
         "functions_used": [
           "concat"
@@ -4721,7 +4721,7 @@
         "component_id": "derived/df_field_010",
         "component_name": "Derived Field 010",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 010.",
+        "description": "",
         "complexity_score": 20.0,
         "functions_used": [
           "concat"
@@ -4748,7 +4748,7 @@
         "component_id": "derived/df_field_011",
         "component_name": "Derived Field 011",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 011.",
+        "description": "",
         "complexity_score": 21.0,
         "functions_used": [
           "concat"
@@ -4775,7 +4775,7 @@
         "component_id": "derived/df_field_012",
         "component_name": "Derived Field 012",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 012.",
+        "description": "",
         "complexity_score": 22.0,
         "functions_used": [
           "concat"
@@ -4802,7 +4802,7 @@
         "component_id": "derived/df_field_013",
         "component_name": "Derived Field 013",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 013.",
+        "description": "",
         "complexity_score": 23.0,
         "functions_used": [
           "concat"
@@ -4829,7 +4829,7 @@
         "component_id": "derived/df_field_014",
         "component_name": "Derived Field 014",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 014.",
+        "description": "",
         "complexity_score": 24.0,
         "functions_used": [
           "concat"
@@ -4856,7 +4856,7 @@
         "component_id": "derived/df_field_015",
         "component_name": "Derived Field 015",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 015.",
+        "description": "",
         "complexity_score": 25.0,
         "functions_used": [
           "concat"
@@ -4883,7 +4883,7 @@
         "component_id": "derived/df_field_016",
         "component_name": "Derived Field 016",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 016.",
+        "description": "",
         "complexity_score": 26.0,
         "functions_used": [
           "concat"
@@ -4910,7 +4910,7 @@
         "component_id": "derived/df_field_017",
         "component_name": "Derived Field 017",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 017.",
+        "description": "",
         "complexity_score": 27.0,
         "functions_used": [
           "concat"
@@ -4937,7 +4937,7 @@
         "component_id": "derived/df_field_018",
         "component_name": "Derived Field 018",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 018.",
+        "description": "",
         "complexity_score": 28.0,
         "functions_used": [
           "concat"
@@ -4964,7 +4964,7 @@
         "component_id": "derived/df_field_019",
         "component_name": "Derived Field 019",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 019.",
+        "description": "",
         "complexity_score": 29.0,
         "functions_used": [
           "concat"
@@ -4991,7 +4991,7 @@
         "component_id": "derived/df_field_020",
         "component_name": "Derived Field 020",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 020.",
+        "description": "",
         "complexity_score": 30.0,
         "functions_used": [
           "concat"
@@ -5018,7 +5018,7 @@
         "component_id": "derived/df_field_021",
         "component_name": "Derived Field 021",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 021.",
+        "description": "",
         "complexity_score": 31.0,
         "functions_used": [
           "concat"
@@ -5045,7 +5045,7 @@
         "component_id": "derived/df_field_022",
         "component_name": "Derived Field 022",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 022.",
+        "description": "",
         "complexity_score": 32.0,
         "functions_used": [
           "concat"
@@ -5072,7 +5072,7 @@
         "component_id": "derived/df_field_023",
         "component_name": "Derived Field 023",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 023.",
+        "description": "",
         "complexity_score": 33.0,
         "functions_used": [
           "concat"
@@ -5099,7 +5099,7 @@
         "component_id": "derived/df_field_024",
         "component_name": "Derived Field 024",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 024.",
+        "description": "",
         "complexity_score": 34.0,
         "functions_used": [
           "concat"
@@ -5126,7 +5126,7 @@
         "component_id": "derived/df_field_025",
         "component_name": "Derived Field 025",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 025.",
+        "description": "",
         "complexity_score": 35.0,
         "functions_used": [
           "concat"
@@ -5153,7 +5153,7 @@
         "component_id": "derived/df_field_026",
         "component_name": "Derived Field 026",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 026.",
+        "description": "",
         "complexity_score": 36.0,
         "functions_used": [
           "concat"
@@ -5180,7 +5180,7 @@
         "component_id": "derived/df_field_027",
         "component_name": "Derived Field 027",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 027.",
+        "description": "",
         "complexity_score": 37.0,
         "functions_used": [
           "concat"
@@ -5207,7 +5207,7 @@
         "component_id": "derived/df_field_028",
         "component_name": "Derived Field 028",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 028.",
+        "description": "",
         "complexity_score": 38.0,
         "functions_used": [
           "concat"
@@ -5234,7 +5234,7 @@
         "component_id": "derived/df_field_029",
         "component_name": "Derived Field 029",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 029.",
+        "description": "",
         "complexity_score": 39.0,
         "functions_used": [
           "concat"
@@ -5261,7 +5261,7 @@
         "component_id": "derived/df_field_030",
         "component_name": "Derived Field 030",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 030.",
+        "description": "",
         "complexity_score": 10.0,
         "functions_used": [
           "concat"
@@ -5288,7 +5288,7 @@
         "component_id": "derived/df_field_031",
         "component_name": "Derived Field 031",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 031.",
+        "description": "",
         "complexity_score": 11.0,
         "functions_used": [
           "concat"
@@ -5315,7 +5315,7 @@
         "component_id": "derived/df_field_032",
         "component_name": "Derived Field 032",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 032.",
+        "description": "",
         "complexity_score": 12.0,
         "functions_used": [
           "concat"
@@ -5342,7 +5342,7 @@
         "component_id": "derived/df_field_033",
         "component_name": "Derived Field 033",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 033.",
+        "description": "",
         "complexity_score": 13.0,
         "functions_used": [
           "concat"
@@ -5369,7 +5369,7 @@
         "component_id": "derived/df_field_034",
         "component_name": "Derived Field 034",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 034.",
+        "description": "",
         "complexity_score": 14.0,
         "functions_used": [
           "concat"
@@ -5396,7 +5396,7 @@
         "component_id": "derived/df_field_035",
         "component_name": "Derived Field 035",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 035.",
+        "description": "",
         "complexity_score": 15.0,
         "functions_used": [
           "concat"
@@ -5423,7 +5423,7 @@
         "component_id": "derived/df_field_036",
         "component_name": "Derived Field 036",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 036.",
+        "description": "",
         "complexity_score": 16.0,
         "functions_used": [
           "concat"
@@ -5450,7 +5450,7 @@
         "component_id": "derived/df_field_037",
         "component_name": "Derived Field 037",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 037.",
+        "description": "",
         "complexity_score": 17.0,
         "functions_used": [
           "concat"
@@ -5477,7 +5477,7 @@
         "component_id": "derived/df_field_038",
         "component_name": "Derived Field 038",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 038.",
+        "description": "",
         "complexity_score": 18.0,
         "functions_used": [
           "concat"
@@ -5504,7 +5504,7 @@
         "component_id": "derived/df_field_039",
         "component_name": "Derived Field 039",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 039.",
+        "description": "",
         "complexity_score": 19.0,
         "functions_used": [
           "concat"
@@ -5531,7 +5531,7 @@
         "component_id": "derived/df_field_040",
         "component_name": "Derived Field 040",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 040.",
+        "description": "",
         "complexity_score": 20.0,
         "functions_used": [
           "concat"
@@ -5558,7 +5558,7 @@
         "component_id": "derived/df_field_041",
         "component_name": "Derived Field 041",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 041.",
+        "description": "",
         "complexity_score": 21.0,
         "functions_used": [
           "concat"
@@ -5585,7 +5585,7 @@
         "component_id": "derived/df_field_042",
         "component_name": "Derived Field 042",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 042.",
+        "description": "",
         "complexity_score": 22.0,
         "functions_used": [
           "concat"
@@ -5612,7 +5612,7 @@
         "component_id": "derived/df_field_043",
         "component_name": "Derived Field 043",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 043.",
+        "description": "",
         "complexity_score": 23.0,
         "functions_used": [
           "concat"
@@ -5639,7 +5639,7 @@
         "component_id": "derived/df_field_044",
         "component_name": "Derived Field 044",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 044.",
+        "description": "",
         "complexity_score": 24.0,
         "functions_used": [
           "concat"
@@ -5666,7 +5666,7 @@
         "component_id": "derived/df_field_045",
         "component_name": "Derived Field 045",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 045.",
+        "description": "",
         "complexity_score": 25.0,
         "functions_used": [
           "concat"
@@ -5693,7 +5693,7 @@
         "component_id": "derived/df_field_046",
         "component_name": "Derived Field 046",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 046.",
+        "description": "",
         "complexity_score": 26.0,
         "functions_used": [
           "concat"
@@ -5720,7 +5720,7 @@
         "component_id": "derived/df_field_047",
         "component_name": "Derived Field 047",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 047.",
+        "description": "",
         "complexity_score": 27.0,
         "functions_used": [
           "concat"
@@ -5747,7 +5747,7 @@
         "component_id": "derived/df_field_048",
         "component_name": "Derived Field 048",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 048.",
+        "description": "",
         "complexity_score": 28.0,
         "functions_used": [
           "concat"
@@ -5774,7 +5774,7 @@
         "component_id": "derived/df_field_049",
         "component_name": "Derived Field 049",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 049.",
+        "description": "",
         "complexity_score": 29.0,
         "functions_used": [
           "concat"
@@ -5801,7 +5801,7 @@
         "component_id": "derived/df_field_050",
         "component_name": "Derived Field 050",
         "component_type": "derived_field",
-        "description": "Auto-generated derived field 050.",
+        "description": "",
         "complexity_score": 30.0,
         "functions_used": [
           "concat"

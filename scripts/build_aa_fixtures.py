@@ -40,6 +40,7 @@ def _evar(idx: int, *, description: str | None, allocation: str = "most-recent",
 
 
 def _prop(idx: int, *, description: str | None,
+          tags: list[str] | None = None,
           owner_id: int | None = None) -> dict[str, Any]:
     return {
         "id": f"variables/prop{idx}",
@@ -47,7 +48,7 @@ def _prop(idx: int, *, description: str | None,
         "description": description,
         "type": "string",
         "category": "Content",
-        "tags": ["taxonomy"],
+        "tags": tags if tags is not None else ["taxonomy"],
         "parent": "",
         "pathable": True,
         "owner_id": owner_id,
@@ -56,6 +57,7 @@ def _prop(idx: int, *, description: str | None,
 
 
 def _event(idx: int, *, description: str | None,
+           tags: list[str] | None = None,
            owner_id: int | None = None) -> dict[str, Any]:
     return {
         "id": f"metrics/event{idx}",
@@ -64,7 +66,7 @@ def _event(idx: int, *, description: str | None,
         "type": "int",
         "category": "Conversion",
         "data_group": "Conversion",
-        "tags": [],
+        "tags": tags or [],
         "precision": 0,
         "segmentable": True,
         "owner_id": owner_id,
@@ -75,7 +77,10 @@ def build_messy_aa_snapshot() -> dict[str, Any]:
     evars: list[dict[str, Any]] = []
     for i in range(40):
         idx = i + 1
-        has_desc = i >= 10  # 10/40 missing descriptions
+        # 22/40 missing descriptions (55%) — above the calibrated SCH-003
+        # strict threshold of 0.35 so the messy fixture actually exercises
+        # the rule.
+        has_desc = i >= 22
         evars.append(
             _evar(
                 idx,
@@ -86,8 +91,10 @@ def build_messy_aa_snapshot() -> dict[str, Any]:
             )
         )
 
-    props = [_prop(i + 1, description=f"Prop {i+1} description." if i % 4 else None) for i in range(20)]
-    events = [_event(i + 1, description="Event description." if i % 3 else None) for i in range(15)]
+    # 11/20 props missing descriptions, 9/15 events missing — overall ~55%
+    # missing-description rate across the messy fixture.
+    props = [_prop(i + 1, description=f"Prop {i+1} description." if i >= 11 else None) for i in range(20)]
+    events = [_event(i + 1, description="Event description." if i >= 9 else None) for i in range(15)]
 
     calc_metrics = [
         {
@@ -193,12 +200,18 @@ def build_clean_aa_snapshot() -> dict[str, Any]:
         _evar(i + 1, description=f"Documented eVar {i+1}.", tags=["custom"], owner_id=1)
         for i in range(8)
     ]
+    # Props default to tags=["taxonomy"]; preserve so NAME-003 sees a
+    # consistent casing pool per tag (props are Title Case under "taxonomy",
+    # eVars under "custom").
     props = [
         _prop(i + 1, description=f"Documented Prop {i+1}.", owner_id=1)
         for i in range(5)
     ]
+    # Events default to no tags; give them a distinct "event" tag so the
+    # clean fixture has no untagged components but NAME-003 still groups
+    # them separately from custom eVars / taxonomy props.
     events = [
-        _event(i + 1, description=f"Documented event {i+1}.", owner_id=1)
+        _event(i + 1, description=f"Documented event {i+1}.", tags=["event"], owner_id=1)
         for i in range(6)
     ]
 

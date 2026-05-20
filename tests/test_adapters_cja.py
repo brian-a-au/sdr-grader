@@ -2,9 +2,11 @@
 
 Per SPEC §8 Phase 2: round-trip every field, segment depth and calc metric
 complexity computed correctly, references extracted. The messy fixture
-encodes specific known counts (487 components, 89 missing descriptions,
+encodes specific known counts (487 components, 220 missing descriptions,
 4 deep segments, 7 near-duplicate revenue calc metrics) — those numbers
 are part of the test contract and downstream rule tests rely on them.
+Counts were retuned post-calibration so the messy fixture exercises the
+calibrated SCH-003 strict threshold (0.35); see docs/threshold_calibration.md.
 """
 
 from __future__ import annotations
@@ -71,17 +73,17 @@ def test_messy_total_components_is_487(messy_impl: Implementation) -> None:
     assert total == 487
 
 
-def test_messy_missing_descriptions_total_89(messy_impl: Implementation) -> None:
+def test_messy_missing_descriptions_total_220(messy_impl: Implementation) -> None:
     """Adapter must surface missing descriptions; cja_auto_sdr writes '-' for them."""
     components = [*messy_impl.metrics, *messy_impl.dimensions, *messy_impl.derived_fields]
     missing = [c for c in components if c.description is None]
-    assert len(missing) == 89
+    assert len(missing) == 220
     metrics_missing = sum(1 for c in messy_impl.metrics if c.description is None)
     dims_missing = sum(1 for c in messy_impl.dimensions if c.description is None)
     derived_missing = sum(1 for c in messy_impl.derived_fields if c.description is None)
-    assert metrics_missing == 38
-    assert dims_missing == 51
-    assert derived_missing == 0
+    assert metrics_missing == 70
+    assert dims_missing == 100
+    assert derived_missing == 50
 
 
 # ---------------------------------------------------------------------------
@@ -119,16 +121,18 @@ def test_dimension_record_round_trips(messy_impl: Implementation) -> None:
 
 
 def test_derived_field_round_trips(messy_impl: Implementation) -> None:
-    derived = next(d for d in messy_impl.derived_fields if d.id == "derived/df_field_001")
+    # First 50 derived fields are missing descriptions; df_field_051 is the
+    # first that should carry one. Use it for the round-trip check.
+    derived = next(d for d in messy_impl.derived_fields if d.id == "derived/df_field_051")
     assert derived.component_type == "derived_field"
-    assert derived.name == "Derived Field 001"
-    assert derived.description == "Auto-generated derived field 001."
+    assert derived.name == "Derived Field 051"
+    assert derived.description == "Auto-generated derived field 051."
     assert derived.platform_specific.get("schema_field_count") == 2
 
 
 def test_components_with_descriptions_keep_them(messy_impl: Implementation) -> None:
-    documented = next(m for m in messy_impl.metrics if m.id == "metrics/cm_metric_039")
-    assert documented.description == "Auto-generated metric 039."
+    documented = next(m for m in messy_impl.metrics if m.id == "metrics/cm_metric_071")
+    assert documented.description == "Auto-generated metric 071."
 
 
 def test_dash_descriptions_normalize_to_none(messy_impl: Implementation) -> None:

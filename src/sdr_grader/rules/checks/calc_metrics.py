@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections import Counter, defaultdict
+from collections import defaultdict
 from typing import TYPE_CHECKING
 
 from sdr_grader.render import Finding, FindingBlock
@@ -111,37 +111,6 @@ def check_calc_complexity_threshold(
             title=f"{len(over)} high-complexity calc metric{'s' if len(over) != 1 else ''}",
             paragraph=paragraph,
             extra_blocks=[FindingBlock(kind="components", items=items)],
-        )
-    ]
-
-
-# ---------------------------------------------------------------------------
-# CALC-004: excessive attribution model variety
-# ---------------------------------------------------------------------------
-
-
-@register_check("attribution_model_variety")
-def check_attribution_model_variety(
-    impl: Implementation, ctx: RuleContext
-) -> list[Finding]:
-    max_distinct = int(ctx.params.get("max_distinct", 4))
-    counts = Counter(
-        cm.attribution_model for cm in impl.calculated_metrics if cm.attribution_model
-    )
-    if len(counts) <= max_distinct:
-        return []
-    breakdown = ", ".join(f"{model} ({n})" for model, n in counts.most_common())
-    paragraph = (
-        f"{len(counts)} distinct attribution models in active use across calculated "
-        f"metrics; the rubric flags more than {max_distinct}. Each additional model "
-        "is a tax on analysts who must remember which metric uses which logic."
-    )
-    return [
-        _make_finding(
-            ctx,
-            title=f"{len(counts)} distinct attribution models in use",
-            paragraph=paragraph,
-            extra_blocks=[FindingBlock(kind="section", label="Distribution", body_html=breakdown)],
         )
     ]
 

@@ -1,24 +1,10 @@
 category: segment_complexity
 description: |
-  Segment complexity rules — count, container discipline, references,
-  nesting, and duplicates.
+  Segment complexity rules — container discipline, references, nesting,
+  and duplicates. Rules measure shape, ratio, or correctness — never raw
+  cardinality (see SPEC §11).
 
 rules:
-  - id: SEG-001
-    name: Total segment count exceeds reasonable bound
-    severity: low
-    platforms: [cja, aa]
-    check: segment_count_cap
-    params:
-      max_segments: 200
-    rationale: |
-      Beyond a few hundred segments, the segment library becomes a
-      graveyard: nobody can find the right segment, so they create a new
-      one, and the cycle compounds.
-    remediation: |
-      Audit segment usage, archive orphan segments, and consolidate
-      near-duplicates.
-
   - id: SEG-002
     name: Container type mixing within a single segment
     severity: medium
@@ -33,19 +19,14 @@ rules:
       Decompose the segment into composed sub-segments, one per container
       level, and combine them at the surface segment.
 
-  - id: SEG-003
-    name: Orphan segments
-    severity: high
-    platforms: [cja, aa]
-    check: orphan_segments
-    params:
-      threshold: 0.50
-    rationale: |
-      Orphan segments accumulate until nobody can tell which are still in
-      use. Without ongoing pruning, every audit reopens the same questions.
-    remediation: |
-      Audit segment usage in Workspace projects and dashboards, then
-      archive segments with no live consumers.
+  # SEG-003 (orphan_segments) is registered but not in the default packs.
+  # The check counts segments that no other segment / calc metric in the
+  # snapshot references. In production, segments are referenced by
+  # Workspace projects, dashboards, and alerts — none of which the SDR
+  # carries. Calibration across 108 real CJA snapshots showed every
+  # segment-bearing tenant at 100% orphan, so the rule has no signal in
+  # default packs. Operators with Workspace usage data can include the
+  # check in a custom rubric pack via the --extra-input pattern.
 
   - id: SEG-004
     name: Circular segment references
@@ -66,11 +47,16 @@ rules:
     platforms: [cja, aa]
     check: segments_missing_descriptions
     params:
-      threshold: 0.30
+      threshold: 0.95           # calibrated against 41 segment-bearing
+                                # snapshots: ~90% of real tenants have
+                                # 100% segments missing descriptions, so
+                                # only the most egregious cases fire.
     rationale: |
       Segment intent is exactly the kind of audience-defining decision
       that must be documented; future analysts inherit the segment without
-      the conversation that produced it.
+      the conversation that produced it. Real-world adoption of segment
+      descriptions is low — the calibrated threshold accepts that and
+      flags only tenants where literally every segment is undocumented.
     remediation: |
       Add concise descriptions explaining who the segment captures and
       why.
@@ -94,7 +80,7 @@ rules:
     platforms: [cja, aa]
     check: segment_nesting_depth
     params:
-      max_depth: 4
+      max_depth: 5              # calibrated p75 across segment-bearing snapshots
     rationale: |
       Deep nesting makes intent illegible — small definitional changes
       have unpredictable population effects.

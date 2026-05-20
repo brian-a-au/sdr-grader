@@ -1,0 +1,33 @@
+# Example manifest format for the calibration corpus.
+# See docs/CALIBRATION_CORPUS.md for the schema. The real manifest at
+# tests/fixtures/private/manifest.yaml is gitignored along with the rest
+# of the private corpus; this example is committed so contributors see
+# the expected shape without needing access to the corpus itself.
+version: 1
+entries:
+  - anon_id: sdr_example_a
+    platform: cja
+    file: cja/sdr_example_a.json
+    submitted_at: "2026-05-21"
+    cohort:
+      size: M
+      industry: retail
+    anonymization:
+      reviewed_descriptions: true
+      redact_words: ["AcmeCorp"]
+    notes: |
+      Mid-size CJA dataview, ~250 segments, attribution-heavy.
+
+  - anon_id: sdr_example_b
+    platform: aa
+    file: aa/sdr_example_b.json
+    submitted_at: "2026-05-21"
+    cohort:
+      size: L
+      industry: media
+    anonymization:
+      reviewed_descriptions: true
+      redact_words: []
+    notes: |
+      Large AA report suite with high orphan-segment rate; useful for
+      SEG-003 calibration.

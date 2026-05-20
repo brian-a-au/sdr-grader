@@ -3,24 +3,32 @@
 All notable changes follow the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
-## 1.0.0 — 2026-05-09
+## 1.0.0 — 2026-05-20
 
 First public release. The grader covers the full surface the design SPEC
 laid out, plus a Claude Code skill bundle for follow-up question support.
+Default rubric thresholds are calibrated against a 108-snapshot corpus of
+real CJA + AA production implementations — see
+[`docs/threshold_calibration.md`](docs/threshold_calibration.md) for the
+distributions and the per-rule confidence rating behind each threshold.
 
 ### Added
 
 - **Deterministic, rule-based linter** for Adobe CJA and AA implementations.
   Reads `cja_auto_sdr` / `aa_auto_sdr` JSON snapshots; emits a single
   self-contained HTML report card and a parallel machine-readable JSON.
-- **31 rules across 6 categories**: schema hygiene, naming consistency,
+- **24 rules across 6 categories**: schema hygiene, naming consistency,
   segment complexity, calc metric maintainability, attribution coverage,
   governance posture. Every rule in the default packs grades against
   data the snapshot itself carries; check functions that need external
-  evidence (Launch exports, cardinality, SDR docs) ship registered but
-  unwired so operators can include them in a forked pack.
-- **Two bundled rubric packs**: `strict` (master-cert-grade thresholds)
-  and `pragmatic` (sanity-check thresholds, same rule IDs).
+  evidence (Launch exports, cardinality, ownership, downstream usage,
+  SDR docs) ship registered but unwired so operators can include them
+  in a forked pack.
+- **No cardinality rules.** Rules measure shape, ratio, or correctness —
+  never raw counts. See SPEC §11 for the principle and rationale.
+- **Two bundled rubric packs (v1.0)**: `strict` (master-cert-grade,
+  calibrated p75–p90 thresholds) and `pragmatic` (sanity-check,
+  calibrated p90–p95 thresholds, same rule IDs).
 - **Four input modes**: file path, snapshot directory (with
   `--at TIMESTAMP` and `--trend`), shell-out via `--dataview` /
   `--rsid`, and stdin.
@@ -59,12 +67,39 @@ laid out, plus a Claude Code skill bundle for follow-up question support.
 
 - **Determinism is testable.** The same snapshot + rubric produces
   byte-identical HTML and JSON; tests assert this across two runs.
-- **207 tests** cover adapters, rules, engine, grader, CLI, trend
+- **261 tests** cover adapters, rules, engine, grader, CLI, trend
   pipeline, distribution context, supplementary inputs, and the skill
   helper. All pass; ruff clean.
 - **Phase discipline preserved**: each commit produced a working,
   reviewable artifact. The full commit graph from scaffold to 1.0.0 is
   visible in the git history.
+
+### Calibration-driven design decisions
+
+Calibration against a 108-snapshot corpus of real CJA + AA production
+implementations exposed three rule design problems that this release
+addresses:
+
+- **Adobe APIs don't expose `owner` on inline dimensions / metrics.**
+  Every tenant in the corpus measured 100% missing owners even after
+  normalizing the `"Unknown User"` sentinel. `GOV-004 missing_owners`
+  has been moved out of the default packs (still registered for
+  operators with their own ownership data).
+- **SDR snapshots don't carry downstream usage.** "Orphan" detection
+  for segments and calculated metrics in the corpus showed every
+  tenant at 100% — segments and calc metrics in production are
+  referenced by Workspace projects, dashboards, and alerts, none of
+  which the SDR captures. `SEG-003 orphan_segments` and
+  `CALC-005 orphan_calc_metrics` have been moved out of the default
+  packs.
+- **Description discipline is universally poor.** ≥90% of real
+  segment-bearing tenants and ≈100% of calc-metric-bearing tenants
+  have 100% of those components missing descriptions.
+  `SEG-005 segments_missing_descriptions` and
+  `CALC-001 calc_metrics_missing_descriptions` are kept in the default
+  packs at low severity with near-saturation thresholds (0.95 strict,
+  1.0 pragmatic) — they flag the most egregious tenants without
+  swamping the grade.
 
 ### Registered but not in the default packs
 
@@ -73,6 +108,10 @@ These check functions are registered and tested, but the default
 evidence the snapshot itself doesn't carry. Operators with that
 evidence can include them in a custom rubric pack:
 
+- `orphan_segments` (slot `SEG-003`) and `orphan_calc_metrics` (slot
+  `CALC-005`) — require downstream Workspace / dashboard usage data.
+- `missing_owners` (slot `GOV-004`) — requires owner attribution data
+  that Adobe's APIs don't expose on dims/metrics.
 - `doc_drift` (slot `GOV-006`) — reads `last_sdr_update_at` (param),
   `supplementary_data['sdr']['last_updated_at']`, or
   `metadata['SDR Last Updated']`.

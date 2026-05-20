@@ -1,5 +1,5 @@
 pack: strict
-version: "0.4"
+version: "1.0"
 description: |
   Strict rubric encoding the opinions of an Adobe Master / CJA Developer about
   what a high-quality CJA or AA implementation looks like. All six categories

@@ -370,7 +370,7 @@ pre.code {
     </div>
     <div class="item">
       <span class="label">Overall</span>
-      <span class="value">44%</span>
+      <span class="value">36%</span>
     </div>
     <div class="item">
       <span class="label">Components</span>
@@ -382,7 +382,7 @@ pre.code {
     </div>
     <div class="item">
       <span class="label">Rubric</span>
-      <span class="value">strict@0.4</span>
+      <span class="value">strict@1.0</span>
     </div>
     <div class="item">
       <span class="label">Generated</span>
@@ -404,7 +404,7 @@ pre.code {
   
   <section id="tldr">
     <div class="tldr">Summary</div>
-    <p class="tldr-body">This implementation graded <strong>F</strong> (44%). The grader evaluated 487 components in this data view using the <span class="mono">strict@0.4</span> rubric pack. The largest gap is in <strong>attribution coverage</strong> (20%); 2 of 3 rules in that category fired.</p>
+    <p class="tldr-body">This implementation graded <strong>F</strong> (36%). The grader evaluated 487 components in this data view using the <span class="mono">strict@1.0</span> rubric pack. The largest gap is in <strong>calc metric maint</strong> (11%); 4 of 5 rules in that category fired.</p>
   </section>
 
   
@@ -439,22 +439,22 @@ pre.code {
       <div class="cat">
         <div class="name">segment complexity</div>
         <div class="score">
-          <span class="pct">50%</span>
-          <span class="sub">F</span>
+          <span class="pct">60%</span>
+          <span class="sub">D−</span>
         </div>
-        <div class="bar crit">
-          <span style="width:50%"></span>
+        <div class="bar warn">
+          <span style="width:60%"></span>
         </div>
       </div>
       
       <div class="cat">
         <div class="name">calc metric maint</div>
         <div class="score">
-          <span class="pct">40%</span>
+          <span class="pct">11%</span>
           <span class="sub">F</span>
         </div>
         <div class="bar crit">
-          <span style="width:40%"></span>
+          <span style="width:11%"></span>
         </div>
       </div>
       
@@ -472,11 +472,11 @@ pre.code {
       <div class="cat">
         <div class="name">governance posture</div>
         <div class="score">
-          <span class="pct">36%</span>
+          <span class="pct">22%</span>
           <span class="sub">F</span>
         </div>
         <div class="bar crit">
-          <span style="width:36%"></span>
+          <span style="width:22%"></span>
         </div>
       </div>
       
@@ -524,10 +524,10 @@ pre.code {
       
       <li>
         <span class="text">
-          Audit segment usage in Workspace projects and dashboards, then archive segments with no live consumers.
-          <span class="ref">SEG-003</span>
+          Either change the attribution model to one appropriate for the metric's intended use, or document in the metric description why last-touch is the correct choice.
+          <span class="ref">ATTR-001</span>
         </span>
-        <span class="impact">+5 pts overall</span>
+        <span class="impact">+3 pts overall</span>
       </li>
       
     </ol>
@@ -648,58 +648,6 @@ calc_metric calculatedMetrics/cm_revenue_visit_corrected -> missing metrics/visi
       
     </article>
     
-    <article class="finding" id="finding-seg-003">
-      <div class="finding-head">
-        <span class="finding-id">SEG-003</span>
-        <span class="sev high">High</span>
-        <span class="finding-cat">segment complexity</span>
-      </div>
-      <h3 class="finding-title">25 orphan segments</h3>
-      <div class="finding-body">
-        
-          
-            <p>25 of 25 segments (100%) are not referenced by any other segment or calculated metric in this snapshot. Orphan segments accumulate until nobody can tell which are still in use.</p>
-          
-        
-          
-            <div class="finding-section-label">Affected components (25)</div>
-<pre class="components-list">segments/seg_qualified_lead_v3
-segments/seg_high_intent_returning
-segments/seg_b2b_account_engaged
-segments/seg_promo_responsive
-segments/seg_simple_001
-segments/seg_simple_002
-segments/seg_simple_003
-segments/seg_simple_004
-segments/seg_simple_005
-segments/seg_simple_006
-segments/seg_simple_007
-segments/seg_simple_008
-segments/seg_simple_009
-segments/seg_simple_010
-segments/seg_simple_011
-segments/seg_simple_012
-segments/seg_simple_013
-segments/seg_simple_014
-segments/seg_simple_015
-segments/seg_simple_016
-segments/seg_simple_017
-segments/seg_simple_018
-segments/seg_simple_019
-segments/seg_simple_020
-segments/seg_simple_021
-</pre>
-          
-        
-          
-            <div class="finding-section-label">How to remediate</div>
-            <p>Audit segment usage in Workspace projects and dashboards, then archive segments with no live consumers.</p>
-          
-        
-      </div>
-      
-    </article>
-    
     <article class="finding" id="finding-attr-001">
       <div class="finding-head">
         <span class="finding-id">ATTR-001</span>
@@ -808,58 +756,6 @@ calculatedMetrics/cm_paid_ratio -> metrics/paid_visits
       
     </article>
     
-    <article class="finding" id="finding-calc-005">
-      <div class="finding-head">
-        <span class="finding-id">CALC-005</span>
-        <span class="sev med">Medium</span>
-        <span class="finding-cat">calc metric maint</span>
-      </div>
-      <h3 class="finding-title">30 orphan calculated metrics</h3>
-      <div class="finding-body">
-        
-          
-            <p>30 of 30 calculated metrics (100%) are not referenced by any other calculated metric or segment in this snapshot. Orphans accumulate until consolidation becomes prohibitively expensive.</p>
-          
-        
-          
-            <div class="finding-section-label">Affected components (25)</div>
-<pre class="components-list">calculatedMetrics/cm_revenue_per_visit
-calculatedMetrics/cm_rev_per_visit_v2
-calculatedMetrics/cm_revpv_lasttouch
-calculatedMetrics/cm_rev_visit_linear
-calculatedMetrics/cm_revenue_visit_corrected
-calculatedMetrics/cm_rpv_marketing
-calculatedMetrics/cm_rev_per_visit_final
-calculatedMetrics/cm_orders_per_visit
-calculatedMetrics/cm_avg_order_value
-calculatedMetrics/cm_bounce_rate_filtered
-calculatedMetrics/cm_engagement_rate
-calculatedMetrics/cm_signup_conversion
-calculatedMetrics/cm_paid_ratio
-calculatedMetrics/cm_organic_share
-calculatedMetrics/cm_repeat_buyer_rate
-calculatedMetrics/cm_cart_to_order
-calculatedMetrics/cm_search_to_view
-calculatedMetrics/cm_video_completion
-calculatedMetrics/cm_email_ctr
-calculatedMetrics/cm_form_submit_rate
-calculatedMetrics/cm_promo_redemption
-calculatedMetrics/cm_help_resolution
-calculatedMetrics/cm_pages_per_visit
-calculatedMetrics/cm_active_user_rate
-calculatedMetrics/cm_returning_share
-</pre>
-          
-        
-          
-            <div class="finding-section-label">How to remediate</div>
-            <p>Audit Workspace projects and dashboards, then archive metrics with no live consumers.</p>
-          
-        
-      </div>
-      
-    </article>
-    
     <article class="finding" id="finding-calc-015">
       <div class="finding-head">
         <span class="finding-id">CALC-015</span>
@@ -894,16 +790,16 @@ calculatedMetrics/cm_returning_share
         <span class="sev med">Medium</span>
         <span class="finding-cat">schema hygiene</span>
       </div>
-      <h3 class="finding-title">89 components lack descriptions</h3>
+      <h3 class="finding-title">170 components lack descriptions</h3>
       <div class="finding-body">
         
           
-            <p>38 metrics and 51 dimensions in this data view have empty <span class="mono">description</span> fields. Descriptions are the primary way new analysts and AI agents understand what a component measures; missing descriptions force readers to infer intent from names alone, which is frequently wrong.</p>
+            <p>70 metrics and 100 dimensions in this data view have empty <span class="mono">description</span> fields. Descriptions are the primary way new analysts and AI agents understand what a component measures; missing descriptions force readers to infer intent from names alone, which is frequently wrong.</p>
           
         
           
             <div class="finding-section-label">Distribution</div>
-            <p>Metrics: 38 of 142 missing (27%). Dimensions: 51 of 203 missing (25%). The rubric threshold is 10%.</p>
+            <p>Metrics: 70 of 142 missing (49%). Dimensions: 100 of 203 missing (49%). The rubric threshold is 35%.</p>
           
         
           
@@ -951,25 +847,76 @@ segments/seg_b2b_account_engaged  containers: event, session  depth: 6
         <span class="sev med">Medium</span>
         <span class="finding-cat">segment complexity</span>
       </div>
-      <h3 class="finding-title">4 segments exceed nesting threshold</h3>
+      <h3 class="finding-title">3 segments exceed nesting threshold</h3>
       <div class="finding-body">
         
           
-            <p>4 segments exceed the nesting depth threshold of 4. Deep nesting makes intent illegible — small definitional changes have unpredictable population effects.</p>
+            <p>3 segments exceed the nesting depth threshold of 5. Deep nesting makes intent illegible — small definitional changes have unpredictable population effects.</p>
           
         
           
-            <div class="finding-section-label">Affected components (4)</div>
+            <div class="finding-section-label">Affected components (3)</div>
 <pre class="components-list">segments/seg_qualified_lead_v3  depth: 8  containers: event, session, person
 segments/seg_high_intent_returning  depth: 6  containers: session, event
 segments/seg_b2b_account_engaged  depth: 6  containers: event, session
-segments/seg_promo_responsive  depth: 5  containers: event
 </pre>
           
         
           
             <div class="finding-section-label">How to remediate</div>
             <p>Decompose the segment into composed sub-segments named for what each layer captures.</p>
+          
+        
+      </div>
+      
+    </article>
+    
+    <article class="finding" id="finding-calc-003">
+      <div class="finding-head">
+        <span class="finding-id">CALC-003</span>
+        <span class="sev low">Low</span>
+        <span class="finding-cat">calc metric maint</span>
+      </div>
+      <h3 class="finding-title">30 high-complexity calc metrics</h3>
+      <div class="finding-body">
+        
+          
+            <p>30 calculated metrics have a complexity score above the rubric threshold of 22. High-complexity formulas are hard to review and easy to miscalibrate.</p>
+          
+        
+          
+            <div class="finding-section-label">Affected components (25)</div>
+<pre class="components-list">calculatedMetrics/cm_amer_share  complexity=47
+calculatedMetrics/cm_emea_share  complexity=46
+calculatedMetrics/cm_apac_share  complexity=45
+calculatedMetrics/cm_loyalty_revenue  complexity=44
+calculatedMetrics/cm_revenue_b2b  complexity=43
+calculatedMetrics/cm_revenue_per_visit  complexity=42
+calculatedMetrics/cm_rev_per_visit_v2  complexity=42
+calculatedMetrics/cm_revpv_lasttouch  complexity=42
+calculatedMetrics/cm_rev_visit_linear  complexity=42
+calculatedMetrics/cm_revenue_visit_corrected  complexity=42
+calculatedMetrics/cm_rpv_marketing  complexity=42
+calculatedMetrics/cm_rev_per_visit_final  complexity=42
+calculatedMetrics/cm_returning_share  complexity=42
+calculatedMetrics/cm_active_user_rate  complexity=41
+calculatedMetrics/cm_pages_per_visit  complexity=40
+calculatedMetrics/cm_help_resolution  complexity=39
+calculatedMetrics/cm_promo_redemption  complexity=38
+calculatedMetrics/cm_form_submit_rate  complexity=37
+calculatedMetrics/cm_email_ctr  complexity=36
+calculatedMetrics/cm_video_completion  complexity=35
+calculatedMetrics/cm_search_to_view  complexity=34
+calculatedMetrics/cm_cart_to_order  complexity=33
+calculatedMetrics/cm_repeat_buyer_rate  complexity=32
+calculatedMetrics/cm_organic_share  complexity=31
+calculatedMetrics/cm_paid_ratio  complexity=30
+</pre>
+          
+        
+          
+            <div class="finding-section-label">How to remediate</div>
+            <p>Decompose the metric into intermediate calculated metrics whose names describe what each step measures.</p>
           
         
       </div>
@@ -1010,7 +957,7 @@ segments/seg_promo_responsive  depth: 5  containers: event
 
     <div class="finding-body" style="max-width: 720px;">
       
-        <p>This grade was produced by <span class="mono">sdr-grader</span> using the <span class="mono">strict@0.4</span> rubric pack. The rubric encodes 31 rules across 6 active categories; 14 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.</p>
+        <p>This grade was produced by <span class="mono">sdr-grader</span> using the <span class="mono">strict@1.0</span> rubric pack. The rubric encodes 26 rules across 6 active categories; 13 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.</p>
       
         <p>The grader is rule-based and deterministic — the same input always produces the same grade. Findings are auditable: every rule's source YAML is linked from its finding, and rules can be suppressed or reweighted via a project-level <span class="mono">.sdr-grader.yaml</span>.</p>
       
@@ -1023,7 +970,7 @@ segments/seg_promo_responsive  depth: 5  containers: event
   <div class="provenance">
     Generated by <a href="https://github.com/brian-a-au/sdr-grader">sdr-grader v1.0.0</a>
     against snapshot <span class="mono">2026-04-25T09:14:00Z</span>.
-    Rubric: <span class="mono">strict@0.4</span>.
+    Rubric: <span class="mono">strict@1.0</span>.
     Adapter: <span class="mono">cja_auto_sdr@3.5.17</span>.
     487 components evaluated; 0 components skipped
     .

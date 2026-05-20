@@ -63,9 +63,24 @@ def adapt(snapshot: dict[str, Any], *, source: str = "<unknown>") -> Implementat
         or "unknown"
     )
 
-    metrics = [_component_from_record(r, "metric") for r in metrics_raw]
-    dimensions = [_component_from_record(r, "dimension") for r in dimensions_raw]
     derived_fields = _adapt_derived_fields(snapshot.get("derived_fields"))
+    # The --include-all-inventory export shape echoes each derived field's
+    # ID into the inline dimensions/metrics arrays as well. Without
+    # dedupe, the same component lands twice in all_components() and
+    # SCH-001 (duplicate names) false-fires. The enriched record from
+    # derived_fields wins (it carries complexity_score, functions_used,
+    # etc.); the inline echo is dropped.
+    derived_ids = {df.id for df in derived_fields}
+    metrics = [
+        _component_from_record(r, "metric")
+        for r in metrics_raw
+        if not isinstance(r, dict) or (r.get("id") not in derived_ids)
+    ]
+    dimensions = [
+        _component_from_record(r, "dimension")
+        for r in dimensions_raw
+        if not isinstance(r, dict) or (r.get("id") not in derived_ids)
+    ]
     calculated_metrics = _adapt_calculated_metrics(snapshot.get("calculated_metrics"))
     segments = _adapt_segments(snapshot.get("segments"))
 
@@ -118,7 +133,7 @@ def _component_from_record(record: dict[str, Any], component_type: str) -> Compo
         polarity=polarity,
         created_at=record.get("created") or record.get("created_at"),
         modified_at=record.get("modified") or record.get("modified_at"),
-        owner=record.get("owner"),
+        owner=_normalize_owner(record.get("owner")),
         tags=list(record.get("tags") or []),
         platform_specific=platform_specific,
     )
@@ -160,7 +175,7 @@ def _derived_field_from_record(record: dict[str, Any]) -> Component:
         polarity=None,
         created_at=record.get("created") or record.get("created_at"),
         modified_at=record.get("modified") or record.get("modified_at"),
-        owner=record.get("owner"),
+        owner=_normalize_owner(record.get("owner")),
         tags=list(record.get("tags") or []),
         platform_specific=platform_specific,
     )
@@ -195,8 +210,10 @@ def _calc_metric_from_record(record: dict[str, Any]) -> CalculatedMetric:
     formula_text = record.get("formula_summary") or record.get("definition_summary") or ""
     references = list(
         dict.fromkeys(
-            [*record.get("metric_references", []),
-             *record.get("segment_references", [])]
+            [
+                *(record.get("metric_references") or []),
+                *(record.get("segment_references") or []),
+            ]
         )
     )
     complexity = float(record.get("complexity_score") or 0.0)
@@ -215,7 +232,7 @@ def _calc_metric_from_record(record: dict[str, Any]) -> CalculatedMetric:
         references=references,
         created_at=record.get("created") or record.get("created_at"),
         modified_at=record.get("modified") or record.get("modified_at"),
-        owner=record.get("owner"),
+        owner=_normalize_owner(record.get("owner")),
     )
 
 
@@ -273,9 +290,11 @@ def _segment_from_record(record: dict[str, Any]) -> Segment:
     container_types = _extract_container_types(record.get("container_type"), definition)
     references = list(
         dict.fromkeys(
-            [*record.get("dimension_references", []),
-             *record.get("metric_references", []),
-             *record.get("other_segment_references", [])]
+            [
+                *(record.get("dimension_references") or []),
+                *(record.get("metric_references") or []),
+                *(record.get("other_segment_references") or []),
+            ]
         )
     )
 
@@ -289,7 +308,7 @@ def _segment_from_record(record: dict[str, Any]) -> Segment:
         references=references,
         created_at=record.get("created") or record.get("created_at"),
         modified_at=record.get("modified") or record.get("modified_at"),
-        owner=record.get("owner"),
+        owner=_normalize_owner(record.get("owner")),
     )
 
 
@@ -396,6 +415,36 @@ def _normalize_description(value: Any) -> str | None:
         return None
     stripped = value.strip()
     if not stripped or stripped == "-":
+        return None
+    return stripped
+
+
+_OWNER_SENTINELS_EMPTY = frozenset({
+    "",
+    "-",
+    "unknown",
+    "unknown user",
+    "n/a",
+    "none",
+    "null",
+})
+
+
+def _normalize_owner(value: Any) -> str | None:
+    """Treat Adobe API sentinel strings as missing.
+
+    cja_auto_sdr pulls everything available from upstream; when Adobe's API
+    doesn't expose a real owner it returns the literal string "Unknown User"
+    (or similar placeholders). Letting those flow through as truthy values
+    silently defeats GOV-004. See docs/threshold_calibration.md for the
+    corpus evidence that prompted this.
+    """
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        return None
+    stripped = value.strip()
+    if stripped.lower() in _OWNER_SENTINELS_EMPTY:
         return None
     return stripped
 

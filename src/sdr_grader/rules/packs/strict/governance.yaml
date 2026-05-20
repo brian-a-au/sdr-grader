@@ -52,19 +52,14 @@ rules:
       alongside this snapshot. Suppress this rule via .sdr-grader.yaml if
       the SDR lives somewhere the grader cannot see.
 
-  - id: GOV-004
-    name: Components missing owner attribution
-    severity: medium
-    platforms: [cja, aa]
-    check: missing_owners
-    params:
-      threshold: 0.10
-    rationale: |
-      When a component has no owner, there is no clear person to ask for
-      context, sign off on changes, or maintain its documentation.
-    remediation: |
-      Populate the owner field via the platform API. Adopt a convention
-      that new components must have an owner before publication.
+  # GOV-004 (missing_owners) is registered but not in the default packs.
+  # Adobe's APIs do not surface `owner` on inline dimensions / metrics,
+  # so cja_auto_sdr can't populate the field even though it pulls
+  # everything available upstream. Calibration across 108 real snapshots
+  # confirmed: every tenant scored 100% missing-owner even after
+  # normalizing "Unknown User" sentinels to None. Operators with their
+  # own ownership data can wire the check via a custom pack +
+  # --extra-input.
 
   - id: GOV-005
     name: Components missing tags
@@ -72,7 +67,7 @@ rules:
     platforms: [cja, aa]
     check: missing_tags
     params:
-      threshold: 0.50
+      threshold: 0.15           # calibrated ~p75 across 108-snapshot corpus
     rationale: |
       Tags are the cheapest way to keep schema browsing tractable as the
       data view grows; without them, finding components by purpose

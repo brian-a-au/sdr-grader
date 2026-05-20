@@ -32,15 +32,7 @@ rules:
     rationale: Same as strict.
     remediation: Same as strict.
 
-  - id: GOV-004
-    name: Components missing owner attribution
-    severity: low                # demoted from medium
-    platforms: [cja, aa]
-    check: missing_owners
-    params:
-      threshold: 0.30            # 30% vs strict 10%
-    rationale: Same as strict.
-    remediation: Same as strict.
+  # GOV-004 unwired: see strict pack note.
 
   - id: GOV-005
     name: Components missing tags
@@ -48,7 +40,7 @@ rules:
     platforms: [cja, aa]
     check: missing_tags
     params:
-      threshold: 0.80            # 80% vs strict 50%
+      threshold: 0.30           # calibrated p90 across 108-snapshot corpus
     rationale: Same as strict.
     remediation: Same as strict.
 

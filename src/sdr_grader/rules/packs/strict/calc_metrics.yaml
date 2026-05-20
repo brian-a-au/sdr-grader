@@ -6,14 +6,19 @@ description: |
 rules:
   - id: CALC-001
     name: Calculated metrics lacking descriptions
-    severity: medium
+    severity: low               # demoted from medium post-calibration
     platforms: [cja, aa]
     check: calc_metrics_missing_descriptions
     params:
-      threshold: 0.20
+      threshold: 0.95           # calibrated against 31 calc-metric-bearing
+                                # snapshots: nearly every real tenant has
+                                # 100% calc metrics missing descriptions
     rationale: |
       Calculated metrics carry definitional choices (attribution, allocation,
-      formula assumptions) that are invisible from the formula alone.
+      formula assumptions) that are invisible from the formula alone. Real-
+      world adoption of calc-metric descriptions is essentially zero — the
+      calibrated threshold flags only the most undocumented tenants and the
+      severity is low so this never dominates a grade.
     remediation: |
       Add concise descriptions explaining what the metric measures, when to
       use it, and which attribution / allocation choices were made.
@@ -37,7 +42,7 @@ rules:
     platforms: [cja, aa]
     check: calc_complexity_threshold
     params:
-      max_complexity: 75
+      max_complexity: 22        # calibrated p90 across calc-metric-bearing snapshots
     rationale: |
       High-complexity formulas are hard to review and easy to miscalibrate.
       Beyond a certain threshold, the formula stops being self-documenting.
@@ -45,33 +50,11 @@ rules:
       Decompose the metric into intermediate calculated metrics whose names
       describe what each step measures.
 
-  - id: CALC-004
-    name: Excessive attribution model variety
-    severity: high
-    platforms: [cja, aa]
-    check: attribution_model_variety
-    params:
-      max_distinct: 4
-    rationale: |
-      Each additional attribution model in active use is a tax on analysts
-      who must remember which metric uses which logic.
-    remediation: |
-      Standardize on a smaller set of attribution models, document the
-      choice in the SDR, and migrate or retire outliers.
-
-  - id: CALC-005
-    name: Orphan calculated metrics
-    severity: medium
-    platforms: [cja, aa]
-    check: orphan_calc_metrics
-    params:
-      threshold: 0.50
-    rationale: |
-      Orphan calculated metrics accumulate until consolidation becomes
-      prohibitively expensive.
-    remediation: |
-      Audit Workspace projects and dashboards, then archive metrics with
-      no live consumers.
+  # CALC-005 (orphan_calc_metrics) is registered but not in the default
+  # packs. Same reasoning as SEG-003: calc metrics are referenced by
+  # Workspace projects and dashboards, not other calc metrics or segments,
+  # so the in-snapshot orphan signal is universally degenerate (every
+  # calc-bearing tenant in the 108-snapshot corpus was at 100% orphan).
 
   - id: CALC-014
     name: Near-duplicate calculated metrics
