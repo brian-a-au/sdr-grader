@@ -16,7 +16,7 @@ calibrated here):
   grade_scale bands.
 
 This is intentionally simple. Calibration (caps, partial credit per finding,
-non-linear penalties) is a Phase 5/6 conversation once more rules ship.
+non-linear penalties) is left for a later release once more rules ship.
 """
 
 from __future__ import annotations

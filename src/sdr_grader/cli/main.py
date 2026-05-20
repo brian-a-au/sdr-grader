@@ -182,7 +182,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--platform",
         choices=["cja", "aa"],
-        help="Override platform auto-detection (Phase 7+).",
+        help="Override platform auto-detection.",
     )
     parser.add_argument(
         "--output",

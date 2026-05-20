@@ -1,9 +1,8 @@
 """Schema hygiene checks (SCH-001..SCH-006).
 
-Phase 3 shipped SCH-003 alone end-to-end. Phase 4 fills in the rest of the
-category. Each rule is registered by its `check:` name in the YAML rubric;
-the YAML names and Python function names are intentionally decoupled so a
-single function can serve multiple rule definitions if needed.
+Each rule is registered by its `check:` name in the YAML rubric; the YAML
+names and Python function names are intentionally decoupled so a single
+function can serve multiple rule definitions if needed.
 """
 
 from __future__ import annotations
@@ -32,7 +31,7 @@ if TYPE_CHECKING:
 
 
 # ---------------------------------------------------------------------------
-# SCH-003: missing descriptions (Phase 3, kept here)
+# SCH-003: missing descriptions
 # ---------------------------------------------------------------------------
 
 
@@ -291,7 +290,7 @@ def _looks_deprecated(component_id: str, name: str, tags: list[str]) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# SCH-006: cardinality concerns (stub for v0.1)
+# SCH-006: cardinality concerns (supplementary-input rule; not in default packs)
 # ---------------------------------------------------------------------------
 
 

@@ -94,7 +94,7 @@ def grade(
         remediations=_derive_remediations(rules_by_id, findings),
         findings=_sort_findings(findings),
         methodology=_build_methodology(rubric, result, findings, suppression),
-        distribution=None,  # leaderboard data is a v0.4 concern (SPEC §8)
+        distribution=None,  # attached later by the CLI when --distribution-data is set
     )
 
 

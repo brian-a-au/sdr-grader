@@ -23,6 +23,8 @@ from typing import Literal
 
 from jinja2 import Environment, FileSystemLoader, StrictUndefined, select_autoescape
 
+from sdr_grader import __version__ as _PACKAGE_VERSION
+
 # ---------------------------------------------------------------------------
 # Data model
 # ---------------------------------------------------------------------------
@@ -128,7 +130,7 @@ class Report:
     findings: list[Finding]
     methodology: Methodology
     distribution: Distribution | None = None
-    tool_version: str = "0.3.1"
+    tool_version: str = _PACKAGE_VERSION
     tool_url: str = "https://github.com/brian-a-au/sdr-grader"
 
 

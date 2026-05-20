@@ -148,9 +148,9 @@ def apply_to_findings(
     """Drop findings for fully-suppressed rules; keep others.
 
     Component-level suppressions are honored only when the finding has a
-    1:1 link to a single component, which the v0.1 finding shape does not
-    expose. They are passed through unchanged for now and noted in the
-    methodology summary.
+    1:1 link to a single component, which the current finding shape does
+    not expose. They are passed through unchanged for now and noted in
+    the methodology summary.
     """
     fully = suppression.fully_suppressed_ids
     if not fully and not suppression.severity_overrides:

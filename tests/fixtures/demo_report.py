@@ -266,7 +266,7 @@ def build_demo_report() -> Report:
         ],
         methodology=Methodology(
             paragraphs=[
-                ("This grade was produced by <span class=\"mono\">sdr-grader v0.3.1</span> using the "
+                ("This grade was produced by <span class=\"mono\">sdr-grader v1.0.0</span> using the "
                  "<span class=\"mono\">strict@1.2</span> rubric pack. The rubric encodes 73 rules across "
                  "six categories; 68 ran successfully against the input data view and 5 were skipped "
                  "(see below). Each rule contributes to a category subtotal weighted by severity "

@@ -271,7 +271,7 @@ def check_calc_identical_formula_text(
 
 
 # ---------------------------------------------------------------------------
-# CALC-022: deprecated allocations (stub for v0.1)
+# CALC-022: deprecated allocations (registered but not in default packs)
 # ---------------------------------------------------------------------------
 
 

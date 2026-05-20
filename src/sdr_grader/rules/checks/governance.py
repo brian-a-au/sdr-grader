@@ -38,8 +38,8 @@ def check_snapshot_history_absent(
 
     Resolution order: ctx.params['history_present'] (pack-level override) ->
     snapshot metadata 'history_present' / 'History Present' -> assume worst
-    (fire). The directory-mode loader (Phase 8) and CI integrations can inject
-    the metadata flag when they have evidence of history.
+    (fire). The directory-mode loader and CI integrations can inject the
+    metadata flag when they have evidence of history.
     """
     if _signal_present(impl, ctx, "history_present", "History Present"):
         return []
@@ -115,8 +115,8 @@ def check_sdr_doc_absent(
     """
     if _signal_present(impl, ctx, "sdr_doc_present", "SDR Doc Present"):
         return []
-    # Default to firing in v0.1; the operator can suppress via .sdr-grader.yaml
-    # if they keep their SDR somewhere the grader can't see.
+    # Default to firing; the operator can suppress via .sdr-grader.yaml if
+    # they keep their SDR somewhere the grader can't see.
     paragraph = (
         "No Solution Design Reference (SDR) document was supplied alongside "
         "this snapshot. Without an SDR, definitions live only in the platform "
@@ -197,7 +197,7 @@ def check_missing_tags(
 
 
 # ---------------------------------------------------------------------------
-# GOV-006: stale modifications without doc updates (stub)
+# GOV-006: stale modifications without doc updates
 # ---------------------------------------------------------------------------
 
 

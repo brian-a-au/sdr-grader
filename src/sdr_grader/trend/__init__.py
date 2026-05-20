@@ -1,4 +1,4 @@
-"""Trend reports — grade a directory of snapshots over time (v0.3).
+"""Trend reports — grade a directory of snapshots over time.
 
 `from sdr_grader.trend import build_trend_report, render_trend` is the
 public surface; everything else is internal.

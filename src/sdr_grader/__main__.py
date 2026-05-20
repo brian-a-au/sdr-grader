@@ -1,4 +1,4 @@
-"""Allow `python -m sdr_grader` to invoke the CLI once Phase 3 wires it up."""
+"""Allow `python -m sdr_grader` to invoke the CLI."""
 
 from sdr_grader.cli.main import main
 

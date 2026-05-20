@@ -5,21 +5,20 @@ spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
 ## 1.0.0 — 2026-05-09
 
-First public release. The grader covers the full v0.1 + v0.3 + v0.4 surface
-the design SPEC laid out, plus a Claude Code skill bundle for follow-up
-question support.
+First public release. The grader covers the full surface the design SPEC
+laid out, plus a Claude Code skill bundle for follow-up question support.
 
 ### Added
 
 - **Deterministic, rule-based linter** for Adobe CJA and AA implementations.
   Reads `cja_auto_sdr` / `aa_auto_sdr` JSON snapshots; emits a single
   self-contained HTML report card and a parallel machine-readable JSON.
-- **32 rules across 6 categories**: schema hygiene, naming consistency,
+- **31 rules across 6 categories**: schema hygiene, naming consistency,
   segment complexity, calc metric maintainability, attribution coverage,
-  governance posture — plus a platform-specific AAEVAR rule. Every rule
-  grades against data the snapshot itself carries; rules that required
-  external evidence (Launch exports, cardinality, stitching, SDR docs)
-  are not part of the default packs.
+  governance posture. Every rule in the default packs grades against
+  data the snapshot itself carries; check functions that need external
+  evidence (Launch exports, cardinality, SDR docs) ship registered but
+  unwired so operators can include them in a forked pack.
 - **Two bundled rubric packs**: `strict` (master-cert-grade thresholds)
   and `pragmatic` (sanity-check thresholds, same rule IDs).
 - **Four input modes**: file path, snapshot directory (with
@@ -49,10 +48,12 @@ question support.
   remediations, and comparing two grade JSONs from inside Claude Code.
 - **Documentation set**: `docs/RUBRIC_FORMAT.md`, `docs/CHECK_FUNCTION_GUIDE.md`,
   `docs/ADAPTER_GUIDE.md`, `docs/CI_INTEGRATION.md`, plus README quickstart.
-- **Examples**: `examples/grade-clean.html` (A 100%), `examples/grade-messy.html`
-  (F 54%), `examples/trend-example.html`, plus the original
-  `examples/sample-report.html` and renderer-output golden
-  `examples/templated-report.html`.
+- **Examples**: clean and messy grade cards per platform
+  (`examples/grade-cja-clean.html` A 100%, `examples/grade-cja-messy.html`
+  F 44%, `examples/grade-aa-clean.html` A 100%, `examples/grade-aa-messy.html`
+  F 39%), a multi-snapshot `examples/trend-example.html`, the original
+  visual-contract reference `examples/sample-report.html`, and the
+  renderer-output golden `examples/templated-report.html`.
 
 ### Discipline
 
@@ -72,22 +73,17 @@ These check functions are registered and tested, but the default
 evidence the snapshot itself doesn't carry. Operators with that
 evidence can include them in a custom rubric pack:
 
-- `doc_drift` (formerly `GOV-006`) — reads `last_sdr_update_at` (param),
+- `doc_drift` (slot `GOV-006`) — reads `last_sdr_update_at` (param),
   `supplementary_data['sdr']['last_updated_at']`, or
   `metadata['SDR Last Updated']`.
-- `cardinality_concerns` (formerly `SCH-006`) — reads
+- `cardinality_concerns` (slot `SCH-006`) — reads
   `supplementary_data['cardinality']` (a `component_id -> int` map).
-- `aa_evar_distinct_values` (formerly `AAEVAR-001`) — reads the same
-  `supplementary_data['cardinality']` map.
-- `cja_stitching_unstitched` (formerly `CJASTITCH-001`) — reads
-  `supplementary_data['stitching']['unstitched_ratio']` or the same
-  field nested in `impl.raw['data_view']['stitching']`.
-- `launch_required_data_elements` (formerly `LAUNCH-001`) — reads
+- `launch_required_data_elements` (slot `LAUNCH-001`) — reads
   `supplementary_data['launch']`; the canonical worked example for the
   `--extra-input` extension pattern.
-- `calc_deprecated_allocations` (formerly `CALC-022`) — needs a
-  concrete `deprecated_allocations` set via params; default ships
-  placeholder values.
+- `calc_deprecated_allocations` (slot `CALC-022`) — needs a concrete
+  `deprecated_allocations` set via params; default ships placeholder
+  values.
 
 ### Known limitations
 
@@ -98,7 +94,7 @@ evidence can include them in a custom rubric pack:
   internal leaderboards from a directory of grade JSONs;
   `--distribution-data PATH` plugs the result into the report. A
   centralized opt-in submission service is out of scope for this repo.
-- Phase 10 README screenshots require manual capture (open
-  `examples/grade-messy.html` in a browser and screenshot the page).
+- README screenshots require manual capture (open
+  `examples/grade-cja-messy.html` in a browser and screenshot the page).
   Embedded SVG sparklines + the inlined CSS make the report itself a
   high-fidelity preview when rendered.

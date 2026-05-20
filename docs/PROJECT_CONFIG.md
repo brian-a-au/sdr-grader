@@ -43,10 +43,10 @@ A list of suppression entries. Each entry must have:
   can see *why* a rule was silenced rather than wondering whether it
   was missed.
 - `components` *(optional, list of strings)* — currently declared but
-  not actively applied: the v0.1 finding shape doesn't carry per-component
-  identity, so component-level suppressions are passed through and noted
-  in the methodology summary. Whole-rule suppression is the only
-  enforcement today. Tracked for a future release.
+  not actively applied: the current finding shape doesn't carry
+  per-component identity, so component-level suppressions are passed
+  through and noted in the methodology summary. Whole-rule suppression
+  is the only enforcement today. Tracked for a future release.
 
 ### `severity_overrides`
 
