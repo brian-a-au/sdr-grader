@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/brian-a-au/sdr-grader/security/advisories/new
+    about: Please report security issues privately via a GitHub Security Advisory, not a public issue.
+  - name: False positive on a private snapshot
+    url: https://github.com/brian-a-au/sdr-grader/security/advisories/new
+    about: If a rule fires incorrectly on a snapshot you cannot share publicly, open a private advisory and we'll work out a sanitized reduction together. See SECURITY.md.

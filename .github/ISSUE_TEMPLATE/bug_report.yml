@@ -1,0 +1,73 @@
+name: Bug report
+description: A rule grades incorrectly, the CLI crashes, or output is wrong.
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug. A reproducible snapshot
+        is the single most useful thing you can attach.
+
+        **Do not paste a real production snapshot.** Use
+        `scripts/sanitize_sdr.py` to scrub tenant identifiers, then trim
+        to the smallest shape that still reproduces the bug. If the
+        snapshot is sensitive even after scrubbing, open a
+        [private security advisory](https://github.com/brian-a-au/sdr-grader/security/advisories/new)
+        instead.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What did the grader do? What did you expect it to do?
+      placeholder: |
+        Ran `sdr-grader snapshot.json --output grade.html`. SCH-003 fired
+        with "170 components lack descriptions" but the snapshot has
+        descriptions on every component.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: |
+        Minimal command + minimal snapshot. Inline the snapshot in a code
+        block if it's small, or attach it.
+      render: shell
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: sdr-grader version
+      description: Output of `sdr-grader --version` (or commit SHA if running from source).
+      placeholder: "1.0.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - CJA (cja_auto_sdr snapshot)
+        - AA (aa_auto_sdr snapshot)
+        - Both / not platform-specific
+    validations:
+      required: true
+
+  - type: input
+    id: pack
+    attributes:
+      label: Rubric pack
+      description: Which pack was active? Default is `strict`.
+      placeholder: "strict"
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: Logs, screenshots of the rendered report, related issues.

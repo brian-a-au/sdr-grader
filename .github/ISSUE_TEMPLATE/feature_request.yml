@@ -1,0 +1,65 @@
+name: Feature or rule proposal
+description: Propose a new rule, new check kind, or other enhancement.
+title: "[feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Open an issue **before** opening a PR for new rules or structural
+        changes — it saves us both time vs. arriving at the same
+        conclusion through review feedback. See `CONTRIBUTING.md` for
+        what's PR-able directly vs. maintainer-gated.
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What are you proposing
+      description: One paragraph. New rule? New check kind? New CLI flag? Something else?
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: |
+        What broken-implementation pattern does this catch? Why does the
+        current rule set miss it?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: shape
+    attributes:
+      label: If this is a new rule, what does it measure?
+      description: |
+        See `CONTRIBUTING.md` invariants. Cardinality rules ("you have
+        more than N segments") are rejected by default — the same number
+        is healthy for one tenant and pathological for another.
+      options:
+        - Shape (structure of a definition, e.g. nesting depth)
+        - Ratio (e.g. % of components missing descriptions)
+        - Correctness (e.g. formula references a deleted component)
+        - Cardinality (raw count — likely to be rejected)
+        - Not applicable (not a new rule)
+    validations:
+      required: true
+
+  - type: textarea
+    id: example
+    attributes:
+      label: Example
+      description: |
+        Synthetic fixture or sketch of what the firing condition looks
+        like. If this needs calibration data, say so — provisional
+        thresholds are fine in an initial PR.
+      render: shell
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: |
+        Existing rules that almost cover this? Other ways to surface the
+        same signal (e.g. supplementary input vs. core rule)?
