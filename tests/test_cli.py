@@ -33,6 +33,23 @@ def test_cli_runs_against_messy_fixture_and_writes_html(tmp_path, capsys):
     assert "dv_messy_prod_web" in err
 
 
+def test_cli_default_output_filename_is_keyed_by_instance(tmp_path, monkeypatch, capsys):
+    """No --output → default filename must encode the instance so batch runs
+    across many instances don't collide on a single grade-{ts}.html name
+    (issue #2). report.id is `SDR-{YYYY-MMDD}-{INSTANCE-TOKEN}`."""
+    monkeypatch.chdir(tmp_path)
+    rc = main([str(FIXTURES / "cja_snapshot_messy.json"), "--quiet"])
+    assert rc == SUCCESS
+    outputs = list(tmp_path.glob("grade-*.html"))
+    assert len(outputs) == 1
+    name = outputs[0].name
+    # Filename must contain the sanitized instance token so different
+    # instances graded at the same second don't write to the same path.
+    assert "DV-MESSY-PROD-WEB" in name
+    assert name.startswith("grade-SDR-")
+    assert name.endswith(".html")
+
+
 def test_cli_quiet_suppresses_stderr_summary(tmp_path, capsys):
     output = tmp_path / "report.html"
     rc = main([str(FIXTURES / "cja_snapshot_messy.json"), "--output", str(output), "--quiet"])
@@ -67,43 +84,59 @@ def test_cli_rejects_invalid_json(tmp_path, capsys):
 
 
 def test_cli_rejects_unknown_pack(tmp_path, capsys):
-    rc = main([
-        str(FIXTURES / "cja_snapshot_messy.json"),
-        "--output", str(tmp_path / "out.html"),
-        "--pack", "no_such_pack",
-    ])
+    rc = main(
+        [
+            str(FIXTURES / "cja_snapshot_messy.json"),
+            "--output",
+            str(tmp_path / "out.html"),
+            "--pack",
+            "no_such_pack",
+        ]
+    )
     assert rc == RUNTIME_ERROR
     assert "not found" in capsys.readouterr().err
 
 
 def test_cli_rejects_invalid_rubric_dir(tmp_path, capsys):
-    rc = main([
-        str(FIXTURES / "cja_snapshot_messy.json"),
-        "--output", str(tmp_path / "out.html"),
-        "--rubric", str(tmp_path / "no_such_dir"),
-    ])
+    rc = main(
+        [
+            str(FIXTURES / "cja_snapshot_messy.json"),
+            "--output",
+            str(tmp_path / "out.html"),
+            "--rubric",
+            str(tmp_path / "no_such_dir"),
+        ]
+    )
     assert rc == RUNTIME_ERROR
     assert "rubric directory not found" in capsys.readouterr().err
 
 
 def test_cli_rejects_cja_snapshot_with_aa_override(tmp_path, capsys):
     """A CJA snapshot routed through the AA adapter must fail validation."""
-    rc = main([
-        str(FIXTURES / "cja_snapshot_messy.json"),
-        "--output", str(tmp_path / "out.html"),
-        "--platform", "aa",
-    ])
+    rc = main(
+        [
+            str(FIXTURES / "cja_snapshot_messy.json"),
+            "--output",
+            str(tmp_path / "out.html"),
+            "--platform",
+            "aa",
+        ]
+    )
     assert rc == RUNTIME_ERROR
     assert "report_suite" in capsys.readouterr().err
 
 
 def test_cli_fail_below_returns_grade_below_threshold(tmp_path):
-    rc = main([
-        str(FIXTURES / "cja_snapshot_messy.json"),
-        "--output", str(tmp_path / "out.html"),
-        "--quiet",
-        "--fail-below", "B-",
-    ])
+    rc = main(
+        [
+            str(FIXTURES / "cja_snapshot_messy.json"),
+            "--output",
+            str(tmp_path / "out.html"),
+            "--quiet",
+            "--fail-below",
+            "B-",
+        ]
+    )
     assert rc == GRADE_BELOW_THRESHOLD
 
 
@@ -111,12 +144,16 @@ def test_cli_fail_below_passes_when_grade_meets_threshold(tmp_path):
     # Clean fixture grades C; D is below it, so the threshold is met.
     # External-context rules (GOV-001/003) fire even on the clean fixture
     # because the loader can't prove history / SDR presence yet.
-    rc = main([
-        str(FIXTURES / "cja_snapshot_clean.json"),
-        "--output", str(tmp_path / "out.html"),
-        "--quiet",
-        "--fail-below", "D",
-    ])
+    rc = main(
+        [
+            str(FIXTURES / "cja_snapshot_clean.json"),
+            "--output",
+            str(tmp_path / "out.html"),
+            "--quiet",
+            "--fail-below",
+            "D",
+        ]
+    )
     assert rc == SUCCESS
 
 
@@ -124,11 +161,15 @@ def test_cli_invalid_rubric_yaml_returns_validation_failure(tmp_path, capsys):
     pack = tmp_path / "broken_pack"
     pack.mkdir()
     (pack / "_meta.yaml").write_text("pack: test\n")  # missing required keys
-    rc = main([
-        str(FIXTURES / "cja_snapshot_messy.json"),
-        "--output", str(tmp_path / "out.html"),
-        "--rubric", str(pack),
-    ])
+    rc = main(
+        [
+            str(FIXTURES / "cja_snapshot_messy.json"),
+            "--output",
+            str(tmp_path / "out.html"),
+            "--rubric",
+            str(pack),
+        ]
+    )
     assert rc == RUBRIC_VALIDATION_FAILURE
     assert "rubric error" in capsys.readouterr().err
 
@@ -138,12 +179,16 @@ def test_cli_json_output_writes_machine_readable_report(tmp_path):
 
     output = tmp_path / "out.html"
     json_path = tmp_path / "out.json"
-    rc = main([
-        str(FIXTURES / "cja_snapshot_messy.json"),
-        "--output", str(output),
-        "--json", str(json_path),
-        "--quiet",
-    ])
+    rc = main(
+        [
+            str(FIXTURES / "cja_snapshot_messy.json"),
+            "--output",
+            str(output),
+            "--json",
+            str(json_path),
+            "--quiet",
+        ]
+    )
     assert rc == SUCCESS
     data = json.loads(json_path.read_text(encoding="utf-8"))
     assert data["grade"]

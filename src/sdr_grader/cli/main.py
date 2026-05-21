@@ -102,6 +102,7 @@ def main(argv: list[str] | None = None) -> int:
         import json as _json
 
         from sdr_grader.render.json_output import report_to_dict
+
         json_path = Path(args.json_output)
         try:
             json_path.parent.mkdir(parents=True, exist_ok=True)
@@ -186,7 +187,10 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--output",
-        help="HTML output path. Default: ./grade-{generated_at}.html.",
+        help=(
+            "HTML output path. Default: ./grade-{report.id}.html "
+            "(e.g. grade-SDR-2026-0520-DV-PROD-WEB.html)."
+        ),
     )
     parser.add_argument(
         "--json",
@@ -195,10 +199,7 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--suppress-config",
-        help=(
-            "Path to a project-level suppression YAML. "
-            "Default: ./.sdr-grader.yaml if present."
-        ),
+        help=("Path to a project-level suppression YAML. Default: ./.sdr-grader.yaml if present."),
     )
     parser.add_argument(
         "--distribution-data",
@@ -244,20 +245,14 @@ def _attach_extra_inputs(impl, raw_specs: list[str]) -> None:
 
     for spec in raw_specs:
         if "=" not in spec:
-            raise InvalidSnapshotError(
-                f"--extra-input expected KEY=PATH, got {spec!r}"
-            )
+            raise InvalidSnapshotError(f"--extra-input expected KEY=PATH, got {spec!r}")
         key, _, path_str = spec.partition("=")
         key = key.strip()
         if not key:
-            raise InvalidSnapshotError(
-                f"--extra-input has empty KEY in {spec!r}"
-            )
+            raise InvalidSnapshotError(f"--extra-input has empty KEY in {spec!r}")
         path = Path(path_str.strip())
         if not path.is_file():
-            raise InvalidSnapshotError(
-                f"--extra-input {key}: file not found at {path}"
-            )
+            raise InvalidSnapshotError(f"--extra-input {key}: file not found at {path}")
         try:
             text = path.read_text(encoding="utf-8")
         except OSError as exc:
@@ -267,13 +262,9 @@ def _attach_extra_inputs(impl, raw_specs: list[str]) -> None:
         try:
             payload = _json.loads(text)
         except _json.JSONDecodeError as exc:
-            raise InvalidSnapshotError(
-                f"--extra-input {key}: not valid JSON: {exc}"
-            ) from exc
+            raise InvalidSnapshotError(f"--extra-input {key}: not valid JSON: {exc}") from exc
         if key in impl.supplementary_data:
-            raise InvalidSnapshotError(
-                f"--extra-input {key}: duplicate key (already attached)"
-            )
+            raise InvalidSnapshotError(f"--extra-input {key}: duplicate key (already attached)")
         impl.supplementary_data[key] = payload
 
 
@@ -315,9 +306,7 @@ def _run_trend(args, rubric, suppression) -> int:
     from sdr_grader.trend import build_trend_report, render_trend
 
     if not args.snapshot:
-        print(
-            "error: --trend requires a snapshot directory path", file=sys.stderr
-        )
+        print("error: --trend requires a snapshot directory path", file=sys.stderr)
         return RUNTIME_ERROR
     directory = Path(args.snapshot)
     if not directory.is_dir():
@@ -368,9 +357,7 @@ def _run_trend(args, rubric, suppression) -> int:
 
 def _load_snapshot_for_args(args) -> tuple[dict, str]:
     """Pick the right input mode from CLI args and return (snapshot, source)."""
-    explicit_modes = sum(
-        1 for v in (args.snapshot, args.dataview, args.rsid) if v
-    )
+    explicit_modes = sum(1 for v in (args.snapshot, args.dataview, args.rsid) if v)
     if explicit_modes == 0:
         raise InvalidSnapshotError(
             "no input specified; pass a snapshot path, '-' for stdin, "
@@ -378,8 +365,7 @@ def _load_snapshot_for_args(args) -> tuple[dict, str]:
         )
     if explicit_modes > 1:
         raise InvalidSnapshotError(
-            "multiple input modes specified; pick one of "
-            "snapshot / --dataview / --rsid."
+            "multiple input modes specified; pick one of snapshot / --dataview / --rsid."
         )
     if args.dataview:
         return shell_cja(args.dataview)
@@ -410,9 +396,7 @@ def _adapt_snapshot(snapshot, *, source: str, platform_override: str | None):
         return adapt_cja(snapshot, source=source)
     if platform == "aa":
         return adapt_aa(snapshot, source=source)
-    raise UnknownPlatformError(
-        f"unknown platform {platform!r}; expected 'cja' or 'aa'"
-    )
+    raise UnknownPlatformError(f"unknown platform {platform!r}; expected 'cja' or 'aa'")
 
 
 # ---------------------------------------------------------------------------
@@ -444,8 +428,12 @@ def _resolve_rubric_dir(args) -> Path | None:
 
 
 def _default_output_path(report) -> Path:
-    stamp = report.generated_at.strftime("%Y%m%d-%H%M%S")
-    return Path(f"grade-{stamp}.html")
+    # report.id is `SDR-{YYYY-MMDD}-{INSTANCE-TOKEN}` (see core/grader.py
+    # _report_id) — already sanitized for filesystem use and keyed by
+    # instance, so batch runs across many instances don't collide on
+    # filename. Same-instance re-runs on the same day overwrite, which
+    # mirrors --trend's `trend-{instance}-{YYYYMMDD}.html` convention.
+    return Path(f"grade-{report.id}.html")
 
 
 def _check_threshold(report, threshold_grade: str, rubric) -> int:
