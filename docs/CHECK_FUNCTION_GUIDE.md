@@ -47,7 +47,7 @@ A check function must be:
 
 | Symbol            | Type                | What it is                          |
 |-------------------|---------------------|-------------------------------------|
-| `impl`            | `Implementation`    | Normalized model (SPEC §5)          |
+| `impl`            | `Implementation`    | Normalized model (`core/models.py`) |
 | `ctx`             | `RuleContext`       | Per-rule context the engine assembles |
 | `ctx.rule_id`     | `str`               | The rule ID from YAML               |
 | `ctx.severity`    | `str`               | Already-overridden severity         |

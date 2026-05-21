@@ -17,7 +17,7 @@ distributions and the per-rule confidence rating behind each threshold.
 - **Deterministic, rule-based linter** for Adobe CJA and AA implementations.
   Reads `cja_auto_sdr` / `aa_auto_sdr` JSON snapshots; emits a single
   self-contained HTML report card and a parallel machine-readable JSON.
-- **24 rules across 6 categories**: schema hygiene, naming consistency,
+- **26 rules across 6 categories**: schema hygiene, naming consistency,
   segment complexity, calc metric maintainability, attribution coverage,
   governance posture. Every rule in the default packs grades against
   data the snapshot itself carries; check functions that need external

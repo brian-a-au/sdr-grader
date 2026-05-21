@@ -6,20 +6,17 @@ Guidance for Claude Code when working in this repo.
 
 `sdr-grader` is a deterministic, rule-based linter for Adobe Customer Journey Analytics (CJA) and Adobe Analytics (AA) implementations. It is **not** an AI tool — no LLM calls, no agent loops. The intelligence lives in YAML rubrics and pure Python check functions. Determinism is a contract: same input + same rubric version = byte-identical output.
 
-## The spec
+## Design references
 
-The full project spec lives **outside the repo** at `../sdr-grader/SPEC.md` in the local working directory (gitignored intentionally — the working folder is preserved as a reference area, the repo is the deliverable). Read it end-to-end before scaffolding or extending anything. Sections of particular load:
+The project is past its spec-driven phase — the repo is the deliverable, and the load-bearing contracts now live in tracked docs and code:
 
-- §3 Visual contract (locked, do not redesign)
-- §4 Architecture (one-way flow: input → adapter → model → rules → Report → renderer)
-- §5 Normalized internal model (the contract between adapters and rules)
-- §6 Rubric format (YAML rules + Python check functions)
-- §8 Build phases (do not skip; do not merge)
-- §11 Decisions already made (do not relitigate)
-
-## Phase discipline
-
-Each phase in §8 produces a single reviewable artifact. Don't proceed to phase N+1 until phase N is reviewed. Don't bundle phases. The scaffolding here is **Phase 0 only**: directory structure, project metadata, CI, and a smoke test.
+- **Architecture (one-way flow):** README "How it grades" section + `src/sdr_grader/core/grader.py`.
+- **Normalized internal model:** `src/sdr_grader/core/models.py` (`Implementation`, `Component`, etc.).
+- **Rubric format:** `docs/RUBRIC_FORMAT.md` — the user-facing contract for YAML packs.
+- **Adapter contract:** `docs/ADAPTER_GUIDE.md` + the two reference adapters in `src/sdr_grader/adapters/`.
+- **Check function shape:** `docs/CHECK_FUNCTION_GUIDE.md` + working examples in `src/sdr_grader/rules/checks/`.
+- **Visual contract:** the Jinja templates + CSS in `src/sdr_grader/render/templates/` and `render/static/`. Locked — do not redesign.
+- **Locked decisions:** no randomness or `datetime.now()` in graded output (determinism is a contract; the `examples-drift` CI gate enforces it). No cardinality rules — rules measure shape, ratio, or correctness, never raw counts like `len(X) > k`. Renderer stays presentation-only (no imports from `rules/` or `core/grader.py` inside `render/`).
 
 ## Develop
 
@@ -39,4 +36,4 @@ uv run ruff format     # Auto-format
 
 ## When in doubt
 
-Prefer fewer features done well over more features done poorly. Surface ambiguity as a GitHub issue rather than guessing — the open questions list in SPEC §13 is a starting point.
+Prefer fewer features done well over more features done poorly. Surface ambiguity as a GitHub issue rather than guessing.

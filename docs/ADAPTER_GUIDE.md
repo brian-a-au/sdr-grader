@@ -21,7 +21,7 @@ def adapt(snapshot: dict[str, Any], *, source: str = "<unknown>") -> Implementat
 ```
 
 The function takes a parsed dict (the loader handles file IO and JSON
-parsing) and returns an `Implementation` (see SPEC §5). No async, no
+parsing) and returns an `Implementation` (see `src/sdr_grader/core/models.py`). No async, no
 I/O, no globals.
 
 ## Responsibilities
