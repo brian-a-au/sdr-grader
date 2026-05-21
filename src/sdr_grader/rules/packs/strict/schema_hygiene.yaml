@@ -80,3 +80,21 @@ rules:
       deprecated component or remove the deprecated marker if it was
       misapplied.
 
+  - id: SCH-007
+    name: Persistence lookback exceeds 90-day platform cap
+    severity: medium
+    platforms: [cja]
+    check: persistence_lookback_exceeds_cap
+    params:
+      cap_days: 90
+    rationale: |
+      Adobe documents 90 days as the maximum lookback for CJA dimension
+      persistence component settings. Values beyond that are silently
+      clamped at query time, so the configured behaviour disagrees with
+      what the platform actually executes — and analysts have no signal
+      that an override is in effect.
+    remediation: |
+      Reduce the lookback to ≤ 90 days, or use a session/person scope if
+      the analytical question really requires a longer attribution window
+      than the platform supports.
+

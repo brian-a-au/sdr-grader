@@ -13,3 +13,12 @@ rules:
     params: {}
     rationale: Same as strict.
     remediation: Same as strict.
+
+  - id: ATTR-004
+    name: Data View metric attribution override not documented in description
+    severity: low                # demoted from strict's medium
+    platforms: [cja]
+    check: attribution_setting_undocumented
+    params: {}
+    rationale: Same as strict.
+    remediation: Same as strict.

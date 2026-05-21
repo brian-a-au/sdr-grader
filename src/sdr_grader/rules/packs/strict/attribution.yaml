@@ -26,3 +26,19 @@ rules:
       Pick one attribution model per concept, document the choice, and
       either migrate the outliers or rename them to make the alternate
       attribution explicit.
+
+  - id: ATTR-004
+    name: Data View metric attribution override not documented in description
+    severity: medium
+    platforms: [cja]
+    check: attribution_setting_undocumented
+    params: {}
+    rationale: |
+      CJA Data Views allow per-metric attribution overrides. When two
+      metrics look identical in the picker but report different numbers,
+      the override is usually the reason. If the description doesn't
+      mention attribution, the next analyst will have no signal that an
+      override is in effect.
+    remediation: |
+      Update the metric description to name the attribution model and
+      why it was chosen, or remove the override if it was unintentional.

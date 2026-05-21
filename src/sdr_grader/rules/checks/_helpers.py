@@ -7,8 +7,10 @@ re-derive the same conventions.
 
 from __future__ import annotations
 
+import json
+import math
 from collections.abc import Iterable
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from sdr_grader.core.models import Component, Implementation
@@ -73,3 +75,27 @@ def join_with_and(parts: Iterable[str]) -> str:
 def compact(text: str) -> str:
     """Collapse a YAML-loaded multi-line string into a single line."""
     return " ".join(text.split())
+
+
+def parse_platform_setting(value: Any) -> dict[str, Any] | None:
+    """Parse a CJA Data View setting value into a dict.
+
+    `cja_auto_sdr` ships fields like `persistenceSetting` and
+    `attributionSetting` as JSON-encoded strings (e.g.
+    `'{"enabled": true, ...}'`) — or as the float `NaN` when the snapshot
+    pandas pipeline encountered a missing value. Returns the parsed dict
+    on success, or `None` for any value the rule should skip.
+    """
+    if value is None or value == "":
+        return None
+    if isinstance(value, float) and math.isnan(value):
+        return None
+    if isinstance(value, dict):
+        return value
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+        except json.JSONDecodeError:
+            return None
+        return parsed if isinstance(parsed, dict) else None
+    return None

@@ -7,7 +7,11 @@ from collections import defaultdict
 from typing import TYPE_CHECKING
 
 from sdr_grader.render import Finding, FindingBlock
-from sdr_grader.rules.checks._helpers import category_display, compact
+from sdr_grader.rules.checks._helpers import (
+    category_display,
+    compact,
+    parse_platform_setting,
+)
 from sdr_grader.rules.registry import register_check
 
 if TYPE_CHECKING:
@@ -127,6 +131,73 @@ def check_attribution_inconsistency(
         _make_finding(
             ctx,
             title=f"{len(conflicts)} attribution inconsistency group{'s' if len(conflicts) != 1 else ''}",
+            paragraph=paragraph,
+            extra_blocks=[FindingBlock(kind="components", items=items)],
+        )
+    ]
+
+
+# ---------------------------------------------------------------------------
+# ATTR-004: CJA Data View metric attribution overridden without description (CJA-only)
+# ---------------------------------------------------------------------------
+
+
+# CJA Data Views let operators override the default attribution model on
+# a per-metric basis (`attributionSetting.enabled: true` with an explicit
+# `attributionModel.func`). When two metrics look identical in the picker
+# but report different numbers, the override is usually why — and the
+# description is where a future reader will look. Premise: an explicit
+# non-default attribution setting must be mentioned in the description.
+_ATTR_DESC_MENTION_RE = re.compile(
+    r"\b(attribution|allocation|last[\s-]?touch|first[\s-]?touch|"
+    r"linear|participation|instance|model)\b",
+    re.IGNORECASE,
+)
+
+
+@register_check("attribution_setting_undocumented")
+def check_attribution_setting_undocumented(
+    impl: Implementation, ctx: RuleContext
+) -> list[Finding]:
+    """CJA-only. Fire when a metric carries a non-default attributionSetting
+    that the description does not acknowledge.
+    """
+    if impl.platform != "cja":
+        return []
+    offenders: list[tuple[str, str, str]] = []
+    for m in impl.metrics:
+        setting = parse_platform_setting(
+            m.platform_specific.get("attributionSetting")
+        )
+        if not setting or not setting.get("enabled"):
+            continue
+        am = setting.get("attributionModel") or {}
+        func = str(am.get("func") or "").strip()
+        if not func:
+            continue
+        if _ATTR_DESC_MENTION_RE.search(m.description or ""):
+            continue
+        offenders.append((m.id, m.name, func))
+
+    if not offenders:
+        return []
+    items = [
+        f"{mid}  name={name!r}  model={func}"
+        for mid, name, func in offenders[:25]
+    ]
+    plural = len(offenders) != 1
+    paragraph = (
+        f"{len(offenders)} metric{'s have' if plural else ' has'} an explicit "
+        "non-default attribution model configured on the Data View, but the "
+        "metric description does not mention attribution. When two metrics "
+        "look identical in the picker but report different numbers, the "
+        "Data View override is usually the reason — and the description is "
+        "where a future reader will look first."
+    )
+    return [
+        _make_finding(
+            ctx,
+            title=f"{len(offenders)} metric{'s' if plural else ''} with undocumented attribution override",
             paragraph=paragraph,
             extra_blocks=[FindingBlock(kind="components", items=items)],
         )

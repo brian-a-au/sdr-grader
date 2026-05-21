@@ -20,6 +20,7 @@ from sdr_grader.rules.checks._helpers import (
     collect_referenced_ids,
     compact,
     join_with_and,
+    parse_platform_setting,
     pct,
     platform_noun,
 )
@@ -352,6 +353,87 @@ def check_cardinality_concerns(
         _make_finding(
             ctx,
             title=f"{len(suspects)} cardinality concern{'s' if len(suspects) != 1 else ''}",
+            paragraph=paragraph,
+            extra_blocks=[FindingBlock(kind="components", items=items)],
+        )
+    ]
+
+
+# ---------------------------------------------------------------------------
+# SCH-007: persistence lookback exceeds platform cap (CJA-only)
+# ---------------------------------------------------------------------------
+
+
+# Adobe documents 90 days as the maximum lookback for CJA dimension
+# persistence. Values beyond that are silently clamped at query time,
+# which masks the intended attribution behaviour. See:
+# experienceleague.adobe.com/en/docs/analytics-platform/using/cja-dataviews/component-settings/persistence
+_DAY_GRANULARITY = {"day", "days"}
+_MONTH_GRANULARITY = {"month", "months"}
+
+
+def _lookback_days(node: dict) -> int | None:
+    """Translate an `expiration` or `lookback` block to a day count, or None.
+
+    Only handles the inactivity / lookback-period shapes the platform
+    emits today: `{func, granularity, numPeriods}`. Container-based
+    expirations (sessions, visitors) and unrecognized shapes return None
+    so the rule stays a no-op for them.
+    """
+    if not isinstance(node, dict):
+        return None
+    granularity = str(node.get("granularity") or "").lower()
+    periods = node.get("numPeriods")
+    if not isinstance(periods, (int, float)) or periods <= 0:
+        return None
+    periods = int(periods)
+    if granularity in _DAY_GRANULARITY:
+        return periods
+    if granularity in _MONTH_GRANULARITY:
+        return periods * 30
+    return None
+
+
+@register_check("persistence_lookback_exceeds_cap")
+def check_persistence_lookback_cap(
+    impl: Implementation, ctx: RuleContext
+) -> list[Finding]:
+    """CJA-only. Fire when a dimension's persistenceSetting encodes a lookback
+    longer than Adobe's documented 90-day cap.
+    """
+    if impl.platform != "cja":
+        return []
+    cap_days = int(ctx.params.get("cap_days", 90))
+    violations: list[tuple[str, str, int]] = []
+    for d in impl.dimensions:
+        ps = parse_platform_setting(d.platform_specific.get("persistenceSetting"))
+        if not ps or not ps.get("enabled"):
+            continue
+        am = ps.get("allocationModel") or {}
+        days = (
+            _lookback_days(am.get("expiration"))
+            or _lookback_days(ps.get("lookback"))
+        )
+        if days is not None and days > cap_days:
+            violations.append((d.id, d.name, days))
+
+    if not violations:
+        return []
+    items = [
+        f"{cid}  name={name!r}  lookback={days} days"
+        for cid, name, days in violations[:25]
+    ]
+    paragraph = (
+        f"{len(violations)} dimension{'s set' if len(violations) != 1 else ' sets'} "
+        f"a persistence lookback longer than the platform's {cap_days}-day cap. "
+        "Adobe documents 90 days as the maximum for CJA Data View persistence "
+        "component settings — values beyond that are silently clamped at query "
+        "time, masking the intended attribution behaviour."
+    )
+    return [
+        _make_finding(
+            ctx,
+            title=f"{len(violations)} persistence lookback{'s' if len(violations) != 1 else ''} exceed cap",
             paragraph=paragraph,
             extra_blocks=[FindingBlock(kind="components", items=items)],
         )

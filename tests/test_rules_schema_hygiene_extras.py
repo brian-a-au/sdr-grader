@@ -15,6 +15,7 @@ from sdr_grader.rules.checks.schema_hygiene import (
     check_cardinality_concerns,
     check_deprecated_components,
     check_duplicate_component_names,
+    check_persistence_lookback_cap,
     check_type_name_mismatch,
 )
 from sdr_grader.rules.engine import RuleContext
@@ -265,3 +266,95 @@ def test_deprecated_fires_on_old_marker_in_name():
 def test_cardinality_concerns_is_no_op_in_v0_1():
     findings = check_cardinality_concerns(_impl(), _ctx("SCH-006"))
     assert findings == []
+
+
+# ---------------------------------------------------------------------------
+# SCH-007 CJA persistence lookback cap
+# ---------------------------------------------------------------------------
+
+
+def _dim_with_persistence(idx: int, persistence: Any, *, name: str | None = None) -> Component:
+    dim = Component(
+        id=f"variables/dim_{idx:03d}",
+        name=name or f"Dim {idx:03d}",
+        description=None,
+        component_type="dimension",
+        data_type="string",
+        polarity=None,
+        created_at=None,
+        modified_at=None,
+        owner=None,
+        tags=[],
+        platform_specific={"persistenceSetting": persistence},
+    )
+    return dim
+
+
+def test_persistence_cap_no_op_on_aa():
+    """SCH-007 is CJA-only — must skip AA snapshots even if data is present."""
+    aa_impl = Implementation(
+        platform="aa", instance_id="rs_x", instance_name="x",
+        snapshot_taken_at=None, snapshot_source="t", adapter_version="0",
+        metrics=[], dimensions=[_dim_with_persistence(1, '{"enabled":true,"lookback":{"granularity":"day","numPeriods":180}}')],
+        segments=[], calculated_metrics=[], derived_fields=[], raw={},
+    )
+    assert check_persistence_lookback_cap(aa_impl, _ctx("SCH-007")) == []
+
+
+def test_persistence_cap_quiet_when_disabled():
+    impl = _impl(dimensions=[_dim_with_persistence(1, '{"enabled":false}')])
+    assert check_persistence_lookback_cap(impl, _ctx("SCH-007")) == []
+
+
+def test_persistence_cap_quiet_when_within_cap():
+    """30-day inactivity expiration is well within Adobe's 90-day cap."""
+    setting = (
+        '{"enabled":true,"allocationModel":{"func":"allocation-lastTouch_dim",'
+        '"expiration":{"func":"allocation-inactivity","granularity":"day","numPeriods":30}}}'
+    )
+    impl = _impl(dimensions=[_dim_with_persistence(1, setting)])
+    assert check_persistence_lookback_cap(impl, _ctx("SCH-007")) == []
+
+
+def test_persistence_cap_fires_when_days_exceed_cap():
+    setting = (
+        '{"enabled":true,"allocationModel":{"func":"allocation-lastTouch_dim",'
+        '"expiration":{"func":"allocation-inactivity","granularity":"day","numPeriods":120}}}'
+    )
+    impl = _impl(dimensions=[_dim_with_persistence(1, setting, name="Campaign")])
+    findings = check_persistence_lookback_cap(impl, _ctx("SCH-007"))
+    assert len(findings) == 1
+    assert "lookback=120 days" in str(findings[0].body)
+
+
+def test_persistence_cap_translates_months_to_days():
+    """4 months of granularity = 120 days, which exceeds the 90-day cap."""
+    setting = (
+        '{"enabled":true,"lookback":{"func":"min-months",'
+        '"granularity":"month","numPeriods":4}}'
+    )
+    impl = _impl(dimensions=[_dim_with_persistence(1, setting)])
+    findings = check_persistence_lookback_cap(impl, _ctx("SCH-007"))
+    assert len(findings) == 1
+
+
+def test_persistence_cap_handles_nan_sentinel():
+    """cja_auto_sdr emits float('nan') for missing settings — must skip cleanly."""
+    impl = _impl(dimensions=[_dim_with_persistence(1, float("nan"))])
+    assert check_persistence_lookback_cap(impl, _ctx("SCH-007")) == []
+
+
+def test_persistence_cap_handles_malformed_json():
+    impl = _impl(dimensions=[_dim_with_persistence(1, "not-json {")])
+    assert check_persistence_lookback_cap(impl, _ctx("SCH-007")) == []
+
+
+def test_persistence_cap_skips_container_expirations():
+    """Container-scoped expirations (sessions/visitors) carry no day count
+    — the rule cannot evaluate them and must skip rather than fire."""
+    setting = (
+        '{"enabled":true,"allocationModel":{"func":"allocation-lastTouch_dim",'
+        '"expiration":{"func":"allocation-container","context":"sessions"}}}'
+    )
+    impl = _impl(dimensions=[_dim_with_persistence(1, setting)])
+    assert check_persistence_lookback_cap(impl, _ctx("SCH-007")) == []
