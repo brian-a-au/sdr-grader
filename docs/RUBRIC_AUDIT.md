@@ -22,6 +22,11 @@ authority on whether a threshold is data-backed. This is a *premise*
 audit: does the rule grade something the platform actually models, and
 does the signal mean what the rule says it means?
 
+**Verified against:** the 108-fixture private corpus
+(`tests/fixtures/private/{aa,cja}/`) loaded through the live adapters,
+plus `docs/threshold_calibration.md` and current Adobe Experience League
+documentation. Empirical counts cited below come from that vetting pass.
+
 ## Methodology
 
 For each rule:
@@ -40,16 +45,16 @@ For each rule:
 | SCH-001 duplicate component names | **solid** | Adobe doesn't prevent name collisions within a type. Two metrics named "Revenue" with different IDs is a real bug that causes the classic "dashboards disagree" complaint. Structural rule, no calibration needed. |
 | SCH-002 broken references | **solid** | Segments and calc metrics carry reference IDs; checking they resolve against `all_component_ids ∪ all_segment_ids ∪ calc_metric_ids` is correct. Critical for AA where the API can return zombie references after a deletion. |
 | SCH-003 missing descriptions | **solid (calibrated)** | Threshold `0.35` set at p75 across 108 snapshots. Description fields exist on AA eVars/events and on CJA Data View components. Calibration explicit in `threshold_calibration.md`. |
-| SCH-004 type-name mismatch | **weak — refine** | Premise (rate/percent name + integer type → silently broken) is real but the heuristic is too generic. `_RATE_NAME_RE` matches `rate\|pct\|percent\|ratio\|share` against the full name string — this catches "Currency Conversion Rate" (which is a decimal correctly) and misses metrics named "ConversionFactor" (which might be a broken integer). Either narrow the regex to word-boundary common-suffix patterns (`_rate$\|_pct$\|_ratio$`) or expand the data-type whitelist to recognize Adobe's actual type names: AA events are `counter` / `numeric` / `currency` / `numeric_no_subrelations` — `counter` is the integer-equivalent, the others are decimal. The current rule's `_INTEGER_TYPES = {"integer", "int", "long"}` won't recognize AA's `counter` and won't fire on the actual integer-rate case. |
-| SCH-005 deprecated components still in use | **weak — refine regex** | Premise is real — Adobe doesn't enforce deprecation lifecycle. The regex `\b(deprecated\|legacy\|old\|deleteme\|do_not_use\|v0\|tmp\|temp)\b` is too greedy: `\bold\b` matches "Order Total" (Order**T**otal has no word boundary issue but "Holdovers" or "old_customer_segment" would match), `tmp` and `temp` are weak signals (matches "temperature"), `v0` matches `eVar0`. Drop `old`, `tmp`, `temp`, `v0` from the default set — keep them as opt-in via `params`. Keep `deprecated\|legacy\|deleteme\|do_not_use`. |
+| SCH-004 type-name mismatch | **refined (forward-compat only)** | Premise (rate/percent name + integer type → silently broken) is real. Adobe's current success-event docs list **`counter` / `numeric` / `currency`** — no current Experience League page documents `numeric_no_subrelations`, so the earlier draft of this audit overstated the taxonomy. `counter` was added to `_INTEGER_TYPES` in 1c2abf3, but `aa_auto_sdr` / `cja_auto_sdr` already normalize Adobe's `counter` to `int` upstream — across 108 fixtures the `data_type` histogram is `decimal 6080 / int 2817 / currency 8`, with zero `counter` occurrences. The fix is forward-compatible (good) but inert in the current corpus: only 4 SCH-004 hits total, all on the platform built-in `metrics/advertising.adViewability.percentViewable`. |
+| SCH-005 deprecated components still in use | **refined — possibly over-corrected** | Premise is real. The original default regex `\b(deprecated\|legacy\|old\|deleteme\|do_not_use\|v0\|tmp\|temp)\b` was narrowed in 1c2abf3 to drop `old`, `tmp`, `temp`, `v0`. The named false-positive risks (`Holdovers`, `Order Total`, `temperature`, `eVar0`) can't actually trigger the original regex because of word-boundary semantics: `\bold\b` requires a word boundary on both sides, `\bv0\b` won't match inside `eVar0`. On the 108-fixture corpus the old regex fired 149 times and the new regex fires 146 — the 3 dropped components (`"Account Name (old)"`, `"Old Order Status"`, `"Old Page Type"`) all look like genuine deprecation markers. Either re-add `\bold\b` (the abstract false-positive risk didn't materialize) or document the trade-off explicitly. |
 
 ## Naming consistency (4 rules)
 
 | Rule | Disposition | Notes |
 |------|-------------|-------|
-| NAME-001 prefix consistency | **weak — depends on tag convention** | Default `target: dimensions, tag_filter: custom`. Will fire only on dimensions tagged "custom". Adobe doesn't enforce a "custom" tag convention; most tenants won't have it. The rule effectively no-ops on most snapshots. Either drop the `tag_filter` default (grade ALL dimensions) and accept some platform-default-prefix noise, or document that this rule requires the operator to tag their custom components. The latter is closer to how it's framed in `_meta.yaml` (consultant-grade rules assume hygienic tagging). |
+| NAME-001 prefix consistency | **dead by default** | Default `target: dimensions, tag_filter: custom`. Will fire only on dimensions tagged "custom". Adobe doesn't enforce a "custom" tag convention. **Corpus check: 0 of 108 fixtures have any dimension tagged `custom`** — the rule has a 0% match rate across the entire private corpus. Either drop the `tag_filter` default (grade ALL dimensions) and accept some platform-default-prefix noise, or explicitly document that this rule is dead unless the operator opts in via tagging discipline. The current framing in `_meta.yaml` (consultant-grade rules assume hygienic tagging) does not match observed reality. |
 | NAME-002 ID pattern | **solid** | AA IDs are constrained system-assigned strings (`evar1`, `event23`); CJA dimension IDs are SchemaPath strings (`variables/evar5`, `metrics/m_orders`). The default pattern `^[A-Za-z0-9_/.\-]+$` accepts both correctly. Real-world bugs from spaces in IDs DO occur (cja_auto_sdr has handled at least one such report). Structural, no calibration needed. |
-| NAME-003 casing consistency | **weak — same `tag_filter: custom` issue as NAME-001** | The casing classifier itself is solid (camelCase / PascalCase / snake_case / kebab-case / SCREAMING_SNAKE / Title Case / lowercase phrase). The constraint that it only grades `custom`-tagged dimensions makes it a no-op in practice. |
+| NAME-003 casing consistency | **dead by default — same root cause as NAME-001** | The casing classifier itself is solid (camelCase / PascalCase / snake_case / kebab-case / SCREAMING_SNAKE / Title Case / lowercase phrase). The constraint that it only grades `custom`-tagged dimensions makes it dead by default (0/108 fixtures match — see NAME-001). |
 | NAME-004 semantic synonym mixing | **solid — but expandable** | Synonym groups are platform-agnostic linguistic patterns (`user/visitor`, `page/screen`, `session/visit`). The signal is real: mixed vocabulary fragments downstream tooling. Worth adding Adobe-domain groups: `revenue/sales`, `cart/basket`, `order/transaction`, `purchase/checkout`. (An earlier draft of this audit suggested `event/conversion` — dropped on closer reading because "event" is an AA platform primitive that legitimately coexists with "conversion" in component names; the pair would false-fire on every AA tenant.) |
 
 ## Segment complexity (5 rules)
@@ -68,7 +73,7 @@ For each rule:
 |------|-------------|-------|
 | CALC-001 missing descriptions | **solid (calibrated)** | Threshold 0.95; severity low post-calibration. Calibration explicit: "nearly every real tenant has 100% calc metrics missing descriptions." |
 | CALC-002 broken formula refs | **solid** | Same logic as SCH-002 but scoped to calc metric formulas. Real bug class. |
-| CALC-003 formula complexity | **solid (calibrated)** | Threshold 22 = p90. Complexity score is computed by `cja_auto_sdr` from the parsed formula AST; matches the upstream tool's own complexity metric. |
+| CALC-003 formula complexity | **solid (calibrated)** | Threshold 22, rounded from p90 = 21.5. Complexity score is computed by `cja_auto_sdr` from the parsed formula AST; matches the upstream tool's own complexity metric. |
 | CALC-014 near-duplicates (Jaccard ≥ 0.85) | **solid** | Reference-set Jaccard over calc metric references is a principled near-dup signal. Severity high reflects that this catches the "Revenue (v1)" vs "Revenue (final)" vs "Revenue (canonical)" anti-pattern. |
 | CALC-015 identical formula text | **solid** | Different from CALC-014 — same formula bytes, different IDs/names. A copy-paste-and-forget smell. |
 
@@ -79,8 +84,8 @@ audit; summary here.
 
 | Rule | Disposition | Notes |
 |------|-------------|-------|
-| ATTR-001 silent last-touch default | **weak — premise partly right, trigger too coarse** | Adobe's docs confirm Last Touch IS the platform default when no model is specified. So the premise is real. But the trigger flags every revenue-named calc metric without baked-in attribution, which is most of them. Most calc metrics are simple ratios where attribution is correctly set at the panel level in Workspace. Effect: the rule fires on the common case, not the actually-risky subset (executive-dashboard calc metrics where attribution should be baked in). Recommendation: demote to opt-in, require an additional signal (e.g. metric is referenced from a Workspace project export passed via `--extra-input`). |
-| ATTR-002 calc metrics lacking explicit attribution > 30% | **weak — uncalibrated, almost certainly degenerate** | Threshold 0.30 is a guess, not measured. Likely fires on every tenant. Calibration support added in `scripts/calibrate_thresholds.py`; the May 2026 calibration commit (next time corpus runs) will surface the actual distribution. Predicted outcome: distribution sits at p25 = 0.85+, making the rule indiscriminate. |
+| ATTR-001 silent last-touch default | **weak — premise right, trigger fires on the common case** | Adobe's docs confirm Last Touch IS the platform default when no model is specified. So the premise is real. **Corpus check:** 49 of 49 revenue/order/conversion-named calc metrics (100%) lack a baked-in attribution model — the rule fires on every one of them. Most are simple ratios where attribution is correctly set at the panel level in Workspace. Effect: the rule fires on the common case, not the actually-risky subset (executive-dashboard calc metrics where attribution should be baked in). Recommendation: demote to opt-in, require an additional signal (e.g. metric is referenced from a Workspace project export passed via `--extra-input`). |
+| ATTR-002 calc metrics lacking explicit attribution > 30% | **degenerate — measured indiscriminate** | Threshold 0.30 is a guess, not measured. **Corpus check** (108 fixtures, 31 with calc metrics): p25 = p50 = p75 = **1.00**. All 31 fixtures with calc metrics have 100% of them lacking attribution, so the rule fires on every fixture. Status confirmed degenerate, not "predicted degenerate". Either ship at 0.99+ or excise. No `ATTR-*` section exists in `threshold_calibration.md` yet. |
 | ATTR-003 same-refs different-attribution inconsistency | **solid in principle, rare in practice** | When fired, signal is genuine. Conflict requires ≥2 calc metrics with same input refs AND ≥2 distinct non-None attribution models — rare prerequisite (most calc metrics have None). Keep as-is; expect it to rarely fire. |
 
 ## Governance (4 rules)
@@ -90,7 +95,7 @@ audit; summary here.
 | GOV-001 no snapshot history | **defensible** | Extrinsic signal — the snapshot itself can't carry "is there a directory of older snapshots". Rule fires by default and is silenced by `history_present=true` from the loader / CI when evidence exists. Functions more like a nag-default than a measured rule. |
 | GOV-002 snapshot age | **solid** | Real, simple, parses ISO timestamp from `snapshot_taken_at`. |
 | GOV-003 no SDR documentation | **defensible** | Same shape as GOV-001 — fires by default, silenced by signal. Conceptually thin but useful as a default reminder. |
-| GOV-005 missing tags (>15%) | **solid (calibrated)** | Threshold p75 = 0.15. Calibration explicit. |
+| GOV-005 missing tags (>15%) | **solid (calibrated)** | Threshold 0.15, rounded from p75 = 0.14 (p90 = 0.26). Calibration explicit. |
 | (GOV-004 missing owners — already excluded from defaults post-calibration as degenerate.) | n/a | Correctly demoted. |
 
 ## Gaps — Adobe carries this, no rule grades it
@@ -101,6 +106,15 @@ dumps every unhandled record field into `Component.platform_specific`;
 rules with `platforms: [aa]` could read directly from there.
 
 ### AA-specific
+
+> **Caveat (corpus check).** All 8 AA fixtures in the private corpus
+> ship with `extra: {}` on every component and contain only platform
+> built-ins (~9 metrics, 87 dimensions per snapshot, no custom eVars).
+> The four gaps below are derivable from Adobe's documented snapshot
+> schema, but the data is **not present in the AA fixtures we have
+> today** — implementing these rules will require either richer AA
+> snapshots or `aa_auto_sdr` changes to surface the allocation /
+> expiration / serialization fields before the adapter sees them.
 
 1. **eVar allocation + expiration combinations.** Adobe documents three
    allocations (Most Recent / Original Value / Linear) and a set of
@@ -115,9 +129,13 @@ rules with `platforms: [aa]` could read directly from there.
 2. **Counter-typed events used with currency-shaped names.** Counter
    events store no decimal — using a counter for "Revenue" or "Tax" is
    a silent truncation bug. Similar premise to SCH-004 but for AA event
-   types specifically. `event.type` is `counter` / `numeric` / `currency`
-   / `numeric_no_subrelations` per Adobe's event-type docs. Currently the
-   integer-type whitelist in SCH-004 doesn't even recognize `counter`.
+   types specifically. Per Adobe's current success-event docs, `event.type`
+   is `counter` / `numeric` / `currency`. (An earlier draft of this audit
+   also listed `numeric_no_subrelations`; no current Experience League
+   page documents that as a present type, so it's been dropped.) Note
+   that `aa_auto_sdr` normalizes `counter` to `int` before the adapter
+   sees it, so this rule needs an upstream change to preserve the
+   original event type, not just a YAML addition.
 
 3. **Event serialization gaps on revenue/conversion events.** Adobe
    recommends enabling Event Serialization (Use Event ID) on success
@@ -133,6 +151,13 @@ rules with `platforms: [aa]` could read directly from there.
    the SDR; not graded.
 
 ### CJA-specific
+
+> **Corpus check.** Unlike the AA half, CJA snapshots in the private
+> corpus carry rich configuration data: across 100 CJA fixtures,
+> **19,680 dimensions** populate `persistenceSetting` (with full
+> allocation-model, expiration-context, lookback, and merchandising
+> sub-configs) and **8,825 metrics** populate `attributionSetting`
+> (with model + lookback-period). The data is there today.
 
 5. **Persistence (lookback) on dimensions.** CJA Data Views set
    persistence per dimension: scope (session / person / custom time
@@ -203,4 +228,7 @@ rules with `platforms: [aa]` could read directly from there.
 - [Persistence Component Settings (CJA)](https://experienceleague.adobe.com/en/docs/analytics-platform/using/cja-dataviews/component-settings/persistence)
 - [Attribution component settings (CJA)](https://experienceleague.adobe.com/en/docs/analytics-platform/using/cja-dataviews/component-settings/attribution)
 - [Metric type and Attribution (calculated metrics)](https://experienceleague.adobe.com/en/docs/analytics/components/calculated-metrics/calcmetric-workflow/m-metric-type-alloc)
-- [Attribution Model Application in CJA](https://experienceleague.adobe.com/en/docs/analytics-platform/using/cja-workspace/attribution/overview)
+- [Attribution Models (CJA Workspace)](https://experienceleague.adobe.com/en/docs/analytics-platform/using/cja-workspace/attribution/models)
+- [Manage calculated metrics](https://experienceleague.adobe.com/en/docs/analytics/components/calculated-metrics/calcmetric-workflow/cm-manager)
+- [Manage segments (CJA)](https://experienceleague.adobe.com/en/docs/analytics-platform/using/cja-components/segments/seg-manage)
+- [Derived fields](https://experienceleague.adobe.com/en/docs/analytics-platform/using/cja-dataviews/derived-fields)
