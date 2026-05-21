@@ -27,8 +27,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import statistics
 import sys
+from collections import defaultdict
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -156,6 +158,70 @@ def _gov_missing_tags_ratio(impl: Implementation) -> tuple[float, int | None]:
     return (missing / n, n)
 
 
+# Revenue/conversion regex must mirror the one in
+# src/sdr_grader/rules/checks/attribution.py so calibration measures the
+# same population the rule fires on.
+_ATTR_REVENUE_RE = re.compile(
+    r"\b(revenue|conversion|order|booking|sale|signup|subscribe)\b",
+    re.IGNORECASE,
+)
+
+
+def _attr_silent_last_touch_ratio(impl: Implementation) -> tuple[float, int | None]:
+    """ATTR-001 population: revenue/conversion-named calc metrics that look
+    like silent last-touch defaults — attribution_model empty or 'last-touch'
+    AND no 'attribution' word in the description. Denominator is the count
+    of revenue/conversion-named calc metrics on the tenant. A degenerate
+    distribution here (everyone at 1.00) confirms the rule fires on every
+    revenue-named calc metric without distinguishing real risk from the
+    common case of leaving attribution to the query layer."""
+    revenue_calcs = [
+        cm
+        for cm in impl.calculated_metrics
+        if _ATTR_REVENUE_RE.search(cm.name) or _ATTR_REVENUE_RE.search(cm.id)
+    ]
+    n = len(revenue_calcs)
+    if n == 0:
+        return (0.0, 0)
+    silent = 0
+    for cm in revenue_calcs:
+        model = (cm.attribution_model or "").lower().replace(" ", "-")
+        if model and model not in {"", "last-touch", "lasttouch"}:
+            continue
+        if cm.description and re.search(r"attribution", cm.description, re.IGNORECASE):
+            continue
+        silent += 1
+    return (silent / n, n)
+
+
+def _attr_missing_ratio(impl: Implementation) -> tuple[float, int | None]:
+    """ATTR-002 population: calc metrics with no explicit attribution_model.
+    Denominator is total calc metrics. This is the exact ratio the rule
+    thresholds at 0.30."""
+    n = len(impl.calculated_metrics)
+    if n == 0:
+        return (0.0, 0)
+    missing = sum(1 for cm in impl.calculated_metrics if not cm.attribution_model)
+    return (missing / n, n)
+
+
+def _attr_inconsistency_count(impl: Implementation) -> tuple[float, int | None]:
+    """ATTR-003 population: count of (same-references, ≥2 distinct attribution
+    models) conflict groups. Denominator is the count of calc metrics with
+    BOTH non-empty references AND an explicit attribution_model — i.e. the
+    pool that could in principle conflict."""
+    by_refs: dict[frozenset[str], list[str]] = defaultdict(list)
+    for cm in impl.calculated_metrics:
+        if not cm.references or not cm.attribution_model:
+            continue
+        by_refs[frozenset(cm.references)].append(cm.attribution_model)
+    conflicts = sum(
+        1 for models in by_refs.values() if len(models) >= 2 and len(set(models)) >= 2
+    )
+    eligible = sum(len(models) for models in by_refs.values())
+    return (float(conflicts), eligible)
+
+
 MEASUREMENTS: list[Measurement] = [
     Measurement("SEG-003", "Orphan segment ratio (unreferenced segments / total segments)",
                 "ratio", _orphan_ratio),
@@ -175,6 +241,26 @@ MEASUREMENTS: list[Measurement] = [
                 "ratio", _gov_missing_owners_ratio),
     Measurement("GOV-005", "Components missing tags / total components",
                 "ratio", _gov_missing_tags_ratio),
+    Measurement(
+        "ATTR-001",
+        "Revenue/conversion calc metrics that look like silent last-touch defaults "
+        "(no model or last-touch + no 'attribution' in description) / "
+        "revenue/conversion-named calc metrics",
+        "ratio",
+        _attr_silent_last_touch_ratio,
+    ),
+    Measurement(
+        "ATTR-002",
+        "Calc metrics with no explicit attribution_model / total calc metrics",
+        "ratio",
+        _attr_missing_ratio,
+    ),
+    Measurement(
+        "ATTR-003",
+        "Count of (same-references, ≥2 distinct attribution models) conflict groups per tenant",
+        "value",
+        _attr_inconsistency_count,
+    ),
 ]
 
 
