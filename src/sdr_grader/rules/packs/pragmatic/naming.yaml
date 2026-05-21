@@ -46,5 +46,10 @@ rules:
       synonym_groups:
         - [user, visitor]
         - [page, screen]
+        # Pragmatic keeps only the two strongest Adobe-domain mismatches —
+        # the rest are linguistically real but fire too readily for the
+        # sanity-check pack's purpose.
+        - [revenue, sales]
+        - [cart, basket]
     rationale: Same as strict.
     remediation: Same as strict.

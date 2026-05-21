@@ -173,6 +173,16 @@ def test_type_name_mismatch_quiet_when_decimal_or_unrelated_name():
     assert findings == []
 
 
+def test_type_name_mismatch_fires_on_aa_counter_event_with_rate_name():
+    """AA event type `counter` stores integers — a rate-named counter event
+    is the exact silent-truncation bug SCH-004 was designed to catch, but
+    the original integer-type set didn't recognize AA's vocabulary."""
+    metrics = [_component(1, name="Conversion Rate", data_type="counter")]
+    findings = check_type_name_mismatch(_impl(metrics=metrics), _ctx("SCH-004", severity="low"))
+    assert len(findings) == 1
+    assert findings[0].id == "SCH-004"
+
+
 # ---------------------------------------------------------------------------
 # SCH-005 deprecated components
 # ---------------------------------------------------------------------------
@@ -196,6 +206,38 @@ def test_deprecated_quiet_when_marker_but_no_consumers():
     metrics = [_component(1, name="Old Page Views", tags=["deprecated"])]
     findings = check_deprecated_components(_impl(metrics=metrics), _ctx("SCH-005", severity="low"))
     assert findings == []
+
+
+def test_deprecated_quiet_when_name_contains_innocuous_substring():
+    """Per RUBRIC_AUDIT.md, the original regex matched `old`, `tmp`, `temp`,
+    and `v0` — which false-fired on legitimate names like "Order Total",
+    "temperature", and "eVar0". The narrowed default regex excludes those.
+    A component with one of these innocuous substrings AND no deprecation
+    tag must not be flagged."""
+    metrics = [
+        _component(1, name="Order Total", cid="metrics/order_total"),
+        _component(2, name="temperature", cid="metrics/temperature"),
+        _component(3, name="Custom Var 0", cid="variables/evar0"),
+    ]
+    # Make them referenced so they'd fire if the regex still matched.
+    calc = [_calc("calc/uses_them", refs=[m.id for m in metrics])]
+    findings = check_deprecated_components(
+        _impl(metrics=metrics, calc=calc), _ctx("SCH-005", severity="low")
+    )
+    assert findings == []
+
+
+def test_deprecated_still_fires_on_explicit_legacy_marker_in_name():
+    """The narrowed regex still catches the explicit cases — `deprecated`,
+    `legacy`, `deleteme`, `do_not_use` — even when no tag is set."""
+    metrics = [
+        _component(1, name="Legacy Conversion Rate", cid="metrics/legacy_conv"),
+    ]
+    calc = [_calc("calc/still_using", refs=[metrics[0].id])]
+    findings = check_deprecated_components(
+        _impl(metrics=metrics, calc=calc), _ctx("SCH-005", severity="low")
+    )
+    assert len(findings) == 1
 
 
 # ---------------------------------------------------------------------------

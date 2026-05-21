@@ -196,3 +196,40 @@ def test_semantic_consistency_accepts_custom_synonym_groups():
         _ctx("NAME-004", synonym_groups=[["customer", "member"]]),
     )
     assert len(findings) == 1
+
+
+def test_semantic_consistency_default_groups_catch_adobe_domain_mismatches():
+    """The May 2026 rubric audit added four Adobe-domain pairs to the
+    default synonym list. Each pair should fire when its terms coexist."""
+    cases = [
+        ("Revenue per Visit", "Sales per Visit", ("revenue", "sales")),
+        ("Cart Adds", "Basket Adds", ("cart", "basket")),
+        ("Order Total", "Transaction Total", ("order", "transaction")),
+        ("Purchase Completion", "Checkout Completion", ("purchase", "checkout")),
+    ]
+    for name_a, name_b, (term_a, term_b) in cases:
+        dims = [
+            _component(1, name=name_a, cid=f"variables/{name_a.lower().replace(' ', '_')}"),
+            _component(2, name=name_b, cid=f"variables/{name_b.lower().replace(' ', '_')}"),
+        ]
+        findings = check_semantic_consistency(_impl(dimensions=dims), _ctx("NAME-004"))
+        assert len(findings) == 1, f"expected one finding for {name_a!r} vs {name_b!r}"
+        items_text = " ".join(
+            " ".join(b.items or []) for b in findings[0].body if b.items
+        )
+        assert term_a in items_text and term_b in items_text, (
+            f"expected both {term_a!r} and {term_b!r} in finding items "
+            f"for {name_a!r} vs {name_b!r}; got: {items_text}"
+        )
+
+
+def test_semantic_consistency_event_and_conversion_NOT_in_defaults():
+    """`event/conversion` was deliberately excluded from the defaults — `event`
+    is an AA platform primitive that legitimately coexists with `conversion`
+    in component names. A snapshot using both must not fire NAME-004."""
+    dims = [
+        _component(1, name="Custom Event Type", cid="variables/event_type"),
+        _component(2, name="Conversion Rate", cid="metrics/conversion_rate"),
+    ]
+    findings = check_semantic_consistency(_impl(dimensions=dims), _ctx("NAME-004"))
+    assert findings == []

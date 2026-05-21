@@ -50,7 +50,7 @@ For each rule:
 | NAME-001 prefix consistency | **weak — depends on tag convention** | Default `target: dimensions, tag_filter: custom`. Will fire only on dimensions tagged "custom". Adobe doesn't enforce a "custom" tag convention; most tenants won't have it. The rule effectively no-ops on most snapshots. Either drop the `tag_filter` default (grade ALL dimensions) and accept some platform-default-prefix noise, or document that this rule requires the operator to tag their custom components. The latter is closer to how it's framed in `_meta.yaml` (consultant-grade rules assume hygienic tagging). |
 | NAME-002 ID pattern | **solid** | AA IDs are constrained system-assigned strings (`evar1`, `event23`); CJA dimension IDs are SchemaPath strings (`variables/evar5`, `metrics/m_orders`). The default pattern `^[A-Za-z0-9_/.\-]+$` accepts both correctly. Real-world bugs from spaces in IDs DO occur (cja_auto_sdr has handled at least one such report). Structural, no calibration needed. |
 | NAME-003 casing consistency | **weak — same `tag_filter: custom` issue as NAME-001** | The casing classifier itself is solid (camelCase / PascalCase / snake_case / kebab-case / SCREAMING_SNAKE / Title Case / lowercase phrase). The constraint that it only grades `custom`-tagged dimensions makes it a no-op in practice. |
-| NAME-004 semantic synonym mixing | **solid — but expandable** | Synonym groups are platform-agnostic linguistic patterns (`user/visitor`, `page/screen`, `session/visit`). The signal is real: mixed vocabulary fragments downstream tooling. Worth adding Adobe-specific groups: `event/conversion`, `revenue/sales`, `cart/basket`, `order/transaction`. |
+| NAME-004 semantic synonym mixing | **solid — but expandable** | Synonym groups are platform-agnostic linguistic patterns (`user/visitor`, `page/screen`, `session/visit`). The signal is real: mixed vocabulary fragments downstream tooling. Worth adding Adobe-domain groups: `revenue/sales`, `cart/basket`, `order/transaction`, `purchase/checkout`. (An earlier draft of this audit suggested `event/conversion` — dropped on closer reading because "event" is an AA platform primitive that legitimately coexists with "conversion" in component names; the pair would false-fire on every AA tenant.) |
 
 ## Segment complexity (5 rules)
 
@@ -186,8 +186,8 @@ rules with `platforms: [aa]` could read directly from there.
    tagging-discipline-dependent. ~30 minutes plus calibration.
 
 5. **Consider expanding NAME-004's default synonym groups** with
-   Adobe-domain pairs (`event/conversion`, `revenue/sales`,
-   `cart/basket`, `order/transaction`). ~15 minutes.
+   Adobe-domain pairs (`revenue/sales`, `cart/basket`,
+   `order/transaction`, `purchase/checkout`). ~15 minutes.
 
 6. **CJA-specific rules** (persistence, attribution at Data View level)
    are higher engineering cost — the CJA adapter needs to extract these

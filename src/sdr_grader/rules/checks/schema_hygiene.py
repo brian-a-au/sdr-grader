@@ -190,7 +190,10 @@ def check_broken_references(
 
 
 _RATE_NAME_RE = re.compile(r"\b(rate|pct|percent|ratio|share)\b", re.IGNORECASE)
-_INTEGER_TYPES = {"integer", "int", "long"}
+# AA event type `counter` stores integers (no decimal); CJA/AEP schemas use
+# `integer`/`int`/`long`. A metric whose name implies a rate/percent/ratio
+# bound to any of these whole-number types silently truncates to 0%/100%.
+_INTEGER_TYPES = {"integer", "int", "long", "counter"}
 
 
 @register_check("type_name_mismatch")
@@ -239,7 +242,12 @@ def check_type_name_mismatch(
 
 
 _DEPRECATED_RE = re.compile(
-    r"\b(deprecated|legacy|old|deleteme|do[_\s]?not[_\s]?use|v0|tmp|temp)\b",
+    # Intentionally narrow — earlier defaults included `old`, `tmp`, `temp`,
+    # and `v0` but those triggered on "Order Total", "temperature", and
+    # "eVar0". The default tag set in _DEPRECATED_TAGS catches the explicit
+    # cases; the regex catches the legacy-name cases without false-firing
+    # on substring coincidences.
+    r"\b(deprecated|legacy|deleteme|do[_\s]?not[_\s]?use)\b",
     re.IGNORECASE,
 )
 _DEPRECATED_TAGS = {"deprecated", "legacy", "deleteme", "do_not_use"}

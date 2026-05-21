@@ -65,6 +65,12 @@ rules:
         - [session, visit]
         - [product, item, sku]
         - [customer, member, subscriber]
+        # Adobe-domain pairs: marketing/commerce vocabulary that mixes
+        # across teams in real implementations.
+        - [revenue, sales]
+        - [cart, basket]
+        - [order, transaction]
+        - [purchase, checkout]
     rationale: |
       Inconsistent vocabulary forces analysts to learn each team's idiolect
       and causes downstream tooling and segmentation to drift apart over

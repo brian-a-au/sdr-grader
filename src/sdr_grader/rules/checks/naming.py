@@ -187,6 +187,13 @@ _DEFAULT_SYNONYM_GROUPS: list[list[str]] = [
     ["session", "visit"],
     ["product", "item", "sku"],
     ["customer", "member", "subscriber"],
+    # Adobe-domain pairs from the May 2026 rubric audit. `event/conversion`
+    # was deliberately excluded — `event` is an AA platform primitive that
+    # legitimately coexists with `conversion` in component names.
+    ["revenue", "sales"],
+    ["cart", "basket"],
+    ["order", "transaction"],
+    ["purchase", "checkout"],
 ]
 
 
