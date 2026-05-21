@@ -240,6 +240,23 @@ def test_deprecated_still_fires_on_explicit_legacy_marker_in_name():
     assert len(findings) == 1
 
 
+def test_deprecated_fires_on_old_marker_in_name():
+    """`\\bold\\b` re-added in PR 4 after the May 2026 corpus vetting:
+    the narrowing applied in 1c2abf3 lost 3 genuine `(old)` deprecation
+    flags across the 108-fixture private corpus (`Account Name (old)`,
+    `Old Order Status`, `Old Page Type`). The abstract false-positive
+    risks (`Holdovers`, `Order Total`) can't match `\\bold\\b` due to
+    word-boundary semantics, so re-adding it is net positive."""
+    metrics = [
+        _component(1, name="Account Name (old)", cid="metrics/account_name_old"),
+    ]
+    calc = [_calc("calc/still_using", refs=[metrics[0].id])]
+    findings = check_deprecated_components(
+        _impl(metrics=metrics, calc=calc), _ctx("SCH-005", severity="low")
+    )
+    assert len(findings) == 1
+
+
 # ---------------------------------------------------------------------------
 # SCH-006 cardinality (stub)
 # ---------------------------------------------------------------------------

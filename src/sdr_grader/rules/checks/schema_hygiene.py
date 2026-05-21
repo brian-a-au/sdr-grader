@@ -242,12 +242,15 @@ def check_type_name_mismatch(
 
 
 _DEPRECATED_RE = re.compile(
-    # Intentionally narrow — earlier defaults included `old`, `tmp`, `temp`,
-    # and `v0` but those triggered on "Order Total", "temperature", and
-    # "eVar0". The default tag set in _DEPRECATED_TAGS catches the explicit
-    # cases; the regex catches the legacy-name cases without false-firing
-    # on substring coincidences.
-    r"\b(deprecated|legacy|deleteme|do[_\s]?not[_\s]?use)\b",
+    # `tmp`, `temp`, and `v0` stay removed — their abstract false-positive
+    # risks (matches inside `temperature`, `eVar0`, etc.) are real even at
+    # word-boundary granularity in some name shapes. `\bold\b` was also
+    # dropped in 1c2abf3 on the same reasoning, but corpus vetting (May
+    # 2026 audit) showed the named risks (`Order Total`, `Holdovers`) can't
+    # actually match `\bold\b` — and the narrowed regex lost 3 genuine
+    # `(old)` deprecation flags across 108 fixtures (`Account Name (old)`,
+    # `Old Order Status`, `Old Page Type`). `\bold\b` is back.
+    r"\b(deprecated|legacy|old|deleteme|do[_\s]?not[_\s]?use)\b",
     re.IGNORECASE,
 )
 _DEPRECATED_TAGS = {"deprecated", "legacy", "deleteme", "do_not_use"}
