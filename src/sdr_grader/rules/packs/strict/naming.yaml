@@ -3,24 +3,16 @@ description: |
   Naming consistency rules — prefix conventions, allowed characters, casing,
   and synonym discipline across components.
 
-rules:
-  - id: NAME-001
-    name: Custom dimension prefix consistency
-    severity: low
-    platforms: [cja, aa]
-    check: prefix_consistency
-    params:
-      target: dimensions
-      tag_filter: custom
-      min_consistency: 0.80
-    rationale: |
-      Inconsistent prefixes signal that multiple implementers worked without
-      a shared convention. They make schema browsing harder and complicate
-      downstream tooling that expects naming patterns.
-    remediation: |
-      Pick a convention, document it in the SDR, and rename outliers via the
-      platform UI or API.
+# NAME-001 and NAME-003 demoted to opt-in after May 2026 audit
+# (docs/RUBRIC_AUDIT.md): with the default `tag_filter: custom`, the
+# rules had a 0/108 match rate across the private corpus — no fixture
+# tags any dimension `custom`. PR 2 plans to restore them by dropping
+# the tag filter once the CJA adapter's tag-JSON parsing bug is fixed
+# (today the adapter iterates the JSON-encoded `"[]"` string as a list
+# of characters, so the filter wouldn't match anyway). Check functions
+# remain registered for opt-in custom packs.
 
+rules:
   - id: NAME-002
     name: No whitespace or special characters in component IDs
     severity: low
@@ -35,23 +27,6 @@ rules:
     remediation: |
       Rename the component via the platform API. Use only ASCII letters,
       digits, underscore, hyphen, period, and forward slash.
-
-  - id: NAME-003
-    name: Component name casing consistency
-    severity: low
-    platforms: [cja, aa]
-    check: casing_consistency
-    params:
-      target: dimensions
-      tag_filter: custom
-      min_consistency: 0.80
-    rationale: |
-      Mixed casing styles (camelCase + snake_case + Title Case in the same
-      schema) produce friction in copy-paste workflows and signal a lack of
-      shared convention across implementers.
-    remediation: |
-      Adopt a single casing convention and rename outliers. Add a CI check
-      that flags new components introduced in a different style.
 
   - id: NAME-004
     name: Semantic synonym mixing

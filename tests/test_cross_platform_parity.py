@@ -42,11 +42,11 @@ STRICT_PACK = PROJECT_ROOT / "src" / "sdr_grader" / "rules" / "packs" / "strict"
 # strict "fires on messy" assertion to take effect — that's the proof a
 # Phase 4 fix landed.
 KNOWN_PHASE4_GAPS: frozenset[str] = frozenset({
+    # NAME-001 and NAME-003 were demoted to opt-in (May 2026 audit); they
+    # no longer appear in the strict pack so this set drops them.
     "ATTR-003",
     "GOV-002",
-    "NAME-001",
     "NAME-002",
-    "NAME-003",
     "SCH-001",
     "SCH-004",
     "SCH-005",

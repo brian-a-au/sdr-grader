@@ -370,7 +370,7 @@ pre.code {
     </div>
     <div class="item">
       <span class="label">Overall</span>
-      <span class="value">46%</span>
+      <span class="value">55%</span>
     </div>
     <div class="item">
       <span class="label">Components</span>
@@ -404,7 +404,7 @@ pre.code {
   
   <section id="tldr">
     <div class="tldr">Summary</div>
-    <p class="tldr-body">This implementation graded <strong>F</strong> (46%). The grader evaluated 75 components in this report suite using the <span class="mono">strict@1.0</span> rubric pack. The largest gap is in <strong>attribution coverage</strong> (20%); 2 of 3 rules in that category fired.</p>
+    <p class="tldr-body">This implementation graded <strong>F</strong> (55%). The grader evaluated 75 components in this report suite using the <span class="mono">strict@1.0</span> rubric pack. The largest gap is in <strong>governance posture</strong> (22%); 3 of 4 rules in that category fired.</p>
   </section>
 
   
@@ -428,11 +428,11 @@ pre.code {
       <div class="cat">
         <div class="name">naming consistency</div>
         <div class="score">
-          <span class="pct">60%</span>
-          <span class="sub">D−</span>
+          <span class="pct">33%</span>
+          <span class="sub">F</span>
         </div>
-        <div class="bar warn">
-          <span style="width:60%"></span>
+        <div class="bar crit">
+          <span style="width:33%"></span>
         </div>
       </div>
       
@@ -461,11 +461,11 @@ pre.code {
       <div class="cat">
         <div class="name">attribution coverage</div>
         <div class="score">
-          <span class="pct">20%</span>
-          <span class="sub">F</span>
+          <span class="pct">100%</span>
+          <span class="sub">A</span>
         </div>
-        <div class="bar crit">
-          <span style="width:20%"></span>
+        <div class="bar">
+          <span style="width:100%"></span>
         </div>
       </div>
       
@@ -516,16 +516,16 @@ pre.code {
       
       <li>
         <span class="text">
-          Either change the attribution model to one appropriate for the metric's intended use, or document in the metric description why last-touch is the correct choice.
-          <span class="ref">ATTR-001</span>
+          Update the formula to reference the current canonical component or retire the calculated metric.
+          <span class="ref">CALC-002</span>
         </span>
         <span class="impact">+3 pts overall</span>
       </li>
       
       <li>
         <span class="text">
-          Set the attribution model explicitly on every calculated metric.
-          <span class="ref">ATTR-002</span>
+          Pick one term per concept, document it, and rename existing components to align. The losing synonyms should be deprecated, not silently kept around.
+          <span class="ref">NAME-004</span>
         </span>
         <span class="impact">+3 pts overall</span>
       </li>
@@ -608,57 +608,6 @@ calc_metric cm_revenue_per_visit -> missing metrics/visits
           
             <div class="finding-section-label">How to remediate</div>
             <p>Re-create the missing component, or update the segment / calculated metric to point at the current canonical equivalent.</p>
-          
-        
-      </div>
-      
-    </article>
-    
-    <article class="finding" id="finding-attr-001">
-      <div class="finding-head">
-        <span class="finding-id">ATTR-001</span>
-        <span class="sev med">Medium</span>
-        <span class="finding-cat">attribution coverage</span>
-      </div>
-      <h3 class="finding-title">2 undocumented last-touch metrics</h3>
-      <div class="finding-body">
-        
-          
-            <p>2 revenue / conversion metrics default to last-touch attribution without a documented rationale. Last-touch is appropriate for some use cases but should be a deliberate choice, not a silent default.</p>
-          
-        
-          
-            <div class="finding-section-label">Affected components (2)</div>
-<pre class="components-list">cm_conversion_rate  attribution=—
-cm_revenue_per_visit  attribution=—
-</pre>
-          
-        
-          
-            <div class="finding-section-label">How to remediate</div>
-            <p>Either change the attribution model to one appropriate for the metric's intended use, or document in the metric description why last-touch is the correct choice.</p>
-          
-        
-      </div>
-      
-    </article>
-    
-    <article class="finding" id="finding-attr-002">
-      <div class="finding-head">
-        <span class="finding-id">ATTR-002</span>
-        <span class="sev med">Medium</span>
-        <span class="finding-cat">attribution coverage</span>
-      </div>
-      <h3 class="finding-title">2 calc metrics lack explicit attribution</h3>
-      <div class="finding-body">
-        
-          
-            <p>2 of 2 calculated metrics (100%) have no attribution model specified. The platform falls back to its default model, which is silent until a stakeholder asks why two metrics that look similar disagree.</p>
-          
-        
-          
-            <div class="finding-section-label">How to remediate</div>
-            <p>Set the attribution model explicitly on every calculated metric.</p>
           
         
       </div>
@@ -841,7 +790,7 @@ cm_revenue_per_visit -> metrics/visits
 
     <div class="finding-body" style="max-width: 720px;">
       
-        <p>This grade was produced by <span class="mono">sdr-grader</span> using the <span class="mono">strict@1.0</span> rubric pack. The rubric encodes 26 rules across 6 active categories; 11 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.</p>
+        <p>This grade was produced by <span class="mono">sdr-grader</span> using the <span class="mono">strict@1.0</span> rubric pack. The rubric encodes 22 rules across 6 active categories; 9 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.</p>
       
         <p>The grader is rule-based and deterministic — the same input always produces the same grade. Findings are auditable: every rule's source YAML is linked from its finding, and rules can be suppressed or reweighted via a project-level <span class="mono">.sdr-grader.yaml</span>.</p>
       

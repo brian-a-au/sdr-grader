@@ -4,36 +4,14 @@ description: |
   metrics with no attribution model specified, and inconsistent choices
   across similar metrics.
 
+# ATTR-001 and ATTR-002 were demoted to opt-in after the May 2026 audit
+# (see docs/RUBRIC_AUDIT.md). ATTR-001 fires on 49/49 (100%) revenue-named
+# calc metrics across the 108-fixture private corpus; ATTR-002's
+# distribution measured p25 = p50 = p75 = 1.00 — fires on every fixture.
+# Both check functions stay registered so custom packs can opt in, but
+# they no longer ship in the default rubric.
+
 rules:
-  - id: ATTR-001
-    name: Revenue / conversion metrics defaulting to last-touch without rationale
-    severity: medium
-    platforms: [cja, aa]
-    check: attribution_default_last_touch
-    params: {}
-    rationale: |
-      Last-touch is appropriate for some use cases but should be a
-      deliberate choice, not a silent default for revenue or conversion
-      metrics.
-    remediation: |
-      Either change the attribution model to one appropriate for the
-      metric's intended use, or document in the metric description why
-      last-touch is the correct choice.
-
-  - id: ATTR-002
-    name: Calc metrics with attribution model not specified
-    severity: medium
-    platforms: [cja, aa]
-    check: attribution_missing
-    params:
-      threshold: 0.30
-    rationale: |
-      The platform falls back to its default model when none is specified,
-      which is silent until a stakeholder asks why two metrics that look
-      similar disagree.
-    remediation: |
-      Set the attribution model explicitly on every calculated metric.
-
   - id: ATTR-003
     name: Inconsistent attribution choices across similar metrics
     severity: low
