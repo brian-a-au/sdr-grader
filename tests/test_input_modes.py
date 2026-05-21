@@ -95,11 +95,14 @@ def test_cli_directory_mode(tmp_path):
     snap_dir = tmp_path / "snapshots"
     snap_dir.mkdir()
     shutil.copy(FIXTURES / "cja_snapshot_messy.json", snap_dir / "snapshot_2026-04-25.json")
-    rc = main([
-        str(snap_dir),
-        "--output", str(tmp_path / "out.html"),
-        "--quiet",
-    ])
+    rc = main(
+        [
+            str(snap_dir),
+            "--output",
+            str(tmp_path / "out.html"),
+            "--quiet",
+        ]
+    )
     assert rc == SUCCESS
 
 
@@ -117,23 +120,59 @@ def test_cli_rejects_no_input(capsys):
 
 
 def test_cli_rejects_multiple_input_modes(tmp_path, capsys):
-    rc = main([
-        str(FIXTURES / "cja_snapshot_messy.json"),
-        "--dataview", "dv_test",
-        "--output", str(tmp_path / "out.html"),
-    ])
+    rc = main(
+        [
+            str(FIXTURES / "cja_snapshot_messy.json"),
+            "--dataview",
+            "dv_test",
+            "--output",
+            str(tmp_path / "out.html"),
+        ]
+    )
     assert rc == RUNTIME_ERROR
     assert "multiple input modes" in capsys.readouterr().err
 
 
 def test_cli_dataview_requires_cja_auto_sdr_on_path(tmp_path, capsys, monkeypatch):
     monkeypatch.setattr("shutil.which", lambda _: None)
-    rc = main([
-        "--dataview", "dv_test",
-        "--output", str(tmp_path / "out.html"),
-    ])
+    rc = main(
+        [
+            "--dataview",
+            "dv_test",
+            "--output",
+            str(tmp_path / "out.html"),
+        ]
+    )
     assert rc == RUNTIME_ERROR
     assert "cja_auto_sdr not found" in capsys.readouterr().err
+
+
+def test_shell_cja_passes_include_all_inventory(monkeypatch):
+    """CJA shell-out must request the full inventory so calc-metric and
+    segment rule packs grade against populated inputs."""
+    import subprocess
+
+    from sdr_grader.input.shell_out import shell_cja
+
+    captured: dict = {}
+
+    class _FakeCompleted:
+        stdout = "{}"
+        stderr = ""
+
+    def fake_run(cmd, **kwargs):
+        captured["cmd"] = cmd
+        return _FakeCompleted()
+
+    monkeypatch.setattr("shutil.which", lambda tool: f"/usr/bin/{tool}")
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    snapshot, source = shell_cja("dv_test")
+    assert snapshot == {}
+    assert source == "shell-out:cja_auto_sdr dv_test"
+    assert "--include-all-inventory" in captured["cmd"]
+    # Flag must precede --output so cja_auto_sdr applies it to the JSON write.
+    assert captured["cmd"].index("--include-all-inventory") < captured["cmd"].index("--output")
 
 
 def test_cli_rsid_uses_aa_adapter(tmp_path, capsys):
@@ -144,9 +183,13 @@ def test_cli_rsid_uses_aa_adapter(tmp_path, capsys):
         return aa_payload, f"shell-out:aa_auto_sdr {rsid}"
 
     with patch("sdr_grader.cli.main.shell_aa", side_effect=fake_shell_aa):
-        rc = main([
-            "--rsid", "messy.prod",
-            "--output", str(tmp_path / "out.html"),
-            "--quiet",
-        ])
+        rc = main(
+            [
+                "--rsid",
+                "messy.prod",
+                "--output",
+                str(tmp_path / "out.html"),
+                "--quiet",
+            ]
+        )
     assert rc == SUCCESS

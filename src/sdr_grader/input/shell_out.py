@@ -19,17 +19,30 @@ from sdr_grader.core.exceptions import InvalidSnapshotError
 def shell_cja(
     dataview_id: str, *, extra_args: list[str] | None = None
 ) -> tuple[dict[str, Any], str]:
-    """Shell out to cja_auto_sdr against a CJA data view ID."""
+    """Shell out to cja_auto_sdr against a CJA data view ID.
+
+    Always passes ``--include-all-inventory`` so the snapshot ships
+    calculated metrics and segments alongside dimensions/metrics —
+    without it, those rule packs grade against empty inputs and stay
+    silent. See cja_auto_sdr's Component Inventory Overview for the
+    full set of ``--include-*`` switches.
+    """
     return _shell_out(
         "cja_auto_sdr",
-        [dataview_id, "--format", "json", "--output", "-", *(extra_args or [])],
+        [
+            dataview_id,
+            "--include-all-inventory",
+            "--format",
+            "json",
+            "--output",
+            "-",
+            *(extra_args or []),
+        ],
         flag="--dataview",
     )
 
 
-def shell_aa(
-    rsid: str, *, extra_args: list[str] | None = None
-) -> tuple[dict[str, Any], str]:
+def shell_aa(rsid: str, *, extra_args: list[str] | None = None) -> tuple[dict[str, Any], str]:
     """Shell out to aa_auto_sdr against an AA report suite ID."""
     return _shell_out(
         "aa_auto_sdr",
@@ -38,9 +51,7 @@ def shell_aa(
     )
 
 
-def _shell_out(
-    tool: str, argv: list[str], *, flag: str
-) -> tuple[dict[str, Any], str]:
+def _shell_out(tool: str, argv: list[str], *, flag: str) -> tuple[dict[str, Any], str]:
     binary = shutil.which(tool)
     if not binary:
         raise InvalidSnapshotError(
@@ -66,7 +77,5 @@ def _shell_out(
     try:
         snapshot = json.loads(result.stdout)
     except json.JSONDecodeError as exc:
-        raise InvalidSnapshotError(
-            f"{tool} produced output that is not valid JSON: {exc}"
-        ) from exc
+        raise InvalidSnapshotError(f"{tool} produced output that is not valid JSON: {exc}") from exc
     return snapshot, f"shell-out:{tool} {argv[0]}"

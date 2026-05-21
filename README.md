@@ -65,8 +65,8 @@ a line of grader code. The scoring algorithm itself is in
 uv tool install sdr-grader
 
 # 2. Generate a snapshot of your data view (CJA) or report suite (AA).
-cja_auto_sdr dv_prod_web --format json --output snapshot.json   # CJA
-aa_auto_sdr  prod_us      --format json --output snapshot.json   # AA
+cja_auto_sdr dv_prod_web --include-all-inventory --format json --output snapshot.json   # CJA
+aa_auto_sdr  prod_us                              --format json --output snapshot.json   # AA
 
 # 3. Grade it (platform auto-detected from the snapshot).
 sdr-grader snapshot.json --output grade.html
@@ -75,11 +75,19 @@ sdr-grader snapshot.json --output grade.html
 open grade.html  # macOS; xdg-open on Linux
 ```
 
+`--include-all-inventory` makes `cja_auto_sdr` ship calculated metrics
+and segments alongside the dimensions/metrics SDR. Without it, the
+calc-metric and segment rule packs grade against empty inputs and stay
+silent. `aa_auto_sdr` includes both inventories by default, so no
+equivalent flag is needed on the AA side. See the upstream
+[Component Inventory Overview](https://github.com/brian-a-au/cja_auto_sdr/blob/main/docs/INVENTORY_OVERVIEW.md)
+for the full set of `--include-*` switches.
+
 Or pipe directly without writing a file to disk:
 
 ```bash
 # CJA
-cja_auto_sdr dv_prod_web --format json --output - | \
+cja_auto_sdr dv_prod_web --include-all-inventory --format json --output - | \
   sdr-grader - --output grade.html
 
 # AA
@@ -95,9 +103,9 @@ aa_auto_sdr prod_us --format json --output - | \
 | Directory  | `sdr-grader path/to/snapshots/`                  | Point at a folder of dated snapshots; picks the most recent by filename timestamp (falls back to mtime). |
 |            | `sdr-grader path/to/snapshots/ --at 2026-04-01`  | Same folder, but grade the snapshot closest to (and not after) the given ISO-8601 date — useful for retro grading or reproducing a prior report. |
 | Trend      | `sdr-grader path/to/snapshots/ --trend`          | Grade every dated snapshot in the folder and emit a single trend HTML with sparklines and findings churn. |
-| Shell-out  | `sdr-grader --dataview dv_prod_web`              | Pull a fresh CJA snapshot live via `cja_auto_sdr` and grade it in one shot — no intermediate file. Requires `cja_auto_sdr` on `PATH`. |
+| Shell-out  | `sdr-grader --dataview dv_prod_web`              | Pull a fresh CJA snapshot live via `cja_auto_sdr` and grade it in one shot — no intermediate file. Requires `cja_auto_sdr` on `PATH`; `--include-all-inventory` is passed automatically so calc-metric and segment rule packs grade against populated inputs. |
 |            | `sdr-grader --rsid prod_us`                      | Same idea against AA via `aa_auto_sdr`. Requires `aa_auto_sdr` on `PATH`. |
-| Stdin      | `… \| sdr-grader -`                              | Stream JSON in from another tool without touching disk — pairs with `cja_auto_sdr … --output -` for ephemeral CI runs. |
+| Stdin      | `… \| sdr-grader -`                              | Stream JSON in from another tool without touching disk — pairs with `cja_auto_sdr --include-all-inventory … --output -` for ephemeral CI runs. |
 
 One run grades one platform. CJA and AA snapshots are not mixed: the
 platform is auto-detected per snapshot from its JSON shape, and the
