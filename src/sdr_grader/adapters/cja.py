@@ -134,7 +134,7 @@ def _component_from_record(record: dict[str, Any], component_type: str) -> Compo
         created_at=record.get("created") or record.get("created_at"),
         modified_at=record.get("modified") or record.get("modified_at"),
         owner=_normalize_owner(record.get("owner")),
-        tags=list(record.get("tags") or []),
+        tags=_parse_tag_list(record.get("tags")),
         platform_specific=platform_specific,
     )
 
@@ -176,7 +176,7 @@ def _derived_field_from_record(record: dict[str, Any]) -> Component:
         created_at=record.get("created") or record.get("created_at"),
         modified_at=record.get("modified") or record.get("modified_at"),
         owner=_normalize_owner(record.get("owner")),
-        tags=list(record.get("tags") or []),
+        tags=_parse_tag_list(record.get("tags")),
         platform_specific=platform_specific,
     )
 
@@ -405,6 +405,30 @@ def _parse_definition_json(value: Any) -> dict[str, Any]:
             return {}
         return parsed if isinstance(parsed, dict) else {}
     return {}
+
+
+def _parse_tag_list(value: Any) -> list[str]:
+    """cja_auto_sdr ships `tags` as a JSON-encoded list string (e.g. `'["a"]'`).
+
+    Previously the adapter called `list(record.get("tags") or [])` which
+    iterates the string as characters when it arrives in stringified form
+    — producing fake tags like `'['`, `'"'`, `'c'`. This helper handles
+    both the stringified and native-list shapes and falls back to `[]`
+    for anything unparseable.
+    """
+    if value is None or value == "":
+        return []
+    if isinstance(value, list):
+        return [str(t) for t in value]
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+        except json.JSONDecodeError:
+            return []
+        if isinstance(parsed, list):
+            return [str(t) for t in parsed]
+        return []
+    return []
 
 
 def _normalize_description(value: Any) -> str | None:

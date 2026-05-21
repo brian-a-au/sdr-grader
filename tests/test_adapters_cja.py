@@ -270,3 +270,48 @@ def test_adapt_rejects_non_list_metrics() -> None:
             "metrics": {"not": "a list"},
             "dimensions": [],
         })
+
+
+# ---------------------------------------------------------------------------
+# Field-shape tolerance — cja_auto_sdr ships some list/dict fields as
+# JSON-encoded strings. The adapter must round-trip those into real lists.
+# ---------------------------------------------------------------------------
+
+
+def _minimal_snapshot(*, dim_tags, metric_tags=None):
+    return {
+        "metadata": {"Data View ID": "dv_x"},
+        "metrics": [{"id": "metrics/m1", "name": "M1", "tags": metric_tags or []}],
+        "dimensions": [{"id": "variables/d1", "name": "D1", "tags": dim_tags}],
+    }
+
+
+def test_string_encoded_tags_parsed_as_list() -> None:
+    """cja_auto_sdr ships `tags` as a JSON-encoded string like `'["custom"]'`.
+
+    The adapter previously called `list(record.get("tags") or [])` which
+    iterates the raw string as characters, producing tags like `'['`,
+    `'"'`, `'c'`. Verify the JSON-string form parses back to a real list.
+    """
+    impl = adapt(_minimal_snapshot(dim_tags='["custom","ga4"]'))
+    dim = impl.dimensions[0]
+    assert dim.tags == ["custom", "ga4"]
+
+
+def test_empty_string_tags_parsed_as_empty_list() -> None:
+    impl = adapt(_minimal_snapshot(dim_tags="[]"))
+    dim = impl.dimensions[0]
+    assert dim.tags == []
+
+
+def test_native_list_tags_still_accepted() -> None:
+    impl = adapt(_minimal_snapshot(dim_tags=["custom"]))
+    dim = impl.dimensions[0]
+    assert dim.tags == ["custom"]
+
+
+def test_malformed_tag_string_falls_back_to_empty() -> None:
+    """A non-parsable JSON string should not crash — fall back to empty list."""
+    impl = adapt(_minimal_snapshot(dim_tags="not-json-{["))
+    dim = impl.dimensions[0]
+    assert dim.tags == []
