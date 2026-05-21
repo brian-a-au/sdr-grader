@@ -175,6 +175,63 @@ def test_shell_cja_passes_include_all_inventory(monkeypatch):
     assert captured["cmd"].index("--include-all-inventory") < captured["cmd"].index("--output")
 
 
+def test_shell_cja_raises_when_subprocess_exits_nonzero(monkeypatch):
+    """Upstream tool exiting non-zero must surface as InvalidSnapshotError
+    carrying the captured stderr."""
+    import subprocess
+
+    from sdr_grader.core.exceptions import InvalidSnapshotError
+    from sdr_grader.input.shell_out import shell_cja
+
+    def fake_run(cmd, **kwargs):
+        raise subprocess.CalledProcessError(
+            returncode=2, cmd=cmd, output="", stderr="auth token expired"
+        )
+
+    monkeypatch.setattr("shutil.which", lambda tool: f"/usr/bin/{tool}")
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    with pytest.raises(InvalidSnapshotError, match="auth token expired"):
+        shell_cja("dv_test")
+
+
+def test_shell_cja_raises_when_binary_missing_at_invocation(monkeypatch):
+    """shutil.which returned a path but the binary vanished before exec —
+    surface as InvalidSnapshotError, not a raw FileNotFoundError."""
+    import subprocess
+
+    from sdr_grader.core.exceptions import InvalidSnapshotError
+    from sdr_grader.input.shell_out import shell_cja
+
+    def fake_run(cmd, **kwargs):
+        raise FileNotFoundError(2, "No such file or directory", cmd[0])
+
+    monkeypatch.setattr("shutil.which", lambda tool: f"/usr/bin/{tool}")
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    with pytest.raises(InvalidSnapshotError, match="could not be invoked"):
+        shell_cja("dv_test")
+
+
+def test_shell_cja_raises_on_non_json_stdout(monkeypatch):
+    """Upstream succeeded but wrote garbage to stdout — fail loudly rather
+    than handing malformed input to the adapter."""
+    import subprocess
+
+    from sdr_grader.core.exceptions import InvalidSnapshotError
+    from sdr_grader.input.shell_out import shell_cja
+
+    class _Completed:
+        stdout = "not json at all"
+        stderr = ""
+
+    monkeypatch.setattr("shutil.which", lambda tool: f"/usr/bin/{tool}")
+    monkeypatch.setattr(subprocess, "run", lambda cmd, **kw: _Completed())
+
+    with pytest.raises(InvalidSnapshotError, match="not valid JSON"):
+        shell_cja("dv_test")
+
+
 def test_cli_rsid_uses_aa_adapter(tmp_path, capsys):
     """Mock shell_aa to inject an AA snapshot — exercises Mode 3 wiring."""
     aa_payload = json.loads((FIXTURES / "aa_snapshot_messy.json").read_text(encoding="utf-8"))

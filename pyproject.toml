@@ -24,6 +24,7 @@ dev = [
     "pytest>=8.0",
     "ruff>=0.4",
     "hypothesis>=6.100",
+    "pytest-cov>=7.1.0",
 ]
 
 [build-system]
@@ -38,6 +39,25 @@ minversion = "8.0"
 testpaths = ["tests"]
 pythonpath = ["tests"]
 addopts = "-ra"
+
+[tool.coverage.run]
+source = ["src/sdr_grader"]
+branch = false
+
+[tool.coverage.report]
+# Mirrors aa_auto_sdr's gate. Current baseline is ~91% (see
+# tests/test_rules_supplementary.py, tests/test_detect_and_registry.py,
+# and the doc-drift block in tests/test_rules_governance.py for the
+# floor-clearing tests). Largest remaining gap is rules/rubric.py's
+# YAML validation error paths — backfill before raising further.
+fail_under = 90
+show_missing = true
+skip_covered = false
+exclude_also = [
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "@overload",
+]
 
 [tool.ruff]
 line-length = 100
