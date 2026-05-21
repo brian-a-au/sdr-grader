@@ -204,12 +204,15 @@ Customizing the rubric:
 - [docs/RUBRIC_FORMAT.md](docs/RUBRIC_FORMAT.md) — YAML rubric schema
 - [docs/SUPPLEMENTARY_INPUTS.md](docs/SUPPLEMENTARY_INPUTS.md) — `--extra-input` mechanism
 
-Calibration:
+Calibration and audit:
 
 - [docs/CALIBRATION_CORPUS.md](docs/CALIBRATION_CORPUS.md) — how the
   108-snapshot corpus behind the default thresholds is assembled
 - [docs/threshold_calibration.md](docs/threshold_calibration.md) —
   per-rule distributions + confidence ratings (auto-generated)
+- [docs/RUBRIC_AUDIT.md](docs/RUBRIC_AUDIT.md) — premise audit of each
+  rule against Adobe documentation; gaps Adobe carries but the rubric
+  doesn't grade
 
 Running and reporting:
 
