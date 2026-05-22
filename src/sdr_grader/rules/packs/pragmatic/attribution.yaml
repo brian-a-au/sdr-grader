@@ -1,8 +1,10 @@
 category: attribution_coverage
 description: Pragmatic attribution rules — same IDs as strict, looser thresholds.
 
-# ATTR-001 and ATTR-002 demoted to opt-in after May 2026 audit. See
-# strict/attribution.yaml header and docs/RUBRIC_AUDIT.md.
+# ATTR-001 and ATTR-002 demoted to opt-in after May 2026 audit;
+# calibration on 2026-05-22 confirmed both are degenerate against the
+# 108-fixture corpus. See strict/attribution.yaml header,
+# docs/RUBRIC_AUDIT.md, and ATTR-* rows in docs/threshold_calibration.md.
 
 rules:
   - id: ATTR-003

@@ -5,11 +5,19 @@ description: |
   across similar metrics.
 
 # ATTR-001 and ATTR-002 were demoted to opt-in after the May 2026 audit
-# (see docs/RUBRIC_AUDIT.md). ATTR-001 fires on 49/49 (100%) revenue-named
-# calc metrics across the 108-fixture private corpus; ATTR-002's
-# distribution measured p25 = p50 = p75 = 1.00 — fires on every fixture.
+# (see docs/RUBRIC_AUDIT.md). Calibration via
+# scripts/calibrate_thresholds.py (run 2026-05-22, see ATTR-* rows in
+# docs/threshold_calibration.md) confirmed both are degenerate against
+# the 108-fixture private corpus:
+#   * ATTR-001: 3 of 3 tenants with any revenue-named calc metrics fire
+#     at ratio 1.00 (49 of 49 metrics aggregate).
+#   * ATTR-002: p25 = p50 = p75 = p90 = p95 = 1.00 across n=31 tenants;
+#     no threshold value can separate signal from baseline today.
 # Both check functions stay registered so custom packs can opt in, but
-# they no longer ship in the default rubric.
+# they no longer ship in the default rubric. ATTR-003 stays in defaults
+# as a structural rule even though calibration found 0 observations —
+# its prerequisite (≥2 calc metrics with shared refs AND explicit
+# attribution models) is rare but the signal is high when it does fire.
 
 rules:
   - id: ATTR-003

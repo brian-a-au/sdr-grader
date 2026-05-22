@@ -52,9 +52,9 @@ For each rule:
 
 | Rule | Disposition | Notes |
 |------|-------------|-------|
-| NAME-001 prefix consistency | **dead by default** | Default `target: dimensions, tag_filter: custom`. Will fire only on dimensions tagged "custom". Adobe doesn't enforce a "custom" tag convention. **Corpus check: 0 of 108 fixtures have any dimension tagged `custom`** — the rule has a 0% match rate across the entire private corpus. Either drop the `tag_filter` default (grade ALL dimensions) and accept some platform-default-prefix noise, or explicitly document that this rule is dead unless the operator opts in via tagging discipline. The current framing in `_meta.yaml` (consultant-grade rules assume hygienic tagging) does not match observed reality. |
+| NAME-001 prefix consistency | **solid (calibrated, post-fix)** | Original 0/108 dead-by-default state has been resolved: `tag_filter: custom` was removed from both packs in 074b131, so the rule now grades all dimensions. Calibration (2026-05-22, n=108, high confidence) reveals a clean bimodal distribution: p25=0.04, p50=0.07, p75=0.16, **p90=0.82**, p95=1.00 — tenants either operate under no prefix convention (lower 75%) or apply one broadly (top ~10%). The strict-pack threshold 0.60 sits squarely in the inflection between those populations; pragmatic 0.50 still discriminates. Rule will fire on most tenants without a broad convention — appropriate for a `severity: low` "no shared convention" signal. |
 | NAME-002 ID pattern | **solid** | AA IDs are constrained system-assigned strings (`evar1`, `event23`); CJA dimension IDs are SchemaPath strings (`variables/evar5`, `metrics/m_orders`). The default pattern `^[A-Za-z0-9_/.\-]+$` accepts both correctly. Real-world bugs from spaces in IDs DO occur (cja_auto_sdr has handled at least one such report). Structural, no calibration needed. |
-| NAME-003 casing consistency | **dead by default — same root cause as NAME-001** | The casing classifier itself is solid (camelCase / PascalCase / snake_case / kebab-case / SCREAMING_SNAKE / Title Case / lowercase phrase). The constraint that it only grades `custom`-tagged dimensions makes it dead by default (0/108 fixtures match — see NAME-001). |
+| NAME-003 casing consistency | **solid (calibrated, post-fix)** | Same fix as NAME-001 (074b131 removed `tag_filter: custom`). Casing classifier itself was always solid (camelCase / PascalCase / snake_case / kebab-case / SCREAMING_SNAKE / Title Case / lowercase phrase). Calibration (2026-05-22, n=108, high confidence): p25=0.64, p50=0.70, p75=0.83, p90=0.90. Smoother than NAME-001 — no bimodal cliff. Strict-pack threshold 0.60 fires on the bottom ~20% of tenants (those mixing styles), pragmatic 0.50 on the bottom ~10%. Reasonable signal-to-noise. |
 | NAME-004 semantic synonym mixing | **solid — but expandable** | Synonym groups are platform-agnostic linguistic patterns (`user/visitor`, `page/screen`, `session/visit`). The signal is real: mixed vocabulary fragments downstream tooling. Worth adding Adobe-domain groups: `revenue/sales`, `cart/basket`, `order/transaction`, `purchase/checkout`. (An earlier draft of this audit suggested `event/conversion` — dropped on closer reading because "event" is an AA platform primitive that legitimately coexists with "conversion" in component names; the pair would false-fire on every AA tenant.) |
 
 ## Segment complexity (5 rules)
@@ -84,9 +84,9 @@ audit; summary here.
 
 | Rule | Disposition | Notes |
 |------|-------------|-------|
-| ATTR-001 silent last-touch default | **weak — premise right, trigger fires on the common case** | Adobe's docs confirm Last Touch IS the platform default when no model is specified. So the premise is real. **Corpus check:** 49 of 49 revenue/order/conversion-named calc metrics (100%) lack a baked-in attribution model — the rule fires on every one of them. Most are simple ratios where attribution is correctly set at the panel level in Workspace. Effect: the rule fires on the common case, not the actually-risky subset (executive-dashboard calc metrics where attribution should be baked in). Recommendation: demote to opt-in, require an additional signal (e.g. metric is referenced from a Workspace project export passed via `--extra-input`). |
-| ATTR-002 calc metrics lacking explicit attribution > 30% | **degenerate — measured indiscriminate** | Threshold 0.30 is a guess, not measured. **Corpus check** (108 fixtures, 31 with calc metrics): p25 = p50 = p75 = **1.00**. All 31 fixtures with calc metrics have 100% of them lacking attribution, so the rule fires on every fixture. Status confirmed degenerate, not "predicted degenerate". Either ship at 0.99+ or excise. No `ATTR-*` section exists in `threshold_calibration.md` yet. |
-| ATTR-003 same-refs different-attribution inconsistency | **solid in principle, rare in practice** | When fired, signal is genuine. Conflict requires ≥2 calc metrics with same input refs AND ≥2 distinct non-None attribution models — rare prerequisite (most calc metrics have None). Keep as-is; expect it to rarely fire. |
+| ATTR-001 silent last-touch default | **demoted to opt-in (calibrated)** | Adobe's docs confirm Last Touch IS the platform default when no model is specified, so the premise is real. **Corpus check:** 49 of 49 revenue/order/conversion-named calc metrics (100%) lack a baked-in attribution model — the rule fires on every one of them. At the tenant level the calibration script measures n=3 tenants with any revenue-named calc metrics, all at ratio 1.00. Most are simple ratios where attribution is correctly set at the panel level in Workspace. The rule fires on the common case, not the actually-risky subset (executive-dashboard calc metrics where attribution should be baked in). **Action taken (2026-05):** removed from default `strict` / `pragmatic` packs in 35a57c8; check function stays registered so custom packs can opt in. To re-promote, the rule needs an additional signal (e.g. metric is referenced from a Workspace project export passed via `--extra-input`). |
+| ATTR-002 calc metrics lacking explicit attribution > 30% | **demoted to opt-in (degenerate)** | Calibration via `scripts/calibrate_thresholds.py` (run 2026-05-22) confirms p25 = p50 = p75 = p90 = p95 = **1.00** across n=31 tenants with any calc metrics; the script flags the distribution as **degenerate** — every observation sits at 1.00, so no threshold (0.30, 0.99, anywhere in between) distinguishes signal from baseline. Until tenants routinely populate `attribution_model` on calc metrics, the rule cannot discriminate. **Action taken (2026-05):** removed from default packs in 35a57c8; check function stays registered. ATTR-* row added to `threshold_calibration.md` by the same run. |
+| ATTR-003 same-refs different-attribution inconsistency | **solid in principle, rare in practice (confirmed)** | When fired, signal is genuine. Conflict requires ≥2 calc metrics with same input refs AND ≥2 distinct non-None attribution models — rare prerequisite. Calibration (2026-05-22) confirms: **0 observations** across 108 corpus entries (no tenant carries the prerequisite data). Keep as-is — the rule earns its keep on the day a tenant DOES populate attribution models on overlapping calc metrics. Structural, no threshold to calibrate. |
 
 ## Governance (4 rules)
 
@@ -191,9 +191,14 @@ rules with `platforms: [aa]` could read directly from there.
 
 ## Recommendations ranked by leverage
 
-1. **Run the ATTR calibration** now that the measurement functions exist
-   (`scripts/calibrate_thresholds.py`). Use the result to either ship
-   ATTR-002 with a real threshold or demote it to opt-in. 1-hour task.
+1. ~~**Run the ATTR calibration**~~ **Done (2026-05-22).** Calibration via
+   `scripts/calibrate_thresholds.py` confirms ATTR-002 is degenerate
+   (p25–p95 all at 1.00, n=31), ATTR-001 fires on every revenue-named
+   calc metric in the corpus (3 of 3 tenants at ratio 1.00), and ATTR-003
+   has 0 observations (no tenant has the prerequisite). ATTR-001 and
+   ATTR-002 were demoted to opt-in in 35a57c8; ATTR-003 stays in defaults
+   as a structural rule. See ATTR-* rows in
+   `threshold_calibration.md` for the underlying distributions.
 
 2. **Add the four highest-value AA gaps** (eVar allocation+expiration,
    counter-type events on currency names, event serialization on
@@ -205,10 +210,15 @@ rules with `platforms: [aa]` could read directly from there.
    positives. Drop `old`, `tmp`, `temp`, `v0` from SCH-005's default
    pattern; add `counter` to SCH-004's integer-type set. ~1 hour.
 
-4. **Decide what to do about the `tag_filter: custom` constraint** in
-   NAME-001 and NAME-003. Either drop the constraint and accept some
-   platform-default-prefix noise, or document the rules as
-   tagging-discipline-dependent. ~30 minutes plus calibration.
+4. ~~**Decide what to do about the `tag_filter: custom` constraint**~~
+   **Done (2026-05).** Constraint removed from default packs in 074b131;
+   `tag_filter` remains a check-function parameter for custom packs.
+   NAME-001 and NAME-003 measurements added to
+   `scripts/calibrate_thresholds.py` and the 2026-05-22 run confirms both
+   thresholds (0.60 strict, 0.50 pragmatic) land at defensible inflection
+   points (NAME-001 is bimodal with a clean cliff between p75 and p90;
+   NAME-003 is smoother but the threshold still discriminates the bottom
+   ~20% from the rest). High calibration confidence on both.
 
 5. **Consider expanding NAME-004's default synonym groups** with
    Adobe-domain pairs (`revenue/sales`, `cart/basket`,

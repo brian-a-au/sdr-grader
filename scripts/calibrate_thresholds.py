@@ -167,6 +167,87 @@ _ATTR_REVENUE_RE = re.compile(
 )
 
 
+# Mirror the prefix regex used by rules.checks.naming so calibration
+# measures the same population the rule fires on.
+_NAME_PREFIX_RE = re.compile(r"^([a-z]{1,5}[_-])", re.IGNORECASE)
+
+
+def _extract_prefix(component_id: str) -> str | None:
+    bare = component_id.rsplit("/", 1)[-1]
+    m = _NAME_PREFIX_RE.match(bare)
+    return m.group(1) if m else None
+
+
+def _classify_casing(name: str) -> str | None:
+    """Mirror rules.checks.naming._classify_casing."""
+    if not name:
+        return None
+    stripped = name.strip()
+    if not stripped:
+        return None
+    if " " in stripped:
+        first = stripped.split()[0]
+        return "title-case" if first[:1].isupper() else "lowercase-phrase"
+    if re.match(r"^[a-z]+(?:[A-Z][a-z0-9]*)+$", stripped):
+        return "camelCase"
+    if re.match(r"^(?:[A-Z][a-z0-9]*)+$", stripped):
+        return "PascalCase"
+    if re.match(r"^[a-z][a-z0-9]*(?:_[a-z0-9]+)+$", stripped):
+        return "snake_case"
+    if re.match(r"^[a-z][a-z0-9]*(?:-[a-z0-9]+)+$", stripped):
+        return "kebab-case"
+    if re.match(r"^[A-Z][A-Z0-9_]*$", stripped):
+        return "SCREAMING_SNAKE"
+    return None
+
+
+def _name_prefix_consistency(impl: Implementation) -> tuple[float, int | None]:
+    """NAME-001 population: dimension prefix consistency.
+
+    Numerator: count of dimensions matching the dominant prefix.
+    Denominator: count of dimensions whose ID yielded any prefix at all
+    (the rule's pool — components with no prefix can't be inconsistent).
+    Returns 1.0 when the pool is too small (matches the rule's <5 skip).
+    The rule fires when this ratio < min_consistency, so the calibration
+    should show the inflection between healthy and unhealthy tenants.
+    """
+    pool = list(impl.dimensions)
+    if len(pool) < 5:
+        return (1.0, len(pool))  # below rule's floor; reported as "clean"
+    prefixes = [_extract_prefix(c.id) for c in pool]
+    present = [p for p in prefixes if p]
+    if not present:
+        # No dimension carries a prefix at all — the rule can't discriminate.
+        # Treat as 1.0 ("clean") for the same reason the rule short-circuits.
+        return (1.0, len(pool))
+    counts: dict[str, int] = defaultdict(int)
+    for p in present:
+        counts[p] += 1
+    dominant = max(counts.values())
+    return (dominant / len(pool), len(pool))
+
+
+def _name_casing_consistency(impl: Implementation) -> tuple[float, int | None]:
+    """NAME-003 population: dimension name casing consistency.
+
+    Numerator: count of dimensions whose name matches the dominant
+    casing style. Denominator: total dimensions. Returns 1.0 when the
+    pool is too small (matches the rule's <5 skip).
+    """
+    pool = list(impl.dimensions)
+    if len(pool) < 5:
+        return (1.0, len(pool))
+    styles = [_classify_casing(c.name) for c in pool]
+    classified = [s for s in styles if s]
+    if not classified:
+        return (1.0, len(pool))
+    counts: dict[str, int] = defaultdict(int)
+    for s in classified:
+        counts[s] += 1
+    dominant = max(counts.values())
+    return (dominant / len(pool), len(pool))
+
+
 def _attr_silent_last_touch_ratio(impl: Implementation) -> tuple[float, int | None]:
     """ATTR-001 population: revenue/conversion-named calc metrics that look
     like silent last-touch defaults — attribution_model empty or 'last-touch'
@@ -241,6 +322,22 @@ MEASUREMENTS: list[Measurement] = [
                 "ratio", _gov_missing_owners_ratio),
     Measurement("GOV-005", "Components missing tags / total components",
                 "ratio", _gov_missing_tags_ratio),
+    Measurement(
+        "NAME-001",
+        "Dimension prefix consistency ratio (dominant prefix count / total dimensions). "
+        "Rule fires when this ratio < min_consistency (strict 0.60, pragmatic 0.50). "
+        "Lower values = more inconsistent.",
+        "ratio",
+        _name_prefix_consistency,
+    ),
+    Measurement(
+        "NAME-003",
+        "Dimension name casing consistency ratio (dominant casing style / total dimensions). "
+        "Rule fires when this ratio < min_consistency (strict 0.60, pragmatic 0.50). "
+        "Lower values = more inconsistent.",
+        "ratio",
+        _name_casing_consistency,
+    ),
     Measurement(
         "ATTR-001",
         "Revenue/conversion calc metrics that look like silent last-touch defaults "

@@ -13,8 +13,11 @@ rules:
       target: dimensions
       # `tag_filter: custom` removed after May 2026 audit — 0/108 corpus
       # fixtures had any dimension tagged "custom", so the rule was dead.
-      # Grading all dimensions accepts some platform-default-prefix
-      # noise; min_consistency tuned to 0.65 to absorb it.
+      # Now grades all dimensions. Calibration (2026-05-22, see NAME-001
+      # row in docs/threshold_calibration.md) shows a bimodal
+      # distribution: tenants cluster at either <0.16 (no convention) or
+      # >0.82 (convention applied broadly). 0.60 sits in the cliff
+      # between p75 and p90 — defensible inflection point.
       min_consistency: 0.60
     rationale: |
       Inconsistent prefixes signal that multiple implementers worked without
@@ -46,7 +49,10 @@ rules:
     check: casing_consistency
     params:
       target: dimensions
-      # `tag_filter: custom` removed (see NAME-001 comment).
+      # `tag_filter: custom` removed (see NAME-001 comment). Calibration
+      # (2026-05-22, NAME-003 row in docs/threshold_calibration.md):
+      # p25=0.64, p50=0.70, p75=0.83, p90=0.90 — smoother than NAME-001.
+      # 0.60 fires on the bottom ~20% of tenants (those mixing styles).
       min_consistency: 0.60
     rationale: |
       Mixed casing styles (camelCase + snake_case + Title Case in the same
