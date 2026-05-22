@@ -14,6 +14,8 @@ from sdr_grader.rules.checks.schema_hygiene import (
     check_broken_references,
     check_cardinality_concerns,
     check_deprecated_components,
+    check_derived_field_broken_refs,
+    check_derived_field_cycles,
     check_duplicate_component_names,
     check_persistence_lookback_cap,
     check_type_name_mismatch,
@@ -358,3 +360,176 @@ def test_persistence_cap_skips_container_expirations():
     )
     impl = _impl(dimensions=[_dim_with_persistence(1, setting)])
     assert check_persistence_lookback_cap(impl, _ctx("SCH-007")) == []
+
+
+# ---------------------------------------------------------------------------
+# SCH-008 derived-field cycles (CJA-only)
+# ---------------------------------------------------------------------------
+
+
+def _derived(cid: str, *, refs: list[str] | None = None,
+             lookup_refs: list[str] | None = None) -> Component:
+    return Component(
+        id=cid,
+        name=cid,
+        description=None,
+        component_type="derived_field",
+        data_type="string",
+        polarity=None,
+        created_at=None,
+        modified_at=None,
+        owner=None,
+        tags=[],
+        platform_specific={
+            "component_references": refs or [],
+            "lookup_references": lookup_refs or [],
+        },
+    )
+
+
+def test_derived_field_cycles_quiet_when_no_chains():
+    derived = [
+        _derived("variables/df_a", refs=["web.webPageDetails.URL"]),
+        _derived("variables/df_b", refs=[]),
+    ]
+    impl = _impl(derived=derived)
+    assert check_derived_field_cycles(impl, _ctx("SCH-008")) == []
+
+
+def test_derived_field_cycles_quiet_on_aa():
+    """AA fixtures don't have derived fields; the check must short-circuit."""
+    impl = Implementation(
+        platform="aa",
+        instance_id="rs",
+        instance_name="rs",
+        snapshot_taken_at=None,
+        snapshot_source="t",
+        adapter_version="0",
+        metrics=[],
+        dimensions=[],
+        segments=[],
+        calculated_metrics=[],
+        derived_fields=[_derived("variables/df_a", refs=["variables/df_a"])],
+        raw={},
+    )
+    assert check_derived_field_cycles(impl, _ctx("SCH-008")) == []
+
+
+def test_derived_field_cycles_fires_on_self_loop():
+    derived = [_derived("variables/df_a", refs=["variables/df_a"])]
+    findings = check_derived_field_cycles(_impl(derived=derived), _ctx("SCH-008"))
+    assert len(findings) == 1
+    assert findings[0].id == "SCH-008"
+    assert "1 derived-field reference cycle" in findings[0].title
+
+
+def test_derived_field_cycles_fires_on_two_node_cycle():
+    derived = [
+        _derived("variables/df_a", refs=["variables/df_b"]),
+        _derived("variables/df_b", refs=["variables/df_a"]),
+    ]
+    findings = check_derived_field_cycles(_impl(derived=derived), _ctx("SCH-008"))
+    assert len(findings) == 1
+    assert "1 derived-field reference cycle" in findings[0].title
+
+
+def test_derived_field_cycles_fires_on_three_node_cycle():
+    derived = [
+        _derived("variables/a", refs=["variables/b"]),
+        _derived("variables/b", refs=["variables/c"]),
+        _derived("variables/c", refs=["variables/a"]),
+    ]
+    findings = check_derived_field_cycles(_impl(derived=derived), _ctx("SCH-008"))
+    assert len(findings) == 1
+
+
+def test_derived_field_cycles_dedups_rotations():
+    """A -> B -> A and B -> A -> B are the same cycle; only one finding."""
+    derived = [
+        _derived("variables/a", refs=["variables/b"]),
+        _derived("variables/b", refs=["variables/a"]),
+    ]
+    findings = check_derived_field_cycles(_impl(derived=derived), _ctx("SCH-008"))
+    assert "1 derived-field reference cycle" in findings[0].title
+
+
+def test_derived_field_cycles_normalizes_namespace_prefix():
+    """`dimensions/X` references must resolve to `variables/X` definitions."""
+    derived = [
+        _derived("variables/a", refs=["dimensions/b"]),
+        _derived("variables/b", refs=["variables/a"]),
+    ]
+    findings = check_derived_field_cycles(_impl(derived=derived), _ctx("SCH-008"))
+    assert len(findings) == 1
+
+
+# ---------------------------------------------------------------------------
+# SCH-009 derived-field broken refs (CJA-only)
+# ---------------------------------------------------------------------------
+
+
+def test_derived_field_broken_refs_quiet_when_all_resolve():
+    metrics = [_component(1, cid="metrics/orders")]
+    derived = [_derived("variables/df_a", refs=["metrics/orders"])]
+    impl = _impl(metrics=metrics, derived=derived)
+    assert check_derived_field_broken_refs(impl, _ctx("SCH-009")) == []
+
+
+def test_derived_field_broken_refs_fires_on_missing_target():
+    derived = [_derived("variables/df_a", refs=["metrics/m_deleted"])]
+    findings = check_derived_field_broken_refs(_impl(derived=derived), _ctx("SCH-009"))
+    assert len(findings) == 1
+    assert findings[0].id == "SCH-009"
+    assert "1 broken derived-field reference" in findings[0].title
+
+
+def test_derived_field_broken_refs_filters_platform_builtins():
+    """CJA built-ins like `metrics/adobe_sessionends` are valid even when
+    not enumerated in the snapshot's metrics/dimensions blocks."""
+    derived = [_derived("variables/df_a", refs=[
+        "metrics/adobe_sessionends",
+        "dimensions/daterangemonth",
+        "dimensions/timepartmonthofyear",
+        "dimensions/platformdatasetid",
+    ])]
+    findings = check_derived_field_broken_refs(_impl(derived=derived), _ctx("SCH-009"))
+    assert findings == []
+
+
+def test_derived_field_broken_refs_normalizes_namespace_prefix():
+    """`dimensions/X` references must resolve against `variables/X` definitions —
+    CJA SDR stores dimensions under `variables/` but refs use `dimensions/`."""
+    dimensions = [_component(1, cid="variables/sd_ajo_messageProfileId",
+                             comp_type="dimension", data_type="string")]
+    derived = [_derived("variables/df_a", refs=["dimensions/sd_ajo_messageProfileId"])]
+    impl = _impl(dimensions=dimensions, derived=derived)
+    assert check_derived_field_broken_refs(impl, _ctx("SCH-009")) == []
+
+
+def test_derived_field_broken_refs_quiet_on_aa():
+    impl = Implementation(
+        platform="aa",
+        instance_id="rs",
+        instance_name="rs",
+        snapshot_taken_at=None,
+        snapshot_source="t",
+        adapter_version="0",
+        metrics=[],
+        dimensions=[],
+        segments=[],
+        calculated_metrics=[],
+        derived_fields=[_derived("variables/df_a", refs=["metrics/totally_missing"])],
+        raw={},
+    )
+    assert check_derived_field_broken_refs(impl, _ctx("SCH-009")) == []
+
+
+def test_derived_field_broken_refs_truncates_to_show_top():
+    derived = [
+        _derived(f"variables/df_{i}", refs=[f"metrics/missing_{i}"])
+        for i in range(15)
+    ]
+    findings = check_derived_field_broken_refs(
+        _impl(derived=derived), _ctx("SCH-009", show_top=5),
+    )
+    assert "showing first 5 of 15" in findings[0].title

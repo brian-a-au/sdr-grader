@@ -107,14 +107,26 @@ rules with `platforms: [aa]` could read directly from there.
 
 ### AA-specific
 
-> **Caveat (corpus check).** All 8 AA fixtures in the private corpus
-> ship with `extra: {}` on every component and contain only platform
-> built-ins (~9 metrics, 87 dimensions per snapshot, no custom eVars).
-> The four gaps below are derivable from Adobe's documented snapshot
-> schema, but the data is **not present in the AA fixtures we have
-> today** — implementing these rules will require either richer AA
-> snapshots or `aa_auto_sdr` changes to surface the allocation /
-> expiration / serialization fields before the adapter sees them.
+> **Blocker (verified 2026-05).** All four AA-specific gaps below share
+> the same root cause: the data lives in Adobe's legacy 1.4 Admin API
+> (`ReportSuite.GetSuccessEvents`, `GetConversionVars`), not the 2.0
+> Reporting API surface that `aa_auto_sdr` consumes via pitchmuc /
+> `aanalytics2`. The 2.0 swagger constrains dimension and metric
+> records to a small documented field set — neither merchandising
+> config, allocation, expiration, nor event serialization is exposed.
+> Real-prod sample output from `aa_auto_sdr` (`sample_outputs/`)
+> confirms this: every component ships with `extra: {}`. The 8 AA
+> fixtures in the private corpus mirror that shape.
+>
+> Adobe has publicly indicated this admin surface is eventually
+> migrating to the 2.0 APIs. Until then, these rules are documented
+> here as ready-when-the-data-is — implementing them needs one of:
+> (a) `aa_auto_sdr` wrapping the 1.4 Admin API and surfacing fields
+> through `Component.extra`, (b) `sdr_grader` accepting a
+> `--extra-input` admin-console export, or (c) waiting for Adobe's
+> 2.0 admin endpoints to ship. The audit keeps these gaps in scope
+> so the data shape and check logic stay designed; the rule files
+> just don't exist yet.
 
 1. **eVar allocation + expiration combinations.** Adobe documents three
    allocations (Most Recent / Original Value / Linear) and a set of
@@ -186,11 +198,30 @@ rules with `platforms: [aa]` could read directly from there.
    and it ACTUALLY catches the silent-default risk ATTR-001 was reaching
    for.
 
-7. **Derived field cycles and component refs.** Derived fields can chain
-   (one derived field references another). The adapter handles dedup
-   between inline metrics/dimensions and derived fields, but no rule
-   checks for derived-field circular references or for derived fields
-   that reference non-existent base components.
+7. **Derived field cycles and component refs.** ~~No rule checks for
+   derived-field circular references or for derived fields that
+   reference non-existent base components.~~ **Shipped (2026-05) as
+   SCH-008 and SCH-009.** The corpus carries 970 derived fields across
+   100 CJA fixtures with full reference/lookup/schema graphs, so the
+   data shape was easy to design against. Key findings during
+   implementation:
+   (a) CJA snapshots store dimensions under `variables/` but derived
+   fields reference them via `dimensions/` interchangeably — the rule
+   normalizes bare IDs across that namespace boundary before declaring
+   a ref missing;
+   (b) `lookup_references` and `schema_fields` carry XDM schema paths
+   like `<schema-id>.<field>`, not component IDs — these go through
+   a different resolver and are intentionally excluded from the
+   component-graph check;
+   (c) CJA platform built-ins (`metrics/adobe_*`, `dimensions/daterange*`,
+   `dimensions/timepart*`, `dimensions/platform*` etc.) are referenced
+   constantly but not enumerated in the SDR — the rule filters them
+   via regex.
+   The 100-fixture corpus contains 0 DF-to-DF chains and 0 genuine
+   broken refs after normalization + built-in filtering — but the bug
+   class is real in production Data Views, and both rules are
+   structurally correct, conservative, and will fire when those
+   patterns DO occur. Same shipping rationale as ATTR-003.
 
 ### Both platforms
 

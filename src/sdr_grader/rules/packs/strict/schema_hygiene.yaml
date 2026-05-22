@@ -98,3 +98,42 @@ rules:
       the analytical question really requires a longer attribution window
       than the platform supports.
 
+  - id: SCH-008
+    name: Derived field circular references
+    severity: high
+    platforms: [cja]
+    check: derived_field_cycles
+    params: {}
+    rationale: |
+      Derived fields in CJA can chain — a derived field's formula can read
+      from another derived field. A cycle (A → B → A) causes either a
+      silent compute failure or unbounded recursion at query time,
+      depending on which entry point the resolver follows. Customers
+      typically see this as a metric returning NULL or failing to render
+      in Workspace.
+    remediation: |
+      Break the cycle by introducing a base field that both derived
+      fields can read from, or by inlining one side of the dependency.
+      Document the dependency direction in each derived field's
+      description so the next editor doesn't reintroduce the cycle.
+
+  - id: SCH-009
+    name: Derived field references components that do not exist
+    severity: high
+    platforms: [cja]
+    check: derived_field_broken_refs
+    params:
+      show_top: 10
+    rationale: |
+      A derived field referencing a deleted or renamed base component
+      silently produces NULLs in reports. The check filters CJA platform
+      built-ins (date ranges, time-parts, Adobe-provisioned metrics) and
+      normalizes `dimensions/X` ↔ `variables/X` namespace differences
+      before flagging, so only genuine missing components surface.
+    remediation: |
+      Either restore the missing component, or update the derived field
+      to point at the current canonical equivalent. If the reference is
+      legitimately stale (e.g. migrated to a new XDM field), update the
+      derived field's `definition_json` and verify the resolved field
+      type still matches the derived field's output type.
+

@@ -62,3 +62,22 @@ rules:
     rationale: Same as strict.
     remediation: Same as strict.
 
+  - id: SCH-008
+    name: Derived field circular references
+    severity: medium             # demoted from strict's high
+    platforms: [cja]
+    check: derived_field_cycles
+    params: {}
+    rationale: Same as strict.
+    remediation: Same as strict.
+
+  - id: SCH-009
+    name: Derived field references components that do not exist
+    severity: medium             # demoted from strict's high
+    platforms: [cja]
+    check: derived_field_broken_refs
+    params:
+      show_top: 10
+    rationale: Same as strict.
+    remediation: Same as strict.
+

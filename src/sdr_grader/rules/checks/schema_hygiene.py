@@ -1,4 +1,4 @@
-"""Schema hygiene checks (SCH-001..SCH-006).
+"""Schema hygiene checks (SCH-001..SCH-009).
 
 Each rule is registered by its `check:` name in the YAML rubric; the YAML
 names and Python function names are intentionally decoupled so a single
@@ -450,8 +450,244 @@ def check_persistence_lookback_cap(
 
 
 # ---------------------------------------------------------------------------
+# SCH-008: derived-field circular references (CJA-only)
+# ---------------------------------------------------------------------------
+#
+# Derived fields in CJA can chain — a derived field's formula can read
+# from another derived field. The Data View resolver follows the chain
+# at query time; a cycle (A -> B -> A) causes either a silent compute
+# failure or unbounded recursion depending on the resolver path. The
+# bug class is real even if the private corpus happens not to contain
+# any chains today.
+
+
+@register_check("derived_field_cycles")
+def check_derived_field_cycles(
+    impl: Implementation, ctx: RuleContext
+) -> list[Finding]:
+    """Detect cycles in the derived-field reference graph.
+
+    Builds the DF-to-DF subgraph by intersecting each derived field's
+    references with the set of derived-field IDs in the same snapshot,
+    then runs DFS to find strongly connected components of size ≥ 2,
+    plus any self-loops.
+    """
+    if impl.platform != "cja":
+        return []
+    df_ids = {df.id for df in impl.derived_fields}
+    if not df_ids:
+        return []
+
+    graph: dict[str, list[str]] = {df_id: [] for df_id in df_ids}
+    for df in impl.derived_fields:
+        refs = _derived_field_refs(df)
+        for ref in refs:
+            normalized = _candidate_df_targets(ref, df_ids)
+            for target in normalized:
+                if target == df.id or target in df_ids:
+                    graph[df.id].append(target)
+
+    cycles = _find_simple_cycles(graph)
+    if not cycles:
+        return []
+
+    items = [" -> ".join([*cycle, cycle[0]]) for cycle in cycles[:25]]
+    plural = len(cycles) != 1
+    paragraph = (
+        f"{len(cycles)} derived-field cycle{'s' if plural else ''} detected in "
+        "this data view. CJA resolves derived fields at query time by walking "
+        "the dependency chain — a cycle causes either a silent compute failure "
+        "or unbounded recursion depending on which entry point the resolver "
+        "follows. Customers typically see this as a metric that returns NULL "
+        "or fails to render in Workspace."
+    )
+    return [
+        _make_finding(
+            ctx,
+            title=f"{len(cycles)} derived-field reference cycle{'s' if plural else ''}",
+            paragraph=paragraph,
+            extra_blocks=[FindingBlock(kind="components", items=items)],
+        )
+    ]
+
+
+# ---------------------------------------------------------------------------
+# SCH-009: derived-field broken references (CJA-only)
+# ---------------------------------------------------------------------------
+#
+# Derived fields reference other components — schema fields (XDM paths),
+# classifications (lookups), platform built-ins (date ranges, time-parts,
+# Adobe-provisioned metrics), and occasionally other derived fields. A
+# broken reference (component renamed or deleted without updating the DF)
+# silently produces NULLs.
+#
+# Two corpus realities make a naive "ref not in snapshot" check noisy:
+# (1) CJA platform built-ins (`metrics/adobe_*`, `dimensions/daterange*`,
+# `dimensions/timepart*`, `dimensions/platform*` etc.) are referenced
+# constantly but are not enumerated in the SDR's dimensions/metrics
+# blocks; (2) CJA uses BOTH `dimensions/X` and `variables/X` namespace
+# prefixes interchangeably (snapshots store dimensions under `variables/`
+# but references frequently use `dimensions/`). The check normalizes
+# both before declaring a ref broken.
+
+
+_CJA_PLATFORM_BUILTIN_RE = re.compile(
+    r"^("
+    r"metrics/adobe_"
+    r"|dimensions/(daterange|timepart|platform|adobe_|datasource|datasetid"
+    r"|reportsuite|geo|browser|operatingsystem|mobile|userdevice"
+    r"|usertechnology|firsttouch|lasttouch|persisted)"
+    r")",
+    re.IGNORECASE,
+)
+
+
+@register_check("derived_field_broken_refs")
+def check_derived_field_broken_refs(
+    impl: Implementation, ctx: RuleContext
+) -> list[Finding]:
+    """Fire when a derived field's references resolve to nothing.
+
+    Resolution order:
+      1. Strip namespace prefix (`dimensions/`, `variables/`, `metrics/`,
+         `calculatedMetrics/`) and compare bare IDs.
+      2. Filter out CJA platform built-ins (regex-defined: see
+         _CJA_PLATFORM_BUILTIN_RE).
+      3. Anything left is a genuine broken reference.
+    """
+    if impl.platform != "cja":
+        return []
+    if not impl.derived_fields:
+        return []
+
+    bare_known: set[str] = set()
+    for cid in all_component_ids(impl):
+        bare_known.add(_bare_id(cid))
+    bare_known |= {_bare_id(s.id) for s in impl.segments}
+    bare_known |= {_bare_id(cm.id) for cm in impl.calculated_metrics}
+
+    broken: list[tuple[str, str]] = []  # (referrer_id, missing_ref)
+    for df in impl.derived_fields:
+        for ref in _derived_field_refs(df):
+            if _CJA_PLATFORM_BUILTIN_RE.match(ref):
+                continue
+            if _bare_id(ref) in bare_known:
+                continue
+            broken.append((df.id, ref))
+
+    if not broken:
+        return []
+    threshold = int(ctx.params.get("show_top", 10))
+    sample = broken[:threshold]
+    items = [f"{df_id} -> missing {ref}" for df_id, ref in sample]
+    suffix = "" if len(broken) <= threshold else f" (showing first {threshold} of {len(broken)})"
+    paragraph = (
+        f"{len(broken)} derived-field reference{'s point' if len(broken) != 1 else ' points'} "
+        "at a component that does not exist in this data view. Broken references "
+        "are usually a symptom of a base field renamed or removed without updating "
+        "the derived field's formula, and produce silent NULLs in reports. The "
+        "check filters CJA platform built-ins (date ranges, time-parts, "
+        "Adobe-provisioned metrics) and normalizes `dimensions/X` ↔ `variables/X` "
+        "namespace differences before flagging."
+    )
+    return [
+        _make_finding(
+            ctx,
+            title=f"{len(broken)} broken derived-field reference{'s' if len(broken) != 1 else ''}{suffix}",
+            paragraph=paragraph,
+            extra_blocks=[FindingBlock(kind="components", items=items)],
+        )
+    ]
+
+
+# ---------------------------------------------------------------------------
 # Shared helpers (private)
 # ---------------------------------------------------------------------------
+
+
+def _derived_field_refs(df) -> list[str]:
+    """Collect component-graph references from a derived field.
+
+    Only `component_references` carries IDs of other CJA components
+    (dimensions, metrics, derived fields). `lookup_references` and
+    `schema_fields` carry XDM schema paths (`<schema-id>.<field>`), not
+    component IDs, and go through a different resolver — they're
+    intentionally excluded here.
+    """
+    value = df.platform_specific.get("component_references")
+    if isinstance(value, list):
+        return [str(r) for r in value if r]
+    return []
+
+
+def _bare_id(component_id: str) -> str:
+    """Strip CJA namespace prefix for cross-namespace comparison.
+
+    CJA snapshots store dimensions under the `variables/` namespace but
+    derived-field references frequently use `dimensions/`. Comparing
+    bare IDs lets the resolver match across that convention.
+    """
+    if "/" in component_id:
+        return component_id.rsplit("/", 1)[-1]
+    return component_id
+
+
+def _candidate_df_targets(ref: str, df_ids: set[str]) -> list[str]:
+    """Return DF IDs from `df_ids` that the reference resolves to.
+
+    A reference matches a DF if its bare ID equals the DF's bare ID
+    (regardless of namespace prefix).
+    """
+    bare = _bare_id(ref)
+    return [df_id for df_id in df_ids if _bare_id(df_id) == bare]
+
+
+def _find_simple_cycles(graph: dict[str, list[str]]) -> list[list[str]]:
+    """Find simple cycles in a directed graph.
+
+    Uses an iterative DFS with a recursion stack to detect back-edges;
+    when a back-edge closes, the cycle is the slice of the stack from
+    the re-entry point onward. Returns each cycle as the list of nodes
+    in traversal order, deduplicated by canonical rotation so A->B->A
+    and B->A->B are the same cycle.
+    """
+    seen_cycles: set[tuple[str, ...]] = set()
+    cycles: list[list[str]] = []
+
+    def _canonical(cycle: list[str]) -> tuple[str, ...]:
+        # Rotate so the lexicographically smallest node comes first; if
+        # the node appears more than once, also pick the rotation that
+        # makes the second node smallest.
+        smallest = min(cycle)
+        rotations = [
+            tuple(cycle[i:] + cycle[:i])
+            for i, node in enumerate(cycle)
+            if node == smallest
+        ]
+        return min(rotations)
+
+    def _dfs(node: str, stack: list[str], on_stack: set[str], visited: set[str]) -> None:
+        on_stack.add(node)
+        stack.append(node)
+        for neighbor in graph.get(node, []):
+            if neighbor in on_stack:
+                idx = stack.index(neighbor)
+                cycle = stack[idx:]
+                canon = _canonical(cycle)
+                if canon not in seen_cycles:
+                    seen_cycles.add(canon)
+                    cycles.append(cycle)
+            elif neighbor not in visited:
+                _dfs(neighbor, stack, on_stack, visited)
+        stack.pop()
+        on_stack.discard(node)
+        visited.add(node)
+
+    visited: set[str] = set()
+    for start in graph:
+        if start not in visited:
+            _dfs(start, [], set(), visited)
+    return cycles
 
 
 def _human_target(target: str) -> str:
