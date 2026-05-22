@@ -1,13 +1,15 @@
-"""Tests for governance rules (GOV-001..GOV-006)."""
+"""Tests for governance rules (GOV-001..GOV-008)."""
 
 from __future__ import annotations
 
-from _rule_test_helpers import component, ctx, impl
+from _rule_test_helpers import calc, component, ctx, impl, segment
 from sdr_grader.rules.checks.governance import (
+    check_calc_metric_shared_unapproved,
     check_doc_drift,
     check_missing_owners,
     check_missing_tags,
     check_sdr_doc_absent,
+    check_segment_shared_unapproved,
     check_snapshot_age,
     check_snapshot_history_absent,
 )
@@ -247,5 +249,90 @@ def test_doc_drift_silent_when_no_components():
             category="governance_posture",
             last_sdr_update_at="2026-01-01",
         ),
+    )
+    assert findings == []
+
+
+# ---------------------------------------------------------------------------
+# GOV-007 calc metric shared but not approved
+# ---------------------------------------------------------------------------
+
+
+def test_calc_shared_unapproved_quiet_when_no_signal():
+    """approved=None means the field wasn't populated — don't fire."""
+    cm = calc("calc/x", shared_to_count=20, approved=None)
+    findings = check_calc_metric_shared_unapproved(
+        impl(calc=[cm]), ctx("GOV-007", category="governance_posture", min_shares=5),
+    )
+    assert findings == []
+
+
+def test_calc_shared_unapproved_quiet_when_approved():
+    cm = calc("calc/x", shared_to_count=20, approved=True)
+    findings = check_calc_metric_shared_unapproved(
+        impl(calc=[cm]), ctx("GOV-007", category="governance_posture", min_shares=5),
+    )
+    assert findings == []
+
+
+def test_calc_shared_unapproved_quiet_when_under_threshold():
+    cm = calc("calc/x", shared_to_count=2, approved=False)
+    findings = check_calc_metric_shared_unapproved(
+        impl(calc=[cm]), ctx("GOV-007", category="governance_posture", min_shares=5),
+    )
+    assert findings == []
+
+
+def test_calc_shared_unapproved_fires_when_widely_shared_and_unapproved():
+    cms = [
+        calc("calc/safe", shared_to_count=20, approved=True),
+        calc("calc/x", shared_to_count=14, approved=False, complexity_score=22),
+        calc("calc/y", shared_to_count=6, approved=False, complexity_score=10),
+    ]
+    findings = check_calc_metric_shared_unapproved(
+        impl(calc=cms), ctx("GOV-007", category="governance_posture", min_shares=5),
+    )
+    assert len(findings) == 1
+    assert findings[0].id == "GOV-007"
+    assert "2 shared-but-unapproved" in findings[0].title
+    # Sorted by shares desc — calc/x (shared_to_count=14) before calc/y (=6).
+    items = findings[0].body[1].items
+    assert "calc/x" in items[0]
+    assert "calc/y" in items[1]
+
+
+# ---------------------------------------------------------------------------
+# GOV-008 segment shared but not approved
+# ---------------------------------------------------------------------------
+
+
+def test_segment_shared_unapproved_quiet_when_no_signal():
+    seg = segment("seg/x", shared_to_count=10, approved=None)
+    findings = check_segment_shared_unapproved(
+        impl(segments=[seg]), ctx("GOV-008", category="governance_posture", min_shares=3),
+    )
+    assert findings == []
+
+
+def test_segment_shared_unapproved_fires_at_threshold():
+    segs = [
+        segment("seg/safe", shared_to_count=5, approved=True),
+        segment("seg/x", shared_to_count=5, approved=False),
+    ]
+    findings = check_segment_shared_unapproved(
+        impl(segments=segs), ctx("GOV-008", category="governance_posture", min_shares=3),
+    )
+    assert len(findings) == 1
+    assert findings[0].id == "GOV-008"
+    assert "1 shared-but-unapproved segment" in findings[0].title
+
+
+def test_segment_shared_unapproved_quiet_when_approved_and_no_threshold_breach():
+    segs = [
+        segment("seg/a", shared_to_count=20, approved=True),
+        segment("seg/b", shared_to_count=2, approved=False),
+    ]
+    findings = check_segment_shared_unapproved(
+        impl(segments=segs), ctx("GOV-008", category="governance_posture", min_shares=3),
     )
     assert findings == []

@@ -76,3 +76,42 @@ rules:
       Adopt a small, documented tag taxonomy and apply it via the
       platform API.
 
+  - id: GOV-007
+    name: Calculated metric shared widely but not approved
+    severity: medium
+    platforms: [cja, aa]
+    check: calc_metric_shared_unapproved
+    params:
+      min_shares: 5             # corpus inflection: shared_to_count clusters
+                                # at 0 / 1 / 6+; 5 catches the >=6 cluster
+    rationale: |
+      Approval normally precedes wide distribution in a mature governance
+      posture. A calculated metric shared with several users or projects
+      but carrying no approval signoff usually means it got around the
+      SDR review process and is now powering stakeholder decisions
+      without a vetted owner. Cross-platform — both CJA and AA expose
+      approval + share-count signals; the adapters normalize the shapes.
+    remediation: |
+      Trigger the approval workflow on the offending metrics, or revoke
+      the wider sharing until the definition has been reviewed by the
+      owner and the analytics governance lead. Document the approved
+      definition in the SDR so future reviewers can audit the chain.
+
+  - id: GOV-008
+    name: Segment shared widely but not approved
+    severity: low
+    platforms: [cja, aa]
+    check: segment_shared_unapproved
+    params:
+      min_shares: 3             # segments share less broadly than calc
+                                # metrics; 3 catches the genuine outliers
+    rationale: |
+      Same governance pattern as GOV-007 applied to segments. Widely
+      shared audiences without an approved definition fragment reporting
+      consistency — different teams end up pulling subtly different
+      cohorts under the same segment name.
+    remediation: |
+      Approve the segment, narrow its sharing scope, or — if the
+      definition is intentionally provisional — rename it to make the
+      draft status explicit so consumers know the audience may shift.
+

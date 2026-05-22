@@ -38,7 +38,9 @@ def component(idx: int, *, comp_type: str = "metric", name: str | None = None,
 
 def segment(sid: str, *, references: list[str] | None = None,
             container_types: list[str] | None = None, nesting_depth: int = 1,
-            description: str | None = "ok", definition: dict | None = None) -> Segment:
+            description: str | None = "ok", definition: dict | None = None,
+            approved: bool | None = None,
+            shared_to_count: int | None = None) -> Segment:
     return Segment(
         id=sid,
         name=sid,
@@ -47,13 +49,17 @@ def segment(sid: str, *, references: list[str] | None = None,
         nesting_depth=nesting_depth,
         container_types=container_types or ["event"],
         references=references or [],
+        approved=approved,
+        shared_to_count=shared_to_count,
     )
 
 
 def calc(cid: str, *, references: list[str] | None = None,
          attribution_model: str | None = None, allocation: str | None = None,
          description: str | None = "ok", complexity_score: float = 10.0,
-         formula_text: str = "x / y", name: str | None = None) -> CalculatedMetric:
+         formula_text: str = "x / y", name: str | None = None,
+         approved: bool | None = None,
+         shared_to_count: int | None = None) -> CalculatedMetric:
     return CalculatedMetric(
         id=cid,
         name=name or cid,
@@ -64,6 +70,8 @@ def calc(cid: str, *, references: list[str] | None = None,
         allocation=allocation,
         complexity_score=complexity_score,
         references=references or [],
+        approved=approved,
+        shared_to_count=shared_to_count,
     )
 
 

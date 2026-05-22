@@ -226,11 +226,33 @@ rules with `platforms: [aa]` could read directly from there.
 ### Both platforms
 
 8. **Owner / approval / shared-to-count signals on calc metrics and
-   segments.** Adobe's calculated-metrics and segments APIs DO carry
-   owner, approval status, and shared-to-count fields (and `aa_auto_sdr`
-   pulls them). These are richer than component-level owner attribution
-   (which is degenerate per GOV-004). A "high-complexity calc metric
-   shared widely but never approved" rule has all the data it needs.
+   segments.** ~~No rule grades this.~~ **Shipped (2026-05) as GOV-007
+   (calculated metrics) and GOV-008 (segments).** End-to-end findings:
+   the data IS in the snapshot — CJA carries first-class
+   `approved` / `shared_to_count` / `shares`; AA carries the same
+   semantic in `extra.publishingStatus.published` and `len(extra.shares)`.
+   But the sdr_grader adapters originally dropped these fields on the
+   floor because `CalculatedMetric` and `Segment` lacked
+   `platform_specific` (unlike `Component`). Implementation required:
+   (a) adding `approved: bool | None`, `shared_to_count: int | None`,
+   and `platform_specific: dict[str, Any]` as top-level fields on both
+   dataclasses;
+   (b) updating the CJA adapter to extract the first-class fields and
+   preserve the rest in `platform_specific`;
+   (c) updating the AA adapter to normalize `extra.publishingStatus`
+   and `extra.shares` to the same shape;
+   (d) writing `check_calc_metric_shared_unapproved` and
+   `check_segment_shared_unapproved` that fire only when
+   `approved is False` (not None — None means "no signal") AND
+   `shared_to_count` clears a threshold.
+   Cross-platform — same rule body works on both. Strict thresholds
+   (`min_shares: 5` for calc metrics, `min_shares: 3` for segments)
+   land at the inflection of the CJA corpus distributions
+   (shared_to_count clusters at 0 / 1 / 6+ for calc metrics; at 0 / 1 / 5
+   for segments). On the 100-CJA-fixture corpus, GOV-007 fires on 2
+   tenants surfacing 4 calc metrics; GOV-008 fires on 1 tenant
+   surfacing 1 segment — narrow, meaningful, the exact
+   high-leverage-no-signoff pattern the audit proposed.
 
 ## Recommendations ranked by leverage
 

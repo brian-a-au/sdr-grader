@@ -163,6 +163,9 @@ def _calc_from_record(record: Any) -> CalculatedMetric:
             formula_text = f"{func}({', '.join(str(a) for a in args)})" if func else ""
     references = _extract_aa_calc_refs(formula)
 
+    extra = record.get("extra") if isinstance(record.get("extra"), dict) else {}
+    approved, shared_to_count = _aa_governance_signals(extra)
+
     return CalculatedMetric(
         id=str(metric_id),
         name=str(name),
@@ -176,6 +179,9 @@ def _calc_from_record(record: Any) -> CalculatedMetric:
         created_at=record.get("created") or record.get("created_at"),
         modified_at=record.get("modified") or record.get("modified_at"),
         owner=str(record.get("owner_id")) if record.get("owner_id") else None,
+        approved=approved,
+        shared_to_count=shared_to_count,
+        platform_specific=dict(extra),
     )
 
 
@@ -235,6 +241,9 @@ def _segment_from_record(record: Any) -> Segment:
     nesting_depth, container_types = _walk_segment_definition(definition)
     references: list[str] = []  # AA segments don't expose direct cross-refs in the basic shape
 
+    extra = record.get("extra") if isinstance(record.get("extra"), dict) else {}
+    approved, shared_to_count = _aa_governance_signals(extra)
+
     return Segment(
         id=str(segment_id),
         name=str(name),
@@ -246,7 +255,30 @@ def _segment_from_record(record: Any) -> Segment:
         created_at=record.get("created"),
         modified_at=record.get("modified"),
         owner=str(record.get("owner_id")) if record.get("owner_id") else None,
+        approved=approved,
+        shared_to_count=shared_to_count,
+        platform_specific=dict(extra),
     )
+
+
+def _aa_governance_signals(extra: dict[str, Any]) -> tuple[bool | None, int | None]:
+    """Normalize AA's `extra.publishingStatus` and `extra.shares` to the
+    cross-platform `approved` + `shared_to_count` shape that the CJA
+    adapter populates from first-class fields.
+
+    AA `publishingStatus` is a dict like {'lookbackPeriod': N, 'published':
+    bool, ...}; missing or non-dict means no signal (None). AA `shares` is
+    a list of share targets; missing or non-list means no signal (None).
+    """
+    approved: bool | None = None
+    publishing = extra.get("publishingStatus")
+    if isinstance(publishing, dict) and isinstance(publishing.get("published"), bool):
+        approved = publishing["published"]
+    shared_to_count: int | None = None
+    shares = extra.get("shares")
+    if isinstance(shares, list):
+        shared_to_count = len(shares)
+    return approved, shared_to_count
 
 
 def _walk_segment_definition(definition: Any) -> tuple[int, list[str]]:

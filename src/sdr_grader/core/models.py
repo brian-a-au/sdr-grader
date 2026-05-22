@@ -46,6 +46,14 @@ class Segment:
     created_at: str | None = None
     modified_at: str | None = None
     owner: str | None = None
+    # Governance signals — adapters normalize across CJA's first-class
+    # `approved`/`shared_to_count` and AA's `extra.publishingStatus.published`
+    # / `len(extra.shares)`. None means the field was absent (no signal);
+    # False/0 means the field was present and indicates not-approved /
+    # not-shared.
+    approved: bool | None = None
+    shared_to_count: int | None = None
+    platform_specific: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -62,6 +70,10 @@ class CalculatedMetric:
     created_at: str | None = None
     modified_at: str | None = None
     owner: str | None = None
+    # Governance signals — see Segment.approved / Segment.shared_to_count.
+    approved: bool | None = None
+    shared_to_count: int | None = None
+    platform_specific: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass

@@ -220,6 +220,15 @@ def _calc_metric_from_record(record: dict[str, Any]) -> CalculatedMetric:
 
     attribution_model, allocation = _extract_attribution(formula)
 
+    handled = {
+        "metric_id", "id", "metric_name", "name", "description",
+        "definition_json", "formula_summary", "definition_summary",
+        "metric_references", "segment_references", "complexity_score",
+        "created", "modified", "created_at", "modified_at", "owner",
+        "approved", "shared_to_count",
+    }
+    platform_specific = {k: v for k, v in record.items() if k not in handled}
+
     return CalculatedMetric(
         id=str(metric_id),
         name=str(name),
@@ -233,6 +242,9 @@ def _calc_metric_from_record(record: dict[str, Any]) -> CalculatedMetric:
         created_at=record.get("created") or record.get("created_at"),
         modified_at=record.get("modified") or record.get("modified_at"),
         owner=_normalize_owner(record.get("owner")),
+        approved=_governance_approved(record),
+        shared_to_count=_governance_shared_to_count(record),
+        platform_specific=platform_specific,
     )
 
 
@@ -298,6 +310,15 @@ def _segment_from_record(record: dict[str, Any]) -> Segment:
         )
     )
 
+    handled = {
+        "segment_id", "id", "segment_name", "name", "description",
+        "definition_json", "nesting_depth", "container_type",
+        "dimension_references", "metric_references", "other_segment_references",
+        "created", "modified", "created_at", "modified_at", "owner",
+        "approved", "shared_to_count",
+    }
+    platform_specific = {k: v for k, v in record.items() if k not in handled}
+
     return Segment(
         id=str(segment_id),
         name=str(name),
@@ -309,6 +330,9 @@ def _segment_from_record(record: dict[str, Any]) -> Segment:
         created_at=record.get("created") or record.get("created_at"),
         modified_at=record.get("modified") or record.get("modified_at"),
         owner=_normalize_owner(record.get("owner")),
+        approved=_governance_approved(record),
+        shared_to_count=_governance_shared_to_count(record),
+        platform_specific=platform_specific,
     )
 
 
@@ -479,4 +503,18 @@ def _normalize_polarity(value: Any):
     lowered = value.strip().lower()
     if lowered in {"positive", "negative", "neutral"}:
         return lowered  # type: ignore[return-value]
+    return None
+
+
+def _governance_approved(record: dict[str, Any]) -> bool | None:
+    """Read CJA's first-class `approved` field; None means absent."""
+    value = record.get("approved")
+    return value if isinstance(value, bool) else None
+
+
+def _governance_shared_to_count(record: dict[str, Any]) -> int | None:
+    """Read CJA's first-class `shared_to_count`; None means absent."""
+    value = record.get("shared_to_count")
+    if isinstance(value, (int, float)):
+        return int(value)
     return None

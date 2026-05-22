@@ -44,3 +44,23 @@ rules:
     rationale: Same as strict.
     remediation: Same as strict.
 
+  - id: GOV-007
+    name: Calculated metric shared widely but not approved
+    severity: low                # demoted from strict's medium
+    platforms: [cja, aa]
+    check: calc_metric_shared_unapproved
+    params:
+      min_shares: 10             # higher bar than strict 5
+    rationale: Same as strict.
+    remediation: Same as strict.
+
+  - id: GOV-008
+    name: Segment shared widely but not approved
+    severity: low
+    platforms: [cja, aa]
+    check: segment_shared_unapproved
+    params:
+      min_shares: 5              # higher bar than strict 3
+    rationale: Same as strict.
+    remediation: Same as strict.
+
