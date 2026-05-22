@@ -131,19 +131,26 @@ def build_calculated_metrics() -> dict[str, Any]:
         ("cm_rev_per_visit_final",     "r.kim@example.com",    "2026-02-03"),
     ]
     for mid, owner, created in revenue_authors:
+        # First variant is shared broadly but not approved — exercises GOV-007.
+        is_gov007_trigger = mid == "cm_revenue_per_visit"
+        gov007_shares = (
+            [{"shareToType": "user", "shareToId": f"u{i + 1}"} for i in range(6)]
+            if is_gov007_trigger
+            else []
+        )
         metrics.append({
             "metric_id": f"calculatedMetrics/{mid}",
             "metric_name": mid.replace("_", " ").title(),
             "description": "Revenue per visit (variant).",
             "owner": owner,
             "owner_id": owner.split("@")[0],
-            "approved": True,
+            "approved": not is_gov007_trigger,
             "favorite": False,
             "tags": ["revenue"],
             "created": created + "T00:00:00Z",
             "modified": created + "T00:00:00Z",
-            "shares": [],
-            "shared_to_count": 0,
+            "shares": gov007_shares,
+            "shared_to_count": len(gov007_shares),
             "data_view_id": "dv_messy_prod_web",
             "site_title": "Production Web Analytics",
             "complexity_score": 42.0,
@@ -246,19 +253,26 @@ def build_segments() -> dict[str, Any]:
     ]
     segments = []
     for sid, depth, contexts in deep_specs:
+        # First deep segment is shared broadly but not approved — exercises GOV-008.
+        is_gov008_trigger = sid == "seg_qualified_lead_v3"
+        gov008_shares = (
+            [{"shareToType": "user", "shareToId": f"u{i + 1}"} for i in range(4)]
+            if is_gov008_trigger
+            else []
+        )
         segments.append({
             "segment_id": f"segments/{sid}",
             "segment_name": sid.replace("_", " ").title(),
             "description": f"Deeply nested segment: {sid} (depth {depth}).",
             "owner": "r.kim@example.com",
             "owner_id": "r.kim",
-            "approved": True,
+            "approved": not is_gov008_trigger,
             "favorite": False,
             "tags": ["governance"],
             "created": "2024-01-15T00:00:00Z",
             "modified": "2025-12-01T00:00:00Z",
-            "shares": [],
-            "shared_to_count": 0,
+            "shares": gov008_shares,
+            "shared_to_count": len(gov008_shares),
             "data_view_id": "dv_messy_prod_web",
             "site_title": "Production Web Analytics",
             "complexity_score": 60.0 + depth,

@@ -370,7 +370,7 @@ pre.code {
     </div>
     <div class="item">
       <span class="label">Overall</span>
-      <span class="value">50%</span>
+      <span class="value">51%</span>
     </div>
     <div class="item">
       <span class="label">Components</span>
@@ -404,7 +404,7 @@ pre.code {
   
   <section id="tldr">
     <div class="tldr">Summary</div>
-    <p class="tldr-body">This implementation graded <strong>F</strong> (50%). The grader evaluated 487 components in this data view using the <span class="mono">strict@1.0</span> rubric pack. The largest gap is in <strong>calc metric maint</strong> (11%); 4 of 5 rules in that category fired.</p>
+    <p class="tldr-body">This implementation graded <strong>F</strong> (51%). The grader evaluated 487 components in this data view using the <span class="mono">strict@1.0</span> rubric pack. The largest gap is in <strong>calc metric maint</strong> (11%); 4 of 5 rules in that category fired.</p>
   </section>
 
   
@@ -417,11 +417,11 @@ pre.code {
       <div class="cat">
         <div class="name">schema hygiene</div>
         <div class="score">
-          <span class="pct">55%</span>
-          <span class="sub">F</span>
+          <span class="pct">71%</span>
+          <span class="sub">C−</span>
         </div>
-        <div class="bar crit">
-          <span style="width:55%"></span>
+        <div class="bar">
+          <span style="width:71%"></span>
         </div>
       </div>
       
@@ -472,11 +472,11 @@ pre.code {
       <div class="cat">
         <div class="name">governance posture</div>
         <div class="score">
-          <span class="pct">22%</span>
+          <span class="pct">17%</span>
           <span class="sub">F</span>
         </div>
         <div class="bar crit">
-          <span style="width:22%"></span>
+          <span style="width:17%"></span>
         </div>
       </div>
       
@@ -728,6 +728,34 @@ calculatedMetrics/cm_paid_ratio -> metrics/paid_visits
       
     </article>
     
+    <article class="finding" id="finding-gov-007">
+      <div class="finding-head">
+        <span class="finding-id">GOV-007</span>
+        <span class="sev med">Medium</span>
+        <span class="finding-cat">governance posture</span>
+      </div>
+      <h3 class="finding-title">1 shared-but-unapproved calculated metric</h3>
+      <div class="finding-body">
+        
+          
+            <p>1 calculated metric is shared with at least 5 users or projects but carry no approval signoff. Approval normally precedes wide distribution in a mature governance posture — the reverse pattern usually means the metric got around the SDR review process and is now powering stakeholder decisions without a vetted owner.</p>
+          
+        
+          
+            <div class="finding-section-label">Affected components (1)</div>
+<pre class="components-list">calculatedMetrics/cm_revenue_per_visit  name='Cm Revenue Per Visit'  shared_to=6  complexity=42
+</pre>
+          
+        
+          
+            <div class="finding-section-label">How to remediate</div>
+            <p>Trigger the approval workflow on the offending metrics, or revoke the wider sharing until the definition has been reviewed by the owner and the analytics governance lead. Document the approved definition in the SDR so future reviewers can audit the chain.</p>
+          
+        
+      </div>
+      
+    </article>
+    
     <article class="finding" id="finding-sch-003">
       <div class="finding-head">
         <span class="finding-id">SCH-003</span>
@@ -889,6 +917,34 @@ calculatedMetrics/cm_paid_ratio  complexity=30
       
     </article>
     
+    <article class="finding" id="finding-gov-008">
+      <div class="finding-head">
+        <span class="finding-id">GOV-008</span>
+        <span class="sev low">Low</span>
+        <span class="finding-cat">governance posture</span>
+      </div>
+      <h3 class="finding-title">1 shared-but-unapproved segment</h3>
+      <div class="finding-body">
+        
+          
+            <p>1 segment is shared with at least 3 users or projects but carry no approval signoff. Widely-shared audiences without a vetted definition fragment reporting consistency — different teams pull subtly different cohorts under the same name.</p>
+          
+        
+          
+            <div class="finding-section-label">Affected components (1)</div>
+<pre class="components-list">segments/seg_qualified_lead_v3  name='Seg Qualified Lead V3'  shared_to=4
+</pre>
+          
+        
+          
+            <div class="finding-section-label">How to remediate</div>
+            <p>Approve the segment, narrow its sharing scope, or — if the definition is intentionally provisional — rename it to make the draft status explicit so consumers know the audience may shift.</p>
+          
+        
+      </div>
+      
+    </article>
+    
   </section>
 
   
@@ -901,7 +957,7 @@ calculatedMetrics/cm_paid_ratio  complexity=30
 
     <div class="finding-body" style="max-width: 720px;">
       
-        <p>This grade was produced by <span class="mono">sdr-grader</span> using the <span class="mono">strict@1.0</span> rubric pack. The rubric encodes 26 rules across 6 active categories; 11 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.</p>
+        <p>This grade was produced by <span class="mono">sdr-grader</span> using the <span class="mono">strict@1.0</span> rubric pack. The rubric encodes 30 rules across 6 active categories; 13 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.</p>
       
         <p>The grader is rule-based and deterministic — the same input always produces the same grade. Findings are auditable: every rule's source YAML is linked from its finding, and rules can be suppressed or reweighted via a project-level <span class="mono">.sdr-grader.yaml</span>.</p>
       

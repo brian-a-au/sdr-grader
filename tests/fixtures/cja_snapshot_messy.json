@@ -8331,12 +8331,30 @@
         "created": "2024-03-12T00:00:00Z",
         "modified": "2024-03-12T00:00:00Z",
         "shares": [
-          {"shareToType": "user", "shareToId": "u1"},
-          {"shareToType": "user", "shareToId": "u2"},
-          {"shareToType": "user", "shareToId": "u3"},
-          {"shareToType": "user", "shareToId": "u4"},
-          {"shareToType": "user", "shareToId": "u5"},
-          {"shareToType": "user", "shareToId": "u6"}
+          {
+            "shareToType": "user",
+            "shareToId": "u1"
+          },
+          {
+            "shareToType": "user",
+            "shareToId": "u2"
+          },
+          {
+            "shareToType": "user",
+            "shareToId": "u3"
+          },
+          {
+            "shareToType": "user",
+            "shareToId": "u4"
+          },
+          {
+            "shareToType": "user",
+            "shareToId": "u5"
+          },
+          {
+            "shareToType": "user",
+            "shareToId": "u6"
+          }
         ],
         "shared_to_count": 6,
         "data_view_id": "dv_messy_prod_web",
@@ -9451,10 +9469,22 @@
         "created": "2024-01-15T00:00:00Z",
         "modified": "2025-12-01T00:00:00Z",
         "shares": [
-          {"shareToType": "user", "shareToId": "u1"},
-          {"shareToType": "user", "shareToId": "u2"},
-          {"shareToType": "user", "shareToId": "u3"},
-          {"shareToType": "user", "shareToId": "u4"}
+          {
+            "shareToType": "user",
+            "shareToId": "u1"
+          },
+          {
+            "shareToType": "user",
+            "shareToId": "u2"
+          },
+          {
+            "shareToType": "user",
+            "shareToId": "u3"
+          },
+          {
+            "shareToType": "user",
+            "shareToId": "u4"
+          }
         ],
         "shared_to_count": 4,
         "data_view_id": "dv_messy_prod_web",
