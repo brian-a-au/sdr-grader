@@ -45,7 +45,7 @@ For each rule:
 | SCH-001 duplicate component names | **solid** | Adobe doesn't prevent name collisions within a type. Two metrics named "Revenue" with different IDs is a real bug that causes the classic "dashboards disagree" complaint. Structural rule, no calibration needed. |
 | SCH-002 broken references | **solid** | Segments and calc metrics carry reference IDs; checking they resolve against `all_component_ids ∪ all_segment_ids ∪ calc_metric_ids` is correct. Critical for AA where the API can return zombie references after a deletion. |
 | SCH-003 missing descriptions | **solid (calibrated)** | Threshold `0.35` set at p75 across 108 snapshots. Description fields exist on AA eVars/events and on CJA Data View components. Calibration explicit in `threshold_calibration.md`. |
-| SCH-004 type-name mismatch | **refined (forward-compat only)** | Premise (rate/percent name + integer type → silently broken) is real. Adobe's current success-event docs list **`counter` / `numeric` / `currency`** — no current Experience League page documents `numeric_no_subrelations`, so the earlier draft of this audit overstated the taxonomy. `counter` was added to `_INTEGER_TYPES` in 1c2abf3, but `aa_auto_sdr` / `cja_auto_sdr` already normalize Adobe's `counter` to `int` upstream — across 108 fixtures the `data_type` histogram is `decimal 6080 / int 2817 / currency 8`, with zero `counter` occurrences. The fix is forward-compatible (good) but inert in the current corpus: only 4 SCH-004 hits total, all on the platform built-in `metrics/advertising.adViewability.percentViewable`. |
+| SCH-004 type-name mismatch | **solid as a shape-mismatch detector; counter branch is structurally inert** | Premise (rate/percent name + integer type → silently broken) is real. **Corrected end-to-end trace (2026-05, verified against Adobe's 2.0 swagger and the pitchmuc/aanalytics2 wrapper):** the earlier audit draft claimed `aa_auto_sdr` normalizes `counter → int` upstream — that's wrong, but the broader picture is that **Adobe itself collapses `counter` and `numeric` success events to `INT` server-side** in the 2.0 `/metrics` response. The official 2.0 swagger enum for `AnalyticsMetric.type` is `{STRING, INT, DECIMAL, CURRENCY, PERCENT, TIME, ENUM, ORDERED_ENUM}` — `counter` is not a value the 2.0 API can return. `aa_auto_sdr/api/fetch.py:395` and `sdr_grader/adapters/aa.py:100,116` both pass `type` through verbatim, but the verbatim value is `INT`. The synthetic `aa_auto_sdr/sample_outputs/demo_prod.json` showing `"type": "counter"` is hand-crafted fixture content, not a real API response. **Implications for SCH-004:** (a) the rate/percent + INT/DECIMAL shape check is the load-bearing logic and is correctly wired; (b) the `counter` entry in `_INTEGER_TYPES` (added 1c2abf3) is dead code in the 2.0-API world — it would only fire if a supplementary admin-source (legacy 1.4 `ReportSuite.GetSuccessEvents` or an admin-console export) carrying raw counter types were merged into the snapshot. Keep the entry as forward-compatible scaffolding, but don't expect it to fire against any 2.0-API-sourced snapshot. The 4 hits in the current corpus all fire on the shape-mismatch path, not the counter path. |
 | SCH-005 deprecated components still in use | **refined — possibly over-corrected** | Premise is real. The original default regex `\b(deprecated\|legacy\|old\|deleteme\|do_not_use\|v0\|tmp\|temp)\b` was narrowed in 1c2abf3 to drop `old`, `tmp`, `temp`, `v0`. The named false-positive risks (`Holdovers`, `Order Total`, `temperature`, `eVar0`) can't actually trigger the original regex because of word-boundary semantics: `\bold\b` requires a word boundary on both sides, `\bv0\b` won't match inside `eVar0`. On the 108-fixture corpus the old regex fired 149 times and the new regex fires 146 — the 3 dropped components (`"Account Name (old)"`, `"Old Order Status"`, `"Old Page Type"`) all look like genuine deprecation markers. Either re-add `\bold\b` (the abstract false-positive risk didn't materialize) or document the trade-off explicitly. |
 
 ## Naming consistency (4 rules)
@@ -128,14 +128,26 @@ rules with `platforms: [aa]` could read directly from there.
 
 2. **Counter-typed events used with currency-shaped names.** Counter
    events store no decimal — using a counter for "Revenue" or "Tax" is
-   a silent truncation bug. Similar premise to SCH-004 but for AA event
-   types specifically. Per Adobe's current success-event docs, `event.type`
-   is `counter` / `numeric` / `currency`. (An earlier draft of this audit
-   also listed `numeric_no_subrelations`; no current Experience League
-   page documents that as a present type, so it's been dropped.) Note
-   that `aa_auto_sdr` normalizes `counter` to `int` before the adapter
-   sees it, so this rule needs an upstream change to preserve the
-   original event type, not just a YAML addition.
+   a silent truncation bug. Per Adobe's current success-event docs,
+   `event.type` is `counter` / `numeric` / `currency`. (An earlier
+   draft of this audit also listed `numeric_no_subrelations`; no
+   current Experience League page documents that as a present type, so
+   it's been dropped.) **Wiring constraint (corrected 2026-05):** this
+   rule is **not implementable from the 2.0 `/metrics` endpoint
+   alone**. Adobe's 2.0 API swagger constrains `AnalyticsMetric.type`
+   to `{STRING, INT, DECIMAL, CURRENCY, PERCENT, TIME, ENUM,
+   ORDERED_ENUM}` — counter and numeric success events both surface as
+   `INT`, indistinguishable from each other. The raw counter / numeric
+   / currency polarity lives only in (a) the legacy 1.4 Admin REST API
+   `ReportSuite.GetSuccessEvents` (not wrapped by `aa_auto_sdr` or
+   pitchmuc's `aanalytics2`), or (b) an Admin Console UI export.
+   Implementing this rule requires either integrating that 1.4 endpoint
+   in `aa_auto_sdr` (upstream change), accepting a `--extra-input`
+   admin-console export in `sdr_grader`, or inverting the check: flag
+   metrics whose reported 2.0 type is `INT` / `DECIMAL` but whose name
+   implies `CURRENCY` (a shape-mismatch detector that uses only data
+   already on the snapshot — this is essentially what SCH-004 already
+   does for the rate/percent variant and could be extended).
 
 3. **Event serialization gaps on revenue/conversion events.** Adobe
    recommends enabling Event Serialization (Use Event ID) on success
@@ -208,7 +220,13 @@ rules with `platforms: [aa]` could read directly from there.
 
 3. **Refine the regexes in SCH-004 and SCH-005** to reduce false
    positives. Drop `old`, `tmp`, `temp`, `v0` from SCH-005's default
-   pattern; add `counter` to SCH-004's integer-type set. ~1 hour.
+   pattern (1c2abf3); `\bold\b` later restored (d7001c8) after a corpus
+   pass confirmed the named false positives don't materialize.
+   `counter` was added to SCH-004's `_INTEGER_TYPES` in 1c2abf3 — kept
+   as forward-compat scaffolding, but now known to be structurally
+   inert against 2.0-API-sourced snapshots (Adobe collapses counter →
+   INT server-side). The load-bearing logic in SCH-004 is the
+   rate/percent + INT/DECIMAL shape check, which fires correctly.
 
 4. ~~**Decide what to do about the `tag_filter: custom` constraint**~~
    **Done (2026-05).** Constraint removed from default packs in 074b131;

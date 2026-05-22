@@ -194,6 +194,15 @@ _RATE_NAME_RE = re.compile(r"\b(rate|pct|percent|ratio|share)\b", re.IGNORECASE)
 # AA event type `counter` stores integers (no decimal); CJA/AEP schemas use
 # `integer`/`int`/`long`. A metric whose name implies a rate/percent/ratio
 # bound to any of these whole-number types silently truncates to 0%/100%.
+#
+# Note (2026-05): `counter` is forward-compat scaffolding. The AA 2.0
+# Reporting API collapses counter and numeric success events to `INT`
+# server-side (per the swagger AnalyticsMetric.type enum: STRING / INT /
+# DECIMAL / CURRENCY / PERCENT / TIME / ENUM / ORDERED_ENUM). It will
+# only fire if a supplementary admin source — legacy 1.4
+# `ReportSuite.GetSuccessEvents` or an admin-console export — supplies
+# raw counter values into the snapshot. See docs/RUBRIC_AUDIT.md SCH-004
+# row for the corrected wiring trace.
 _INTEGER_TYPES = {"integer", "int", "long", "counter"}
 
 
