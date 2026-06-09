@@ -81,6 +81,7 @@ def test_render_findings_use_content_visibility():
     html = render(build_demo_report())
     assert "content-visibility: auto" in html
     assert "contain-intrinsic-size" in html
+    assert "content-visibility: visible" in html
 
 
 def test_render_escapes_untrusted_fields():
