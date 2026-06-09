@@ -21,7 +21,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal
 
-from jinja2 import Environment, FileSystemLoader, StrictUndefined, select_autoescape
+from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
 from sdr_grader import __version__ as _PACKAGE_VERSION
 
@@ -147,7 +147,7 @@ def render(report: Report) -> str:
     """Produce a single self-contained HTML document."""
     env = Environment(
         loader=FileSystemLoader(str(_TEMPLATES)),
-        autoescape=select_autoescape(["html"]),
+        autoescape=True,
         undefined=StrictUndefined,
         trim_blocks=False,
         lstrip_blocks=False,
