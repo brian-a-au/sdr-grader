@@ -94,3 +94,11 @@ def test_render_escapes_untrusted_fields():
     assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html
     # CSS is trusted and must NOT be escaped (child combinator survives).
     assert ".cat .bar > span" in html
+
+
+def test_template_and_css_are_cached():
+    """render() must not recompile the template or re-read CSS per call."""
+    from sdr_grader.render import renderer as renderer_mod
+
+    assert renderer_mod._template() is renderer_mod._template()
+    assert renderer_mod._css() is renderer_mod._css()

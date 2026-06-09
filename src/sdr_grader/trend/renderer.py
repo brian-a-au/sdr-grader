@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -20,6 +21,24 @@ _HERE = Path(__file__).parent
 _RENDER_DIR = _HERE.parent / "render"
 _TEMPLATES = _HERE / "templates"
 _STATIC = _RENDER_DIR / "static"
+
+
+@lru_cache(maxsize=1)
+def _template():
+    env = Environment(
+        loader=FileSystemLoader(str(_TEMPLATES)),
+        autoescape=True,
+        undefined=StrictUndefined,
+        trim_blocks=False,
+        lstrip_blocks=False,
+    )
+    return env.get_template("trend.html.j2")
+
+
+@lru_cache(maxsize=1)
+def _css() -> str:
+    return (_STATIC / "report.css").read_text(encoding="utf-8") + "\n" + _trend_css()
+
 
 CATEGORY_DISPLAY = {
     "schema_hygiene": "Schema hygiene",
@@ -40,16 +59,8 @@ class _CategoryTrace:
 
 
 def render_trend(trend: TrendReport) -> str:
-    env = Environment(
-        loader=FileSystemLoader(str(_TEMPLATES)),
-        autoescape=True,
-        undefined=StrictUndefined,
-        trim_blocks=False,
-        lstrip_blocks=False,
-    )
-    template = env.get_template("trend.html.j2")
-    css = (_STATIC / "report.css").read_text(encoding="utf-8")
-    css += "\n" + _trend_css()
+    template = _template()
+    css = _css()
     view = _build_view(trend)
     return template.render(trend=view, css=css)
 
