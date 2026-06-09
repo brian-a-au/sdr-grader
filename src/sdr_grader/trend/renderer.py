@@ -12,7 +12,7 @@ from datetime import UTC
 from pathlib import Path
 from typing import Any
 
-from jinja2 import Environment, FileSystemLoader, StrictUndefined, select_autoescape
+from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
 from sdr_grader.trend.runner import TrendReport
 
@@ -42,7 +42,7 @@ class _CategoryTrace:
 def render_trend(trend: TrendReport) -> str:
     env = Environment(
         loader=FileSystemLoader(str(_TEMPLATES)),
-        autoescape=select_autoescape(["html"]),
+        autoescape=True,
         undefined=StrictUndefined,
         trim_blocks=False,
         lstrip_blocks=False,
