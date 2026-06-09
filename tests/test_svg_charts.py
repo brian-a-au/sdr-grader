@@ -23,3 +23,4 @@ def test_histogram_keeps_markers_and_labels():
 def test_category_comparison_declares_font_family_in_group():
     svg = category_comparison_chart([("Schema hygiene", 72, 65)])
     assert "<g font-family=" in svg
+    assert svg.count("font-family") == 1

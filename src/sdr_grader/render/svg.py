@@ -63,10 +63,12 @@ def category_comparison_chart(rows: list[tuple[str, int, int]]) -> str:
         body.append(f'<line x1="{med_x}" y1="{y - 4}" x2="{med_x}" y2="{y + 4}" stroke="#8a8a82"/>')
     body_str = "\n  ".join(body)
     return f'''<svg viewBox="0 0 400 {height}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Category comparison">
-  <g font-family="Söhne, Inter, sans-serif" font-size="10" fill="#2a2a2a">
+  <g font-family="Söhne, Inter, sans-serif">
+  <g font-size="10" fill="#2a2a2a">
   {body_str}
   </g>
-  <text x="{bar_start}" y="{height - 5}" font-family="Söhne, Inter, sans-serif" font-size="9" fill="#8a8a82">0</text>
-  <text x="{bar_max - 2}" y="{height - 5}" font-family="Söhne, Inter, sans-serif" font-size="9" text-anchor="end" fill="#8a8a82">100</text>
-  <text x="{bar_max}" y="9" font-family="Söhne, Inter, sans-serif" font-size="9" text-anchor="end" fill="#8a8a82">▌ median</text>
+  <text x="{bar_start}" y="{height - 5}" font-size="9" fill="#8a8a82">0</text>
+  <text x="{bar_max - 2}" y="{height - 5}" font-size="9" text-anchor="end" fill="#8a8a82">100</text>
+  <text x="{bar_max}" y="9" font-size="9" text-anchor="end" fill="#8a8a82">▌ median</text>
+  </g>
 </svg>'''
