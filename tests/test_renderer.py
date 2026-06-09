@@ -99,6 +99,9 @@ def test_render_escapes_untrusted_fields():
 def test_template_and_css_are_cached():
     """render() must not recompile the template or re-read CSS per call."""
     from sdr_grader.render import renderer as renderer_mod
+    from sdr_grader.trend import renderer as trend_mod
 
     assert renderer_mod._template() is renderer_mod._template()
     assert renderer_mod._css() is renderer_mod._css()
+    assert trend_mod._template() is trend_mod._template()
+    assert trend_mod._css() is trend_mod._css()
