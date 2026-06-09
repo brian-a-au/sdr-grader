@@ -210,7 +210,12 @@ ol.remediations .impact {
 }
 
 /* ---------- Findings ---------- */
-.finding { padding: 24px 0; border-bottom: 1px solid #ece9e0; }
+.finding {
+  padding: 24px 0;
+  border-bottom: 1px solid #ece9e0;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 320px;
+}
 .finding:first-of-type { border-top: 1px solid #ece9e0; }
 .finding-head {
   display: flex;
@@ -349,7 +354,7 @@ pre.code {
 @media print {
   body { background: #fff; }
   .page { max-width: none; padding: 0.6in; }
-  .finding { break-inside: avoid; }
+  .finding { break-inside: avoid; content-visibility: visible; }
   .cat { break-inside: avoid; }
   nav.toc { display: none; }
   .finding-actions { display: none; }

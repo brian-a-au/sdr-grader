@@ -75,6 +75,14 @@ def test_render_matches_golden():
     )
 
 
+def test_render_findings_use_content_visibility():
+    """Findings are the unbounded section; off-screen ones must be
+    layout-skippable so 500-finding reports stay fast to open."""
+    html = render(build_demo_report())
+    assert "content-visibility: auto" in html
+    assert "contain-intrinsic-size" in html
+
+
 def test_render_escapes_untrusted_fields():
     """Plain-text fields from snapshots (names, titles) must be HTML-escaped,
     while the inlined CSS must pass through unescaped."""
