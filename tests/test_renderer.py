@@ -73,3 +73,35 @@ def test_render_matches_golden():
         "rendered output drifted from examples/templated-report.html. "
         "Regenerate via: uv run python scripts/generate_examples.py"
     )
+
+
+def test_render_findings_use_content_visibility():
+    """Findings are the unbounded section; off-screen ones must be
+    layout-skippable so 500-finding reports stay fast to open."""
+    html = render(build_demo_report())
+    assert "content-visibility: auto" in html
+    assert "contain-intrinsic-size" in html
+    assert "content-visibility: visible" in html
+
+
+def test_render_escapes_untrusted_fields():
+    """Plain-text fields from snapshots (names, titles) must be HTML-escaped,
+    while the inlined CSS must pass through unescaped."""
+    report = build_demo_report()
+    report.instance_name = 'Acme <script>alert(1)</script> & "Co"'
+    html = render(report)
+    assert "<script>alert(1)</script>" not in html
+    assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html
+    # CSS is trusted and must NOT be escaped (child combinator survives).
+    assert ".cat .bar > span" in html
+
+
+def test_template_and_css_are_cached():
+    """render() must not recompile the template or re-read CSS per call."""
+    from sdr_grader.render import renderer as renderer_mod
+    from sdr_grader.trend import renderer as trend_mod
+
+    assert renderer_mod._template() is renderer_mod._template()
+    assert renderer_mod._css() is renderer_mod._css()
+    assert trend_mod._template() is trend_mod._template()
+    assert trend_mod._css() is trend_mod._css()

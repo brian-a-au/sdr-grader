@@ -209,7 +209,13 @@ ol.remediations .impact {
 }
 
 /* ---------- Findings ---------- */
-.finding { padding: 24px 0; border-bottom: 1px solid #ece9e0; }
+.finding {
+  padding: 24px 0;
+  border-bottom: 1px solid #ece9e0;
+  content-visibility: auto;
+  /* 320px ≈ median finding height; `auto` self-corrects after first render */
+  contain-intrinsic-size: auto 320px;
+}
 .finding:first-of-type { border-top: 1px solid #ece9e0; }
 .finding-head {
   display: flex;
@@ -348,7 +354,7 @@ pre.code {
 @media print {
   body { background: #fff; }
   .page { max-width: none; padding: 0.6in; }
-  .finding { break-inside: avoid; }
+  .finding { break-inside: avoid; content-visibility: visible; }
   .cat { break-inside: avoid; }
   nav.toc { display: none; }
   .finding-actions { display: none; }
@@ -598,10 +604,10 @@ pre.code {
         
           
             <div class="finding-section-label">Affected components (4)</div>
-<pre class="components-list">calc_metric cm_conversion_rate -> missing metrics/orders
-calc_metric cm_conversion_rate -> missing metrics/visits
-calc_metric cm_revenue_per_visit -> missing metrics/revenue
-calc_metric cm_revenue_per_visit -> missing metrics/visits
+<pre class="components-list">calc_metric cm_conversion_rate -&gt; missing metrics/orders
+calc_metric cm_conversion_rate -&gt; missing metrics/visits
+calc_metric cm_revenue_per_visit -&gt; missing metrics/revenue
+calc_metric cm_revenue_per_visit -&gt; missing metrics/visits
 </pre>
           
         
@@ -629,10 +635,10 @@ calc_metric cm_revenue_per_visit -> missing metrics/visits
         
           
             <div class="finding-section-label">Affected components (4)</div>
-<pre class="components-list">cm_conversion_rate -> metrics/orders
-cm_conversion_rate -> metrics/visits
-cm_revenue_per_visit -> metrics/revenue
-cm_revenue_per_visit -> metrics/visits
+<pre class="components-list">cm_conversion_rate -&gt; metrics/orders
+cm_conversion_rate -&gt; metrics/visits
+cm_revenue_per_visit -&gt; metrics/revenue
+cm_revenue_per_visit -&gt; metrics/visits
 </pre>
           
         
@@ -660,7 +666,7 @@ cm_revenue_per_visit -> metrics/visits
         
           
             <div class="finding-section-label">Affected components (1)</div>
-<pre class="components-list">[user, visitor] -> user: 1, visitor: 1
+<pre class="components-list">[user, visitor] -&gt; user: 1, visitor: 1
 </pre>
           
         

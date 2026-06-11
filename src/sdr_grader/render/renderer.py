@@ -18,10 +18,11 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
+from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from jinja2 import Environment, FileSystemLoader, StrictUndefined, select_autoescape
+from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
 from sdr_grader import __version__ as _PACKAGE_VERSION
 
@@ -143,18 +144,27 @@ _TEMPLATES = _HERE / "templates"
 _STATIC = _HERE / "static"
 
 
-def render(report: Report) -> str:
-    """Produce a single self-contained HTML document."""
+@lru_cache(maxsize=1)
+def _template():
     env = Environment(
         loader=FileSystemLoader(str(_TEMPLATES)),
-        autoescape=select_autoescape(["html"]),
+        autoescape=True,
         undefined=StrictUndefined,
         trim_blocks=False,
         lstrip_blocks=False,
     )
+    return env.get_template("report.html.j2")
 
-    template = env.get_template("report.html.j2")
-    css = (_STATIC / "report.css").read_text(encoding="utf-8")
+
+@lru_cache(maxsize=1)
+def _css() -> str:
+    return (_STATIC / "report.css").read_text(encoding="utf-8")
+
+
+def render(report: Report) -> str:
+    """Produce a single self-contained HTML document."""
+    template = _template()
+    css = _css()
 
     # Decorate findings with display metadata so the template stays declarative.
     findings_view = []

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import json
 from pathlib import Path
 
@@ -118,6 +119,21 @@ def test_render_trend_self_contained():
 def test_sparkline_handles_single_point():
     svg = sparkline_svg([42], width=120, height=30)
     assert "<svg" in svg
+
+
+def test_render_trend_escapes_untrusted_fields(tmp_path):
+    """Instance names come from snapshot data and must be escaped; the
+    inlined CSS and server-side sparkline SVG must pass through raw."""
+    _build_series(tmp_path)
+    trend = build_trend_report(tmp_path, load_rubric(STRICT_PACK))
+    evil = dataclasses.replace(trend, instance_name='Acme <script>alert(1)</script>')
+    html = render_trend(evil)
+    assert "<script>alert(1)</script>" not in html
+    assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html
+    # CSS must survive unescaped...
+    assert ".cat .bar > span" in html
+    # ...and sparkline SVG must still be inlined raw, not entity-escaped.
+    assert "<polyline" in html
 
 
 # ---------------------------------------------------------------------------
