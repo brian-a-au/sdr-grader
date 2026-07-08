@@ -533,3 +533,11 @@ def test_derived_field_broken_refs_truncates_to_show_top():
         _impl(derived=derived), _ctx("SCH-009", show_top=5),
     )
     assert "showing first 5 of 15" in findings[0].title
+
+
+def test_lookback_days_tolerates_nan_and_infinity():
+    from sdr_grader.rules.checks.schema_hygiene import _lookback_days
+
+    assert _lookback_days({"granularity": "day", "numPeriods": float("nan")}) is None
+    assert _lookback_days({"granularity": "day", "numPeriods": float("inf")}) is None
+    assert _lookback_days({"granularity": "day", "numPeriods": 30}) == 30

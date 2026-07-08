@@ -7,6 +7,7 @@ function can serve multiple rule definitions if needed.
 
 from __future__ import annotations
 
+import math
 import re
 from collections import defaultdict
 from typing import TYPE_CHECKING
@@ -395,6 +396,8 @@ def _lookback_days(node: dict) -> int | None:
     granularity = str(node.get("granularity") or "").lower()
     periods = node.get("numPeriods")
     if not isinstance(periods, (int, float)) or periods <= 0:
+        return None
+    if isinstance(periods, float) and not math.isfinite(periods):
         return None
     periods = int(periods)
     if granularity in _DAY_GRANULARITY:
