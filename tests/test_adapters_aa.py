@@ -102,3 +102,9 @@ def test_aa_clean_grades_better_than_aa_messy(messy_aa, clean_aa):
     messy_pct = grade(adapt(messy_aa), rubric).overall_pct
     clean_pct = grade(adapt(clean_aa), rubric).overall_pct
     assert clean_pct > messy_pct
+
+
+def test_missing_dimensions_key_raises():
+    snap = {"report_suite": {"rsid": "rs1"}, "metrics": []}
+    with pytest.raises(InvalidSnapshotError, match="dimensions"):
+        adapt(snap)

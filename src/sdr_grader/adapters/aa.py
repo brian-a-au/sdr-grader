@@ -311,7 +311,12 @@ def _walk_segment_definition(definition: Any) -> tuple[int, list[str]]:
 
 
 def _ensure_list(snapshot: dict[str, Any], key: str) -> list[Any]:
-    value = snapshot.get(key) or []
+    if key not in snapshot or snapshot[key] is None:
+        raise InvalidSnapshotError(
+            f"AA snapshot missing '{key}' list; refusing to grade a "
+            "truncated export as if it were clean"
+        )
+    value = snapshot[key]
     if not isinstance(value, list):
         raise InvalidSnapshotError(
             f"AA snapshot '{key}' must be a list, got {type(value).__name__}"
