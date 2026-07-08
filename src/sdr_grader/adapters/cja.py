@@ -72,15 +72,25 @@ def adapt(snapshot: dict[str, Any], *, source: str = "<unknown>") -> Implementat
     # derived_fields wins (it carries complexity_score, functions_used,
     # etc.); the inline echo is dropped.
     derived_ids = {df.id for df in derived_fields}
+
+    def _echoes_derived_field(record: Any) -> bool:
+        # Compare on the same normalized (str) IDs and the same aliases
+        # _component_from_record accepts, or numeric/aliased echoes slip
+        # through and SCH-001 false-fires on the duplicate name.
+        if not isinstance(record, dict):
+            return False
+        inline_id = record.get("id") or record.get("component_id") or record.get("metric_id")
+        return inline_id is not None and str(inline_id) in derived_ids
+
     metrics = [
         _component_from_record(r, "metric")
         for r in metrics_raw
-        if not isinstance(r, dict) or (r.get("id") not in derived_ids)
+        if not _echoes_derived_field(r)
     ]
     dimensions = [
         _component_from_record(r, "dimension")
         for r in dimensions_raw
-        if not isinstance(r, dict) or (r.get("id") not in derived_ids)
+        if not _echoes_derived_field(r)
     ]
     calculated_metrics = _adapt_calculated_metrics(snapshot.get("calculated_metrics"))
     segments = _adapt_segments(snapshot.get("segments"))

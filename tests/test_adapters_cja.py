@@ -337,3 +337,15 @@ def test_wrong_typed_references_and_numerics_degrade():
 
     seg = _segment_from_record({"segment_id": "s1", "nesting_depth": "deep"})
     assert seg.nesting_depth == 0
+
+
+def test_numeric_inline_echo_of_derived_field_is_deduped():
+    snap = {
+        "metadata": {"Data View ID": "dv1"},
+        "metrics": [],
+        "dimensions": [{"id": 123, "name": "My DF"}],
+        "derived_fields": {"fields": [{"component_id": 123, "component_name": "My DF"}]},
+    }
+    impl = adapt(snap)
+    assert [d.id for d in impl.dimensions] == []
+    assert [df.id for df in impl.derived_fields] == ["123"]
