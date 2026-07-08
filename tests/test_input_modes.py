@@ -67,6 +67,20 @@ def test_load_snapshot_empty_directory_raises(tmp_path):
         load_snapshot(str(tmp_path))
 
 
+def test_directory_pick_prefers_fresh_untimestamped_file(tmp_path):
+    import os
+
+    stale = tmp_path / "snapshot_2020-01-01.json"
+    stale.write_text('{"which": "stale"}', encoding="utf-8")
+    fresh = tmp_path / "latest.json"
+    fresh.write_text('{"which": "fresh"}', encoding="utf-8")
+    old = 946684800  # 2000-01-01, keeps the mtime comparison unambiguous
+    os.utime(stale, (old, old))
+
+    snapshot, _source = load_snapshot(str(tmp_path))
+    assert snapshot == {"which": "fresh"}
+
+
 # ---------------------------------------------------------------------------
 # Mode 4: stdin
 # ---------------------------------------------------------------------------

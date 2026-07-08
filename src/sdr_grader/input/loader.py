@@ -90,17 +90,14 @@ def _pick_snapshot(
     to mtime when filenames don't carry one.
     With `at`: use the snapshot closest to (and not after) the target.
     """
-    annotated: list[tuple[Path, datetime | None]] = [
-        (p, _extract_timestamp(p)) for p in candidates
+    # Every candidate lands on one scale: filename timestamp when the
+    # name carries one, else file mtime (deterministic across runs on
+    # the same machine, even if not portable). A fresh file without a
+    # timestamped name therefore beats a stale timestamped one.
+    has_timestamp: list[tuple[Path, datetime]] = [
+        (p, _extract_timestamp(p) or datetime.fromtimestamp(p.stat().st_mtime))
+        for p in candidates
     ]
-    has_timestamp = [(p, ts) for p, ts in annotated if ts is not None]
-    if not has_timestamp:
-        # Fall back to filesystem mtime — deterministic across runs on the
-        # same machine, even if not portable.
-        annotated_mtime = [
-            (p, datetime.fromtimestamp(p.stat().st_mtime)) for p in candidates
-        ]
-        has_timestamp = annotated_mtime
 
     if at is None:
         return max(has_timestamp, key=lambda pair: pair[1])[0]
