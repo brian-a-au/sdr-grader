@@ -313,3 +313,10 @@ def test_shell_out_undecodable_bytes_raises_invalid_snapshot(monkeypatch):
 
     with pytest.raises(InvalidSnapshotError, match="could not be decoded as UTF-8"):
         shell_out.shell_cja("dv_123")
+
+
+def test_load_file_with_utf8_bom(tmp_path):
+    p = tmp_path / "snap.json"
+    p.write_bytes(b'\xef\xbb\xbf{"a": 1}')
+    snapshot, _source = load_snapshot(str(p))
+    assert snapshot == {"a": 1}

@@ -61,7 +61,7 @@ def _load_stdin() -> tuple[dict[str, Any], str]:
 
 def _load_from_file(path: Path) -> tuple[dict[str, Any], str]:
     try:
-        text = path.read_text(encoding="utf-8")
+        text = path.read_text(encoding="utf-8-sig")
     except OSError as exc:
         raise InvalidSnapshotError(f"could not read {path}: {exc}") from exc
     try:
