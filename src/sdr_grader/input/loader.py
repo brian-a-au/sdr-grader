@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Any
 
 from sdr_grader.core.exceptions import InvalidSnapshotError
+from sdr_grader.core.timeparse import parse_timestamp
 
 STDIN_TOKEN = "-"
 
@@ -136,16 +137,9 @@ def _extract_timestamp(path: Path) -> datetime | None:
 
 
 def _parse_iso_timestamp(value: str) -> datetime | None:
-    candidate = value.strip().rstrip("Z").replace("/", "-")
-    formats = [
-        "%Y-%m-%d %H:%M:%S",
-        "%Y-%m-%dT%H:%M:%S",
-        "%Y-%m-%dT%H:%M",
-        "%Y-%m-%d",
-    ]
-    for fmt in formats:
-        try:
-            return datetime.strptime(candidate, fmt)
-        except ValueError:
-            continue
-    return None
+    # Filename-derived timestamps are naive, so --at comparisons happen
+    # on naive UTC values; slashes tolerate 2026/04/25-style input.
+    parsed = parse_timestamp(value.replace("/", "-"))
+    if parsed is None:
+        return None
+    return parsed.replace(tzinfo=None)

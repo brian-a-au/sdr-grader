@@ -21,6 +21,7 @@ from html import escape
 
 from sdr_grader.core.grade_calc import GradeResult, compute_grade
 from sdr_grader.core.models import Implementation
+from sdr_grader.core.timeparse import parse_timestamp
 from sdr_grader.render import (
     Adapter,
     Category,
@@ -233,26 +234,7 @@ def _compact_text(text: str) -> str:
 def _resolve_generated_at(snapshot_taken_at: str | None) -> datetime:
     if not snapshot_taken_at:
         return _FALLBACK_GENERATED_AT
-    parsed = _parse_timestamp(snapshot_taken_at)
-    return parsed or _FALLBACK_GENERATED_AT
-
-
-def _parse_timestamp(value: str) -> datetime | None:
-    """Tolerate a few common timestamp shapes from cja_auto_sdr / aa_auto_sdr."""
-    candidate = value.strip().rstrip("Z")
-    formats = [
-        "%Y-%m-%d %H:%M:%S",
-        "%Y-%m-%dT%H:%M:%S",
-        "%Y-%m-%dT%H:%M:%S.%f",
-        "%Y-%m-%d",
-    ]
-    for fmt in formats:
-        try:
-            dt = datetime.strptime(candidate, fmt)
-            return dt.replace(tzinfo=UTC)
-        except ValueError:
-            continue
-    return None
+    return parse_timestamp(snapshot_taken_at) or _FALLBACK_GENERATED_AT
 
 
 _INSTANCE_TOKEN_RE = re.compile(r"[^A-Z0-9]+")
