@@ -8,6 +8,8 @@ inlines verbatim.
 
 from __future__ import annotations
 
+import html
+
 
 def histogram_chart(your_score: int, median: int, p25: int, p75: int) -> str:
     """Distribution band with median marker and 'you are here' marker."""
@@ -56,7 +58,7 @@ def category_comparison_chart(rows: list[tuple[str, int, int]]) -> str:
             bar_color = "#8b2a1f"
         elif you < 70:
             bar_color = "#b8651a"
-        body.append(f'<text x="{label_x}" y="{y + 3}">{label}</text>')
+        body.append(f'<text x="{label_x}" y="{y + 3}">{html.escape(label)}</text>')
         body.append(f'<line x1="{bar_start}" y1="{y}" x2="{bar_max}" y2="{y}" stroke="#ece9e0"/>')
         body.append(f'<line x1="{bar_start}" y1="{y}" x2="{you_x}" y2="{y}" stroke="{bar_color}" stroke-width="3"/>')
         body.append(f'<circle cx="{you_x}" cy="{y}" r="3" fill="{bar_color}"/>')
