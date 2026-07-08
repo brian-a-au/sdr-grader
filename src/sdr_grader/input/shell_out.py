@@ -11,9 +11,14 @@ from __future__ import annotations
 import json
 import shutil
 import subprocess
+import sys
 from typing import Any
 
 from sdr_grader.core.exceptions import InvalidSnapshotError
+
+# Upstream tools make live Adobe API calls; a stalled connection should
+# fail loudly, not hang a CI job forever.
+SHELL_OUT_TIMEOUT_SECONDS = 600
 
 
 def shell_cja(
@@ -65,7 +70,14 @@ def _shell_out(tool: str, argv: list[str], *, flag: str) -> tuple[dict[str, Any]
             check=True,
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            timeout=SHELL_OUT_TIMEOUT_SECONDS,
         )
+    except subprocess.TimeoutExpired as exc:
+        raise InvalidSnapshotError(
+            f"{tool} did not finish within {SHELL_OUT_TIMEOUT_SECONDS}s; "
+            "check network access to Adobe APIs or run the tool manually."
+        ) from exc
     except subprocess.CalledProcessError as exc:
         stderr = exc.stderr or ""
         raise InvalidSnapshotError(
@@ -74,8 +86,15 @@ def _shell_out(tool: str, argv: list[str], *, flag: str) -> tuple[dict[str, Any]
     except FileNotFoundError as exc:
         raise InvalidSnapshotError(f"{tool} could not be invoked: {exc}") from exc
 
+    warnings = (result.stderr or "").strip()
+    if warnings:
+        print(f"{tool} warnings:\n{warnings}", file=sys.stderr)
+
     try:
         snapshot = json.loads(result.stdout)
     except json.JSONDecodeError as exc:
-        raise InvalidSnapshotError(f"{tool} produced output that is not valid JSON: {exc}") from exc
+        detail = f" (stderr: {warnings})" if warnings else ""
+        raise InvalidSnapshotError(
+            f"{tool} produced output that is not valid JSON: {exc}{detail}"
+        ) from exc
     return snapshot, f"shell-out:{tool} {argv[0]}"

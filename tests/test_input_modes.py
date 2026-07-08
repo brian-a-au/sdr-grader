@@ -250,3 +250,39 @@ def test_cli_rsid_uses_aa_adapter(tmp_path, capsys):
             ]
         )
     assert rc == SUCCESS
+
+
+def test_shell_out_passes_timeout_and_encoding_and_surfaces_warnings(monkeypatch, capsys):
+    import subprocess as sp
+
+    from sdr_grader.input import shell_out
+
+    seen_kwargs = {}
+
+    def fake_run(cmd, **kwargs):
+        seen_kwargs.update(kwargs)
+        return sp.CompletedProcess(cmd, 0, stdout='{"ok": true}', stderr="token expires soon\n")
+
+    monkeypatch.setattr(shell_out.shutil, "which", lambda tool: f"/fake/{tool}")
+    monkeypatch.setattr(shell_out.subprocess, "run", fake_run)
+
+    snapshot, source = shell_out.shell_cja("dv_123")
+    assert snapshot == {"ok": True}
+    assert seen_kwargs["timeout"] == shell_out.SHELL_OUT_TIMEOUT_SECONDS
+    assert seen_kwargs["encoding"] == "utf-8"
+    assert "token expires soon" in capsys.readouterr().err
+
+
+def test_shell_out_timeout_raises_invalid_snapshot(monkeypatch):
+    import subprocess as sp
+
+    from sdr_grader.input import shell_out
+
+    def fake_run(cmd, **kwargs):
+        raise sp.TimeoutExpired(cmd, kwargs.get("timeout", 0))
+
+    monkeypatch.setattr(shell_out.shutil, "which", lambda tool: f"/fake/{tool}")
+    monkeypatch.setattr(shell_out.subprocess, "run", fake_run)
+
+    with pytest.raises(InvalidSnapshotError, match="did not finish"):
+        shell_out.shell_cja("dv_123")
