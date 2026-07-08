@@ -85,6 +85,10 @@ def _shell_out(tool: str, argv: list[str], *, flag: str) -> tuple[dict[str, Any]
         ) from exc
     except FileNotFoundError as exc:
         raise InvalidSnapshotError(f"{tool} could not be invoked: {exc}") from exc
+    except UnicodeDecodeError as exc:
+        raise InvalidSnapshotError(
+            f"{tool} produced output that could not be decoded as UTF-8: {exc}"
+        ) from exc
 
     warnings = (result.stderr or "").strip()
     if warnings:

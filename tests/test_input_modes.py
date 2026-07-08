@@ -286,3 +286,16 @@ def test_shell_out_timeout_raises_invalid_snapshot(monkeypatch):
 
     with pytest.raises(InvalidSnapshotError, match="did not finish"):
         shell_out.shell_cja("dv_123")
+
+
+def test_shell_out_undecodable_bytes_raises_invalid_snapshot(monkeypatch):
+    from sdr_grader.input import shell_out
+
+    def fake_run(cmd, **kwargs):
+        raise UnicodeDecodeError("utf-8", b"\x80", 0, 1, "invalid start byte")
+
+    monkeypatch.setattr(shell_out.shutil, "which", lambda tool: f"/fake/{tool}")
+    monkeypatch.setattr(shell_out.subprocess, "run", fake_run)
+
+    with pytest.raises(InvalidSnapshotError, match="could not be decoded as UTF-8"):
+        shell_out.shell_cja("dv_123")
