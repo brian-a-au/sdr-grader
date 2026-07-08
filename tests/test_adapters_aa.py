@@ -108,3 +108,26 @@ def test_missing_dimensions_key_raises():
     snap = {"report_suite": {"rsid": "rs1"}, "metrics": []}
     with pytest.raises(InvalidSnapshotError, match="dimensions"):
         adapt(snap)
+
+
+def test_stringified_tags_parse_as_list():
+    from sdr_grader.adapters.aa import _component_from_record
+
+    comp = _component_from_record(
+        {"id": "evar1", "tags": '["marketing", "web"]'}, "dimension", {}
+    )
+    assert comp.tags == ["marketing", "web"]
+
+
+def test_non_iterable_tags_become_empty():
+    from sdr_grader.adapters.aa import _component_from_record
+
+    comp = _component_from_record({"id": "evar1", "tags": 7}, "dimension", {})
+    assert comp.tags == []
+
+
+def test_non_numeric_complexity_defaults_to_zero():
+    from sdr_grader.adapters.aa import _calc_from_record
+
+    calc = _calc_from_record({"id": "cm1", "complexity_score": "N/A"})
+    assert calc.complexity_score == 0.0

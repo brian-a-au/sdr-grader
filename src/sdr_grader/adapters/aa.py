@@ -7,6 +7,8 @@ classifications attach as tags on the parent dimension.
 
 from __future__ import annotations
 
+import json
+import math
 from typing import Any
 
 from sdr_grader.core.exceptions import InvalidSnapshotError
@@ -99,7 +101,7 @@ def _component_from_record(
     description = _normalize_description(record.get("description"))
     data_type = record.get("type")
     polarity = _normalize_polarity(record.get("polarity"))
-    tags = list(record.get("tags") or [])
+    tags = _parse_tag_list(record.get("tags"))
     # Pick up classifications attached to this component as tags.
     extra_class_tags = classifications_by_parent.get(str(component_id), [])
     if extra_class_tags:
@@ -174,7 +176,7 @@ def _calc_from_record(record: Any) -> CalculatedMetric:
         formula_text=formula_text,
         attribution_model=record.get("attribution") or record.get("attribution_model"),
         allocation=record.get("allocation"),
-        complexity_score=float(record.get("complexity_score") or 0.0),
+        complexity_score=_safe_float(record.get("complexity_score")),
         references=references,
         created_at=record.get("created") or record.get("created_at"),
         modified_at=record.get("modified") or record.get("modified_at"),
@@ -308,6 +310,42 @@ def _walk_segment_definition(definition: Any) -> tuple[int, list[str]]:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+
+def _parse_tag_list(value: Any) -> list[str]:
+    """aa_auto_sdr can ship `tags` as a JSON-encoded list string, same as
+    cja_auto_sdr (see cja.py's copy — adapters stay standalone reference
+    examples, so this helper is intentionally duplicated). Handles native
+    lists, stringified lists, and falls back to [] for anything else."""
+    if value is None or value == "":
+        return []
+    if isinstance(value, list):
+        return [str(t) for t in value]
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+        except json.JSONDecodeError:
+            return []
+        if isinstance(parsed, list):
+            return [str(t) for t in parsed]
+    return []
+
+
+def _safe_float(value: Any, default: float = 0.0) -> float:
+    """Coerce upstream numeric fields defensively — exports carry 'N/A',
+    stringified numbers, or NaN where a float belongs."""
+    if isinstance(value, bool):
+        return default
+    if isinstance(value, (int, float)):
+        result = float(value)
+    elif isinstance(value, str):
+        try:
+            result = float(value.strip())
+        except ValueError:
+            return default
+    else:
+        return default
+    return result if math.isfinite(result) else default
 
 
 def _ensure_list(snapshot: dict[str, Any], key: str) -> list[Any]:

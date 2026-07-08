@@ -130,7 +130,10 @@ def _delete_at(root: Any, path: tuple) -> None:
 @settings(max_examples=50, deadline=None,
           suppress_health_check=[HealthCheck.too_slow, HealthCheck.function_scoped_fixture])
 @given(seed=st.integers(min_value=0, max_value=2**32 - 1),
-       mutation=st.sampled_from(["delete", "replace_none", "replace_int", "replace_str"]))
+       mutation=st.sampled_from([
+           "delete", "replace_none", "replace_int", "replace_str",
+           "replace_truthy_int", "replace_json_list_string",
+       ]))
 def test_adapter_survives_mutated_fixture(fixture_name, adapter, seed, mutation):
     """Take a valid fixture, mutate one path, confirm graceful handling."""
     import random
@@ -150,6 +153,10 @@ def test_adapter_survives_mutated_fixture(fixture_name, adapter, seed, mutation)
         _set_at(doc, target, 0)
     elif mutation == "replace_str":
         _set_at(doc, target, "")
+    elif mutation == "replace_truthy_int":
+        _set_at(doc, target, 7)
+    elif mutation == "replace_json_list_string":
+        _set_at(doc, target, '["fuzzed"]')
 
     try:
         result = adapter.adapt(doc, source=f"<mutation:{mutation}:{target}>")

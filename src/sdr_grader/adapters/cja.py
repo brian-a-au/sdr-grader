@@ -11,6 +11,7 @@ authoritative output shape.
 from __future__ import annotations
 
 import json
+import math
 from typing import Any
 
 from sdr_grader.core.exceptions import InvalidSnapshotError
@@ -211,12 +212,12 @@ def _calc_metric_from_record(record: dict[str, Any]) -> CalculatedMetric:
     references = list(
         dict.fromkeys(
             [
-                *(record.get("metric_references") or []),
-                *(record.get("segment_references") or []),
+                *_parse_ref_list(record.get("metric_references")),
+                *_parse_ref_list(record.get("segment_references")),
             ]
         )
     )
-    complexity = float(record.get("complexity_score") or 0.0)
+    complexity = _safe_float(record.get("complexity_score"))
 
     attribution_model, allocation = _extract_attribution(formula)
 
@@ -298,14 +299,14 @@ def _segment_from_record(record: dict[str, Any]) -> Segment:
     name = record.get("segment_name") or record.get("name") or segment_id
     description = _normalize_description(record.get("description"))
     definition = _parse_definition_json(record.get("definition_json"))
-    nesting_depth = int(record.get("nesting_depth") or 0)
+    nesting_depth = _safe_int(record.get("nesting_depth"))
     container_types = _extract_container_types(record.get("container_type"), definition)
     references = list(
         dict.fromkeys(
             [
-                *(record.get("dimension_references") or []),
-                *(record.get("metric_references") or []),
-                *(record.get("other_segment_references") or []),
+                *_parse_ref_list(record.get("dimension_references")),
+                *_parse_ref_list(record.get("metric_references")),
+                *_parse_ref_list(record.get("other_segment_references")),
             ]
         )
     )
@@ -453,6 +454,44 @@ def _parse_tag_list(value: Any) -> list[str]:
             return [str(t) for t in parsed]
         return []
     return []
+
+
+def _parse_ref_list(value: Any) -> list[str]:
+    """Reference lists arrive as native lists or (like tags) as
+    JSON-encoded list strings; anything else contributes nothing."""
+    if value is None or value == "":
+        return []
+    if isinstance(value, list):
+        return [str(t) for t in value]
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+        except json.JSONDecodeError:
+            return []
+        if isinstance(parsed, list):
+            return [str(t) for t in parsed]
+    return []
+
+
+def _safe_float(value: Any, default: float = 0.0) -> float:
+    """Coerce upstream numeric fields defensively — exports carry 'N/A',
+    stringified numbers, or NaN where a float belongs."""
+    if isinstance(value, bool):
+        return default
+    if isinstance(value, (int, float)):
+        result = float(value)
+    elif isinstance(value, str):
+        try:
+            result = float(value.strip())
+        except ValueError:
+            return default
+    else:
+        return default
+    return result if math.isfinite(result) else default
+
+
+def _safe_int(value: Any, default: int = 0) -> int:
+    return int(_safe_float(value, float(default)))
 
 
 def _normalize_description(value: Any) -> str | None:
