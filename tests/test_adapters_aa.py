@@ -72,9 +72,12 @@ def test_aa_adapter_calc_metric_references(messy_aa):
 def test_aa_adapter_segment_nesting_depth_and_contexts(messy_aa):
     impl = adapt(messy_aa)
     nested = next(s for s in impl.segments if s.id == "s_returning")
-    # Definition has visitors > visits + hits — 3 distinct contexts at nesting depth >= 4.
+    # Definition has a "visitors" container wrapping an `and` predicate whose
+    # two args are sibling "visits" and "hits" containers (not stacked inside
+    # each other) — 3 distinct contexts, but only 2 levels of container
+    # nesting: visitors -> {visits, hits}.
     assert set(nested.container_types) == {"visitors", "visits", "hits"}
-    assert nested.nesting_depth >= 4
+    assert nested.nesting_depth >= 2
 
 
 def test_aa_adapter_dash_descriptions_normalize_to_none():
@@ -131,3 +134,33 @@ def test_non_numeric_complexity_defaults_to_zero():
 
     calc = _calc_from_record({"id": "cm1", "complexity_score": "N/A"})
     assert calc.complexity_score == 0.0
+
+
+def test_single_container_segment_depth_is_one():
+    from sdr_grader.adapters.aa import _walk_segment_definition
+
+    definition = {
+        "func": "segment",
+        "version": [1, 0, 0],
+        "container": {
+            "func": "container",
+            "context": "visits",
+            "pred": {"func": "streq", "str": "Home",
+                     "val": {"func": "attr", "name": "variables/page"}},
+        },
+    }
+    depth, contexts = _walk_segment_definition(definition)
+    assert depth == 1
+    assert contexts == ["visits"]
+
+
+def test_nested_containers_count_only_containers():
+    from sdr_grader.adapters.aa import _walk_segment_definition
+
+    inner = {"func": "container", "context": "hits",
+             "pred": {"func": "exists", "val": {"func": "attr", "name": "variables/evar1"}}}
+    outer = {"func": "container", "context": "visits",
+             "pred": {"func": "without", "arg": inner}}
+    depth, contexts = _walk_segment_definition({"func": "segment", "container": outer})
+    assert depth == 2
+    assert contexts == ["visits", "hits"]
