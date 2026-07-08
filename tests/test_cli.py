@@ -225,3 +225,27 @@ def test_cli_finding_count_drops_when_descriptions_filled_in(tmp_path, _changed_
     html = output.read_text(encoding="utf-8")
     # The finding count is 169 now (one fewer); rule still fires.
     assert "169 components lack descriptions" in html
+
+
+def _make_trend_dir(tmp_path: Path) -> Path:
+    """Two dated copies of the messy fixture = a minimal trend directory."""
+    src = (FIXTURES / "cja_snapshot_messy.json").read_text(encoding="utf-8")
+    d = tmp_path / "snaps"
+    d.mkdir()
+    (d / "snapshot_2026-01-01.json").write_text(src, encoding="utf-8")
+    (d / "snapshot_2026-02-01.json").write_text(src, encoding="utf-8")
+    return d
+
+
+def test_trend_fail_below_gates_exit_code(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    d = _make_trend_dir(tmp_path)
+    rc = main([str(d), "--trend", "--quiet", "--fail-below", "A"])
+    assert rc == GRADE_BELOW_THRESHOLD
+
+
+def test_trend_rejects_flags_it_cannot_honor(tmp_path, capsys):
+    d = _make_trend_dir(tmp_path)
+    rc = main([str(d), "--trend", "--json", str(tmp_path / "out.json")])
+    assert rc == RUNTIME_ERROR
+    assert "--json" in capsys.readouterr().err
