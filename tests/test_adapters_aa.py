@@ -164,3 +164,23 @@ def test_nested_containers_count_only_containers():
     depth, contexts = _walk_segment_definition({"func": "segment", "container": outer})
     assert depth == 2
     assert contexts == ["visits", "hits"]
+
+
+@pytest.mark.parametrize("key", ["calculated_metrics", "segments"])
+@pytest.mark.parametrize("bad_value", [7, "not-a-list", {"id": "x"}, True])
+def test_non_list_optional_sections_raise(key, bad_value):
+    """A present-but-non-list calculated_metrics/segments value is a malformed
+    export, not an empty one — reject it instead of crashing (fuzz regression:
+    replace_truthy_int on the top-level key hit a bare TypeError)."""
+    snap = {"report_suite": {"rsid": "rs1"}, "dimensions": [], "metrics": [], key: bad_value}
+    with pytest.raises(InvalidSnapshotError, match=key):
+        adapt(snap)
+
+
+@pytest.mark.parametrize("key", ["calculated_metrics", "segments"])
+def test_null_or_missing_optional_sections_stay_empty(key):
+    missing = {"report_suite": {"rsid": "rs1"}, "dimensions": [], "metrics": []}
+    null = {**missing, key: None}
+    for snap in (missing, null):
+        impl = adapt(snap)
+        assert getattr(impl, key) == []

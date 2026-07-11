@@ -61,9 +61,9 @@ def adapt(snapshot: dict[str, Any], *, source: str = "<unknown>") -> Implementat
         for r in metrics_raw
     ]
     calculated_metrics = [
-        _calc_from_record(r) for r in (snapshot.get("calculated_metrics") or [])
+        _calc_from_record(r) for r in _optional_list(snapshot, "calculated_metrics")
     ]
-    segments = [_segment_from_record(r) for r in (snapshot.get("segments") or [])]
+    segments = [_segment_from_record(r) for r in _optional_list(snapshot, "segments")]
 
     return Implementation(
         platform="aa",
@@ -360,6 +360,19 @@ def _ensure_list(snapshot: dict[str, Any], key: str) -> list[Any]:
             "truncated export as if it were clean"
         )
     value = snapshot[key]
+    if not isinstance(value, list):
+        raise InvalidSnapshotError(
+            f"AA snapshot '{key}' must be a list, got {type(value).__name__}"
+        )
+    return value
+
+
+def _optional_list(snapshot: dict[str, Any], key: str) -> list[Any]:
+    """Optional sections (segments, calculated_metrics) may be absent or null,
+    but a present non-list value is a malformed export, not an empty one."""
+    value = snapshot.get(key)
+    if value is None:
+        return []
     if not isinstance(value, list):
         raise InvalidSnapshotError(
             f"AA snapshot '{key}' must be a list, got {type(value).__name__}"
