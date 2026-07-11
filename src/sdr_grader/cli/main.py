@@ -65,6 +65,22 @@ def main(argv: list[str] | None = None) -> int:
         return RUBRIC_VALIDATION_FAILURE
 
     if args.trend:
+        ignored = [
+            flag
+            for flag, value in (
+                ("--json", args.json_output),
+                ("--extra-input", args.extra_input),
+                ("--distribution-data", args.distribution_data),
+                ("--at", args.at),
+            )
+            if value
+        ]
+        if ignored:
+            print(
+                f"error: {', '.join(ignored)} not supported with --trend",
+                file=sys.stderr,
+            )
+            return RUNTIME_ERROR
         return _run_trend(args, rubric, suppression)
 
     try:
@@ -347,6 +363,8 @@ def _run_trend(args, rubric, suppression) -> int:
             f"{trend.instance_id}",
             file=sys.stderr,
         )
+    if args.fail_below:
+        return _check_threshold(trend.latest.report, args.fail_below, rubric)
     return SUCCESS
 
 

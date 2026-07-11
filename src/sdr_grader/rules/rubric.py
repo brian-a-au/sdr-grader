@@ -13,6 +13,7 @@ See SPEC §6 for the YAML shapes.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -254,6 +255,7 @@ def _validate_rule_entry(entry: Any, *, category: str, source: str) -> RuleDefin
     params = entry.get("params") or {}
     if not isinstance(params, dict):
         raise RubricValidationError(f"{source} {rule_id}: 'params' must be a mapping")
+    _validate_common_params(params, rule_id=rule_id, source=source)
     return RuleDefinition(
         id=rule_id,
         name=name,
@@ -265,6 +267,40 @@ def _validate_rule_entry(entry: Any, *, category: str, source: str) -> RuleDefin
         rationale=str(entry.get("rationale", "")).strip(),
         remediation=str(entry.get("remediation", "")).strip(),
     )
+
+
+_KNOWN_TARGETS = {"metrics", "dimensions", "derived_fields", "calculated_metrics", "segments"}
+
+
+def _validate_common_params(params: dict[str, Any], *, rule_id: str, source: str) -> None:
+    """Validate the cross-check param conventions at load time.
+
+    'pattern' params must compile as a regex and 'targets' params must
+    name Implementation collections — a YAML typo should fail as a
+    rubric error, not crash halfway through a grading run.
+    """
+    pattern = params.get("pattern")
+    if pattern is not None:
+        if not isinstance(pattern, str):
+            raise RubricValidationError(f"{source} {rule_id}: 'pattern' must be a string")
+        try:
+            re.compile(pattern)
+        except re.error as exc:
+            raise RubricValidationError(
+                f"{source} {rule_id}: 'pattern' is not a valid regex: {exc}"
+            ) from exc
+    targets = params.get("targets")
+    if targets is not None:
+        if not isinstance(targets, list) or not all(isinstance(t, str) for t in targets):
+            raise RubricValidationError(
+                f"{source} {rule_id}: 'targets' must be a list of strings"
+            )
+        unknown = sorted(set(targets) - _KNOWN_TARGETS)
+        if unknown:
+            raise RubricValidationError(
+                f"{source} {rule_id}: unknown 'targets' {unknown!r}; "
+                f"expected names from {sorted(_KNOWN_TARGETS)!r}"
+            )
 
 
 # ---------------------------------------------------------------------------

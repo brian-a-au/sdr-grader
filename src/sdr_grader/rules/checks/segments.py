@@ -10,6 +10,7 @@ from sdr_grader.rules.checks._helpers import (
     category_display,
     collect_referenced_ids,
     compact,
+    cycle_groups,
 )
 from sdr_grader.rules.registry import register_check
 
@@ -97,23 +98,23 @@ def check_circular_segments(
     impl: Implementation, ctx: RuleContext
 ) -> list[Finding]:
     """Detect any segment whose reference graph contains a cycle."""
-    edges: dict[str, set[str]] = {
-        s.id: {ref for ref in s.references if ref.startswith("segments/")}
+    graph: dict[str, list[str]] = {
+        s.id: sorted({ref for ref in s.references if ref.startswith("segments/")})
         for s in impl.segments
     }
-    cycles = _find_cycles(edges)
-    if not cycles:
+    groups = cycle_groups(graph)
+    if not groups:
         return []
-    items = [" -> ".join(cycle) for cycle in cycles[:10]]
+    items = [", ".join(group) for group in groups[:10]]
     paragraph = (
-        f"{len(cycles)} cycle{'s' if len(cycles) != 1 else ''} detected in the "
+        f"{len(groups)} cycle{'s' if len(groups) != 1 else ''} detected in the "
         "segment reference graph. Circular references break linear evaluation "
         "and produce inconsistent populations between platform UI and exports."
     )
     return [
         _make_finding(
             ctx,
-            title=f"{len(cycles)} circular segment reference{'s' if len(cycles) != 1 else ''}",
+            title=f"{len(groups)} circular segment reference{'s' if len(groups) != 1 else ''}",
             paragraph=paragraph,
             extra_blocks=[FindingBlock(kind="components", items=items)],
         )
@@ -233,36 +234,6 @@ def check_segment_nesting_depth(
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-
-def _find_cycles(edges: dict[str, set[str]]) -> list[list[str]]:
-    """Return up to a handful of cycles via DFS on the reference graph."""
-    visited: set[str] = set()
-    stack: list[str] = []
-    cycles: list[list[str]] = []
-    on_stack: set[str] = set()
-
-    def visit(node: str) -> None:
-        if node in on_stack:
-            try:
-                start = stack.index(node)
-                cycles.append([*stack[start:], node])
-            except ValueError:
-                cycles.append([node, node])
-            return
-        if node in visited:
-            return
-        visited.add(node)
-        on_stack.add(node)
-        stack.append(node)
-        for nxt in edges.get(node, ()):
-            visit(nxt)
-        stack.pop()
-        on_stack.discard(node)
-
-    for node in list(edges):
-        visit(node)
-    return cycles
 
 
 def _make_finding(

@@ -24,3 +24,9 @@ def test_category_comparison_declares_font_family_in_group():
     svg = category_comparison_chart([("Schema hygiene", 72, 65)])
     assert "<g font-family=" in svg
     assert svg.count("font-family") == 1
+
+
+def test_category_chart_escapes_labels():
+    svg = category_comparison_chart([('<script>alert(1)</script>', 50, 60)])
+    assert "<script>" not in svg
+    assert "&lt;script&gt;alert(1)&lt;/script&gt;" in svg

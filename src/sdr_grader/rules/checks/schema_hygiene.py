@@ -7,6 +7,7 @@ function can serve multiple rule definitions if needed.
 
 from __future__ import annotations
 
+import math
 import re
 from collections import defaultdict
 from typing import TYPE_CHECKING
@@ -19,6 +20,7 @@ from sdr_grader.rules.checks._helpers import (
     category_display,
     collect_referenced_ids,
     compact,
+    cycle_groups,
     join_with_and,
     parse_platform_setting,
     pct,
@@ -395,6 +397,8 @@ def _lookback_days(node: dict) -> int | None:
     periods = node.get("numPeriods")
     if not isinstance(periods, (int, float)) or periods <= 0:
         return None
+    if isinstance(periods, float) and not math.isfinite(periods):
+        return None
     periods = int(periods)
     if granularity in _DAY_GRANULARITY:
         return periods
@@ -469,8 +473,8 @@ def check_derived_field_cycles(
 
     Builds the DF-to-DF subgraph by intersecting each derived field's
     references with the set of derived-field IDs in the same snapshot,
-    then runs DFS to find strongly connected components of size ≥ 2,
-    plus any self-loops.
+    then runs an iterative Tarjan pass to find strongly connected
+    components of size ≥ 2, plus any self-loops.
     """
     if impl.platform != "cja":
         return []
@@ -478,23 +482,26 @@ def check_derived_field_cycles(
     if not df_ids:
         return []
 
-    graph: dict[str, list[str]] = {df_id: [] for df_id in df_ids}
+    # Bare-ID index built in list order — no set iteration anywhere on
+    # this path, so the graph (and therefore the report) is byte-stable.
+    bare_index: dict[str, list[str]] = {}
     for df in impl.derived_fields:
-        refs = _derived_field_refs(df)
-        for ref in refs:
-            normalized = _candidate_df_targets(ref, df_ids)
-            for target in normalized:
-                if target == df.id or target in df_ids:
-                    graph[df.id].append(target)
+        bare_index.setdefault(_bare_id(df.id), []).append(df.id)
 
-    cycles = _find_simple_cycles(graph)
-    if not cycles:
+    graph: dict[str, list[str]] = {df.id: [] for df in impl.derived_fields}
+    for df in impl.derived_fields:
+        for ref in _derived_field_refs(df):
+            for target in bare_index.get(_bare_id(ref), []):
+                graph[df.id].append(target)
+
+    groups = cycle_groups(graph)
+    if not groups:
         return []
 
-    items = [" -> ".join([*cycle, cycle[0]]) for cycle in cycles[:25]]
-    plural = len(cycles) != 1
+    items = [", ".join(group) for group in groups[:25]]
+    plural = len(groups) != 1
     paragraph = (
-        f"{len(cycles)} derived-field cycle{'s' if plural else ''} detected in "
+        f"{len(groups)} derived-field cycle{'s' if plural else ''} detected in "
         "this data view. CJA resolves derived fields at query time by walking "
         "the dependency chain — a cycle causes either a silent compute failure "
         "or unbounded recursion depending on which entry point the resolver "
@@ -504,7 +511,7 @@ def check_derived_field_cycles(
     return [
         _make_finding(
             ctx,
-            title=f"{len(cycles)} derived-field reference cycle{'s' if plural else ''}",
+            title=f"{len(groups)} derived-field reference cycle{'s' if plural else ''}",
             paragraph=paragraph,
             extra_blocks=[FindingBlock(kind="components", items=items)],
         )
@@ -630,64 +637,6 @@ def _bare_id(component_id: str) -> str:
     if "/" in component_id:
         return component_id.rsplit("/", 1)[-1]
     return component_id
-
-
-def _candidate_df_targets(ref: str, df_ids: set[str]) -> list[str]:
-    """Return DF IDs from `df_ids` that the reference resolves to.
-
-    A reference matches a DF if its bare ID equals the DF's bare ID
-    (regardless of namespace prefix).
-    """
-    bare = _bare_id(ref)
-    return [df_id for df_id in df_ids if _bare_id(df_id) == bare]
-
-
-def _find_simple_cycles(graph: dict[str, list[str]]) -> list[list[str]]:
-    """Find simple cycles in a directed graph.
-
-    Uses an iterative DFS with a recursion stack to detect back-edges;
-    when a back-edge closes, the cycle is the slice of the stack from
-    the re-entry point onward. Returns each cycle as the list of nodes
-    in traversal order, deduplicated by canonical rotation so A->B->A
-    and B->A->B are the same cycle.
-    """
-    seen_cycles: set[tuple[str, ...]] = set()
-    cycles: list[list[str]] = []
-
-    def _canonical(cycle: list[str]) -> tuple[str, ...]:
-        # Rotate so the lexicographically smallest node comes first; if
-        # the node appears more than once, also pick the rotation that
-        # makes the second node smallest.
-        smallest = min(cycle)
-        rotations = [
-            tuple(cycle[i:] + cycle[:i])
-            for i, node in enumerate(cycle)
-            if node == smallest
-        ]
-        return min(rotations)
-
-    def _dfs(node: str, stack: list[str], on_stack: set[str], visited: set[str]) -> None:
-        on_stack.add(node)
-        stack.append(node)
-        for neighbor in graph.get(node, []):
-            if neighbor in on_stack:
-                idx = stack.index(neighbor)
-                cycle = stack[idx:]
-                canon = _canonical(cycle)
-                if canon not in seen_cycles:
-                    seen_cycles.add(canon)
-                    cycles.append(cycle)
-            elif neighbor not in visited:
-                _dfs(neighbor, stack, on_stack, visited)
-        stack.pop()
-        on_stack.discard(node)
-        visited.add(node)
-
-    visited: set[str] = set()
-    for start in graph:
-        if start not in visited:
-            _dfs(start, [], set(), visited)
-    return cycles
 
 
 def _human_target(target: str) -> str:

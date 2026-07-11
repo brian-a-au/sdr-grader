@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Any
 
 from sdr_grader.core.exceptions import InvalidSnapshotError
+from sdr_grader.core.timeparse import parse_timestamp
 
 STDIN_TOKEN = "-"
 
@@ -60,7 +61,7 @@ def _load_stdin() -> tuple[dict[str, Any], str]:
 
 def _load_from_file(path: Path) -> tuple[dict[str, Any], str]:
     try:
-        text = path.read_text(encoding="utf-8")
+        text = path.read_text(encoding="utf-8-sig")
     except OSError as exc:
         raise InvalidSnapshotError(f"could not read {path}: {exc}") from exc
     try:
@@ -89,17 +90,14 @@ def _pick_snapshot(
     to mtime when filenames don't carry one.
     With `at`: use the snapshot closest to (and not after) the target.
     """
-    annotated: list[tuple[Path, datetime | None]] = [
-        (p, _extract_timestamp(p)) for p in candidates
+    # Every candidate lands on one scale: filename timestamp when the
+    # name carries one, else file mtime (deterministic across runs on
+    # the same machine, even if not portable). A fresh file without a
+    # timestamped name therefore beats a stale timestamped one.
+    has_timestamp: list[tuple[Path, datetime]] = [
+        (p, _extract_timestamp(p) or datetime.fromtimestamp(p.stat().st_mtime))
+        for p in candidates
     ]
-    has_timestamp = [(p, ts) for p, ts in annotated if ts is not None]
-    if not has_timestamp:
-        # Fall back to filesystem mtime — deterministic across runs on the
-        # same machine, even if not portable.
-        annotated_mtime = [
-            (p, datetime.fromtimestamp(p.stat().st_mtime)) for p in candidates
-        ]
-        has_timestamp = annotated_mtime
 
     if at is None:
         return max(has_timestamp, key=lambda pair: pair[1])[0]
@@ -136,16 +134,9 @@ def _extract_timestamp(path: Path) -> datetime | None:
 
 
 def _parse_iso_timestamp(value: str) -> datetime | None:
-    candidate = value.strip().rstrip("Z").replace("/", "-")
-    formats = [
-        "%Y-%m-%d %H:%M:%S",
-        "%Y-%m-%dT%H:%M:%S",
-        "%Y-%m-%dT%H:%M",
-        "%Y-%m-%d",
-    ]
-    for fmt in formats:
-        try:
-            return datetime.strptime(candidate, fmt)
-        except ValueError:
-            continue
-    return None
+    # Filename-derived timestamps are naive, so --at comparisons happen
+    # on naive UTC values; slashes tolerate 2026/04/25-style input.
+    parsed = parse_timestamp(value.replace("/", "-"))
+    if parsed is None:
+        return None
+    return parsed.replace(tzinfo=None)

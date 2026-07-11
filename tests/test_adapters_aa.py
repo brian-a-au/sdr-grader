@@ -72,9 +72,12 @@ def test_aa_adapter_calc_metric_references(messy_aa):
 def test_aa_adapter_segment_nesting_depth_and_contexts(messy_aa):
     impl = adapt(messy_aa)
     nested = next(s for s in impl.segments if s.id == "s_returning")
-    # Definition has visitors > visits + hits — 3 distinct contexts at nesting depth >= 4.
+    # Definition has a "visitors" container wrapping an `and` predicate whose
+    # two args are sibling "visits" and "hits" containers (not stacked inside
+    # each other) — 3 distinct contexts, but only 2 levels of container
+    # nesting: visitors -> {visits, hits}.
     assert set(nested.container_types) == {"visitors", "visits", "hits"}
-    assert nested.nesting_depth >= 4
+    assert nested.nesting_depth >= 2
 
 
 def test_aa_adapter_dash_descriptions_normalize_to_none():
@@ -102,3 +105,82 @@ def test_aa_clean_grades_better_than_aa_messy(messy_aa, clean_aa):
     messy_pct = grade(adapt(messy_aa), rubric).overall_pct
     clean_pct = grade(adapt(clean_aa), rubric).overall_pct
     assert clean_pct > messy_pct
+
+
+def test_missing_dimensions_key_raises():
+    snap = {"report_suite": {"rsid": "rs1"}, "metrics": []}
+    with pytest.raises(InvalidSnapshotError, match="dimensions"):
+        adapt(snap)
+
+
+def test_stringified_tags_parse_as_list():
+    from sdr_grader.adapters.aa import _component_from_record
+
+    comp = _component_from_record(
+        {"id": "evar1", "tags": '["marketing", "web"]'}, "dimension", {}
+    )
+    assert comp.tags == ["marketing", "web"]
+
+
+def test_non_iterable_tags_become_empty():
+    from sdr_grader.adapters.aa import _component_from_record
+
+    comp = _component_from_record({"id": "evar1", "tags": 7}, "dimension", {})
+    assert comp.tags == []
+
+
+def test_non_numeric_complexity_defaults_to_zero():
+    from sdr_grader.adapters.aa import _calc_from_record
+
+    calc = _calc_from_record({"id": "cm1", "complexity_score": "N/A"})
+    assert calc.complexity_score == 0.0
+
+
+def test_single_container_segment_depth_is_one():
+    from sdr_grader.adapters.aa import _walk_segment_definition
+
+    definition = {
+        "func": "segment",
+        "version": [1, 0, 0],
+        "container": {
+            "func": "container",
+            "context": "visits",
+            "pred": {"func": "streq", "str": "Home",
+                     "val": {"func": "attr", "name": "variables/page"}},
+        },
+    }
+    depth, contexts = _walk_segment_definition(definition)
+    assert depth == 1
+    assert contexts == ["visits"]
+
+
+def test_nested_containers_count_only_containers():
+    from sdr_grader.adapters.aa import _walk_segment_definition
+
+    inner = {"func": "container", "context": "hits",
+             "pred": {"func": "exists", "val": {"func": "attr", "name": "variables/evar1"}}}
+    outer = {"func": "container", "context": "visits",
+             "pred": {"func": "without", "arg": inner}}
+    depth, contexts = _walk_segment_definition({"func": "segment", "container": outer})
+    assert depth == 2
+    assert contexts == ["visits", "hits"]
+
+
+@pytest.mark.parametrize("key", ["calculated_metrics", "segments"])
+@pytest.mark.parametrize("bad_value", [7, "not-a-list", {"id": "x"}, True])
+def test_non_list_optional_sections_raise(key, bad_value):
+    """A present-but-non-list calculated_metrics/segments value is a malformed
+    export, not an empty one — reject it instead of crashing (fuzz regression:
+    replace_truthy_int on the top-level key hit a bare TypeError)."""
+    snap = {"report_suite": {"rsid": "rs1"}, "dimensions": [], "metrics": [], key: bad_value}
+    with pytest.raises(InvalidSnapshotError, match=key):
+        adapt(snap)
+
+
+@pytest.mark.parametrize("key", ["calculated_metrics", "segments"])
+def test_null_or_missing_optional_sections_stay_empty(key):
+    missing = {"report_suite": {"rsid": "rs1"}, "dimensions": [], "metrics": []}
+    null = {**missing, key: None}
+    for snap in (missing, null):
+        impl = adapt(snap)
+        assert getattr(impl, key) == []

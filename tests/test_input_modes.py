@@ -67,6 +67,20 @@ def test_load_snapshot_empty_directory_raises(tmp_path):
         load_snapshot(str(tmp_path))
 
 
+def test_directory_pick_prefers_fresh_untimestamped_file(tmp_path):
+    import os
+
+    stale = tmp_path / "snapshot_2020-01-01.json"
+    stale.write_text('{"which": "stale"}', encoding="utf-8")
+    fresh = tmp_path / "latest.json"
+    fresh.write_text('{"which": "fresh"}', encoding="utf-8")
+    old = 946684800  # 2000-01-01, keeps the mtime comparison unambiguous
+    os.utime(stale, (old, old))
+
+    snapshot, _source = load_snapshot(str(tmp_path))
+    assert snapshot == {"which": "fresh"}
+
+
 # ---------------------------------------------------------------------------
 # Mode 4: stdin
 # ---------------------------------------------------------------------------
@@ -250,3 +264,59 @@ def test_cli_rsid_uses_aa_adapter(tmp_path, capsys):
             ]
         )
     assert rc == SUCCESS
+
+
+def test_shell_out_passes_timeout_and_encoding_and_surfaces_warnings(monkeypatch, capsys):
+    import subprocess as sp
+
+    from sdr_grader.input import shell_out
+
+    seen_kwargs = {}
+
+    def fake_run(cmd, **kwargs):
+        seen_kwargs.update(kwargs)
+        return sp.CompletedProcess(cmd, 0, stdout='{"ok": true}', stderr="token expires soon\n")
+
+    monkeypatch.setattr(shell_out.shutil, "which", lambda tool: f"/fake/{tool}")
+    monkeypatch.setattr(shell_out.subprocess, "run", fake_run)
+
+    snapshot, source = shell_out.shell_cja("dv_123")
+    assert snapshot == {"ok": True}
+    assert seen_kwargs["timeout"] == shell_out.SHELL_OUT_TIMEOUT_SECONDS
+    assert seen_kwargs["encoding"] == "utf-8"
+    assert "token expires soon" in capsys.readouterr().err
+
+
+def test_shell_out_timeout_raises_invalid_snapshot(monkeypatch):
+    import subprocess as sp
+
+    from sdr_grader.input import shell_out
+
+    def fake_run(cmd, **kwargs):
+        raise sp.TimeoutExpired(cmd, kwargs.get("timeout", 0))
+
+    monkeypatch.setattr(shell_out.shutil, "which", lambda tool: f"/fake/{tool}")
+    monkeypatch.setattr(shell_out.subprocess, "run", fake_run)
+
+    with pytest.raises(InvalidSnapshotError, match="did not finish"):
+        shell_out.shell_cja("dv_123")
+
+
+def test_shell_out_undecodable_bytes_raises_invalid_snapshot(monkeypatch):
+    from sdr_grader.input import shell_out
+
+    def fake_run(cmd, **kwargs):
+        raise UnicodeDecodeError("utf-8", b"\x80", 0, 1, "invalid start byte")
+
+    monkeypatch.setattr(shell_out.shutil, "which", lambda tool: f"/fake/{tool}")
+    monkeypatch.setattr(shell_out.subprocess, "run", fake_run)
+
+    with pytest.raises(InvalidSnapshotError, match="could not be decoded as UTF-8"):
+        shell_out.shell_cja("dv_123")
+
+
+def test_load_file_with_utf8_bom(tmp_path):
+    p = tmp_path / "snap.json"
+    p.write_bytes(b'\xef\xbb\xbf{"a": 1}')
+    snapshot, _source = load_snapshot(str(p))
+    assert snapshot == {"a": 1}

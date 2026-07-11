@@ -315,3 +315,37 @@ def test_malformed_tag_string_falls_back_to_empty() -> None:
     impl = adapt(_minimal_snapshot(dim_tags="not-json-{["))
     dim = impl.dimensions[0]
     assert dim.tags == []
+
+
+def test_stringified_reference_lists_parse():
+    from sdr_grader.adapters.cja import _calc_metric_from_record
+
+    calc = _calc_metric_from_record(
+        {"metric_id": "cm1", "metric_references": '["metrics/a"]'}
+    )
+    assert calc.references == ["metrics/a"]
+
+
+def test_wrong_typed_references_and_numerics_degrade():
+    from sdr_grader.adapters.cja import _calc_metric_from_record, _segment_from_record
+
+    calc = _calc_metric_from_record(
+        {"metric_id": "cm1", "metric_references": 7, "complexity_score": "N/A"}
+    )
+    assert calc.references == []
+    assert calc.complexity_score == 0.0
+
+    seg = _segment_from_record({"segment_id": "s1", "nesting_depth": "deep"})
+    assert seg.nesting_depth == 0
+
+
+def test_numeric_inline_echo_of_derived_field_is_deduped():
+    snap = {
+        "metadata": {"Data View ID": "dv1"},
+        "metrics": [],
+        "dimensions": [{"id": 123, "name": "My DF"}],
+        "derived_fields": {"fields": [{"component_id": 123, "component_name": "My DF"}]},
+    }
+    impl = adapt(snap)
+    assert [d.id for d in impl.dimensions] == []
+    assert [df.id for df in impl.derived_fields] == ["123"]

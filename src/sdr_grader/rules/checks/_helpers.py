@@ -99,3 +99,67 @@ def parse_platform_setting(value: Any) -> dict[str, Any] | None:
             return None
         return parsed if isinstance(parsed, dict) else None
     return None
+
+
+def cycle_groups(graph: dict[str, list[str]]) -> list[list[str]]:
+    """Strongly connected components of size >= 2, plus self-loops.
+
+    Iterative Tarjan over sorted nodes and sorted, deduplicated
+    neighbors, so the result is byte-stable no matter how the caller
+    assembled the graph (sets, dicts, any insertion order). Each group
+    is sorted; groups sort by first member. Edges pointing outside the
+    graph's key set are ignored. Iterative so reference chains deeper
+    than the recursion limit cannot crash a grading run.
+    """
+    nodes = sorted(graph)
+    edges = {node: sorted(set(graph.get(node, []))) for node in nodes}
+
+    index_of: dict[str, int] = {}
+    lowlink: dict[str, int] = {}
+    on_stack: set[str] = set()
+    stack: list[str] = []
+    groups: list[list[str]] = []
+    counter = 0
+
+    for root in nodes:
+        if root in index_of:
+            continue
+        work: list[tuple[str, int]] = [(root, 0)]
+        while work:
+            node, edge_idx = work.pop()
+            if edge_idx == 0:
+                index_of[node] = counter
+                lowlink[node] = counter
+                counter += 1
+                stack.append(node)
+                on_stack.add(node)
+            descended = False
+            neighbors = edges[node]
+            for i in range(edge_idx, len(neighbors)):
+                nxt = neighbors[i]
+                if nxt not in edges:
+                    continue
+                if nxt not in index_of:
+                    work.append((node, i + 1))
+                    work.append((nxt, 0))
+                    descended = True
+                    break
+                if nxt in on_stack:
+                    lowlink[node] = min(lowlink[node], index_of[nxt])
+            if descended:
+                continue
+            if work:
+                parent = work[-1][0]
+                lowlink[parent] = min(lowlink[parent], lowlink[node])
+            if lowlink[node] == index_of[node]:
+                group: list[str] = []
+                while True:
+                    member = stack.pop()
+                    on_stack.discard(member)
+                    group.append(member)
+                    if member == node:
+                        break
+                if len(group) > 1 or node in edges[node]:
+                    groups.append(sorted(group))
+    groups.sort()
+    return groups

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SDR-2026-0101-MESSY-PROD — Messy Production</title>
+<title>SDR-2026-0425-MESSY-PROD — Messy Production</title>
 <style>/* ---------- Reset & base ---------- */
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
@@ -365,18 +365,18 @@ pre.code {
 <main class="page">
 
   
-  <div class="eyebrow">SDR-2026-0101-MESSY-PROD</div>
+  <div class="eyebrow">SDR-2026-0425-MESSY-PROD</div>
   <h1>Messy Production</h1>
 
   
   <div class="meta-strip">
     <div class="item grade-cell">
       <span class="label">Grade</span>
-      <span class="value">D+</span>
+      <span class="value">C−</span>
     </div>
     <div class="item">
       <span class="label">Overall</span>
-      <span class="value">67%</span>
+      <span class="value">70%</span>
     </div>
     <div class="item">
       <span class="label">Components</span>
@@ -392,7 +392,7 @@ pre.code {
     </div>
     <div class="item">
       <span class="label">Generated</span>
-      <span class="value">Jan 01 2026 · 00:00 UTC</span>
+      <span class="value">Apr 25 2026 · 09:14 UTC</span>
     </div>
   </div>
 
@@ -410,7 +410,7 @@ pre.code {
   
   <section id="tldr">
     <div class="tldr">Summary</div>
-    <p class="tldr-body">This implementation graded <strong>D+</strong> (67%). The grader evaluated 75 components in this report suite using the <span class="mono">strict@1.0</span> rubric pack. The largest gap is in <strong>governance posture</strong> (42%); 3 of 6 rules in that category fired.</p>
+    <p class="tldr-body">This implementation graded <strong>C−</strong> (70%). The grader evaluated 75 components in this report suite using the <span class="mono">strict@1.0</span> rubric pack. The largest gap is in <strong>governance posture</strong> (42%); 3 of 6 rules in that category fired.</p>
   </section>
 
   
@@ -445,11 +445,11 @@ pre.code {
       <div class="cat">
         <div class="name">segment complexity</div>
         <div class="score">
-          <span class="pct">60%</span>
-          <span class="sub">D−</span>
+          <span class="pct">80%</span>
+          <span class="sub">B−</span>
         </div>
-        <div class="bar warn">
-          <span style="width:60%"></span>
+        <div class="bar">
+          <span style="width:80%"></span>
         </div>
       </div>
       
@@ -721,41 +721,13 @@ cm_revenue_per_visit -&gt; metrics/visits
         
           
             <div class="finding-section-label">Affected components (1)</div>
-<pre class="components-list">s_returning  containers: visitors, visits, hits  depth: 6
+<pre class="components-list">s_returning  containers: visitors, visits, hits  depth: 2
 </pre>
           
         
           
             <div class="finding-section-label">How to remediate</div>
             <p>Decompose the segment into composed sub-segments, one per container level, and combine them at the surface segment.</p>
-          
-        
-      </div>
-      
-    </article>
-    
-    <article class="finding" id="finding-seg-007">
-      <div class="finding-head">
-        <span class="finding-id">SEG-007</span>
-        <span class="sev med">Medium</span>
-        <span class="finding-cat">segment complexity</span>
-      </div>
-      <h3 class="finding-title">1 segment exceed nesting threshold</h3>
-      <div class="finding-body">
-        
-          
-            <p>1 segment exceeds the nesting depth threshold of 5. Deep nesting makes intent illegible — small definitional changes have unpredictable population effects.</p>
-          
-        
-          
-            <div class="finding-section-label">Affected components (1)</div>
-<pre class="components-list">s_returning  depth: 6  containers: visitors, visits, hits
-</pre>
-          
-        
-          
-            <div class="finding-section-label">How to remediate</div>
-            <p>Decompose the segment into composed sub-segments named for what each layer captures.</p>
           
         
       </div>
@@ -796,7 +768,7 @@ cm_revenue_per_visit -&gt; metrics/visits
 
     <div class="finding-body" style="max-width: 720px;">
       
-        <p>This grade was produced by <span class="mono">sdr-grader</span> using the <span class="mono">strict@1.0</span> rubric pack. The rubric encodes 30 rules across 6 active categories; 9 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.</p>
+        <p>This grade was produced by <span class="mono">sdr-grader</span> using the <span class="mono">strict@1.0</span> rubric pack. The rubric encodes 30 rules across 6 active categories; 8 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.</p>
       
         <p>The grader is rule-based and deterministic — the same input always produces the same grade. Findings are auditable: every rule's source YAML is linked from its finding, and rules can be suppressed or reweighted via a project-level <span class="mono">.sdr-grader.yaml</span>.</p>
       
@@ -808,7 +780,7 @@ cm_revenue_per_visit -&gt; metrics/visits
   
   <div class="provenance">
     Generated by <a href="https://github.com/brian-a-au/sdr-grader">sdr-grader v1.0.0</a>
-    against snapshot <span class="mono">2026-01-01T00:00:00Z</span>.
+    against snapshot <span class="mono">2026-04-25T09:14:00Z</span>.
     Rubric: <span class="mono">strict@1.0</span>.
     Adapter: <span class="mono">aa_auto_sdr@1.0.0</span>.
     75 components evaluated; 0 components skipped

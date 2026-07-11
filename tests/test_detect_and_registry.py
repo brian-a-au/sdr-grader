@@ -24,12 +24,15 @@ def test_detect_rejects_non_dict_input():
         detect_platform(["not", "a", "dict"])
 
 
-def test_detect_falls_back_to_data_view_key_for_cja():
-    """Some adapters emit `data_view` at top level instead of nesting under
-    `metadata` — detect_platform still resolves these as CJA."""
-    assert detect_platform({"data_view": {"id": "dv_x"}}) == "cja"
-    # camelCase variant accepted too.
-    assert detect_platform({"dataView": {"id": "dv_x"}}) == "cja"
+def test_detect_bare_data_view_key_raises_unparseable_shape():
+    """A top-level `data_view` key alone is not enough: the CJA adapter
+    requires `metadata`, so this shape can never be parsed. detect_platform
+    must raise rather than silently claim "cja" (dropped dead fallback)."""
+    with pytest.raises(UnknownPlatformError, match="could not auto-detect"):
+        detect_platform({"data_view": {"id": "dv_x"}})
+    # camelCase variant is equally unparseable.
+    with pytest.raises(UnknownPlatformError, match="could not auto-detect"):
+        detect_platform({"dataView": {"id": "dv_x"}})
 
 
 def test_detect_raises_when_no_platform_marker_found():
@@ -37,6 +40,18 @@ def test_detect_raises_when_no_platform_marker_found():
     caller can ask the user to pass --platform explicitly."""
     with pytest.raises(UnknownPlatformError, match="could not auto-detect"):
         detect_platform({"unrelated": "shape"})
+
+
+def test_detect_ambiguous_snapshot_raises():
+    snap = {"metadata": {"Data View ID": "dv1"}, "report_suite": {"rsid": "rs1"}}
+    with pytest.raises(UnknownPlatformError, match="both"):
+        detect_platform(snap)
+
+
+def test_detect_bare_data_view_key_is_not_enough():
+    # The old fallback said "cja" for a shape the CJA adapter can't parse.
+    with pytest.raises(UnknownPlatformError):
+        detect_platform({"data_view": {}})
 
 
 # ---------------------------------------------------------------------------
