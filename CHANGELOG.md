@@ -3,6 +3,83 @@
 All notable changes follow the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
+## 1.1.0 — 2026-07-11
+
+This release adds six rules, removes two rules that a corpus audit showed
+could not tell a good implementation from a bad one, and fixes a wide set
+of bugs in the adapters, the input pipeline, and the renderer. The default
+packs now hold 30 rules across the same 6 categories. Grades can shift
+from 1.0.0 because the default packs changed.
+
+### Added
+
+- **Six new rules** in both default packs:
+  - `SCH-007` and `ATTR-004` grade CJA Data View settings.
+  - `SCH-008` finds cycles between CJA derived fields.
+  - `SCH-009` finds CJA derived fields that reference components that do
+    not exist.
+  - `GOV-007` and `GOV-008` flag calculated metrics and segments that are
+    shared but never approved.
+- **Default output filenames keyed to the report id.** When you do not
+  pass `--output`, the CLI names the file `grade-<report id>.html`. The
+  old default used a timestamp, so a batch run that graded several
+  instances within the same second wrote them all to one file. (#2)
+- **Capped component lists in the report.** A finding now shows at most
+  50 affected components plus a line with the count of the hidden ones.
+  The `--json` output keeps the full list. (#5)
+- **Full inventory in shell-out mode.** Runs started with `--dataview` or
+  `--rsid` now pass `--include-all-inventory` to the snapshot tool.
+
+### Changed
+
+- **`ATTR-001` and `ATTR-002` are out of the default packs.** A corpus
+  audit (`docs/RUBRIC_AUDIT.md`) showed that `ATTR-001` fired on 100% of
+  the metrics it watched, and that every fixture scored the same on
+  `ATTR-002`, so its threshold could not separate anything. Both check
+  functions stay registered for custom packs.
+- **`NAME-001` and `NAME-003` grade again.** The CJA adapter now parses
+  tags that arrive as JSON-encoded strings, which is what real snapshots
+  contain. Before this fix the two rules matched nothing.
+- **Faster rendering of large reports.** The renderer caches compiled
+  templates and CSS, and the report skips layout work for findings that
+  are off-screen.
+- **Docs reorganized.** Reference material moved out of the README into
+  `docs/`, including a customization hub, platform coverage, supplementary
+  inputs, leaderboards, and the rubric audit.
+
+### Fixed
+
+- **HTML escaping.** The report and trend templates rendered values
+  without escaping, and the comparison chart did not escape category
+  labels in its SVG. Both are fixed, so snapshot content can no longer
+  inject markup into a report.
+- **Input handling.** Snapshot files with a UTF-8 BOM load. Timestamps
+  with UTC offsets or fractional seconds parse. A snapshot whose platform
+  cannot be determined raises a clear error instead of being guessed.
+  Directory mode ranks all snapshots on one timestamp scale.
+- **Shell-out mode.** The subprocess call has a timeout, decodes output
+  as UTF-8, surfaces warnings from the snapshot tool, and reports decode
+  failures as the standard invalid-snapshot error.
+- **Rule engine.** Pattern and target params are validated when the
+  rubric loads instead of failing mid-run. Cycle detection for `SCH-008`
+  and `SEG-004` is iterative and deterministic. Expiration blocks with
+  NaN or Infinity `numPeriods` no longer crash.
+- **AA adapter.** It rejects exports whose dimension, metric, calculated
+  metric, or segment sections are missing or not lists. It guards against
+  wrongly typed tags, reference lists, and numbers. It counts nesting
+  depth the same way the CJA adapter does. It renders nested formula text
+  readably and skips blank classification tags.
+- **CJA adapter.** Derived-field deduplication normalizes IDs before
+  comparing them.
+- **CLI.** `--fail-below` works in trend mode, and trend mode rejects
+  flags it does not support.
+
+### Discipline
+
+- 402 tests pass and ruff is clean.
+- Determinism holds. The same snapshot and rubric still produce
+  byte-identical HTML and JSON.
+
 ## 1.0.0 — 2026-05-20
 
 First public release. The grader covers the full surface the design SPEC
