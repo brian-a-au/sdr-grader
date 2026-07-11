@@ -68,6 +68,12 @@ bodies:
   (used for ID lists).
 - `code` with `text` — preformatted block.
 
+Emit the **full** list of affected components in `items` — don't self-cap.
+The HTML presentation is bounded at the render boundary
+(`render.cap_component_items`, 50 items plus a deterministic
+"… and N more" trailer), while the `--json` artifact always carries the
+complete list.
+
 Conventional finding shape:
 
 ```python

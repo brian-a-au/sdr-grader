@@ -25,7 +25,7 @@ from sdr_grader.core.exceptions import (
 from sdr_grader.core.grader import grade
 from sdr_grader.input.loader import STDIN_TOKEN, load_snapshot
 from sdr_grader.input.shell_out import shell_aa, shell_cja
-from sdr_grader.render import render
+from sdr_grader.render import cap_component_items, render
 from sdr_grader.rules.rubric import load_rubric
 from sdr_grader.rules.suppression import (
     DEFAULT_SUPPRESSION_FILENAME,
@@ -105,7 +105,9 @@ def main(argv: list[str] | None = None) -> int:
     report = _maybe_attach_distribution(report, args)
     if report is None:
         return RUNTIME_ERROR
-    html = render(report)
+    # HTML gets the display-capped copy; --json below serializes the full
+    # report so no component list is ever lost to the cap (issue #5).
+    html = render(cap_component_items(report))
     output_path = Path(args.output) if args.output else _default_output_path(report)
     try:
         output_path.parent.mkdir(parents=True, exist_ok=True)

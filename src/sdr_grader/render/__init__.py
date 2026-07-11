@@ -21,8 +21,13 @@ from sdr_grader.render.renderer import (
     SkippedRules,
     render,
 )
+from sdr_grader.render.truncation import (
+    MAX_COMPONENT_ITEMS,
+    cap_component_items,
+)
 
 __all__ = [
+    "MAX_COMPONENT_ITEMS",
     "Adapter",
     "Category",
     "Distribution",
@@ -36,5 +41,6 @@ __all__ = [
     "Rubric",
     "Severity",
     "SkippedRules",
+    "cap_component_items",
     "render",
 ]
