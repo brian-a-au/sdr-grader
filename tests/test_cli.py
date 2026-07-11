@@ -249,3 +249,54 @@ def test_trend_rejects_flags_it_cannot_honor(tmp_path, capsys):
     rc = main([str(d), "--trend", "--json", str(tmp_path / "out.json")])
     assert rc == RUNTIME_ERROR
     assert "--json" in capsys.readouterr().err
+
+
+def test_cli_html_caps_component_lists_but_json_keeps_full_list(tmp_path):
+    """Issue #5: a rule matching many components must not put an unbounded
+    list into the HTML; the --json artifact keeps the full list."""
+    dimensions = []
+    for i in range(60):  # 60 duplicate-name pairs -> SCH-001 fires with 60 items
+        for side in ("a", "b"):
+            dimensions.append(
+                {
+                    "id": f"dim_{side}_{i:03d}",
+                    "name": f"Duplicate Name {i:03d}",
+                    "description": "documented",
+                }
+            )
+    snapshot = {
+        "metadata": {"Data View ID": "dv_cap_test", "Data View Name": "Cap Test"},
+        "metrics": [],
+        "dimensions": dimensions,
+    }
+    snapshot_path = tmp_path / "cap_test.json"
+    snapshot_path.write_text(json.dumps(snapshot), encoding="utf-8")
+
+    output = tmp_path / "report.html"
+    json_path = tmp_path / "report.json"
+    rc = main(
+        [
+            str(snapshot_path),
+            "--platform",
+            "cja",
+            "--output",
+            str(output),
+            "--json",
+            str(json_path),
+            "--quiet",
+        ]
+    )
+    assert rc == SUCCESS
+
+    html = output.read_text(encoding="utf-8")
+    assert "Affected components (50)" in html
+    assert "… and 10 more (see JSON output)" in html
+
+    data = json.loads(json_path.read_text(encoding="utf-8"))
+    item_counts = [
+        len(block["items"])
+        for finding in data["findings"]
+        for block in finding["body"]
+        if block["kind"] == "components" and block["items"]
+    ]
+    assert max(item_counts) == 60  # JSON list is complete, not capped

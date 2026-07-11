@@ -22,7 +22,7 @@ sys.path.insert(0, str(REPO_ROOT / "src"))
 from sdr_grader.adapters.aa import adapt as adapt_aa  # noqa: E402
 from sdr_grader.adapters.cja import adapt as adapt_cja  # noqa: E402
 from sdr_grader.core.grader import grade  # noqa: E402
-from sdr_grader.render import render  # noqa: E402
+from sdr_grader.render import cap_component_items, render  # noqa: E402
 from sdr_grader.rules.rubric import load_rubric  # noqa: E402
 
 STRICT_PACK = REPO_ROOT / "src" / "sdr_grader" / "rules" / "packs" / "strict"
@@ -37,7 +37,7 @@ def render_fixture(platform: str, snapshot_path: Path, output_path: Path) -> Non
     impl = ADAPTERS[platform](snap, source=str(snapshot_path.relative_to(REPO_ROOT)))
     rubric = load_rubric(STRICT_PACK)
     report = grade(impl, rubric)
-    html = render(report)
+    html = render(cap_component_items(report))
     output_path.write_text(html, encoding="utf-8")
     print(
         f"Wrote {output_path.relative_to(REPO_ROOT)}: "
