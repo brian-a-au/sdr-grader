@@ -136,13 +136,35 @@ def _index_classifications(classifications: Any) -> dict[str, list[str]]:
         parent = entry.get("parent")
         if not parent:
             continue
-        out.setdefault(str(parent), []).append(str(entry.get("name") or entry.get("id") or ""))
+        label = entry.get("name") or entry.get("id")
+        if not label:
+            continue
+        out.setdefault(str(parent), []).append(str(label))
     return out
 
 
 # ---------------------------------------------------------------------------
 # Calculated metrics
 # ---------------------------------------------------------------------------
+
+
+def _stringify_formula(formula: dict[str, Any]) -> str:
+    func = formula.get("func")
+    if not func:
+        return ""
+    args = formula.get("args") or []
+    if not isinstance(args, list):
+        args = [args]
+    return f"{func}({', '.join(_stringify_formula_arg(a) for a in args)})"
+
+
+def _stringify_formula_arg(arg: Any) -> str:
+    if isinstance(arg, dict):
+        # Nested formula: render it the same way instead of leaking a
+        # Python dict repr into user-facing formula summaries.
+        rendered = _stringify_formula(arg)
+        return rendered or str(arg.get("func") or "?")
+    return str(arg)
 
 
 def _calc_from_record(record: Any) -> CalculatedMetric:
@@ -157,12 +179,7 @@ def _calc_from_record(record: Any) -> CalculatedMetric:
     description = _normalize_description(record.get("description"))
     definition = record.get("definition") or {}
     formula = definition.get("formula") if isinstance(definition, dict) else {}
-    formula_text = ""
-    if isinstance(formula, dict):
-        func = formula.get("func")
-        args = formula.get("args") or []
-        if isinstance(args, list):
-            formula_text = f"{func}({', '.join(str(a) for a in args)})" if func else ""
+    formula_text = _stringify_formula(formula) if isinstance(formula, dict) else ""
     references = _extract_aa_calc_refs(formula)
 
     extra = record.get("extra") if isinstance(record.get("extra"), dict) else {}

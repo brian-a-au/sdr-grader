@@ -184,3 +184,42 @@ def test_null_or_missing_optional_sections_stay_empty(key):
     for snap in (missing, null):
         impl = adapt(snap)
         assert getattr(impl, key) == []
+
+
+def test_formula_text_renders_nested_formulas_readably():
+    snapshot = {
+        "report_suite": {"rsid": "test"},
+        "dimensions": [],
+        "metrics": [],
+        "calculated_metrics": [
+            {
+                "id": "cm_nested",
+                "name": "Nested",
+                "definition": {
+                    "formula": {
+                        "func": "divide",
+                        "args": [
+                            {"func": "add", "args": ["metrics/orders", "metrics/units"]},
+                            "metrics/visits",
+                        ],
+                    }
+                },
+            }
+        ],
+    }
+    impl = adapt(snapshot)
+    cm = impl.calculated_metrics[0]
+    assert cm.formula_text == "divide(add(metrics/orders, metrics/units), metrics/visits)"
+    assert "{" not in cm.formula_text  # no Python repr leaking to users
+
+
+def test_classification_without_name_or_id_is_skipped():
+    from sdr_grader.adapters.aa import _index_classifications
+
+    idx = _index_classifications(
+        [
+            {"parent": "variables/evar1"},
+            {"parent": "variables/evar1", "name": "Campaign"},
+        ]
+    )
+    assert idx == {"variables/evar1": ["Campaign"]}
