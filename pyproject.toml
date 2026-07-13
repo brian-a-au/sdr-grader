@@ -1,11 +1,31 @@
 [project]
 name = "sdr-grader"
-version = "1.1.0"
+dynamic = ["version"]
 description = "Deterministic, rule-based linter for Adobe Customer Journey Analytics and Adobe Analytics implementations."
 readme = "README.md"
 license = { text = "MIT" }
 authors = [{ name = "Brian Au" }]
 requires-python = ">=3.11"
+keywords = [
+    "adobe-analytics",
+    "customer-journey-analytics",
+    "cja",
+    "linter",
+    "sdr",
+    "analytics-governance",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Utilities",
+]
 dependencies = [
     "jinja2>=3.1",
     "pyyaml>=6.0",
@@ -31,8 +51,25 @@ dev = [
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+# Single source of truth for the version: __init__.py. The report footer
+# reads the same __version__, so the shipped package and the graded output
+# can never disagree.
+[tool.hatch.version]
+path = "src/sdr_grader/__init__.py"
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/sdr_grader"]
+
+[tool.hatch.build.targets.sdist]
+# hatchling already honors .gitignore, but exclude local working artifacts
+# explicitly so they can never leak into the published sdist even if the
+# ignore rules regress. The sdist is uploaded to PyPI and is world-readable
+# regardless of the git repo's visibility.
+exclude = [
+    "/.superpowers",
+    "/.hypothesis",
+    "**/.DS_Store",
+]
 
 [tool.pytest.ini_options]
 minversion = "8.0"
