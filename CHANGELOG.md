@@ -3,6 +3,27 @@
 All notable changes follow the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
+## 1.1.1 — 2026-07-13
+
+A packaging-only release. No rules, checks, or grades change, so grades
+are identical to 1.1.0.
+
+### Fixed
+
+- **Local working artifacts no longer ship in the source distribution.**
+  The `.superpowers/` and `.hypothesis/` directories were bundled into the
+  sdist because `.gitignore` did not cover them, and hatchling reads
+  `.gitignore` to decide what the sdist contains. They are now ignored,
+  and `pyproject.toml` excludes them from the sdist target as a second
+  guard. The sdist is uploaded to PyPI and is world-readable regardless of
+  the git repository's visibility, so these never belonged in it. The
+  wheel was already clean and is unchanged.
+
+### Changed
+
+- **Richer PyPI metadata.** Added trove classifiers and keywords to
+  `pyproject.toml`. No runtime change.
+
 ## 1.1.0 — 2026-07-11
 
 This release adds six rules, removes two rules that a corpus audit showed

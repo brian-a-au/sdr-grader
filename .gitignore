@@ -31,6 +31,7 @@ env/
 
 # Testing
 .pytest_cache/
+.hypothesis/
 .coverage
 .coverage.*
 htmlcov/
@@ -58,8 +59,10 @@ coverage.xml
 
 # Claude Code "superpowers" plugin artifacts and plans — local tooling only,
 # never committed. Matches any `superpowers/` directory at any depth
-# (e.g. `/superpowers/`, `docs/superpowers/plans/`).
+# (e.g. `/superpowers/`, `docs/superpowers/plans/`), including the
+# dot-prefixed `.superpowers/` working directory the plugin writes to.
 **/superpowers/
+.superpowers/
 
 # Private production SDR snapshots used for rubric calibration.
 # Real customer data; never committed. See the calibration plan in
