@@ -41,9 +41,9 @@ Issues = "https://github.com/brian-a-au/sdr-grader/issues"
 
 [dependency-groups]
 dev = [
-    "pytest>=8.0",
-    "ruff>=0.4",
-    "hypothesis>=6.100",
+    "pytest>=9.1.1",
+    "ruff>=0.15.22",
+    "hypothesis>=6.156.6",
     "pytest-cov>=7.1.0",
 ]
 
