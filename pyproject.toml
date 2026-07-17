@@ -68,6 +68,7 @@ packages = ["src/sdr_grader"]
 exclude = [
     "/.superpowers",
     "/.hypothesis",
+    "/docs/assets",
     "**/.DS_Store",
 ]
 
