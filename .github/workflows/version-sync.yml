@@ -1,0 +1,15 @@
+name: Version Sync
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  version-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Check package version matches the CHANGELOG
+        run: python3 scripts/check_version_sync.py
