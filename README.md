@@ -11,8 +11,6 @@
 [![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-![sdr-grader report card: a CJA implementation graded F at 51%, with per-category scores](https://raw.githubusercontent.com/brian-a-au/sdr-grader/main/docs/assets/report-card.png)
-
 A deterministic, rule-based linter for Adobe Customer Journey Analytics
 (CJA) and Adobe Analytics (AA) implementations. It consumes JSON
 snapshots from [`cja_auto_sdr`](https://github.com/brian-a-au/cja_auto_sdr)
@@ -20,6 +18,8 @@ and [`aa_auto_sdr`](https://github.com/brian-a-au/aa_auto_sdr), evaluates
 them against a versioned, pluggable YAML rubric, and produces a single
 self-contained HTML report card plus a machine-readable JSON output. No
 LLMs, no API calls — same input + same rubric always yields the same grade.
+
+![sdr-grader report card: a CJA implementation graded F at 51%, with per-category scores](https://raw.githubusercontent.com/brian-a-au/sdr-grader/main/docs/assets/report-card.png)
 
 ## What it grades
 
