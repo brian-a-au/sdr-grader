@@ -1,10 +1,17 @@
 # sdr-grader
 
+[![PyPI](https://img.shields.io/pypi/v/sdr-grader)](https://pypi.org/project/sdr-grader/)
 [![Tests](https://github.com/brian-a-au/sdr-grader/actions/workflows/test.yml/badge.svg)](https://github.com/brian-a-au/sdr-grader/actions/workflows/test.yml)
+[![Lint](https://github.com/brian-a-au/sdr-grader/actions/workflows/lint.yml/badge.svg)](https://github.com/brian-a-au/sdr-grader/actions/workflows/lint.yml)
+[![Version Sync](https://github.com/brian-a-au/sdr-grader/actions/workflows/version-sync.yml/badge.svg)](https://github.com/brian-a-au/sdr-grader/actions/workflows/version-sync.yml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
+[![Coverage](https://img.shields.io/badge/coverage-92%25-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-402-brightgreen.svg)](tests/)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+![sdr-grader report card: a CJA implementation graded F at 51%, with per-category scores](https://raw.githubusercontent.com/brian-a-au/sdr-grader/main/docs/assets/report-card.png)
 
 A deterministic, rule-based linter for Adobe Customer Journey Analytics
 (CJA) and Adobe Analytics (AA) implementations. It consumes JSON
