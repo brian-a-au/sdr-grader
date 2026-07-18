@@ -373,3 +373,8 @@ def test_header_classes_have_top_level_css_rules():
         if not re.search(rf"^\.{re.escape(cls)}[ .{{]", css, flags=re.M)
     ]
     assert missing == []
+    # Compound rules such as .delta.trend-up also satisfy the loop's
+    # selector, so pin the bare header rule separately (issue #18).
+    assert re.search(r"^\.delta \{", css, flags=re.M), (
+        "the bare .delta rule that styles the header delta must exist"
+    )
