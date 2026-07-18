@@ -109,6 +109,28 @@ For a worked example, see `LAUNCH-001`
 documents the JSON shape it expects and is the template to follow when
 adding new supplementary-input rules.
 
+## Vendoring parity with sdr-visualizer
+
+`adapters/{cja,aa}.py` share a defensive-coercion layer with
+[`sdr-visualizer`](https://github.com/brian-a-au/sdr-visualizer) per
+SPEC §11/§15. The adapters are not byte-identical, but changes to these
+shared helpers must be mirrored to the sibling repository in the same cycle:
+
+- `_parse_tag_list` / `_parse_ref_list` parse JSON-encoded list strings,
+  tolerate native lists, and drop unparseable values to `[]`.
+- `_optional_list` (AA) treats an absent optional section as `[]` while a
+  present non-list raises `InvalidSnapshotError`; CJA gets the equivalent
+  guarantee through `_section_records`.
+- `TESTED_THROUGH_GENERATOR_VERSION`, `generator_version_warning`, and
+  `_version_tuple` implement the Q5 compatibility warning. Helper behavior is
+  identical; the constant value is deliberately platform- and release-specific.
+- `_optional_timestamp` keeps `created_at` / `modified_at` only when already a
+  non-empty string, so malformed timestamp scalars become missing values.
+- `_optional_str` (CJA) guards derived-field `data_type` with the same
+  `str(x) if x else None` coercion used by the visualizer. Grader-side `owner`
+  safety comes through `_normalize_owner`: a different mechanism with the same
+  defensive outcome, so no owner-specific `_optional_str` mirror is needed.
+
 ## Testing
 
 Mirror `tests/test_adapters_cja.py` / `tests/test_adapters_aa.py`. Cover

@@ -261,7 +261,7 @@ def test_classification_without_name_or_id_is_skipped():
 
 # ---------------------------------------------------------------------------
 # Q5 (1.0.0): generator-version compatibility warning helper. Warn-only,
-# never refuse. Mirrored to sdr-grader (SPEC §11/§15).
+# never refuse. Mirrors the sdr-visualizer originals (SPEC §11/§15).
 # ---------------------------------------------------------------------------
 
 
@@ -288,3 +288,10 @@ def test_equal_older_or_unparseable_versions_do_not_warn():
     assert generator_version_warning("unknown") is None
     assert generator_version_warning("") is None
     assert generator_version_warning("3.5.x") is None
+
+
+def test_tuple_length_mismatch_versions_compare_correctly():
+    from sdr_grader.adapters.aa import generator_version_warning
+
+    assert generator_version_warning("1.19") is not None
+    assert generator_version_warning("1.18") is None
