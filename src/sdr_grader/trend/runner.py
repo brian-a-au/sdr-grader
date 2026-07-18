@@ -8,8 +8,6 @@ HTML; the JSON serializer can write it to disk for downstream tooling.
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
-from datetime import datetime
 from pathlib import Path
 
 from sdr_grader.adapters.aa import adapt as adapt_aa
@@ -18,38 +16,9 @@ from sdr_grader.core.exceptions import InvalidSnapshotError
 from sdr_grader.core.grader import grade
 from sdr_grader.input.detect import detect_platform
 from sdr_grader.input.loader import _extract_timestamp
-from sdr_grader.render import Report
 from sdr_grader.rules.rubric import Rubric
 from sdr_grader.rules.suppression import Suppression
-
-
-@dataclass(frozen=True)
-class TrendPoint:
-    """One graded snapshot in a chronological series."""
-
-    timestamp: datetime
-    source: str           # filesystem path or label
-    report: Report        # full single-snapshot Report
-
-
-@dataclass(frozen=True)
-class TrendReport:
-    """A series of graded snapshots for a single instance."""
-
-    instance_id: str
-    instance_name: str
-    platform: str
-    pack: str
-    pack_version: str
-    points: list[TrendPoint] = field(default_factory=list)
-
-    @property
-    def first(self) -> TrendPoint:
-        return self.points[0]
-
-    @property
-    def latest(self) -> TrendPoint:
-        return self.points[-1]
+from sdr_grader.trend.models import TrendPoint, TrendReport
 
 
 def build_trend_report(

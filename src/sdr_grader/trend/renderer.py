@@ -15,7 +15,7 @@ from typing import Any
 
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
-from sdr_grader.trend.runner import TrendReport
+from sdr_grader.trend.models import TrendReport
 
 _HERE = Path(__file__).parent
 _RENDER_DIR = _HERE.parent / "render"

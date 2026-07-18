@@ -176,3 +176,26 @@ def test_cli_trend_mode_default_output_filename(tmp_path, monkeypatch):
     # Default pattern: trend-{instance_id}-{YYYYMMDD}.html
     files = sorted(tmp_path.glob("trend-*.html"))
     assert files, "expected default trend output to be created"
+
+
+def test_trend_renderer_never_imports_the_rule_engine():
+    """Spec F28: the trend renderer must work standalone (fresh process)."""
+    import subprocess
+    import sys
+
+    code = (
+        "import sys; import sdr_grader.trend.renderer; "
+        "banned = [m for m in ('sdr_grader.core.grader', "
+        "'sdr_grader.adapters.cja', 'sdr_grader.adapters.aa', "
+        "'sdr_grader.rules.rubric') if m in sys.modules]; "
+        "sys.exit(1 if banned else 0)"
+    )
+    proc = subprocess.run([sys.executable, "-c", code])
+    assert proc.returncode == 0
+
+
+def test_trend_dataclasses_reexported_from_runner():
+    from sdr_grader.trend import models, runner
+
+    assert runner.TrendPoint is models.TrendPoint
+    assert runner.TrendReport is models.TrendReport
