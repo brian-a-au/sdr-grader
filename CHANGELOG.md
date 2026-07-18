@@ -21,8 +21,16 @@ sdr-visualizer corpus-fidelity round. No rules, checks, or grades change.
 
 ## 1.1.2 — 2026-07-17
 
-Trend report bug fixes and small rendering fixes. No rules, checks, or
-grades change.
+Trend report bug fixes and small rendering fixes, plus one adapter
+feature merged earlier in this cycle. No rules, checks, or grades
+change.
+
+### Added
+
+- **Adapters.** A generator-version warning (PR #17): when a snapshot
+  was produced by a newer cja_auto_sdr generator than the newest version
+  this release was tested against, the adapter warns that newer snapshot
+  fields may not be represented. Unparseable versions never warn.
 
 ### Fixed
 
