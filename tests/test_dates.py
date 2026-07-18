@@ -35,3 +35,11 @@ def test_aware_non_utc_converts_instead_of_relabeling():
     plus2 = datetime(2026, 4, 25, 11, 14, tzinfo=timezone(timedelta(hours=2)))
     assert to_utc(plus2) == datetime(2026, 4, 25, 9, 14, tzinfo=UTC)
     assert human_datetime(plus2) == "Apr 25 2026 · 09:14 UTC"
+
+
+def test_to_utc_is_the_timeparse_function():
+    """Spec F45: keep one definition of the naive-means-UTC rule."""
+    from sdr_grader.core import timeparse
+    from sdr_grader.render import dates
+
+    assert dates.to_utc is timeparse.to_utc

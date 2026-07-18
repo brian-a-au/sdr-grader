@@ -15,6 +15,13 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 
+def to_utc(value: datetime) -> datetime:
+    """Return an aware UTC datetime; naive input is treated as UTC."""
+    if value.tzinfo is None:
+        return value.replace(tzinfo=UTC)
+    return value.astimezone(UTC)
+
+
 def parse_timestamp(value: str) -> datetime | None:
     """Parse a timestamp string to a UTC-aware datetime, or None."""
     if not isinstance(value, str):
@@ -26,6 +33,4 @@ def parse_timestamp(value: str) -> datetime | None:
         parsed = datetime.fromisoformat(candidate)
     except ValueError:
         return None
-    if parsed.tzinfo is None:
-        return parsed.replace(tzinfo=UTC)
-    return parsed.astimezone(UTC)
+    return to_utc(parsed)
