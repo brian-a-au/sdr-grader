@@ -262,3 +262,25 @@ def test_every_template_class_has_a_css_rule():
     css = trend_renderer._css()
     missing = sorted(c for c in classes if f".{c}" not in css)
     assert missing == []
+
+
+def test_header_classes_have_top_level_css_rules():
+    """Spec F27 regression net: the header classes must be styled outside
+    any scoped selector — a scoped rule like `.trend-card .delta` must not
+    satisfy the bare `.delta` the header uses."""
+    import re
+
+    from sdr_grader.trend import renderer as trend_renderer
+
+    header_classes = [
+        "report", "report-header", "header-row", "kicker",
+        "instance-name", "instance-meta", "grade-block",
+        "grade-letter", "grade-pct", "grade-meta", "delta",
+    ]
+    css = trend_renderer._css()
+    missing = [
+        cls
+        for cls in header_classes
+        if not re.search(rf"^\.{re.escape(cls)}[ .{{]", css, flags=re.M)
+    ]
+    assert missing == []
