@@ -240,3 +240,25 @@ def test_trend_table_rows_align_with_header_union(tmp_path):
     for row in rows:
         assert row.count("<td") == header_cells
     assert '<td class="num"></td>' in tbody  # the dropped category's empty cell
+
+
+def test_every_template_class_has_a_css_rule():
+    """Spec F27: the page must not reference classes no stylesheet defines."""
+    import re
+
+    from sdr_grader.trend import renderer as trend_renderer
+
+    template_text = (
+        Path(trend_renderer.__file__).parent / "templates" / "trend.html.j2"
+    ).read_text(encoding="utf-8")
+    classes: set[str] = set()
+    for match in re.finditer(r'class="([^"]+)"', template_text):
+        for token in match.group(1).split():
+            if re.fullmatch(r"[a-z][a-z0-9-]*", token):
+                classes.add(token)
+    # Dynamic classes injected via {{ trend.delta_class }} / {{ cat.delta_class }}:
+    classes.update({"trend-up", "trend-down", "trend-flat"})
+
+    css = trend_renderer._css()
+    missing = sorted(c for c in classes if f".{c}" not in css)
+    assert missing == []
