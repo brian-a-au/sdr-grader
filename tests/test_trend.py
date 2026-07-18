@@ -217,6 +217,34 @@ def test_render_trend_empty_report_raises_clear_error():
         render_trend(empty)
 
 
+def test_colliding_category_slugs_resolve_first_wins_everywhere(tmp_path):
+    """Spec F39: duplicate slugs agree in the header and table rows."""
+    from sdr_grader.trend.renderer import _build_view
+
+    _build_series(tmp_path)
+    trend = build_trend_report(tmp_path, load_rubric(STRICT_PACK))
+    last = trend.points[-1]
+    first_cat = last.report.categories[0]
+    clash_pct = 1 if first_cat.pct != 1 else 2
+    clash = dataclasses.replace(
+        first_cat,
+        name=first_cat.name.upper(),
+        pct=clash_pct,
+    )
+    extended = dataclasses.replace(
+        last.report,
+        categories=[*last.report.categories, clash],
+    )
+    points = [*trend.points[:-1], dataclasses.replace(last, report=extended)]
+    view = _build_view(dataclasses.replace(trend, points=points))
+
+    header_pct = view["category_traces"][0]["latest_pct"]
+    row_pct = view["rows"][-1]["categories"][0]["pct"]
+    assert header_pct == first_cat.pct
+    assert row_pct == first_cat.pct
+    assert row_pct != clash_pct
+
+
 def test_trend_table_rows_align_with_header_union(tmp_path):
     """Spec F26: every body row renders one cell per header column."""
     import re

@@ -61,3 +61,17 @@ def test_valid_params_still_load(tmp_path):
     pack = _write_pack(tmp_path, 'pattern: "^[a-z]+$"')
     rubric = load_rubric(pack)
     assert [r.id for r in rubric.rules] == ["NAME-T01"]
+
+
+def test_colliding_category_weight_keys_fail_at_load(tmp_path):
+    """Spec F39: keys that normalize to one rendered slug are rejected."""
+    meta = META.replace(
+        "category_weights:\n  naming_conventions: 1.0",
+        "category_weights:\n  naming_conventions: 0.5\n  Naming Conventions: 0.5",
+    )
+    (tmp_path / "_meta.yaml").write_text(meta, encoding="utf-8")
+    with pytest.raises(
+        RubricValidationError,
+        match=r"naming_conventions.*Naming Conventions",
+    ):
+        load_rubric(tmp_path)

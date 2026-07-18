@@ -118,6 +118,15 @@ def _validate_category_weights(value: Any) -> dict[str, float]:
             raise RubricValidationError(
                 f"category_weights[{k!r}] is not numeric ({v!r})"
             ) from exc
+    seen_slugs: dict[str, str] = {}
+    for key in weights:
+        slug = key.lower().replace(" ", "_")
+        if slug in seen_slugs:
+            raise RubricValidationError(
+                f"category_weights keys {seen_slugs[slug]!r} and {key!r} collapse to "
+                f"the same category slug {slug!r}"
+            )
+        seen_slugs[slug] = key
     total = sum(weights.values())
     if abs(total - 1.0) > WEIGHT_TOLERANCE:
         raise RubricValidationError(
