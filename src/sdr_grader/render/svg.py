@@ -54,8 +54,10 @@ def category_comparison_chart(rows: list[tuple[str, int, int]]) -> str:
     body = []
     for i, (label, you, med) in enumerate(rows):
         y = (i + 1) * line_height - 7
-        you_x = bar_start + (you / 100) * bar_width
-        med_x = bar_start + (med / 100) * bar_width
+        you_pct = max(0, min(100, you))
+        med_pct = max(0, min(100, med))
+        you_x = bar_start + (you_pct / 100) * bar_width
+        med_x = bar_start + (med_pct / 100) * bar_width
         bar_color = "#1a1a1a"
         if you < 60:
             bar_color = "#8b2a1f"
