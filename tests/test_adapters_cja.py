@@ -380,3 +380,29 @@ def test_equal_older_or_unparseable_versions_do_not_warn():
     assert generator_version_warning("unknown") is None
     assert generator_version_warning("") is None
     assert generator_version_warning("3.5.x") is None
+
+
+# ---------------------------------------------------------------------------
+# Real cja_auto_sdr snapshots carry the generation timestamp only under
+# "Generated Date & timestamp and timezone" (corpus, 2026-07-17). Mirrored
+# to sdr-grader (SPEC §11/§15).
+# ---------------------------------------------------------------------------
+
+
+def test_real_generator_timestamp_key_is_read():
+    snap = json.loads((FIXTURES / "cja_snapshot_clean.json").read_text(encoding="utf-8"))
+    md = snap["metadata"]
+    for key in ("Generation Timestamp", "generation_timestamp", "generated_at"):
+        md.pop(key, None)
+    md["Generated Date & timestamp and timezone"] = "2026-05-20 10:56:29 PDT"
+    impl = adapt(snap)
+    assert impl.snapshot_taken_at == "2026-05-20 10:56:29 PDT"
+
+
+def test_synthetic_timestamp_keys_keep_precedence():
+    snap = json.loads((FIXTURES / "cja_snapshot_clean.json").read_text(encoding="utf-8"))
+    md = snap["metadata"]
+    md["Generation Timestamp"] = "2026-01-01 00:00:00"
+    md["Generated Date & timestamp and timezone"] = "2026-05-20 10:56:29 PDT"
+    impl = adapt(snap)
+    assert impl.snapshot_taken_at == "2026-01-01 00:00:00"
