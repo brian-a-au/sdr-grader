@@ -96,3 +96,24 @@ def test_launch_singular_title_when_one_missing():
     assert len(findings) == 1
     # Singular form when exactly one missing.
     assert "1 required Launch data element missing" in findings[0].title
+
+
+def test_launch_missing_elements_without_remediation_has_no_empty_block():
+    """Spec F36: no FindingBlock with empty html when remediation is unset."""
+    import dataclasses
+
+    i = _impl_with_launch(
+        {
+            "property": {"name": "Production Web"},
+            "data_elements": [{"name": "page_name", "type": "JS Variable"}],
+        }
+    )
+    c = dataclasses.replace(
+        ctx("LAUNCH-001", required=["page_name", "user_id", "session_id"]),
+        remediation="",
+    )
+    findings = check_launch_required_data_elements(i, c)
+    assert len(findings) == 1
+    for block in findings[0].body:
+        assert not (block.kind == "paragraph" and block.html == "")
+    assert len(findings[0].body) == 2

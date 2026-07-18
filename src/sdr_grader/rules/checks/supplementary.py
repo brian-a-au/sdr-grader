@@ -65,20 +65,24 @@ def check_launch_required_data_elements(
         f"{launch.get('property', {}).get('name', 'unknown')!r}. Without these "
         "data elements, downstream tags can't pick up the values they expect."
     )
+    body = [
+        FindingBlock(kind="paragraph", html=paragraph),
+        FindingBlock(kind="components", items=[f"missing: {n}" for n in missing]),
+    ]
+    if ctx.remediation:
+        body.append(
+            FindingBlock(
+                kind="section",
+                label="How to remediate",
+                body_html=compact(ctx.remediation),
+            )
+        )
     return [
         Finding(
             id=ctx.rule_id,
             severity=ctx.severity,  # type: ignore[arg-type]
             category=category_display(ctx.category),
             title=f"{len(missing)} required Launch data element{'s' if len(missing) != 1 else ''} missing",
-            body=[
-                FindingBlock(kind="paragraph", html=paragraph),
-                FindingBlock(kind="components", items=[f"missing: {n}" for n in missing]),
-                FindingBlock(
-                    kind="section",
-                    label="How to remediate",
-                    body_html=compact(ctx.remediation),
-                ) if ctx.remediation else FindingBlock(kind="paragraph", html=""),
-            ],
+            body=body,
         )
     ]
