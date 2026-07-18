@@ -199,3 +199,19 @@ def test_trend_dataclasses_reexported_from_runner():
 
     assert runner.TrendPoint is models.TrendPoint
     assert runner.TrendReport is models.TrendReport
+
+
+def test_render_trend_empty_report_raises_clear_error():
+    """Spec F29: fabricated empty input gets ValueError, not IndexError."""
+    from sdr_grader.trend.models import TrendReport
+
+    empty = TrendReport(
+        instance_id="dv_x",
+        instance_name="Empty",
+        platform="cja",
+        pack="strict",
+        pack_version="1.0",
+        points=[],
+    )
+    with pytest.raises(ValueError, match="no points"):
+        render_trend(empty)

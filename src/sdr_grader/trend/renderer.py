@@ -71,6 +71,10 @@ def render_trend(trend: TrendReport) -> str:
 
 
 def _build_view(trend: TrendReport) -> dict[str, Any]:
+    if not trend.points:
+        raise ValueError(
+            "TrendReport has no points; a trend needs at least one graded snapshot"
+        )
     points = trend.points
     pct_series = [p.report.overall_pct for p in points]
     overall_first = pct_series[0]
