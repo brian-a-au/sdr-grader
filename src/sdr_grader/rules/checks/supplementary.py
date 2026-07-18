@@ -59,10 +59,12 @@ def check_launch_required_data_elements(
     missing = [name for name in required if name not in present]
     if not missing:
         return []
+    prop = launch.get("property")
+    prop_name = prop.get("name", "unknown") if isinstance(prop, dict) else "unknown"
     paragraph = (
         f"{len(missing)} of {len(required)} required Launch data elements "
         f"({pct(len(missing), len(required))}%) are not defined on the property "
-        f"{launch.get('property', {}).get('name', 'unknown')!r}. Without these "
+        f"{prop_name!r}. Without these "
         "data elements, downstream tags can't pick up the values they expect."
     )
     body = [
