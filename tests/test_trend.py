@@ -201,6 +201,22 @@ def test_trend_dataclasses_reexported_from_runner():
     assert runner.TrendReport is models.TrendReport
 
 
+def test_dir_lists_the_lazy_entry_point():
+    """Spec F43: PEP 562 ``__getattr__`` needs a matching ``__dir__``."""
+    import sdr_grader.trend as trend_pkg
+
+    assert "build_trend_report" in dir(trend_pkg)
+    assert set(trend_pkg.__all__) <= set(dir(trend_pkg))
+
+
+def test_unknown_trend_attribute_raises_attribute_error():
+    """Issue #18: cover the lazy loader's negative path."""
+    import sdr_grader.trend as trend_pkg
+
+    with pytest.raises(AttributeError, match="does_not_exist"):
+        trend_pkg.does_not_exist
+
+
 def test_render_trend_empty_report_raises_clear_error():
     """Spec F29: fabricated empty input gets ValueError, not IndexError."""
     from sdr_grader.trend.models import TrendReport
