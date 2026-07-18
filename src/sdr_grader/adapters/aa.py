@@ -334,6 +334,39 @@ def _walk_segment_definition(definition: Any) -> tuple[int, list[str]]:
 # ---------------------------------------------------------------------------
 
 
+# The newest aa_auto_sdr version this release was validated against
+# (bundled fixtures + the private real corpus; re-derive at each release:
+# grep -rho '"Tool Version": "[^"]*"|"tool_version": "[^"]*"' over corpus
+# and fixtures, take the max). Q5 (SPEC §14): warn only — never refuse.
+TESTED_THROUGH_GENERATOR_VERSION = "1.18.0"
+
+
+def generator_version_warning(adapter_version: str) -> str | None:
+    """Return warning text when the snapshot's generator is newer than the
+    newest version this release was tested against, else None. Unparseable
+    versions ("unknown", empty, suffixed builds) never warn. Vendored
+    parity: behavior-identical copy in sdr-visualizer (SPEC §11/§15); the
+    per-platform constant value is the one deliberate difference."""
+    tested = _version_tuple(TESTED_THROUGH_GENERATOR_VERSION)
+    seen = _version_tuple(adapter_version)
+    if tested is None or seen is None or seen <= tested:
+        return None
+    return (
+        f"snapshot generator version {adapter_version} is newer than the "
+        f"newest version this release was tested against "
+        f"({TESTED_THROUGH_GENERATOR_VERSION}); newer snapshot fields may "
+        "not be represented"
+    )
+
+
+def _version_tuple(value: str) -> tuple[int, ...] | None:
+    parts = str(value).strip().split(".")
+    try:
+        return tuple(int(p) for p in parts)
+    except (TypeError, ValueError):
+        return None
+
+
 def _parse_tag_list(value: Any) -> list[str]:
     """aa_auto_sdr can ship `tags` as a JSON-encoded list string, same as
     cja_auto_sdr (see cja.py's copy — adapters stay standalone reference

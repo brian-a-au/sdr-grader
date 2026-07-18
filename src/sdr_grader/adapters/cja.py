@@ -384,6 +384,39 @@ def _walk_for_contexts(node: Any, out: list[str]) -> None:
 # ---------------------------------------------------------------------------
 
 
+# The newest cja_auto_sdr version this release was validated against
+# (bundled fixtures + the private real corpus; re-derive at each release:
+# grep -rho '"Tool Version": "[^"]*"|"tool_version": "[^"]*"' over corpus
+# and fixtures, take the max). Q5 (SPEC §14): warn only — never refuse.
+TESTED_THROUGH_GENERATOR_VERSION = "3.5.17"
+
+
+def generator_version_warning(adapter_version: str) -> str | None:
+    """Return warning text when the snapshot's generator is newer than the
+    newest version this release was tested against, else None. Unparseable
+    versions ("unknown", empty, suffixed builds) never warn. Vendored
+    parity: behavior-identical copy in sdr-visualizer (SPEC §11/§15); the
+    per-platform constant value is the one deliberate difference."""
+    tested = _version_tuple(TESTED_THROUGH_GENERATOR_VERSION)
+    seen = _version_tuple(adapter_version)
+    if tested is None or seen is None or seen <= tested:
+        return None
+    return (
+        f"snapshot generator version {adapter_version} is newer than the "
+        f"newest version this release was tested against "
+        f"({TESTED_THROUGH_GENERATOR_VERSION}); newer snapshot fields may "
+        "not be represented"
+    )
+
+
+def _version_tuple(value: str) -> tuple[int, ...] | None:
+    parts = str(value).strip().split(".")
+    try:
+        return tuple(int(p) for p in parts)
+    except (TypeError, ValueError):
+        return None
+
+
 def _require_dict(snapshot: dict[str, Any], key: str) -> dict[str, Any]:
     value = snapshot.get(key)
     if not isinstance(value, dict):
