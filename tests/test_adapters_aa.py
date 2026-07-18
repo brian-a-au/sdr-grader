@@ -213,6 +213,40 @@ def test_formula_text_renders_nested_formulas_readably():
     assert "{" not in cm.formula_text  # no Python repr leaking to users
 
 
+# ---------------------------------------------------------------------------
+# Wrong-typed optional timestamps (visualizer parity): a non-string
+# created/modified is missing, not a value worth fabricating. Owner needs no
+# equivalent guard — its owner_id path is already cast. Mirrored from
+# sdr-visualizer (SPEC §11/§15).
+# ---------------------------------------------------------------------------
+
+
+def test_component_non_string_timestamps_become_none():
+    from sdr_grader.adapters.aa import _component_from_record
+
+    comp = _component_from_record(
+        {"id": "evar1", "created": 1735689600, "modified": 1735776000}, "dimension", {}
+    )
+    assert comp.created_at is None
+    assert comp.modified_at is None
+
+
+def test_calc_metric_non_string_timestamps_become_none():
+    from sdr_grader.adapters.aa import _calc_from_record
+
+    calc = _calc_from_record({"id": "cm1", "created": 1735689600, "modified": 1735776000})
+    assert calc.created_at is None
+    assert calc.modified_at is None
+
+
+def test_segment_non_string_timestamps_become_none():
+    from sdr_grader.adapters.aa import _segment_from_record
+
+    seg = _segment_from_record({"id": "s1", "created": 1735689600, "modified": 1735776000})
+    assert seg.created_at is None
+    assert seg.modified_at is None
+
+
 def test_classification_without_name_or_id_is_skipped():
     from sdr_grader.adapters.aa import _index_classifications
 

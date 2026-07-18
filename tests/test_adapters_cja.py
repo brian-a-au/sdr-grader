@@ -339,6 +339,68 @@ def test_wrong_typed_references_and_numerics_degrade():
     assert seg.nesting_depth == 0
 
 
+# ---------------------------------------------------------------------------
+# Wrong-typed optional scalars (visualizer parity): a non-string
+# created/modified is missing, not a value worth fabricating; a falsy
+# derived-field output_type is likewise missing after the cast; a truthy one
+# is stringified. Mirrored from sdr-visualizer (SPEC §11/§15).
+# ---------------------------------------------------------------------------
+
+
+def test_component_non_string_timestamps_become_none():
+    from sdr_grader.adapters.cja import _component_from_record
+
+    comp = _component_from_record(
+        {"id": "metrics/m1", "created": 1735689600, "modified": 1735776000}, "metric"
+    )
+    assert comp.created_at is None
+    assert comp.modified_at is None
+
+
+def test_derived_field_falsy_output_type_becomes_none():
+    from sdr_grader.adapters.cja import _derived_field_from_record
+
+    field = _derived_field_from_record({"component_id": "derived/df1", "inferred_output_type": 0})
+    assert field.data_type is None
+
+
+def test_derived_field_truthy_output_type_is_stringified():
+    from sdr_grader.adapters.cja import _derived_field_from_record
+
+    field = _derived_field_from_record({"component_id": "derived/df1", "inferred_output_type": 7})
+    assert field.data_type == "7"
+
+
+def test_derived_field_non_string_timestamps_become_none():
+    from sdr_grader.adapters.cja import _derived_field_from_record
+
+    field = _derived_field_from_record(
+        {"component_id": "derived/df1", "created": 1735689600, "modified": 1735776000}
+    )
+    assert field.created_at is None
+    assert field.modified_at is None
+
+
+def test_calc_metric_non_string_timestamps_become_none():
+    from sdr_grader.adapters.cja import _calc_metric_from_record
+
+    calc = _calc_metric_from_record(
+        {"metric_id": "cm1", "created": 1735689600, "modified": 1735776000}
+    )
+    assert calc.created_at is None
+    assert calc.modified_at is None
+
+
+def test_segment_non_string_timestamps_become_none():
+    from sdr_grader.adapters.cja import _segment_from_record
+
+    seg = _segment_from_record(
+        {"segment_id": "s1", "created": 1735689600, "modified": 1735776000}
+    )
+    assert seg.created_at is None
+    assert seg.modified_at is None
+
+
 def test_numeric_inline_echo_of_derived_field_is_deduped():
     snap = {
         "metadata": {"Data View ID": "dv1"},

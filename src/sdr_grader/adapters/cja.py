@@ -146,8 +146,8 @@ def _component_from_record(record: dict[str, Any], component_type: str) -> Compo
         component_type=component_type,  # type: ignore[arg-type]
         data_type=str(data_type) if data_type else None,
         polarity=polarity,
-        created_at=record.get("created") or record.get("created_at"),
-        modified_at=record.get("modified") or record.get("modified_at"),
+        created_at=_optional_timestamp(record.get("created") or record.get("created_at")),
+        modified_at=_optional_timestamp(record.get("modified") or record.get("modified_at")),
         owner=_normalize_owner(record.get("owner")),
         tags=_parse_tag_list(record.get("tags")),
         platform_specific=platform_specific,
@@ -186,10 +186,10 @@ def _derived_field_from_record(record: dict[str, Any]) -> Component:
         name=str(name),
         description=description,
         component_type="derived_field",
-        data_type=record.get("output_type") or record.get("inferred_output_type"),
+        data_type=_optional_str(record.get("output_type") or record.get("inferred_output_type")),
         polarity=None,
-        created_at=record.get("created") or record.get("created_at"),
-        modified_at=record.get("modified") or record.get("modified_at"),
+        created_at=_optional_timestamp(record.get("created") or record.get("created_at")),
+        modified_at=_optional_timestamp(record.get("modified") or record.get("modified_at")),
         owner=_normalize_owner(record.get("owner")),
         tags=_parse_tag_list(record.get("tags")),
         platform_specific=platform_specific,
@@ -254,8 +254,8 @@ def _calc_metric_from_record(record: dict[str, Any]) -> CalculatedMetric:
         allocation=allocation,
         complexity_score=complexity,
         references=references,
-        created_at=record.get("created") or record.get("created_at"),
-        modified_at=record.get("modified") or record.get("modified_at"),
+        created_at=_optional_timestamp(record.get("created") or record.get("created_at")),
+        modified_at=_optional_timestamp(record.get("modified") or record.get("modified_at")),
         owner=_normalize_owner(record.get("owner")),
         approved=_governance_approved(record),
         shared_to_count=_governance_shared_to_count(record),
@@ -342,8 +342,8 @@ def _segment_from_record(record: dict[str, Any]) -> Segment:
         nesting_depth=nesting_depth,
         container_types=container_types,
         references=references,
-        created_at=record.get("created") or record.get("created_at"),
-        modified_at=record.get("modified") or record.get("modified_at"),
+        created_at=_optional_timestamp(record.get("created") or record.get("created_at")),
+        modified_at=_optional_timestamp(record.get("modified") or record.get("modified_at")),
         owner=_normalize_owner(record.get("owner")),
         approved=_governance_approved(record),
         shared_to_count=_governance_shared_to_count(record),
@@ -477,6 +477,34 @@ def _parse_definition_json(value: Any) -> dict[str, Any]:
             return {}
         return parsed if isinstance(parsed, dict) else {}
     return {}
+
+
+def _optional_str(value: Any) -> str | None:
+    """Coerce an optional scalar (derived-field data_type) to a string, or None.
+
+    cja_auto_sdr's output_type/inferred_output_type fields are declared
+    str|None in the internal model but the raw export can carry an int
+    dataType; a bare passthrough leaks that shape straight into consumers
+    (fuzz-surfaced in the sibling sdr-visualizer:
+    $.components[*].data_type). Falsy input (including 0) stays None rather
+    than becoming the string "0" — matching the pre-existing
+    `str(x) if x else None` pattern the metric/dimension path already used.
+    Mirrored from sdr-visualizer's copy (SPEC §11/§15); owner needs no
+    equivalent here — `_normalize_owner` already reduces a non-string owner
+    to None by a different mechanism."""
+    return str(value) if value else None
+
+
+def _optional_timestamp(value: Any) -> str | None:
+    """Keep created_at/modified_at only if they're already a non-empty string.
+
+    A non-string timestamp (e.g. an epoch int) is treated as *missing*
+    rather than coerced to a numeric string — a malformed timestamp should
+    read as absent, not as a fabricated one (fuzz-surfaced in the sibling
+    sdr-visualizer: $.components[*].modified_at, where the render-path
+    schema check caught it; here it protects rule inputs from the same
+    shape). Mirrored from sdr-visualizer's copy (SPEC §11/§15)."""
+    return value if isinstance(value, str) and value else None
 
 
 def _parse_tag_list(value: Any) -> list[str]:

@@ -117,8 +117,8 @@ def _component_from_record(
         component_type=component_type,  # type: ignore[arg-type]
         data_type=str(data_type) if data_type else None,
         polarity=polarity,
-        created_at=record.get("created"),
-        modified_at=record.get("modified"),
+        created_at=_optional_timestamp(record.get("created")),
+        modified_at=_optional_timestamp(record.get("modified")),
         owner=str(record.get("owner_id")) if record.get("owner_id") else None,
         tags=tags,
         platform_specific=platform_specific,
@@ -195,8 +195,8 @@ def _calc_from_record(record: Any) -> CalculatedMetric:
         allocation=record.get("allocation"),
         complexity_score=_safe_float(record.get("complexity_score")),
         references=references,
-        created_at=record.get("created") or record.get("created_at"),
-        modified_at=record.get("modified") or record.get("modified_at"),
+        created_at=_optional_timestamp(record.get("created") or record.get("created_at")),
+        modified_at=_optional_timestamp(record.get("modified") or record.get("modified_at")),
         owner=str(record.get("owner_id")) if record.get("owner_id") else None,
         approved=approved,
         shared_to_count=shared_to_count,
@@ -271,8 +271,8 @@ def _segment_from_record(record: Any) -> Segment:
         nesting_depth=nesting_depth,
         container_types=container_types,
         references=references,
-        created_at=record.get("created"),
-        modified_at=record.get("modified"),
+        created_at=_optional_timestamp(record.get("created")),
+        modified_at=_optional_timestamp(record.get("modified")),
         owner=str(record.get("owner_id")) if record.get("owner_id") else None,
         approved=approved,
         shared_to_count=shared_to_count,
@@ -365,6 +365,22 @@ def _version_tuple(value: str) -> tuple[int, ...] | None:
         return tuple(int(p) for p in parts)
     except (TypeError, ValueError):
         return None
+
+
+def _optional_timestamp(value: Any) -> str | None:
+    """Keep created_at/modified_at only if they're already a non-empty string.
+
+    aa_auto_sdr's created/modified fields are declared str|None in the
+    internal model, but a raw export can carry a non-string value (e.g. an
+    epoch int); a bare passthrough would leak that shape straight into
+    consumers. A non-string timestamp is treated as *missing* rather than
+    coerced to a numeric string — a malformed timestamp should read as
+    absent, not fabricated (fuzz-surfaced in the sibling sdr-visualizer:
+    $.components[*].modified_at). Same helper as cja.py's copy (adapters
+    stay standalone reference examples, so it's intentionally duplicated).
+    Mirrored from sdr-visualizer's copy (SPEC §11/§15); owner needs no
+    equivalent mirror — its `owner_id` path is already cast here."""
+    return value if isinstance(value, str) and value else None
 
 
 def _parse_tag_list(value: Any) -> list[str]:
