@@ -201,6 +201,22 @@ def test_trend_dataclasses_reexported_from_runner():
     assert runner.TrendReport is models.TrendReport
 
 
+def test_dir_lists_the_lazy_entry_point():
+    """Spec F43: PEP 562 ``__getattr__`` needs a matching ``__dir__``."""
+    import sdr_grader.trend as trend_pkg
+
+    assert "build_trend_report" in dir(trend_pkg)
+    assert set(trend_pkg.__all__) <= set(dir(trend_pkg))
+
+
+def test_unknown_trend_attribute_raises_attribute_error():
+    """Issue #18: cover the lazy loader's negative path."""
+    import sdr_grader.trend as trend_pkg
+
+    with pytest.raises(AttributeError, match="does_not_exist"):
+        trend_pkg.does_not_exist
+
+
 def test_render_trend_empty_report_raises_clear_error():
     """Spec F29: fabricated empty input gets ValueError, not IndexError."""
     from sdr_grader.trend.models import TrendReport
@@ -215,6 +231,79 @@ def test_render_trend_empty_report_raises_clear_error():
     )
     with pytest.raises(ValueError, match="no points"):
         render_trend(empty)
+
+
+def test_first_and_latest_raise_clear_error_when_empty():
+    """Spec F42: property access mirrors the renderer's empty guard."""
+    from sdr_grader.trend.models import TrendReport
+
+    empty = TrendReport(
+        instance_id="dv_x",
+        instance_name="Empty",
+        platform="cja",
+        pack="strict",
+        pack_version="1.0",
+        points=[],
+    )
+    with pytest.raises(ValueError, match="no points"):
+        empty.first
+    with pytest.raises(ValueError, match="no points"):
+        empty.latest
+
+
+def test_colliding_category_slugs_resolve_first_wins_everywhere(tmp_path):
+    """Spec F39: duplicate slugs agree in the header and table rows."""
+    from sdr_grader.trend.renderer import _build_view
+
+    _build_series(tmp_path)
+    trend = build_trend_report(tmp_path, load_rubric(STRICT_PACK))
+    last = trend.points[-1]
+    first_cat = last.report.categories[0]
+    clash_pct = 1 if first_cat.pct != 1 else 2
+    clash = dataclasses.replace(
+        first_cat,
+        name=first_cat.name.upper(),
+        pct=clash_pct,
+    )
+    extended = dataclasses.replace(
+        last.report,
+        categories=[*last.report.categories, clash],
+    )
+    points = [*trend.points[:-1], dataclasses.replace(last, report=extended)]
+    view = _build_view(dataclasses.replace(trend, points=points))
+
+    header_pct = view["category_traces"][0]["latest_pct"]
+    row_pct = view["rows"][-1]["categories"][0]["pct"]
+    assert header_pct == first_cat.pct
+    assert row_pct == first_cat.pct
+    assert row_pct != clash_pct
+
+
+def test_trend_view_converts_each_raw_timestamp_once_and_omits_dead_cell_keys(
+    tmp_path,
+    monkeypatch,
+):
+    """Spec F46/F49: one conversion per point and template-shaped cells."""
+    from sdr_grader.trend import renderer as trend_renderer
+
+    _build_series(tmp_path)
+    trend = build_trend_report(tmp_path, load_rubric(STRICT_PACK))
+    original_to_utc = trend_renderer.to_utc
+    converted = []
+
+    def counting_to_utc(value):
+        converted.append(value)
+        return original_to_utc(value)
+
+    monkeypatch.setattr(trend_renderer, "to_utc", counting_to_utc)
+    view = trend_renderer._build_view(trend)
+
+    assert converted == [point.timestamp for point in trend.points]
+    assert all(
+        set(cell) == {"pct"}
+        for row in view["rows"]
+        for cell in row["categories"]
+    )
 
 
 def test_trend_table_rows_align_with_header_union(tmp_path):
@@ -284,3 +373,8 @@ def test_header_classes_have_top_level_css_rules():
         if not re.search(rf"^\.{re.escape(cls)}[ .{{]", css, flags=re.M)
     ]
     assert missing == []
+    # Compound rules such as .delta.trend-up also satisfy the loop's
+    # selector, so pin the bare header rule separately (issue #18).
+    assert re.search(r"^\.delta \{", css, flags=re.M), (
+        "the bare .delta rule that styles the header delta must exist"
+    )

@@ -15,7 +15,7 @@ from dataclasses import asdict
 from datetime import datetime
 from typing import Any
 
-from sdr_grader.render.dates import to_utc
+from sdr_grader.render.dates import to_iso_z
 from sdr_grader.render.renderer import Report
 
 
@@ -27,4 +27,4 @@ def report_to_dict(report: Report) -> dict[str, Any]:
 
 
 def _normalize_datetime(value: datetime) -> str:
-    return to_utc(value).isoformat(timespec="seconds").replace("+00:00", "Z")
+    return to_iso_z(value)

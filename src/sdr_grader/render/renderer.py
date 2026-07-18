@@ -25,7 +25,7 @@ from typing import Literal
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
 from sdr_grader import __version__ as _PACKAGE_VERSION
-from sdr_grader.render.dates import human_datetime, to_utc
+from sdr_grader.render.dates import human_datetime, to_iso_z
 
 # ---------------------------------------------------------------------------
 # Data model
@@ -190,7 +190,7 @@ def render(report: Report) -> str:
         "components_skipped_reason": report.components_skipped_reason,
         "adapter": asdict(report.adapter),
         "rubric": asdict(report.rubric),
-        "generated_at_iso": to_utc(report.generated_at).isoformat(timespec="seconds").replace("+00:00", "Z"),
+        "generated_at_iso": to_iso_z(report.generated_at),
         "generated_at_human": human_datetime(report.generated_at),
         "tldr_html": report.tldr_html,
         "categories": [asdict(c) for c in report.categories],

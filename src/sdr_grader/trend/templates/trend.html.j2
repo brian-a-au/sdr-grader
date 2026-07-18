@@ -77,11 +77,7 @@
           <td class="num">{{ row.overall_pct }}%</td>
           <td class="num">{{ row.finding_count }}</td>
           {% for cat in row.categories %}
-          {% if cat.pct is none %}
-          <td class="num"></td>
-          {% else %}
-          <td class="num">{{ cat.pct }}%</td>
-          {% endif %}
+          <td class="num">{% if cat.pct is not none %}{{ cat.pct }}%{% endif %}</td>
           {% endfor %}
         </tr>
         {% endfor %}

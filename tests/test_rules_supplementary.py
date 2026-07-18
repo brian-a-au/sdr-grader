@@ -117,3 +117,23 @@ def test_launch_missing_elements_without_remediation_has_no_empty_block():
     for block in findings[0].body:
         assert not (block.kind == "paragraph" and block.html == "")
     assert len(findings[0].body) == 2
+
+
+def test_launch_null_property_still_produces_a_finding():
+    """Spec F38 (v1.1.4): ``property: null`` must not crash the check."""
+    i = _impl_with_launch(
+        {"property": None, "data_elements": [{"name": "page_name"}]}
+    )
+    c = ctx("LAUNCH-001", required=["page_name", "user_id"])
+    findings = check_launch_required_data_elements(i, c)
+    assert len(findings) == 1
+    assert "'unknown'" in findings[0].body[0].html
+
+
+def test_launch_non_dict_property_still_produces_a_finding():
+    """Spec F38 (v1.1.4): a non-object property also renders safely."""
+    i = _impl_with_launch({"property": "Production Web", "data_elements": []})
+    c = ctx("LAUNCH-001", required=["page_name"])
+    findings = check_launch_required_data_elements(i, c)
+    assert len(findings) == 1
+    assert "'unknown'" in findings[0].body[0].html

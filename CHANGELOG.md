@@ -3,6 +3,48 @@
 All notable changes follow the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
+## 1.1.4 — 2026-07-18
+
+Hardening and cleanup from the v1.1.2 branch review (findings F38 to
+F49), plus the remaining follow-ups from issue #18. No rule thresholds
+or grade calculations change.
+
+### Fixed
+
+- **LAUNCH-001** no longer crashes when the launch payload carries a
+  null or non-dict property; the finding renders with the property
+  name shown as unknown.
+- **Rubric loading.** A pack whose `category_weights` keys collapse to
+  the same category slug now fails to load with an error naming both
+  keys, instead of rendering a page that silently merges categories.
+- **Trend report.** Header cards and table rows resolve duplicate
+  category slugs the same way (first wins). `TrendReport.first` and
+  `.latest` raise a clear error on an empty report instead of a bare
+  `IndexError`, and `dir(sdr_grader.trend)` now lists
+  `build_trend_report`.
+- **Charts.** The category comparison chart clamps its median ticks to
+  the axis, matching the 1.1.2 histogram fix. Distribution data files
+  now fail loudly at load when percentile values are invalid or the
+  interquartile range is inverted.
+- **Snapshot selection.** Filename timestamps and filesystem mtimes now
+  share an aware UTC scale, so local-time mtime conversion cannot
+  misorder an untimestamped file against a timestamped file.
+
+### Internal
+
+- One canonical naive-means-UTC helper is shared by the timestamp
+  parser and renderers, alongside one ISO-Z formatter, one human-date
+  formatter, and a single raw timestamp conversion per trend row.
+- The trend table cell template collapsed to a single element, with a
+  whitespace-only update to the generated trend example.
+- Removed the stale hand-built `examples/sample-report.html`; the
+  generated `examples/templated-report.html` remains the canonical
+  renderer golden.
+- Added regression coverage for the trend package's lazy-attribute
+  failure path and its bare `.delta` header rule.
+- Source distributions explicitly exclude local `.claude/` state and
+  worktrees so development artifacts cannot enter a published archive.
+
 ## 1.1.3 — 2026-07-18
 
 Adapter fixes for real-world CJA and AA exports, mirrored from the
@@ -208,8 +250,7 @@ distributions and the per-rule confidence rating behind each threshold.
 - **Examples**: clean and messy grade cards per platform
   (`examples/grade-cja-clean.html` A 100%, `examples/grade-cja-messy.html`
   F 44%, `examples/grade-aa-clean.html` A 100%, `examples/grade-aa-messy.html`
-  F 39%), a multi-snapshot `examples/trend-example.html`, the original
-  visual-contract reference `examples/sample-report.html`, and the
+  F 39%), a multi-snapshot `examples/trend-example.html`, and the
   renderer-output golden `examples/templated-report.html`.
 
 ### Discipline

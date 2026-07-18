@@ -15,7 +15,7 @@ from typing import Any
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
 from sdr_grader.render.dates import human_date, to_utc
-from sdr_grader.trend.models import TrendReport
+from sdr_grader.trend.models import TrendPoint, TrendReport
 
 _HERE = Path(__file__).parent
 _RENDER_DIR = _HERE.parent / "render"
@@ -90,19 +90,17 @@ def _build_view(trend: TrendReport) -> dict[str, Any]:
     trace_slugs = [trace.name for trace in category_traces]
     rows = []
     for p in points:
-        pct_by_slug = {
-            _category_slug(cat.name): cat.pct for cat in p.report.categories
-        }
+        pct_by_slug = _slug_pcts(p.report)
+        iso, human = _point_dates(p)
         rows.append(
             {
-                "iso": _format_iso(p),
-                "human": _format_human(p),
+                "iso": iso,
+                "human": human,
                 "grade": p.report.grade,
                 "overall_pct": p.report.overall_pct,
                 "finding_count": len(p.report.findings),
                 "categories": [
-                    {"slug": slug, "pct": pct_by_slug.get(slug)}
-                    for slug in trace_slugs
+                    {"pct": pct_by_slug.get(slug)} for slug in trace_slugs
                 ],
             }
         )
@@ -113,8 +111,8 @@ def _build_view(trend: TrendReport) -> dict[str, Any]:
         "platform": trend.platform.upper(),
         "pack": trend.pack,
         "pack_version": trend.pack_version,
-        "first_iso": _format_iso(points[0]),
-        "latest_iso": _format_iso(points[-1]),
+        "first_iso": rows[0]["iso"],
+        "latest_iso": rows[-1]["iso"],
         "snapshot_count": len(points),
         "overall_pct_series": pct_series,
         "overall_first": overall_first,
@@ -140,6 +138,14 @@ def _build_view(trend: TrendReport) -> dict[str, Any]:
     }
 
 
+def _slug_pcts(report: Any) -> dict[str, int]:
+    """Build an insertion-ordered, first-wins slug-to-pct map."""
+    out: dict[str, int] = {}
+    for category in report.categories:
+        out.setdefault(_category_slug(category.name), category.pct)
+    return out
+
+
 def _category_traces(trend: TrendReport) -> list[_CategoryTrace]:
     """Build one trace per category present across the series.
 
@@ -147,14 +153,11 @@ def _category_traces(trend: TrendReport) -> list[_CategoryTrace]:
     inventory (depending on rubric weights), so we union across the series
     and pad missing pcts with the previous known value.
     """
-    series_categories: list[list[tuple[str, int]]] = []
-    for p in trend.points:
-        slugs_pcts = [(_category_slug(c.name), c.pct) for c in p.report.categories]
-        series_categories.append(slugs_pcts)
+    series_categories = [_slug_pcts(p.report) for p in trend.points]
 
     seen_slugs: list[str] = []
     for slugs in series_categories:
-        for slug, _ in slugs:
+        for slug in slugs:
             if slug not in seen_slugs:
                 seen_slugs.append(slug)
 
@@ -162,7 +165,7 @@ def _category_traces(trend: TrendReport) -> list[_CategoryTrace]:
     for slug in seen_slugs:
         points: list[int] = []
         for snap in series_categories:
-            value = next((pct for s, pct in snap if s == slug), None)
+            value = snap.get(slug)
             if value is None and points:
                 value = points[-1]
             elif value is None:
@@ -254,13 +257,10 @@ def _delta_class(delta: int) -> str:
     return "trend-flat"
 
 
-def _format_iso(point) -> str:
-    """ISO date for the trend table."""
-    return to_utc(point.timestamp).date().isoformat()
-
-
-def _format_human(point) -> str:
-    return human_date(point.timestamp)
+def _point_dates(point: TrendPoint) -> tuple[str, str]:
+    """Return ISO and human dates after converting the raw timestamp once."""
+    utc = to_utc(point.timestamp)
+    return utc.date().isoformat(), human_date(utc)
 
 
 # ---------------------------------------------------------------------------

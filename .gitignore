@@ -49,6 +49,9 @@ coverage.xml
 *.swp
 *.swo
 
+# Local Claude Code state and worktrees.
+/.claude/
+
 # Local-only generated artifacts
 /grade-*.html
 /grade-*.json

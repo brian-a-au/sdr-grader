@@ -4,7 +4,13 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta, timezone
 
-from sdr_grader.render.dates import MONTH_ABBREV, human_date, human_datetime, to_utc
+from sdr_grader.render.dates import (
+    MONTH_ABBREV,
+    human_date,
+    human_datetime,
+    to_iso_z,
+    to_utc,
+)
 
 
 def test_month_table_covers_all_twelve_months():
@@ -35,3 +41,19 @@ def test_aware_non_utc_converts_instead_of_relabeling():
     plus2 = datetime(2026, 4, 25, 11, 14, tzinfo=timezone(timedelta(hours=2)))
     assert to_utc(plus2) == datetime(2026, 4, 25, 9, 14, tzinfo=UTC)
     assert human_datetime(plus2) == "Apr 25 2026 · 09:14 UTC"
+
+
+def test_to_utc_is_the_timeparse_function():
+    """Spec F45: keep one definition of the naive-means-UTC rule."""
+    from sdr_grader.core import timeparse
+    from sdr_grader.render import dates
+
+    assert dates.to_utc is timeparse.to_utc
+
+
+def test_to_iso_z_shapes_and_utc_normalization():
+    """Spec F44: one ISO-Z formatter serves HTML and JSON output."""
+    assert to_iso_z(datetime(2026, 4, 25, 9, 14, tzinfo=UTC)) == "2026-04-25T09:14:00Z"
+    assert to_iso_z(datetime(2026, 4, 25, 9, 14)) == "2026-04-25T09:14:00Z"
+    plus2 = datetime(2026, 4, 25, 11, 14, tzinfo=timezone(timedelta(hours=2)))
+    assert to_iso_z(plus2) == "2026-04-25T09:14:00Z"

@@ -6,6 +6,7 @@ import io
 import json
 import shutil
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 from unittest.mock import patch
 
@@ -79,6 +80,34 @@ def test_directory_pick_prefers_fresh_untimestamped_file(tmp_path):
 
     snapshot, _source = load_snapshot(str(tmp_path))
     assert snapshot == {"which": "fresh"}
+
+
+def test_directory_candidate_timestamps_are_utc_aware(tmp_path):
+    """Issue #18: an mtime is an epoch instant, not naive local wall time."""
+    import os
+
+    from sdr_grader.input.loader import _candidate_timestamp
+
+    untimestamped = tmp_path / "latest.json"
+    untimestamped.write_text("{}", encoding="utf-8")
+    epoch = 946684800  # 2000-01-01T00:00:00Z
+    os.utime(untimestamped, (epoch, epoch))
+
+    timestamped = tmp_path / "snapshot_2000-01-02.json"
+    timestamped.write_text("{}", encoding="utf-8")
+
+    assert _candidate_timestamp(untimestamped) == datetime(
+        2000,
+        1,
+        1,
+        tzinfo=UTC,
+    )
+    assert _candidate_timestamp(timestamped) == datetime(
+        2000,
+        1,
+        2,
+        tzinfo=UTC,
+    )
 
 
 # ---------------------------------------------------------------------------

@@ -43,3 +43,15 @@ def test_histogram_clamps_out_of_range_inputs():
     svg = histogram_chart(your_score=150, median=-5, p25=0, p75=100)
     assert 'cx="400"' in svg          # marker pinned to the right edge
     assert 'x1="0" y1="26"' in svg    # median pinned to the left edge
+
+
+def test_category_chart_clamps_out_of_range_median():
+    """Spec F40: an external median above 100 pins to the bar end."""
+    svg = category_comparison_chart([("Governance", 80, 150)])
+    assert 'x1="380.0"' in svg
+
+
+def test_category_chart_clamps_negative_median():
+    """Spec F40: a negative external median pins to the bar start."""
+    svg = category_comparison_chart([("Governance", 80, -30)])
+    assert 'x1="140.0"' in svg

@@ -66,6 +66,7 @@ packages = ["src/sdr_grader"]
 # ignore rules regress. The sdist is uploaded to PyPI and is world-readable
 # regardless of the git repo's visibility.
 exclude = [
+    "/.claude",
     "/.superpowers",
     "/.hypothesis",
     "/docs/assets",
