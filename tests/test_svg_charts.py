@@ -30,3 +30,16 @@ def test_category_chart_escapes_labels():
     svg = category_comparison_chart([('<script>alert(1)</script>', 50, 60)])
     assert "<script>" not in svg
     assert "&lt;script&gt;alert(1)&lt;/script&gt;" in svg
+
+
+def test_histogram_tolerates_inverted_percentiles():
+    """Spec F37: p25 > p75 must not produce a negative-width rect."""
+    svg = histogram_chart(your_score=50, median=40, p25=90, p75=10)
+    assert 'width="-' not in svg
+    assert '<rect x="40"' in svg and 'width="320"' in svg  # band spans 10..90
+
+
+def test_histogram_clamps_out_of_range_inputs():
+    svg = histogram_chart(your_score=150, median=-5, p25=0, p75=100)
+    assert 'cx="400"' in svg          # marker pinned to the right edge
+    assert 'x1="0" y1="26"' in svg    # median pinned to the left edge
