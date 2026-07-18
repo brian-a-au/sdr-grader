@@ -8,6 +8,7 @@ submission service is built (SPEC §8 deferred items).
 from __future__ import annotations
 
 import json
+from math import isfinite
 from pathlib import Path
 from typing import Any
 
@@ -49,7 +50,59 @@ def load_distribution_data(path: str | Path | None = None) -> dict[str, Any]:
         raise InvalidSnapshotError(f"{p}: not valid JSON: {exc}") from exc
     if not isinstance(data, dict):
         raise InvalidSnapshotError(f"{p}: distribution data must be a JSON object")
+
+    overall = data.get("overall")
+    if overall is None:
+        overall = {}
+    if not isinstance(overall, dict):
+        raise InvalidSnapshotError(
+            f"{p}: distribution field overall must be an object"
+        )
+    categories = data.get("categories")
+    if categories is None:
+        categories = {}
+    if not isinstance(categories, dict):
+        raise InvalidSnapshotError(
+            f"{p}: distribution field categories must be an object"
+        )
+
+    p25 = _require_pct(overall.get("p25", 0), "overall.p25", p)
+    p75 = _require_pct(overall.get("p75", 100), "overall.p75", p)
+    _require_pct(overall.get("median", 0), "overall.median", p)
+    if p25 > p75:
+        raise InvalidSnapshotError(
+            f"{p}: distribution overall.p25 ({p25}) is greater than "
+            f"overall.p75 ({p75})"
+        )
+    for slug, category in categories.items():
+        if not isinstance(category, dict):
+            raise InvalidSnapshotError(
+                f"{p}: distribution field categories.{slug} must be an object"
+            )
+        _require_pct(
+            category.get("median", 0),
+            f"categories.{slug}.median",
+            p,
+        )
     return data
+
+
+def _require_pct(value: Any, field: str, source: Path) -> int | float:
+    """Require a finite JSON number inside the inclusive percentage range."""
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, (int, float))
+        or not isfinite(value)
+    ):
+        raise InvalidSnapshotError(
+            f"{source}: distribution field {field} must be a number, got {value!r}"
+        )
+    if not 0 <= value <= 100:
+        raise InvalidSnapshotError(
+            f"{source}: distribution field {field} must be between 0 and 100, "
+            f"got {value}"
+        )
+    return value
 
 
 def build_distribution(report: Report, data: dict[str, Any]) -> Distribution:

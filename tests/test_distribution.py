@@ -79,6 +79,64 @@ def test_load_distribution_rejects_invalid_json(tmp_path):
         load_distribution_data(bad)
 
 
+def test_out_of_range_overall_percentile_fails_at_load(tmp_path):
+    p = tmp_path / "dist.json"
+    p.write_text(
+        json.dumps({"overall": {"median": 500, "p25": 10, "p75": 90}}),
+        encoding="utf-8",
+    )
+    with pytest.raises(InvalidSnapshotError, match="overall.median"):
+        load_distribution_data(p)
+
+
+def test_inverted_percentiles_fail_at_load(tmp_path):
+    p = tmp_path / "dist.json"
+    p.write_text(
+        json.dumps({"overall": {"median": 50, "p25": 90, "p75": 10}}),
+        encoding="utf-8",
+    )
+    with pytest.raises(InvalidSnapshotError, match="overall.p25"):
+        load_distribution_data(p)
+
+
+@pytest.mark.parametrize("median", ["50", True, "high", -1, 101])
+def test_invalid_category_median_fails_at_load(tmp_path, median):
+    """Spec F41: category medians must be JSON numbers in range."""
+    p = tmp_path / "dist.json"
+    p.write_text(
+        json.dumps(
+            {
+                "overall": {"median": 50, "p25": 10, "p75": 90},
+                "categories": {"schema_hygiene": {"median": median}},
+            }
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(
+        InvalidSnapshotError,
+        match="categories.schema_hygiene.median",
+    ):
+        load_distribution_data(p)
+
+
+@pytest.mark.parametrize(
+    ("payload", "message"),
+    [
+        ({"overall": []}, "overall must be an object"),
+        ({"categories": []}, "categories must be an object"),
+        (
+            {"categories": {"schema_hygiene": []}},
+            "categories.schema_hygiene must be an object",
+        ),
+    ],
+)
+def test_distribution_sections_must_be_objects(tmp_path, payload, message):
+    p = tmp_path / "dist.json"
+    p.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(InvalidSnapshotError, match=message):
+        load_distribution_data(p)
+
+
 def test_build_distribution_includes_overall_and_category_charts():
     data = load_distribution_data(BUNDLED_PATH)
     distribution = build_distribution(_stub_report(), data)
