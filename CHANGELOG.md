@@ -6,8 +6,8 @@ spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 ## 1.1.4 — 2026-07-18
 
 Hardening and cleanup from the v1.1.2 branch review (findings F38 to
-F49), plus the remaining follow-ups from issue #18. No rules, checks,
-or grades change.
+F49), plus the remaining follow-ups from issue #18. No rule thresholds
+or grade calculations change.
 
 ### Fixed
 
@@ -27,8 +27,8 @@ or grades change.
   now fail loudly at load when percentile values are invalid or the
   interquartile range is inverted.
 - **Snapshot selection.** Filename timestamps and filesystem mtimes now
-  share an aware UTC scale, so an untimestamped file's local-time mtime
-  cannot be mislabeled as UTC or misordered against a timestamped file.
+  share an aware UTC scale, so local-time mtime conversion cannot
+  misorder an untimestamped file against a timestamped file.
 
 ### Internal
 
