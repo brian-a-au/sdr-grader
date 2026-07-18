@@ -3,6 +3,41 @@
 All notable changes follow the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
+## 1.1.2 — 2026-07-17
+
+Trend report bug fixes and small rendering fixes, plus one adapter
+feature merged earlier in this cycle. No rules, checks, or grades
+change.
+
+### Added
+
+- **Adapters.** A generator-version warning (PR #17): when a snapshot
+  was produced by a newer cja_auto_sdr generator than the newest version
+  this release was tested against, the adapter warns that newer snapshot
+  fields may not be represented. Unparseable versions never warn.
+
+### Fixed
+
+- **Trend report.** The snapshot table keeps its columns aligned when a
+  snapshot is missing a category. The page header and container are now
+  styled; the template previously referenced CSS classes that no
+  stylesheet defined. An empty trend report raises a clear error instead
+  of crashing. The trend renderer no longer imports the grading engine,
+  restoring the renderer-standalone contract.
+- **Date rendering.** Month names come from a fixed English table
+  instead of the process locale, and naive datetimes are treated as UTC
+  everywhere, so embedding hosts get identical output regardless of
+  locale or machine timezone.
+- **Charts.** The distribution histogram clamps its inputs and tolerates
+  inverted percentiles instead of emitting a rect with negative width.
+- **LAUNCH-001** no longer emits an empty paragraph block when a rule
+  has no remediation text.
+
+### Docs
+
+- The SCH-005 docstring no longer promises `stale_days` behavior the
+  check does not implement; the real check is deferred to 1.2.0.
+
 ## 1.1.1 — 2026-07-13
 
 A packaging-only release. No rules, checks, or grades change, so grades

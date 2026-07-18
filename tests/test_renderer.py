@@ -105,3 +105,19 @@ def test_template_and_css_are_cached():
     assert renderer_mod._css() is renderer_mod._css()
     assert trend_mod._template() is trend_mod._template()
     assert trend_mod._css() is trend_mod._css()
+
+
+def test_naive_and_aware_utc_generated_at_render_identically():
+    """Spec F31: fabricated naive datetimes must not depend on the machine tz."""
+    import dataclasses
+    from datetime import UTC, datetime
+
+    from sdr_grader.render.json_output import report_to_dict
+
+    base = build_demo_report()
+    naive = dataclasses.replace(base, generated_at=datetime(2026, 4, 25, 9, 14))
+    aware = dataclasses.replace(
+        base, generated_at=datetime(2026, 4, 25, 9, 14, tzinfo=UTC)
+    )
+    assert render(naive) == render(aware)
+    assert report_to_dict(naive)["generated_at"] == "2026-04-25T09:14:00Z"

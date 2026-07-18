@@ -176,3 +176,111 @@ def test_cli_trend_mode_default_output_filename(tmp_path, monkeypatch):
     # Default pattern: trend-{instance_id}-{YYYYMMDD}.html
     files = sorted(tmp_path.glob("trend-*.html"))
     assert files, "expected default trend output to be created"
+
+
+def test_trend_renderer_never_imports_the_rule_engine():
+    """Spec F28: the trend renderer must work standalone (fresh process)."""
+    import subprocess
+    import sys
+
+    code = (
+        "import sys; import sdr_grader.trend.renderer; "
+        "banned = [m for m in ('sdr_grader.core.grader', "
+        "'sdr_grader.adapters.cja', 'sdr_grader.adapters.aa', "
+        "'sdr_grader.rules.rubric') if m in sys.modules]; "
+        "sys.exit(1 if banned else 0)"
+    )
+    proc = subprocess.run([sys.executable, "-c", code])
+    assert proc.returncode == 0
+
+
+def test_trend_dataclasses_reexported_from_runner():
+    from sdr_grader.trend import models, runner
+
+    assert runner.TrendPoint is models.TrendPoint
+    assert runner.TrendReport is models.TrendReport
+
+
+def test_render_trend_empty_report_raises_clear_error():
+    """Spec F29: fabricated empty input gets ValueError, not IndexError."""
+    from sdr_grader.trend.models import TrendReport
+
+    empty = TrendReport(
+        instance_id="dv_x",
+        instance_name="Empty",
+        platform="cja",
+        pack="strict",
+        pack_version="1.0",
+        points=[],
+    )
+    with pytest.raises(ValueError, match="no points"):
+        render_trend(empty)
+
+
+def test_trend_table_rows_align_with_header_union(tmp_path):
+    """Spec F26: every body row renders one cell per header column."""
+    import re
+
+    _build_series(tmp_path)
+    trend = build_trend_report(tmp_path, load_rubric(STRICT_PACK))
+    # Drop the last category from the first snapshot to simulate a series
+    # whose per-snapshot category sets differ.
+    first = trend.points[0]
+    reduced = dataclasses.replace(
+        first.report, categories=first.report.categories[:-1]
+    )
+    points = [dataclasses.replace(first, report=reduced), *trend.points[1:]]
+    html = render_trend(dataclasses.replace(trend, points=points))
+
+    thead = html.split("<thead>")[1].split("</thead>")[0]
+    tbody = html.split("<tbody>")[1].split("</tbody>")[0]
+    header_cells = thead.count("<th")
+    rows = re.findall(r"<tr>(.*?)</tr>", tbody, flags=re.S)
+    assert rows
+    for row in rows:
+        assert row.count("<td") == header_cells
+    assert '<td class="num"></td>' in tbody  # the dropped category's empty cell
+
+
+def test_every_template_class_has_a_css_rule():
+    """Spec F27: the page must not reference classes no stylesheet defines."""
+    import re
+
+    from sdr_grader.trend import renderer as trend_renderer
+
+    template_text = (
+        Path(trend_renderer.__file__).parent / "templates" / "trend.html.j2"
+    ).read_text(encoding="utf-8")
+    classes: set[str] = set()
+    for match in re.finditer(r'class="([^"]+)"', template_text):
+        for token in match.group(1).split():
+            if re.fullmatch(r"[a-z][a-z0-9-]*", token):
+                classes.add(token)
+    # Dynamic classes injected via {{ trend.delta_class }} / {{ cat.delta_class }}:
+    classes.update({"trend-up", "trend-down", "trend-flat"})
+
+    css = trend_renderer._css()
+    missing = sorted(c for c in classes if f".{c}" not in css)
+    assert missing == []
+
+
+def test_header_classes_have_top_level_css_rules():
+    """Spec F27 regression net: the header classes must be styled outside
+    any scoped selector — a scoped rule like `.trend-card .delta` must not
+    satisfy the bare `.delta` the header uses."""
+    import re
+
+    from sdr_grader.trend import renderer as trend_renderer
+
+    header_classes = [
+        "report", "report-header", "header-row", "kicker",
+        "instance-name", "instance-meta", "grade-block",
+        "grade-letter", "grade-pct", "grade-meta", "delta",
+    ]
+    css = trend_renderer._css()
+    missing = [
+        cls
+        for cls in header_classes
+        if not re.search(rf"^\.{re.escape(cls)}[ .{{]", css, flags=re.M)
+    ]
+    assert missing == []

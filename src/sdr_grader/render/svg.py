@@ -14,8 +14,11 @@ import html
 def histogram_chart(your_score: int, median: int, p25: int, p75: int) -> str:
     """Distribution band with median marker and 'you are here' marker."""
 
-    def x(pct: int) -> float:
-        return pct * 4  # 0-100 scale across 400px width
+    def x(pct: int) -> int:
+        return max(0, min(100, pct)) * 4  # clamp to the 0-100 axis, 400px wide
+
+    band_lo = min(p25, p75)
+    band_hi = max(p25, p75)
 
     return f'''<svg viewBox="0 0 400 60" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Distribution">
   <g font-family="Söhne, Inter, sans-serif">
@@ -30,7 +33,7 @@ def histogram_chart(your_score: int, median: int, p25: int, p75: int) -> str:
   <text x="200" y="55" font-size="9" fill="#8a8a82">50</text>
   <text x="300" y="55" font-size="9" fill="#8a8a82">75</text>
   <text x="396" y="55" font-size="9" text-anchor="end" fill="#8a8a82">100</text>
-  <rect x="{x(p25)}" y="30" width="{x(p75) - x(p25)}" height="20" fill="#ece9e0"/>
+  <rect x="{x(band_lo)}" y="30" width="{x(band_hi) - x(band_lo)}" height="20" fill="#ece9e0"/>
   <line x1="{x(median)}" y1="26" x2="{x(median)}" y2="54" stroke="#6b6b66" stroke-width="1.5"/>
   <text x="{x(median)}" y="22" font-size="9" text-anchor="middle" fill="#6b6b66">median {median}</text>
   <line x1="{x(your_score)}" y1="20" x2="{x(your_score)}" y2="50" stroke="#1a1a1a" stroke-width="2"/>

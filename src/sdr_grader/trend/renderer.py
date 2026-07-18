@@ -8,14 +8,14 @@ accents only. Sparklines are server-side SVG; no JS, no CDN.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import UTC
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
-from sdr_grader.trend.runner import TrendReport
+from sdr_grader.render.dates import human_date, to_utc
+from sdr_grader.trend.models import TrendReport
 
 _HERE = Path(__file__).parent
 _RENDER_DIR = _HERE.parent / "render"
@@ -71,6 +71,10 @@ def render_trend(trend: TrendReport) -> str:
 
 
 def _build_view(trend: TrendReport) -> dict[str, Any]:
+    if not trend.points:
+        raise ValueError(
+            "TrendReport has no points; a trend needs at least one graded snapshot"
+        )
     points = trend.points
     pct_series = [p.report.overall_pct for p in points]
     overall_first = pct_series[0]
@@ -80,8 +84,15 @@ def _build_view(trend: TrendReport) -> dict[str, Any]:
     category_traces = _category_traces(trend)
     appeared, disappeared = _findings_churn(trend)
 
+    # Rows render in the same union order the table header uses, so a
+    # snapshot missing a category yields an empty cell instead of
+    # shifting every later value left (spec F26).
+    trace_slugs = [trace.name for trace in category_traces]
     rows = []
     for p in points:
+        pct_by_slug = {
+            _category_slug(cat.name): cat.pct for cat in p.report.categories
+        }
         rows.append(
             {
                 "iso": _format_iso(p),
@@ -90,13 +101,8 @@ def _build_view(trend: TrendReport) -> dict[str, Any]:
                 "overall_pct": p.report.overall_pct,
                 "finding_count": len(p.report.findings),
                 "categories": [
-                    {
-                        "slug": _category_slug(cat.name),
-                        "name": CATEGORY_DISPLAY.get(_category_slug(cat.name), cat.name),
-                        "pct": cat.pct,
-                        "grade": cat.grade,
-                    }
-                    for cat in p.report.categories
+                    {"slug": slug, "pct": pct_by_slug.get(slug)}
+                    for slug in trace_slugs
                 ],
             }
         )
@@ -250,11 +256,11 @@ def _delta_class(delta: int) -> str:
 
 def _format_iso(point) -> str:
     """ISO date for the trend table."""
-    return point.timestamp.replace(tzinfo=None).date().isoformat()
+    return to_utc(point.timestamp).date().isoformat()
 
 
 def _format_human(point) -> str:
-    return point.timestamp.replace(tzinfo=UTC).strftime("%b %d %Y")
+    return human_date(point.timestamp)
 
 
 # ---------------------------------------------------------------------------
@@ -265,6 +271,23 @@ def _format_human(point) -> str:
 def _trend_css() -> str:
     return """
 /* --- trend-specific additions --- */
+/* Container + header: values mirror report.css (.page, .eyebrow, h1,
+   metadata strip) so the trend page shares the main report's register. */
+.report { max-width: 880px; margin: 0 auto; padding: 56px 48px 96px; }
+@media (max-width: 720px) { .report { padding: 32px 20px 64px; } }
+.report-header { margin-bottom: 40px; }
+.header-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; }
+.kicker { font-family: 'Söhne', 'Inter', system-ui, sans-serif; font-size: 11px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: #6b6b66; margin: 0 0 12px 0; }
+.instance-name { font-family: 'Charter','Iowan Old Style',Georgia,serif; font-weight: 500; font-size: 36px; line-height: 1.15; letter-spacing: -0.01em; margin: 0 0 8px 0; }
+.instance-meta { font-family: 'Söhne', 'Inter', system-ui, sans-serif; font-size: 13px; color: #6b6b66; margin: 0; }
+.grade-block { text-align: right; flex-shrink: 0; }
+.grade-letter { font-family: 'Charter','Iowan Old Style',Georgia,serif; font-size: 56px; font-weight: 600; line-height: 1; }
+.grade-pct { font-family: 'Söhne', 'Inter', system-ui, sans-serif; font-size: 14px; color: #1a1a1a; margin-top: 4px; }
+.grade-meta { font-family: 'Söhne', 'Inter', system-ui, sans-serif; font-size: 11px; color: #8a8a82; margin-top: 4px; }
+.delta { font-family: 'Söhne', 'Inter', sans-serif; font-size: 11px; }
+.delta.trend-up { color: #355c2c; }
+.delta.trend-down { color: #8b2a1f; }
+.delta.trend-flat { color: #6b6b66; }
 .trend-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; margin: 24px 0; }
 .trend-card { padding: 16px 20px; background: #f3f1ea; border-radius: 6px; }
 .trend-card h3 { margin: 0 0 4px 0; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: #6b6b66; font-family: 'Söhne', 'Inter', sans-serif; font-weight: 500; }
