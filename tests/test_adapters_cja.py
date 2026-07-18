@@ -349,3 +349,34 @@ def test_numeric_inline_echo_of_derived_field_is_deduped():
     impl = adapt(snap)
     assert [d.id for d in impl.dimensions] == []
     assert [df.id for df in impl.derived_fields] == ["123"]
+
+
+# ---------------------------------------------------------------------------
+# Q5 (1.0.0): generator-version compatibility warning helper. Warn-only,
+# never refuse. Mirrored to sdr-grader (SPEC §11/§15).
+# ---------------------------------------------------------------------------
+
+
+def test_newer_generator_version_warns():
+    from sdr_grader.adapters.cja import (
+        TESTED_THROUGH_GENERATOR_VERSION,
+        generator_version_warning,
+    )
+
+    msg = generator_version_warning("99.0.0")
+    assert msg is not None
+    assert TESTED_THROUGH_GENERATOR_VERSION in msg
+    assert "99.0.0" in msg
+
+
+def test_equal_older_or_unparseable_versions_do_not_warn():
+    from sdr_grader.adapters.cja import (
+        TESTED_THROUGH_GENERATOR_VERSION,
+        generator_version_warning,
+    )
+
+    assert generator_version_warning(TESTED_THROUGH_GENERATOR_VERSION) is None
+    assert generator_version_warning("0.0.1") is None
+    assert generator_version_warning("unknown") is None
+    assert generator_version_warning("") is None
+    assert generator_version_warning("3.5.x") is None
