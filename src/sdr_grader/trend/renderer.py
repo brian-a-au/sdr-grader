@@ -8,13 +8,13 @@ accents only. Sparklines are server-side SVG; no JS, no CDN.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import UTC
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
+from sdr_grader.render.dates import human_date, to_utc
 from sdr_grader.trend.models import TrendReport
 
 _HERE = Path(__file__).parent
@@ -254,11 +254,11 @@ def _delta_class(delta: int) -> str:
 
 def _format_iso(point) -> str:
     """ISO date for the trend table."""
-    return point.timestamp.replace(tzinfo=None).date().isoformat()
+    return to_utc(point.timestamp).date().isoformat()
 
 
 def _format_human(point) -> str:
-    return point.timestamp.replace(tzinfo=UTC).strftime("%b %d %Y")
+    return human_date(point.timestamp)
 
 
 # ---------------------------------------------------------------------------

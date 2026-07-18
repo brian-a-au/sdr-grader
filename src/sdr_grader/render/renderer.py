@@ -17,7 +17,7 @@ Design notes
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
-from datetime import UTC, datetime
+from datetime import datetime
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
@@ -25,6 +25,7 @@ from typing import Literal
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
 from sdr_grader import __version__ as _PACKAGE_VERSION
+from sdr_grader.render.dates import human_datetime, to_utc
 
 # ---------------------------------------------------------------------------
 # Data model
@@ -189,8 +190,8 @@ def render(report: Report) -> str:
         "components_skipped_reason": report.components_skipped_reason,
         "adapter": asdict(report.adapter),
         "rubric": asdict(report.rubric),
-        "generated_at_iso": report.generated_at.astimezone(UTC).isoformat(timespec="seconds").replace("+00:00", "Z"),
-        "generated_at_human": report.generated_at.astimezone(UTC).strftime("%b %d %Y · %H:%M UTC"),
+        "generated_at_iso": to_utc(report.generated_at).isoformat(timespec="seconds").replace("+00:00", "Z"),
+        "generated_at_human": human_datetime(report.generated_at),
         "tldr_html": report.tldr_html,
         "categories": [asdict(c) for c in report.categories],
         "remediations": [asdict(r) for r in report.remediations],
