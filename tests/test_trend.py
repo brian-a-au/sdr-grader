@@ -215,3 +215,28 @@ def test_render_trend_empty_report_raises_clear_error():
     )
     with pytest.raises(ValueError, match="no points"):
         render_trend(empty)
+
+
+def test_trend_table_rows_align_with_header_union(tmp_path):
+    """Spec F26: every body row renders one cell per header column."""
+    import re
+
+    _build_series(tmp_path)
+    trend = build_trend_report(tmp_path, load_rubric(STRICT_PACK))
+    # Drop the last category from the first snapshot to simulate a series
+    # whose per-snapshot category sets differ.
+    first = trend.points[0]
+    reduced = dataclasses.replace(
+        first.report, categories=first.report.categories[:-1]
+    )
+    points = [dataclasses.replace(first, report=reduced), *trend.points[1:]]
+    html = render_trend(dataclasses.replace(trend, points=points))
+
+    thead = html.split("<thead>")[1].split("</thead>")[0]
+    tbody = html.split("<tbody>")[1].split("</tbody>")[0]
+    header_cells = thead.count("<th")
+    rows = re.findall(r"<tr>(.*?)</tr>", tbody, flags=re.S)
+    assert rows
+    for row in rows:
+        assert row.count("<td") == header_cells
+    assert '<td class="num"></td>' in tbody  # the dropped category's empty cell

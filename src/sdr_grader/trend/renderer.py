@@ -84,8 +84,15 @@ def _build_view(trend: TrendReport) -> dict[str, Any]:
     category_traces = _category_traces(trend)
     appeared, disappeared = _findings_churn(trend)
 
+    # Rows render in the same union order the table header uses, so a
+    # snapshot missing a category yields an empty cell instead of
+    # shifting every later value left (spec F26).
+    trace_slugs = [trace.name for trace in category_traces]
     rows = []
     for p in points:
+        pct_by_slug = {
+            _category_slug(cat.name): cat.pct for cat in p.report.categories
+        }
         rows.append(
             {
                 "iso": _format_iso(p),
@@ -94,13 +101,8 @@ def _build_view(trend: TrendReport) -> dict[str, Any]:
                 "overall_pct": p.report.overall_pct,
                 "finding_count": len(p.report.findings),
                 "categories": [
-                    {
-                        "slug": _category_slug(cat.name),
-                        "name": CATEGORY_DISPLAY.get(_category_slug(cat.name), cat.name),
-                        "pct": cat.pct,
-                        "grade": cat.grade,
-                    }
-                    for cat in p.report.categories
+                    {"slug": slug, "pct": pct_by_slug.get(slug)}
+                    for slug in trace_slugs
                 ],
             }
         )
