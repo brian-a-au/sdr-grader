@@ -3,6 +3,22 @@
 All notable changes follow the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
+## 1.1.3 — 2026-07-18
+
+Adapter fixes for real-world CJA and AA exports, mirrored from the
+sdr-visualizer corpus-fidelity round. No rules, checks, or grades change.
+
+### Fixed
+
+- **CJA adapter.** Real cja_auto_sdr exports carry the generation
+  timestamp only under the key "Generated Date & timestamp and
+  timezone"; the adapter now reads it, after the existing synthetic
+  keys, so `snapshot_taken_at` is populated for real exports.
+- **Both adapters.** `created_at` and `modified_at` come back as None
+  when the raw export carries a non-string value, instead of passing a
+  fabricated value through, and the CJA derived-field `data_type` gets
+  the same string cast the metric and dimension paths already used.
+
 ## 1.1.2 — 2026-07-17
 
 Trend report bug fixes and small rendering fixes, plus one adapter
