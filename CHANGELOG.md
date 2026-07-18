@@ -42,6 +42,8 @@ or grade calculations change.
   renderer golden.
 - Added regression coverage for the trend package's lazy-attribute
   failure path and its bare `.delta` header rule.
+- Source distributions explicitly exclude local `.claude/` state and
+  worktrees so development artifacts cannot enter a published archive.
 
 ## 1.1.3 — 2026-07-18
 
