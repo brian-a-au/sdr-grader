@@ -15,7 +15,7 @@ from __future__ import annotations
 import json
 import re
 import sys
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -90,12 +90,11 @@ def _pick_snapshot(
     to mtime when filenames don't carry one.
     With `at`: use the snapshot closest to (and not after) the target.
     """
-    # Every candidate lands on one scale: filename timestamp when the
-    # name carries one, else file mtime (deterministic across runs on
-    # the same machine, even if not portable). A fresh file without a
+    # Every candidate lands on the same aware UTC scale: filename timestamp
+    # when the name carries one, else file mtime. A fresh file without a
     # timestamped name therefore beats a stale timestamped one.
     has_timestamp: list[tuple[Path, datetime]] = [
-        (p, _extract_timestamp(p) or datetime.fromtimestamp(p.stat().st_mtime))
+        (p, _candidate_timestamp(p))
         for p in candidates
     ]
 
@@ -116,6 +115,14 @@ def _pick_snapshot(
     )
 
 
+def _candidate_timestamp(path: Path) -> datetime:
+    """Return a filename timestamp or filesystem mtime as aware UTC."""
+    return _extract_timestamp(path) or datetime.fromtimestamp(
+        path.stat().st_mtime,
+        tz=UTC,
+    )
+
+
 def _extract_timestamp(path: Path) -> datetime | None:
     match = _TIMESTAMP_RE.search(path.stem)
     if not match:
@@ -128,15 +135,12 @@ def _extract_timestamp(path: Path) -> datetime | None:
         hour = int(parts["hour"] or 0)
         minute = int(parts["minute"] or 0)
         second = int(parts["second"] or 0)
-        return datetime(year, month, day, hour, minute, second)
+        return datetime(year, month, day, hour, minute, second, tzinfo=UTC)
     except (TypeError, ValueError):
         return None
 
 
 def _parse_iso_timestamp(value: str) -> datetime | None:
-    # Filename-derived timestamps are naive, so --at comparisons happen
-    # on naive UTC values; slashes tolerate 2026/04/25-style input.
-    parsed = parse_timestamp(value.replace("/", "-"))
-    if parsed is None:
-        return None
-    return parsed.replace(tzinfo=None)
+    # Candidate timestamps are aware UTC; slashes tolerate
+    # 2026/04/25-style input.
+    return parse_timestamp(value.replace("/", "-"))
