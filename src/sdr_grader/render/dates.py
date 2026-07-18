@@ -20,6 +20,12 @@ MONTH_ABBREV = (
     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 )
 
+
+def to_iso_z(value: datetime) -> str:
+    """Render a UTC timestamp with seconds precision and a ``Z`` suffix."""
+    return to_utc(value).isoformat(timespec="seconds").replace("+00:00", "Z")
+
+
 def human_date(value: datetime) -> str:
     """Render like 'Apr 25 2026' (zero-padded day, pinned month names)."""
     utc = to_utc(value)
