@@ -274,9 +274,12 @@ def check_deprecated_components(
 ) -> list[Finding]:
     """Fire when components appear deprecated by name/tag yet remain active.
 
-    A component is "deprecated and active" when it has a deprecated marker
-    (tag or name pattern) but is still referenced by something or has been
-    modified within the last `stale_days` (defaults to 90).
+    A component is "deprecated and active" when it has a deprecated
+    marker (tag or name pattern) and is still referenced by segments or
+    calculated metrics. Recency of modification is intentionally not
+    consulted: a modified-within-N-days clause would change grades on
+    real input, so it is deferred to the 1.2.0 semantics batch (spec
+    2026-07-17 §3.8).
     """
     referenced = collect_referenced_ids(impl)
     deprecated_active: list[str] = []
