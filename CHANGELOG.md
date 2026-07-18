@@ -208,8 +208,7 @@ distributions and the per-rule confidence rating behind each threshold.
 - **Examples**: clean and messy grade cards per platform
   (`examples/grade-cja-clean.html` A 100%, `examples/grade-cja-messy.html`
   F 44%, `examples/grade-aa-clean.html` A 100%, `examples/grade-aa-messy.html`
-  F 39%), a multi-snapshot `examples/trend-example.html`, the original
-  visual-contract reference `examples/sample-report.html`, and the
+  F 39%), a multi-snapshot `examples/trend-example.html`, and the
   renderer-output golden `examples/templated-report.html`.
 
 ### Discipline

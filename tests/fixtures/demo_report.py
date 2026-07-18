@@ -1,8 +1,8 @@
 """Canonical demo Report used for renderer tests and example regeneration.
 
-Mirrors the hand-built sample at examples/sample-report.html. Used as both:
+Used as both:
 - a stable input for renderer regression tests, and
-- the source for scripts/generate_examples.py.
+- the source for scripts/generate_examples.py and examples/templated-report.html.
 
 The `generated_at` timestamp is hard-coded so renderer output is deterministic.
 """
