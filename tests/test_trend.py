@@ -279,6 +279,33 @@ def test_colliding_category_slugs_resolve_first_wins_everywhere(tmp_path):
     assert row_pct != clash_pct
 
 
+def test_trend_view_converts_each_raw_timestamp_once_and_omits_dead_cell_keys(
+    tmp_path,
+    monkeypatch,
+):
+    """Spec F46/F49: one conversion per point and template-shaped cells."""
+    from sdr_grader.trend import renderer as trend_renderer
+
+    _build_series(tmp_path)
+    trend = build_trend_report(tmp_path, load_rubric(STRICT_PACK))
+    original_to_utc = trend_renderer.to_utc
+    converted = []
+
+    def counting_to_utc(value):
+        converted.append(value)
+        return original_to_utc(value)
+
+    monkeypatch.setattr(trend_renderer, "to_utc", counting_to_utc)
+    view = trend_renderer._build_view(trend)
+
+    assert converted == [point.timestamp for point in trend.points]
+    assert all(
+        set(cell) == {"pct"}
+        for row in view["rows"]
+        for cell in row["categories"]
+    )
+
+
 def test_trend_table_rows_align_with_header_union(tmp_path):
     """Spec F26: every body row renders one cell per header column."""
     import re

@@ -26,13 +26,16 @@ def to_iso_z(value: datetime) -> str:
     return to_utc(value).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
+def _format_date(utc: datetime) -> str:
+    return f"{MONTH_ABBREV[utc.month - 1]} {utc:%d} {utc.year}"
+
+
 def human_date(value: datetime) -> str:
     """Render like 'Apr 25 2026' (zero-padded day, pinned month names)."""
-    utc = to_utc(value)
-    return f"{MONTH_ABBREV[utc.month - 1]} {utc:%d} {utc.year}"
+    return _format_date(to_utc(value))
 
 
 def human_datetime(value: datetime) -> str:
     """Render like 'Apr 25 2026 · 09:14 UTC' (pinned month names)."""
     utc = to_utc(value)
-    return f"{MONTH_ABBREV[utc.month - 1]} {utc:%d} {utc.year} · {utc:%H:%M} UTC"
+    return f"{_format_date(utc)} · {utc:%H:%M} UTC"
