@@ -35,10 +35,17 @@ class TrendReport:
     pack_version: str
     points: list[TrendPoint] = field(default_factory=list)
 
+    def _require_points(self) -> list[TrendPoint]:
+        if not self.points:
+            raise ValueError(
+                "TrendReport has no points; a trend needs at least one graded snapshot"
+            )
+        return self.points
+
     @property
     def first(self) -> TrendPoint:
-        return self.points[0]
+        return self._require_points()[0]
 
     @property
     def latest(self) -> TrendPoint:
-        return self.points[-1]
+        return self._require_points()[-1]

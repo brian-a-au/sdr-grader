@@ -217,6 +217,24 @@ def test_render_trend_empty_report_raises_clear_error():
         render_trend(empty)
 
 
+def test_first_and_latest_raise_clear_error_when_empty():
+    """Spec F42: property access mirrors the renderer's empty guard."""
+    from sdr_grader.trend.models import TrendReport
+
+    empty = TrendReport(
+        instance_id="dv_x",
+        instance_name="Empty",
+        platform="cja",
+        pack="strict",
+        pack_version="1.0",
+        points=[],
+    )
+    with pytest.raises(ValueError, match="no points"):
+        empty.first
+    with pytest.raises(ValueError, match="no points"):
+        empty.latest
+
+
 def test_colliding_category_slugs_resolve_first_wins_everywhere(tmp_path):
     """Spec F39: duplicate slugs agree in the header and table rows."""
     from sdr_grader.trend.renderer import _build_view
