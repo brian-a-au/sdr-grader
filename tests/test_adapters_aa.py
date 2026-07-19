@@ -45,6 +45,17 @@ def test_aa_adapter_basic_shape(messy_aa):
     assert impl.derived_fields == []  # CJA-only concept
 
 
+def test_aa_adapter_treats_non_string_snapshot_timestamp_as_missing():
+    snapshot = {
+        "report_suite": {"rsid": "test"},
+        "dimensions": [],
+        "metrics": [],
+        "captured_at": 7,
+    }
+
+    assert adapt(snapshot).snapshot_taken_at is None
+
+
 def test_aa_adapter_combines_evars_and_props_into_dimensions(messy_aa):
     impl = adapt(messy_aa)
     evars = [d for d in impl.dimensions if d.id.startswith("variables/evar")]

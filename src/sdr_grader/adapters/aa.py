@@ -46,6 +46,8 @@ def adapt(snapshot: dict[str, Any], *, source: str = "<unknown>") -> Implementat
     snapshot_taken_at = snapshot.get("captured_at") or snapshot.get("captured")
     if isinstance(snapshot_taken_at, str):
         snapshot_taken_at = snapshot_taken_at.strip() or None
+    else:
+        snapshot_taken_at = None
     adapter_version = str(snapshot.get("tool_version") or "unknown")
 
     dims_raw = _ensure_list(snapshot, "dimensions")
