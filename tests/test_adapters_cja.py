@@ -65,6 +65,16 @@ def test_messy_implementation_metadata(messy_impl: Implementation) -> None:
     assert isinstance(messy_impl.raw, dict) and "metadata" in messy_impl.raw
 
 
+def test_cja_adapter_treats_non_string_snapshot_timestamp_as_missing() -> None:
+    snapshot = {
+        "metadata": {"Data View ID": "dv_test", "Generation Timestamp": 7},
+        "metrics": [],
+        "dimensions": [],
+    }
+
+    assert adapt(snapshot).snapshot_taken_at is None
+
+
 def test_messy_total_components_is_487(messy_impl: Implementation) -> None:
     assert len(messy_impl.metrics) == 142
     assert len(messy_impl.dimensions) == 203
