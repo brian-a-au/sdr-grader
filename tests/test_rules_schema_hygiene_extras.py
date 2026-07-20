@@ -23,9 +23,15 @@ from sdr_grader.rules.checks.schema_hygiene import (
 from sdr_grader.rules.engine import RuleContext
 
 
-def _component(idx: int, *, name: str | None = None, cid: str | None = None,
-               comp_type: str = "metric", data_type: str = "integer",
-               tags: list[str] | None = None) -> Component:
+def _component(
+    idx: int,
+    *,
+    name: str | None = None,
+    cid: str | None = None,
+    comp_type: str = "metric",
+    data_type: str | None = "integer",
+    tags: list[str] | None = None,
+) -> Component:
     return Component(
         id=cid or f"metrics/m_{idx:03d}",
         name=name or f"Metric {idx:03d}",
@@ -66,7 +72,9 @@ def _calc(cid: str, refs: list[str]) -> CalculatedMetric:
     )
 
 
-def _impl(*, metrics=None, dimensions=None, derived=None, segments=None, calc=None) -> Implementation:
+def _impl(
+    *, metrics=None, dimensions=None, derived=None, segments=None, calc=None, supplementary=None
+) -> Implementation:
     return Implementation(
         platform="cja",
         instance_id="dv_t",
@@ -80,6 +88,7 @@ def _impl(*, metrics=None, dimensions=None, derived=None, segments=None, calc=No
         calculated_metrics=calc or [],
         derived_fields=derived or [],
         raw={},
+        supplementary_data=supplementary or {},
     )
 
 
@@ -134,7 +143,9 @@ def test_duplicate_names_normalizes_case_and_whitespace():
 def test_broken_references_passes_when_all_resolve():
     metrics = [_component(1, cid="metrics/visits"), _component(2, cid="metrics/orders")]
     calc = [_calc("calculatedMetrics/x", refs=["metrics/visits", "metrics/orders"])]
-    findings = check_broken_references(_impl(metrics=metrics, calc=calc), _ctx("SCH-002", severity="high"))
+    findings = check_broken_references(
+        _impl(metrics=metrics, calc=calc), _ctx("SCH-002", severity="high")
+    )
     assert findings == []
 
 
@@ -143,7 +154,8 @@ def test_broken_references_fires_on_missing_target():
     calc = [_calc("calculatedMetrics/x", refs=["metrics/visits", "metrics/missing"])]
     segs = [_segment("segments/s", refs=["variables/missing_dim"])]
     findings = check_broken_references(
-        _impl(metrics=metrics, calc=calc, segments=segs), _ctx("SCH-002", severity="high"),
+        _impl(metrics=metrics, calc=calc, segments=segs),
+        _ctx("SCH-002", severity="high"),
     )
     assert len(findings) == 1
     assert "2 broken references" in findings[0].title
@@ -151,7 +163,9 @@ def test_broken_references_fires_on_missing_target():
 
 def test_broken_references_truncates_to_show_top():
     calc = [_calc(f"calc/{i}", refs=[f"missing/{i}"]) for i in range(15)]
-    findings = check_broken_references(_impl(calc=calc), _ctx("SCH-002", severity="high", show_top=5))
+    findings = check_broken_references(
+        _impl(calc=calc), _ctx("SCH-002", severity="high", show_top=5)
+    )
     assert "showing first 5 of 15" in findings[0].title
 
 
@@ -176,6 +190,17 @@ def test_type_name_mismatch_quiet_when_decimal_or_unrelated_name():
     assert findings == []
 
 
+def test_type_name_mismatch_skips_metrics_without_a_data_type():
+    metrics = [_component(1, name="Conversion Rate", data_type=None)]
+    assert (
+        check_type_name_mismatch(
+            _impl(metrics=metrics),
+            _ctx("SCH-004", severity="low"),
+        )
+        == []
+    )
+
+
 def test_type_name_mismatch_fires_on_aa_counter_event_with_rate_name():
     """AA event type `counter` stores integers — a rate-named counter event
     is the exact silent-truncation bug SCH-004 was designed to catch, but
@@ -194,14 +219,18 @@ def test_type_name_mismatch_fires_on_aa_counter_event_with_rate_name():
 def test_deprecated_quiet_when_no_deprecated_markers():
     metrics = [_component(1, name="Active Metric", tags=["custom"])]
     calc = [_calc("calc/use_active", refs=[metrics[0].id])]
-    findings = check_deprecated_components(_impl(metrics=metrics, calc=calc), _ctx("SCH-005", severity="low"))
+    findings = check_deprecated_components(
+        _impl(metrics=metrics, calc=calc), _ctx("SCH-005", severity="low")
+    )
     assert findings == []
 
 
 def test_deprecated_fires_when_marker_and_referenced():
     metrics = [_component(1, name="Old Page Views", tags=["deprecated"])]
     calc = [_calc("calc/still_using", refs=[metrics[0].id])]
-    findings = check_deprecated_components(_impl(metrics=metrics, calc=calc), _ctx("SCH-005", severity="low"))
+    findings = check_deprecated_components(
+        _impl(metrics=metrics, calc=calc), _ctx("SCH-005", severity="low")
+    )
     assert len(findings) == 1
 
 
@@ -270,6 +299,52 @@ def test_cardinality_concerns_is_no_op_in_v0_1():
     assert findings == []
 
 
+def test_cardinality_concerns_filters_invalid_counts_and_fires_for_named_flag():
+    dimensions = [
+        _component(1, cid="variables/status", name="Account Status", comp_type="dimension"),
+        _component(2, cid="variables/region", name="Region", comp_type="dimension"),
+        _component(3, cid="variables/tier", name="Account Tier", comp_type="dimension"),
+    ]
+    findings = check_cardinality_concerns(
+        _impl(
+            dimensions=dimensions,
+            supplementary={
+                "cardinality": {
+                    "variables/status": 12,
+                    "variables/region": 500,
+                    "variables/tier": "unknown",
+                }
+            },
+        ),
+        _ctx("SCH-006", low_cardinality_cap=10),
+    )
+    assert len(findings) == 1
+    assert "variables/status" in findings[0].body[1].items[0]
+
+
+def test_cardinality_concerns_quiet_for_wrong_typed_or_low_counts():
+    dimension = _component(
+        1,
+        cid="variables/status",
+        name="Account Status",
+        comp_type="dimension",
+    )
+    assert (
+        check_cardinality_concerns(
+            _impl(dimensions=[dimension], supplementary={"cardinality": "unknown"}),
+            _ctx("SCH-006"),
+        )
+        == []
+    )
+    assert (
+        check_cardinality_concerns(
+            _impl(dimensions=[dimension], supplementary={"cardinality": {dimension.id: 10}}),
+            _ctx("SCH-006", low_cardinality_cap=10),
+        )
+        == []
+    )
+
+
 # ---------------------------------------------------------------------------
 # SCH-007 CJA persistence lookback cap
 # ---------------------------------------------------------------------------
@@ -295,10 +370,22 @@ def _dim_with_persistence(idx: int, persistence: Any, *, name: str | None = None
 def test_persistence_cap_no_op_on_aa():
     """SCH-007 is CJA-only — must skip AA snapshots even if data is present."""
     aa_impl = Implementation(
-        platform="aa", instance_id="rs_x", instance_name="x",
-        snapshot_taken_at=None, snapshot_source="t", adapter_version="0",
-        metrics=[], dimensions=[_dim_with_persistence(1, '{"enabled":true,"lookback":{"granularity":"day","numPeriods":180}}')],
-        segments=[], calculated_metrics=[], derived_fields=[], raw={},
+        platform="aa",
+        instance_id="rs_x",
+        instance_name="x",
+        snapshot_taken_at=None,
+        snapshot_source="t",
+        adapter_version="0",
+        metrics=[],
+        dimensions=[
+            _dim_with_persistence(
+                1, '{"enabled":true,"lookback":{"granularity":"day","numPeriods":180}}'
+            )
+        ],
+        segments=[],
+        calculated_metrics=[],
+        derived_fields=[],
+        raw={},
     )
     assert check_persistence_lookback_cap(aa_impl, _ctx("SCH-007")) == []
 
@@ -332,8 +419,7 @@ def test_persistence_cap_fires_when_days_exceed_cap():
 def test_persistence_cap_translates_months_to_days():
     """4 months of granularity = 120 days, which exceeds the 90-day cap."""
     setting = (
-        '{"enabled":true,"lookback":{"func":"min-months",'
-        '"granularity":"month","numPeriods":4}}'
+        '{"enabled":true,"lookback":{"func":"min-months","granularity":"month","numPeriods":4}}'
     )
     impl = _impl(dimensions=[_dim_with_persistence(1, setting)])
     findings = check_persistence_lookback_cap(impl, _ctx("SCH-007"))
@@ -367,8 +453,9 @@ def test_persistence_cap_skips_container_expirations():
 # ---------------------------------------------------------------------------
 
 
-def _derived(cid: str, *, refs: list[str] | None = None,
-             lookup_refs: list[str] | None = None) -> Component:
+def _derived(
+    cid: str, *, refs: list[str] | None = None, lookup_refs: list[str] | None = None
+) -> Component:
     return Component(
         id=cid,
         name=cid,
@@ -486,12 +573,17 @@ def test_derived_field_broken_refs_fires_on_missing_target():
 def test_derived_field_broken_refs_filters_platform_builtins():
     """CJA built-ins like `metrics/adobe_sessionends` are valid even when
     not enumerated in the snapshot's metrics/dimensions blocks."""
-    derived = [_derived("variables/df_a", refs=[
-        "metrics/adobe_sessionends",
-        "dimensions/daterangemonth",
-        "dimensions/timepartmonthofyear",
-        "dimensions/platformdatasetid",
-    ])]
+    derived = [
+        _derived(
+            "variables/df_a",
+            refs=[
+                "metrics/adobe_sessionends",
+                "dimensions/daterangemonth",
+                "dimensions/timepartmonthofyear",
+                "dimensions/platformdatasetid",
+            ],
+        )
+    ]
     findings = check_derived_field_broken_refs(_impl(derived=derived), _ctx("SCH-009"))
     assert findings == []
 
@@ -499,8 +591,11 @@ def test_derived_field_broken_refs_filters_platform_builtins():
 def test_derived_field_broken_refs_normalizes_namespace_prefix():
     """`dimensions/X` references must resolve against `variables/X` definitions —
     CJA SDR stores dimensions under `variables/` but refs use `dimensions/`."""
-    dimensions = [_component(1, cid="variables/sd_ajo_messageProfileId",
-                             comp_type="dimension", data_type="string")]
+    dimensions = [
+        _component(
+            1, cid="variables/sd_ajo_messageProfileId", comp_type="dimension", data_type="string"
+        )
+    ]
     derived = [_derived("variables/df_a", refs=["dimensions/sd_ajo_messageProfileId"])]
     impl = _impl(dimensions=dimensions, derived=derived)
     assert check_derived_field_broken_refs(impl, _ctx("SCH-009")) == []
@@ -525,14 +620,24 @@ def test_derived_field_broken_refs_quiet_on_aa():
 
 
 def test_derived_field_broken_refs_truncates_to_show_top():
-    derived = [
-        _derived(f"variables/df_{i}", refs=[f"metrics/missing_{i}"])
-        for i in range(15)
-    ]
+    derived = [_derived(f"variables/df_{i}", refs=[f"metrics/missing_{i}"]) for i in range(15)]
     findings = check_derived_field_broken_refs(
-        _impl(derived=derived), _ctx("SCH-009", show_top=5),
+        _impl(derived=derived),
+        _ctx("SCH-009", show_top=5),
     )
     assert "showing first 5 of 15" in findings[0].title
+
+
+def test_derived_field_refs_ignore_non_list_platform_values():
+    derived = _derived("variables/df_a")
+    derived.platform_specific["component_references"] = "metrics/missing"
+    assert (
+        check_derived_field_broken_refs(
+            _impl(derived=[derived]),
+            _ctx("SCH-009"),
+        )
+        == []
+    )
 
 
 def test_lookback_days_tolerates_nan_and_infinity():
@@ -541,3 +646,4 @@ def test_lookback_days_tolerates_nan_and_infinity():
     assert _lookback_days({"granularity": "day", "numPeriods": float("nan")}) is None
     assert _lookback_days({"granularity": "day", "numPeriods": float("inf")}) is None
     assert _lookback_days({"granularity": "day", "numPeriods": 30}) == 30
+    assert _lookback_days({"granularity": "week", "numPeriods": 2}) is None

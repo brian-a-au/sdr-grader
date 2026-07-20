@@ -180,7 +180,9 @@ def test_segment_references_combined_from_three_lists(messy_impl: Implementation
     assert "metrics/cm_metric_001" in seg.references
 
 
-def test_shallow_segment_falls_back_to_declared_container_when_no_nested(messy_impl: Implementation) -> None:
+def test_shallow_segment_falls_back_to_declared_container_when_no_nested(
+    messy_impl: Implementation,
+) -> None:
     # The shallow segments do contain a container in their definition; this also
     # exercises that the walk finds it correctly.
     seg = next(s for s in messy_impl.segments if s.id == "segments/seg_simple_001")
@@ -199,15 +201,16 @@ def test_messy_has_30_calc_metrics(messy_impl: Implementation) -> None:
 
 def test_seven_near_duplicate_revenue_calc_metrics(messy_impl: Implementation) -> None:
     near_dups = [
-        cm for cm in messy_impl.calculated_metrics
-        if cm.formula_text == "Revenue / Visits"
+        cm for cm in messy_impl.calculated_metrics if cm.formula_text == "Revenue / Visits"
     ]
     assert len(near_dups) == 7
     assert all(set(cm.references) == {"metrics/revenue", "metrics/visits"} for cm in near_dups)
 
 
 def test_calc_metric_round_trip(messy_impl: Implementation) -> None:
-    cm = next(c for c in messy_impl.calculated_metrics if c.id == "calculatedMetrics/cm_revenue_per_visit")
+    cm = next(
+        c for c in messy_impl.calculated_metrics if c.id == "calculatedMetrics/cm_revenue_per_visit"
+    )
     assert isinstance(cm, CalculatedMetric)
     assert cm.complexity_score == 42.0
     assert cm.formula_text == "Revenue / Visits"
@@ -217,7 +220,9 @@ def test_calc_metric_round_trip(messy_impl: Implementation) -> None:
 
 
 def test_calc_metric_distinct_complexity_preserved(messy_impl: Implementation) -> None:
-    distinct = next(c for c in messy_impl.calculated_metrics if c.id == "calculatedMetrics/cm_orders_per_visit")
+    distinct = next(
+        c for c in messy_impl.calculated_metrics if c.id == "calculatedMetrics/cm_orders_per_visit"
+    )
     assert distinct.complexity_score == 25.0
     assert distinct.formula_text == "Orders / Visits"
 
@@ -275,11 +280,13 @@ def test_adapt_rejects_snapshot_without_data_view_id() -> None:
 
 def test_adapt_rejects_non_list_metrics() -> None:
     with pytest.raises(InvalidSnapshotError, match="metrics"):
-        adapt({
-            "metadata": {"Data View ID": "dv_x"},
-            "metrics": {"not": "a list"},
-            "dimensions": [],
-        })
+        adapt(
+            {
+                "metadata": {"Data View ID": "dv_x"},
+                "metrics": {"not": "a list"},
+                "dimensions": [],
+            }
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -330,9 +337,7 @@ def test_malformed_tag_string_falls_back_to_empty() -> None:
 def test_stringified_reference_lists_parse():
     from sdr_grader.adapters.cja import _calc_metric_from_record
 
-    calc = _calc_metric_from_record(
-        {"metric_id": "cm1", "metric_references": '["metrics/a"]'}
-    )
+    calc = _calc_metric_from_record({"metric_id": "cm1", "metric_references": '["metrics/a"]'})
     assert calc.references == ["metrics/a"]
 
 
@@ -404,9 +409,7 @@ def test_calc_metric_non_string_timestamps_become_none():
 def test_segment_non_string_timestamps_become_none():
     from sdr_grader.adapters.cja import _segment_from_record
 
-    seg = _segment_from_record(
-        {"segment_id": "s1", "created": 1735689600, "modified": 1735776000}
-    )
+    seg = _segment_from_record({"segment_id": "s1", "created": 1735689600, "modified": 1735776000})
     assert seg.created_at is None
     assert seg.modified_at is None
 
@@ -487,3 +490,221 @@ def test_synthetic_timestamp_keys_keep_precedence():
     md["Generated Date & timestamp and timezone"] = "2026-05-20 10:56:29 PDT"
     impl = adapt(snap)
     assert impl.snapshot_taken_at == "2026-01-01 00:00:00"
+
+
+# ---------------------------------------------------------------------------
+# Deterministic normalization and validation characterization
+# ---------------------------------------------------------------------------
+
+
+def test_metadata_aliases_and_absent_optional_sections_normalize():
+    impl = adapt(
+        {
+            "metadata": {
+                "data_view_id": "dv-alias",
+                "dataViewName": "Alias view",
+                "generated_at": " 2026-07-18T12:00:00Z ",
+                "tool_version": 7,
+            },
+            "metrics": [],
+            "dimensions": [],
+        },
+        source="alias.json",
+    )
+
+    assert impl.instance_id == "dv-alias"
+    assert impl.instance_name == "Alias view"
+    assert impl.snapshot_taken_at == "2026-07-18T12:00:00Z"
+    assert impl.adapter_version == "7"
+    assert impl.snapshot_source == "alias.json"
+    assert impl.derived_fields == []
+    assert impl.calculated_metrics == []
+    assert impl.segments == []
+
+
+@pytest.mark.parametrize("key", ["metrics", "dimensions"])
+def test_required_collections_reject_wrong_types(key):
+    snapshot = {
+        "metadata": {"Data View ID": "dv1"},
+        "metrics": [],
+        "dimensions": [],
+        key: {},
+    }
+
+    with pytest.raises(InvalidSnapshotError, match=rf"required array '{key}'.*dict"):
+        adapt(snapshot)
+
+
+@pytest.mark.parametrize(
+    ("record", "message"),
+    [
+        (7, "expected metric record to be an object, got int"),
+        ({"name": "No ID"}, "metric record is missing 'id'"),
+    ],
+)
+def test_metric_records_reject_invalid_shapes(record, message):
+    snapshot = {
+        "metadata": {"Data View ID": "dv1"},
+        "metrics": [record],
+        "dimensions": [],
+    }
+
+    with pytest.raises(InvalidSnapshotError, match=message):
+        adapt(snapshot)
+
+
+@pytest.mark.parametrize(
+    ("section", "records_key", "record", "message"),
+    [
+        ("derived_fields", "fields", 7, "expected derived field record to be an object"),
+        (
+            "derived_fields",
+            "fields",
+            {"component_name": "No ID"},
+            "derived field record is missing 'component_id'",
+        ),
+        (
+            "calculated_metrics",
+            "metrics",
+            7,
+            "expected calculated metric record to be an object",
+        ),
+        (
+            "calculated_metrics",
+            "metrics",
+            {"metric_name": "No ID"},
+            "calculated metric record is missing 'metric_id'",
+        ),
+        ("segments", "segments", 7, "expected segment record to be an object"),
+        (
+            "segments",
+            "segments",
+            {"segment_name": "No ID"},
+            "segment record is missing 'segment_id'",
+        ),
+    ],
+)
+def test_optional_component_records_reject_invalid_shapes(section, records_key, record, message):
+    snapshot = {
+        "metadata": {"Data View ID": "dv1"},
+        "metrics": [],
+        "dimensions": [],
+        section: {records_key: [record]},
+    }
+
+    with pytest.raises(InvalidSnapshotError, match=message):
+        adapt(snapshot)
+
+
+def test_nested_attribution_and_allocation_normalize_from_definition():
+    from sdr_grader.adapters.cja import _calc_metric_from_record, _extract_attribution
+
+    assert _extract_attribution([]) == (None, None)  # type: ignore[arg-type]
+
+    calc = _calc_metric_from_record(
+        {
+            "metric_id": "cm1",
+            "definition_json": {"func": {"model": "first-touch", "allocation": "most-recent"}},
+        }
+    )
+    assert calc.attribution_model == "first-touch"
+    assert calc.allocation == "most-recent"
+
+
+def test_container_helpers_recurse_lists_and_fall_back_to_declared_type():
+    from sdr_grader.adapters.cja import _extract_container_types
+
+    definition = [
+        {"func": "container", "context": "event"},
+        {"func": "wrapper", "args": [{"func": "container", "context": "person"}]},
+        {"func": "container", "context": "event"},
+    ]
+    assert _extract_container_types("session", definition) == [  # type: ignore[arg-type]
+        "event",
+        "person",
+    ]
+    assert _extract_container_types("session", {}) == ["session"]
+
+
+def test_section_record_shapes_keep_tolerant_and_malformed_contracts():
+    from sdr_grader.adapters.cja import _section_records
+
+    record = {"id": "one"}
+    assert _section_records([record], "items") == [record]
+    assert _section_records({"summary": {"count": 0}}, "items") == []
+
+    with pytest.raises(InvalidSnapshotError, match="section 'items'.*list.*str"):
+        _section_records({"items": "bad"}, "items")
+    with pytest.raises(InvalidSnapshotError, match="section must be object or list.*int"):
+        _section_records(7, "items")
+
+
+def test_definition_parser_accepts_objects_and_degrades_malformed_shapes():
+    from sdr_grader.adapters.cja import _parse_definition_json
+
+    definition = {"func": "divide"}
+    assert _parse_definition_json(definition) is definition
+    assert _parse_definition_json("not-json") == {}
+    assert _parse_definition_json('["not", "an", "object"]') == {}
+    assert _parse_definition_json(7) == {}
+
+
+def test_tag_and_reference_parsers_degrade_json_scalars_and_malformed_json():
+    from sdr_grader.adapters.cja import _parse_ref_list, _parse_tag_list
+
+    assert _parse_tag_list('"custom"') == []
+    assert _parse_tag_list(7) == []
+    assert _parse_ref_list("not-json") == []
+
+
+def test_component_normalizers_preserve_owner_description_polarity_and_governance():
+    from sdr_grader.adapters.cja import (
+        _calc_metric_from_record,
+        _component_from_record,
+        _normalize_owner,
+        _segment_from_record,
+    )
+
+    component = _component_from_record(
+        {
+            "component_id": "variables/d1",
+            "title": "Dimension",
+            "description": 7,
+            "polarity": " Negative ",
+            "owner": " owner@example.com ",
+            "tags": ["governed", 7],
+            "schema": "web",
+        },
+        "dimension",
+    )
+    assert component.description is None
+    assert component.polarity == "negative"
+    assert component.owner == "owner@example.com"
+    assert component.tags == ["governed", "7"]
+    assert component.platform_specific == {"component_id": "variables/d1", "schema": "web"}
+
+    assert _normalize_owner(7) is None
+    assert _normalize_owner(" Unknown User ") is None
+    assert _component_from_record({"id": "m1", "polarity": "upward"}, "metric").polarity is None
+
+    calc = _calc_metric_from_record({"metric_id": "cm1", "approved": False, "shared_to_count": 2.9})
+    segment = _segment_from_record({"segment_id": "s1", "approved": True, "shared_to_count": 0})
+    assert (calc.approved, calc.shared_to_count) == (False, 2)
+    assert (segment.approved, segment.shared_to_count) == (True, 0)
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [(True, 0.0), (3, 3.0), (float("inf"), 0.0), (" 2.5 ", 2.5)],
+)
+def test_numeric_coercion_accepts_only_finite_non_boolean_values(value, expected):
+    from sdr_grader.adapters.cja import _safe_float
+
+    assert _safe_float(value) == expected
+
+
+def test_aa_snapshot_forced_through_cja_keeps_platform_validation_failure():
+    aa = json.loads((FIXTURES / "aa_snapshot_clean.json").read_text(encoding="utf-8"))
+
+    with pytest.raises(InvalidSnapshotError, match="metadata"):
+        adapt(aa)

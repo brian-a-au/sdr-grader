@@ -83,6 +83,21 @@ def test_age_quiet_when_snapshot_within_window():
     assert findings == []
 
 
+def test_age_quiet_when_either_timestamp_is_malformed():
+    impl_obj = impl()
+    impl_obj.snapshot_taken_at = "not-a-date"
+    findings = check_snapshot_age(
+        impl_obj,
+        ctx(
+            "GOV-002",
+            category="governance_posture",
+            max_age_days=30,
+            reference_date="2025-06-01",
+        ),
+    )
+    assert findings == []
+
+
 # ---------------------------------------------------------------------------
 # GOV-003 SDR doc absent
 # ---------------------------------------------------------------------------
@@ -127,6 +142,16 @@ def test_missing_owners_fires_above_threshold():
     assert "20 components lack owner" in findings[0].title
 
 
+def test_missing_owners_quiet_when_there_are_no_components():
+    assert (
+        check_missing_owners(
+            impl(),
+            ctx("GOV-004", category="governance_posture"),
+        )
+        == []
+    )
+
+
 # ---------------------------------------------------------------------------
 # GOV-005 missing tags
 # ---------------------------------------------------------------------------
@@ -150,6 +175,16 @@ def test_missing_tags_fires_when_majority_untagged():
         ctx("GOV-005", category="governance_posture", threshold=0.50),
     )
     assert len(findings) == 1
+
+
+def test_missing_tags_quiet_when_there_are_no_components():
+    assert (
+        check_missing_tags(
+            impl(),
+            ctx("GOV-005", category="governance_posture"),
+        )
+        == []
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -253,6 +288,36 @@ def test_doc_drift_silent_when_no_components():
     assert findings == []
 
 
+def test_doc_drift_skips_missing_malformed_and_pre_document_dates():
+    missing = component(1)
+    malformed = component(2)
+    malformed.modified_at = "not-a-date"
+    older = component(3)
+    older.modified_at = "2025-01-01T00:00:00Z"
+
+    findings = check_doc_drift(
+        impl(metrics=[missing, malformed, older]),
+        ctx(
+            "GOV-006",
+            category="governance_posture",
+            last_sdr_update_at="2026-01-01",
+        ),
+    )
+    assert findings == []
+
+
+def test_doc_drift_tolerates_non_mapping_supplementary_path():
+    implementation = impl(metrics=[component(1)])
+    implementation.supplementary_data["sdr"] = "not-a-mapping"
+    assert (
+        check_doc_drift(
+            implementation,
+            ctx("GOV-006", category="governance_posture"),
+        )
+        == []
+    )
+
+
 # ---------------------------------------------------------------------------
 # GOV-007 calc metric shared but not approved
 # ---------------------------------------------------------------------------
@@ -262,7 +327,8 @@ def test_calc_shared_unapproved_quiet_when_no_signal():
     """approved=None means the field wasn't populated — don't fire."""
     cm = calc("calc/x", shared_to_count=20, approved=None)
     findings = check_calc_metric_shared_unapproved(
-        impl(calc=[cm]), ctx("GOV-007", category="governance_posture", min_shares=5),
+        impl(calc=[cm]),
+        ctx("GOV-007", category="governance_posture", min_shares=5),
     )
     assert findings == []
 
@@ -270,7 +336,8 @@ def test_calc_shared_unapproved_quiet_when_no_signal():
 def test_calc_shared_unapproved_quiet_when_approved():
     cm = calc("calc/x", shared_to_count=20, approved=True)
     findings = check_calc_metric_shared_unapproved(
-        impl(calc=[cm]), ctx("GOV-007", category="governance_posture", min_shares=5),
+        impl(calc=[cm]),
+        ctx("GOV-007", category="governance_posture", min_shares=5),
     )
     assert findings == []
 
@@ -278,7 +345,8 @@ def test_calc_shared_unapproved_quiet_when_approved():
 def test_calc_shared_unapproved_quiet_when_under_threshold():
     cm = calc("calc/x", shared_to_count=2, approved=False)
     findings = check_calc_metric_shared_unapproved(
-        impl(calc=[cm]), ctx("GOV-007", category="governance_posture", min_shares=5),
+        impl(calc=[cm]),
+        ctx("GOV-007", category="governance_posture", min_shares=5),
     )
     assert findings == []
 
@@ -290,7 +358,8 @@ def test_calc_shared_unapproved_fires_when_widely_shared_and_unapproved():
         calc("calc/y", shared_to_count=6, approved=False, complexity_score=10),
     ]
     findings = check_calc_metric_shared_unapproved(
-        impl(calc=cms), ctx("GOV-007", category="governance_posture", min_shares=5),
+        impl(calc=cms),
+        ctx("GOV-007", category="governance_posture", min_shares=5),
     )
     assert len(findings) == 1
     assert findings[0].id == "GOV-007"
@@ -309,7 +378,8 @@ def test_calc_shared_unapproved_fires_when_widely_shared_and_unapproved():
 def test_segment_shared_unapproved_quiet_when_no_signal():
     seg = segment("seg/x", shared_to_count=10, approved=None)
     findings = check_segment_shared_unapproved(
-        impl(segments=[seg]), ctx("GOV-008", category="governance_posture", min_shares=3),
+        impl(segments=[seg]),
+        ctx("GOV-008", category="governance_posture", min_shares=3),
     )
     assert findings == []
 
@@ -320,7 +390,8 @@ def test_segment_shared_unapproved_fires_at_threshold():
         segment("seg/x", shared_to_count=5, approved=False),
     ]
     findings = check_segment_shared_unapproved(
-        impl(segments=segs), ctx("GOV-008", category="governance_posture", min_shares=3),
+        impl(segments=segs),
+        ctx("GOV-008", category="governance_posture", min_shares=3),
     )
     assert len(findings) == 1
     assert findings[0].id == "GOV-008"
@@ -333,6 +404,7 @@ def test_segment_shared_unapproved_quiet_when_approved_and_no_threshold_breach()
         segment("seg/b", shared_to_count=2, approved=False),
     ]
     findings = check_segment_shared_unapproved(
-        impl(segments=segs), ctx("GOV-008", category="governance_posture", min_shares=3),
+        impl(segments=segs),
+        ctx("GOV-008", category="governance_posture", min_shares=3),
     )
     assert findings == []

@@ -44,7 +44,11 @@ def check_calc_metrics_missing_descriptions(
         "definitional choices (attribution, allocation, formula assumptions) "
         "that are invisible from the formula alone."
     )
-    return [_make_finding(ctx, title=f"{len(missing)} calculated metrics lack descriptions", paragraph=paragraph)]
+    return [
+        _make_finding(
+            ctx, title=f"{len(missing)} calculated metrics lack descriptions", paragraph=paragraph
+        )
+    ]
 
 
 # ---------------------------------------------------------------------------
@@ -53,9 +57,7 @@ def check_calc_metrics_missing_descriptions(
 
 
 @register_check("calc_formula_broken_refs")
-def check_calc_formula_broken_refs(
-    impl: Implementation, ctx: RuleContext
-) -> list[Finding]:
+def check_calc_formula_broken_refs(impl: Implementation, ctx: RuleContext) -> list[Finding]:
     component_ids = all_component_ids(impl)
     segment_ids = all_segment_ids(impl)
     calc_ids = {cm.id for cm in impl.calculated_metrics}
@@ -91,9 +93,7 @@ def check_calc_formula_broken_refs(
 
 
 @register_check("calc_complexity_threshold")
-def check_calc_complexity_threshold(
-    impl: Implementation, ctx: RuleContext
-) -> list[Finding]:
+def check_calc_complexity_threshold(impl: Implementation, ctx: RuleContext) -> list[Finding]:
     max_complexity = float(ctx.params.get("max_complexity", 75.0))
     over = [cm for cm in impl.calculated_metrics if cm.complexity_score > max_complexity]
     if not over:
@@ -121,9 +121,7 @@ def check_calc_complexity_threshold(
 
 
 @register_check("orphan_calc_metrics")
-def check_orphan_calc_metrics(
-    impl: Implementation, ctx: RuleContext
-) -> list[Finding]:
+def check_orphan_calc_metrics(impl: Implementation, ctx: RuleContext) -> list[Finding]:
     threshold = float(ctx.params.get("threshold", 0.50))
     if not impl.calculated_metrics:
         return []
@@ -156,9 +154,7 @@ def check_orphan_calc_metrics(
 
 
 @register_check("calc_near_duplicates")
-def check_calc_near_duplicates(
-    impl: Implementation, ctx: RuleContext
-) -> list[Finding]:
+def check_calc_near_duplicates(impl: Implementation, ctx: RuleContext) -> list[Finding]:
     """Pairwise Jaccard over reference sets; fire on pairs >= threshold."""
     threshold = float(ctx.params.get("min_similarity", 0.85))
     metrics = [cm for cm in impl.calculated_metrics if cm.references]
@@ -170,9 +166,7 @@ def check_calc_near_duplicates(
     # Also approximate: pairs with Jaccard >= threshold but not identical.
     refs_seen = list(clusters.keys())
     for i, refs_a in enumerate(refs_seen):
-        for refs_b in refs_seen[i + 1:]:
-            if not refs_a or not refs_b:
-                continue
+        for refs_b in refs_seen[i + 1 :]:
             jaccard = len(refs_a & refs_b) / len(refs_a | refs_b)
             if jaccard >= threshold and refs_a != refs_b:
                 suspects.append((refs_a | refs_b, [*clusters[refs_a], *clusters[refs_b]]))
@@ -209,9 +203,7 @@ def check_calc_near_duplicates(
 
 
 @register_check("calc_identical_formula_text")
-def check_calc_identical_formula_text(
-    impl: Implementation, ctx: RuleContext
-) -> list[Finding]:
+def check_calc_identical_formula_text(impl: Implementation, ctx: RuleContext) -> list[Finding]:
     groups: dict[str, list[str]] = defaultdict(list)
     for cm in impl.calculated_metrics:
         if not cm.formula_text:
@@ -220,10 +212,7 @@ def check_calc_identical_formula_text(
     duplicates = {text: ids for text, ids in groups.items() if len(ids) > 1}
     if not duplicates:
         return []
-    items = [
-        f"{text!r}: {', '.join(sorted(ids))}"
-        for text, ids in sorted(duplicates.items())[:25]
-    ]
+    items = [f"{text!r}: {', '.join(sorted(ids))}" for text, ids in sorted(duplicates.items())[:25]]
     paragraph = (
         f"{len(duplicates)} formula text{'s appear' if len(duplicates) != 1 else ' appears'} "
         "verbatim on more than one calculated metric. Identical formulas are a "
@@ -248,9 +237,7 @@ _DEPRECATED_ALLOCATIONS = {"linear-deprecated", "even-deprecated"}
 
 
 @register_check("calc_deprecated_allocations")
-def check_calc_deprecated_allocations(
-    impl: Implementation, ctx: RuleContext
-) -> list[Finding]:
+def check_calc_deprecated_allocations(impl: Implementation, ctx: RuleContext) -> list[Finding]:
     """Fire on calc metrics still using deprecated allocation values.
 
     The deprecated set is a placeholder; real values land when CJA / AA
@@ -282,7 +269,10 @@ def check_calc_deprecated_allocations(
 
 
 def _make_finding(
-    ctx: RuleContext, *, title: str, paragraph: str,
+    ctx: RuleContext,
+    *,
+    title: str,
+    paragraph: str,
     extra_blocks: list[FindingBlock] | None = None,
 ) -> Finding:
     body: list[FindingBlock] = [FindingBlock(kind="paragraph", html=paragraph)]

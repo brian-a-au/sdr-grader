@@ -6,7 +6,9 @@
 /report.html.j2
 /sample-report.html
 /templated-report.html
-/SPEC.md
+/SPEC*.md
+/docs/specs/
+/docs/plans/
 
 # macOS
 .DS_Store

@@ -3,6 +3,23 @@
 All notable changes follow the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
+## 1.1.5 — 2026-07-19
+
+Test and reliability hardening for validation, adapter normalization,
+CLI failures, input loading, rule boundaries, and trend reporting. No
+grading rules, thresholds, CLI exit codes, or normalized outputs change.
+
+### Internal
+
+- Expanded deterministic characterization and boundary coverage across
+  the shipped package, including malformed-input and dependency-failure
+  paths.
+- Raised the shared local, pull-request, and tagged-release line-coverage
+  gate from 90% to 99.00% with two-decimal precision. The deterministic
+  no-fuzz suite reports 100.00% coverage.
+- Kept generated root specs and local `docs/specs/` and `docs/plans/`
+  artifacts out of release diffs through explicit Git ignore rules.
+
 ## 1.1.4 — 2026-07-18
 
 Hardening and cleanup from the v1.1.2 branch review (findings F38 to

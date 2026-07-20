@@ -9,9 +9,12 @@ from __future__ import annotations
 
 import pytest
 
+from _rule_test_helpers import impl
 from sdr_grader.core.exceptions import UnknownPlatformError
 from sdr_grader.input.detect import detect_platform
+from sdr_grader.rules.engine import _applies_to_platform
 from sdr_grader.rules.registry import get_check, register_check
+from sdr_grader.rules.rubric import RuleDefinition
 
 # ---------------------------------------------------------------------------
 # detect_platform
@@ -96,3 +99,15 @@ def test_get_check_unknown_name_raises_with_known_list():
     can spot a YAML typo without rereading the registry."""
     with pytest.raises(KeyError, match="no check function registered"):
         get_check("__no_such_check_anywhere__")
+
+
+def test_platform_agnostic_rule_applies_to_any_implementation():
+    rule = RuleDefinition(
+        id="TEST-ANY",
+        name="Platform agnostic",
+        severity="low",
+        platforms=[],
+        check="unused-in-direct-test",
+        category="schema_hygiene",
+    )
+    assert _applies_to_platform(rule, impl(platform="cja")) is True

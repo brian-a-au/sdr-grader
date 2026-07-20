@@ -79,6 +79,31 @@ def test_load_distribution_rejects_invalid_json(tmp_path):
         load_distribution_data(bad)
 
 
+def test_load_distribution_wraps_read_error(tmp_path, monkeypatch):
+    data_path = tmp_path / "distribution.json"
+    data_path.write_text("{}", encoding="utf-8")
+    original_read_text = Path.read_text
+
+    def fail_target_read(path, *args, **kwargs):
+        if path == data_path:
+            raise OSError("simulated read failure")
+        return original_read_text(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", fail_target_read)
+
+    with pytest.raises(InvalidSnapshotError, match="simulated read failure") as exc_info:
+        load_distribution_data(data_path)
+    assert str(data_path) in str(exc_info.value)
+
+
+def test_load_distribution_rejects_non_object_root(tmp_path):
+    data_path = tmp_path / "distribution.json"
+    data_path.write_text("[]", encoding="utf-8")
+
+    with pytest.raises(InvalidSnapshotError, match="must be a JSON object"):
+        load_distribution_data(data_path)
+
+
 def test_out_of_range_overall_percentile_fails_at_load(tmp_path):
     p = tmp_path / "dist.json"
     p.write_text(
@@ -150,12 +175,16 @@ def test_build_distribution_includes_overall_and_category_charts():
 
 def test_cli_attaches_distribution_when_flag_set(tmp_path):
     output = tmp_path / "out.html"
-    rc = main([
-        str(FIXTURES / "cja_snapshot_messy.json"),
-        "--output", str(output),
-        "--distribution-data", "bundled",
-        "--quiet",
-    ])
+    rc = main(
+        [
+            str(FIXTURES / "cja_snapshot_messy.json"),
+            "--output",
+            str(output),
+            "--distribution-data",
+            "bundled",
+            "--quiet",
+        ]
+    )
     assert rc == SUCCESS
     html = output.read_text(encoding="utf-8")
     assert "median 67" in html
@@ -163,15 +192,41 @@ def test_cli_attaches_distribution_when_flag_set(tmp_path):
 
 def test_cli_skips_distribution_without_flag(tmp_path):
     output = tmp_path / "out.html"
-    rc = main([
-        str(FIXTURES / "cja_snapshot_messy.json"),
-        "--output", str(output),
-        "--quiet",
-    ])
+    rc = main(
+        [
+            str(FIXTURES / "cja_snapshot_messy.json"),
+            "--output",
+            str(output),
+            "--quiet",
+        ]
+    )
     assert rc == SUCCESS
     html = output.read_text(encoding="utf-8")
     # The distribution section is gated on report.distribution being non-None.
     assert "median 67" not in html
+
+
+def test_cli_invalid_distribution_returns_runtime_error_without_report(tmp_path, capsys):
+    distribution = tmp_path / "invalid-distribution.json"
+    distribution.write_text("[]", encoding="utf-8")
+    output = tmp_path / "out.html"
+
+    rc = main(
+        [
+            str(FIXTURES / "cja_snapshot_clean.json"),
+            "--output",
+            str(output),
+            "--distribution-data",
+            str(distribution),
+            "--quiet",
+        ]
+    )
+
+    assert rc == RUNTIME_ERROR
+    assert not output.exists()
+    err = capsys.readouterr().err
+    assert str(distribution) in err
+    assert "must be a JSON object" in err
 
 
 # ---------------------------------------------------------------------------
@@ -184,35 +239,121 @@ def test_extra_input_attaches_to_supplementary_data(tmp_path):
     launch = tmp_path / "launch.json"
     launch.write_text(json.dumps({"property": {"name": "Demo"}, "rules": [1, 2]}), encoding="utf-8")
     output = tmp_path / "out.html"
-    rc = main([
-        str(FIXTURES / "cja_snapshot_clean.json"),
-        "--output", str(output),
-        "--extra-input", f"launch={launch}",
-        "--quiet",
-    ])
+    rc = main(
+        [
+            str(FIXTURES / "cja_snapshot_clean.json"),
+            "--output",
+            str(output),
+            "--extra-input",
+            f"launch={launch}",
+            "--quiet",
+        ]
+    )
     assert rc == SUCCESS
 
 
 def test_extra_input_rejects_malformed_spec(tmp_path):
     output = tmp_path / "out.html"
-    rc = main([
-        str(FIXTURES / "cja_snapshot_clean.json"),
-        "--output", str(output),
-        "--extra-input", "no_equals_sign",
-        "--quiet",
-    ])
+    rc = main(
+        [
+            str(FIXTURES / "cja_snapshot_clean.json"),
+            "--output",
+            str(output),
+            "--extra-input",
+            "no_equals_sign",
+            "--quiet",
+        ]
+    )
     assert rc == RUNTIME_ERROR
+
+
+def test_extra_input_rejects_empty_key_with_context(tmp_path, capsys):
+    payload = tmp_path / "payload.json"
+    payload.write_text("{}", encoding="utf-8")
+    output = tmp_path / "out.html"
+
+    rc = main(
+        [
+            str(FIXTURES / "cja_snapshot_clean.json"),
+            "--output",
+            str(output),
+            "--extra-input",
+            f" = {payload}",
+            "--quiet",
+        ]
+    )
+
+    assert rc == RUNTIME_ERROR
+    assert not output.exists()
+    assert "--extra-input has empty KEY" in capsys.readouterr().err
 
 
 def test_extra_input_rejects_missing_file(tmp_path):
     output = tmp_path / "out.html"
-    rc = main([
-        str(FIXTURES / "cja_snapshot_clean.json"),
-        "--output", str(output),
-        "--extra-input", f"launch={tmp_path}/no_such.json",
-        "--quiet",
-    ])
+    rc = main(
+        [
+            str(FIXTURES / "cja_snapshot_clean.json"),
+            "--output",
+            str(output),
+            "--extra-input",
+            f"launch={tmp_path}/no_such.json",
+            "--quiet",
+        ]
+    )
     assert rc == RUNTIME_ERROR
+
+
+def test_extra_input_wraps_read_error(tmp_path, monkeypatch, capsys):
+    payload = tmp_path / "payload.json"
+    payload.write_text("{}", encoding="utf-8")
+    output = tmp_path / "out.html"
+    original_read_text = Path.read_text
+
+    def fail_extra_input_read(path, *args, **kwargs):
+        if path == payload:
+            raise OSError("simulated read failure")
+        return original_read_text(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", fail_extra_input_read)
+
+    rc = main(
+        [
+            str(FIXTURES / "cja_snapshot_clean.json"),
+            "--output",
+            str(output),
+            "--extra-input",
+            f"launch={payload}",
+            "--quiet",
+        ]
+    )
+
+    assert rc == RUNTIME_ERROR
+    assert not output.exists()
+    err = capsys.readouterr().err
+    assert "--extra-input launch: could not read" in err
+    assert "simulated read failure" in err
+
+
+def test_extra_input_rejects_invalid_json_with_key_context(tmp_path, capsys):
+    payload = tmp_path / "payload.json"
+    payload.write_text("not json", encoding="utf-8")
+    output = tmp_path / "out.html"
+
+    rc = main(
+        [
+            str(FIXTURES / "cja_snapshot_clean.json"),
+            "--output",
+            str(output),
+            "--extra-input",
+            f"launch={payload}",
+            "--quiet",
+        ]
+    )
+
+    assert rc == RUNTIME_ERROR
+    assert not output.exists()
+    err = capsys.readouterr().err
+    assert "--extra-input launch: not valid JSON" in err
 
 
 def test_extra_input_rejects_duplicate_keys(tmp_path):
@@ -220,11 +361,16 @@ def test_extra_input_rejects_duplicate_keys(tmp_path):
     launch_b = tmp_path / "b.json"
     launch_a.write_text("{}", encoding="utf-8")
     launch_b.write_text("{}", encoding="utf-8")
-    rc = main([
-        str(FIXTURES / "cja_snapshot_clean.json"),
-        "--output", str(tmp_path / "out.html"),
-        "--extra-input", f"launch={launch_a}",
-        "--extra-input", f"launch={launch_b}",
-        "--quiet",
-    ])
+    rc = main(
+        [
+            str(FIXTURES / "cja_snapshot_clean.json"),
+            "--output",
+            str(tmp_path / "out.html"),
+            "--extra-input",
+            f"launch={launch_a}",
+            "--extra-input",
+            f"launch={launch_b}",
+            "--quiet",
+        ]
+    )
     assert rc == RUNTIME_ERROR

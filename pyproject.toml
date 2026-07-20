@@ -84,12 +84,11 @@ source = ["src/sdr_grader"]
 branch = false
 
 [tool.coverage.report]
-# Mirrors aa_auto_sdr's gate. Current baseline is ~91% (see
-# tests/test_rules_supplementary.py, tests/test_detect_and_registry.py,
-# and the doc-drift block in tests/test_rules_governance.py for the
-# floor-clearing tests). Largest remaining gap is rules/rubric.py's
-# YAML validation error paths — backfill before raising further.
-fail_under = 90
+# Keep the shared local, PR, and tagged-release gate exact to two decimals.
+# The deterministic suite has headroom above this threshold and does not
+# depend on Hypothesis-generated paths to pass.
+fail_under = 99
+precision = 2
 show_missing = true
 skip_covered = false
 exclude_also = [

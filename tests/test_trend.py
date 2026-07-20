@@ -16,7 +16,14 @@ from sdr_grader.trend import build_trend_report, render_trend
 from sdr_grader.trend.renderer import sparkline_svg
 
 FIXTURES = Path(__file__).parent / "fixtures"
-STRICT_PACK = Path(__file__).resolve().parent.parent / "src" / "sdr_grader" / "rules" / "packs" / "strict"
+STRICT_PACK = (
+    Path(__file__).resolve().parent.parent / "src" / "sdr_grader" / "rules" / "packs" / "strict"
+)
+
+
+@pytest.fixture(scope="module")
+def strict_rubric():
+    return load_rubric(STRICT_PACK)
 
 
 # ---------------------------------------------------------------------------
@@ -85,6 +92,38 @@ def test_build_trend_report_rejects_empty_directory(tmp_path):
         build_trend_report(tmp_path, load_rubric(STRICT_PACK))
 
 
+def test_build_trend_report_rejects_non_directory_directly(tmp_path, strict_rubric):
+    snapshot = tmp_path / "snapshot_2026-01-01.json"
+    snapshot.write_text("{}", encoding="utf-8")
+    with pytest.raises(InvalidSnapshotError, match="trend input must be a directory"):
+        build_trend_report(snapshot, strict_rubric)
+
+
+def test_build_trend_report_rejects_mixed_platforms_for_same_instance(tmp_path, strict_rubric):
+    cja = json.loads((FIXTURES / "cja_snapshot_clean.json").read_text(encoding="utf-8"))
+    aa = json.loads((FIXTURES / "aa_snapshot_clean.json").read_text(encoding="utf-8"))
+    cja["metadata"]["Data View ID"] = "shared-instance"
+    aa["report_suite"]["rsid"] = "shared-instance"
+    (tmp_path / "snapshot_2026-01-01.json").write_text(json.dumps(cja), encoding="utf-8")
+    (tmp_path / "snapshot_2026-02-01.json").write_text(json.dumps(aa), encoding="utf-8")
+
+    with pytest.raises(InvalidSnapshotError, match="mix platforms"):
+        build_trend_report(tmp_path, strict_rubric)
+
+
+def test_build_trend_report_reports_snapshot_read_failure(tmp_path, strict_rubric):
+    unreadable = tmp_path / "snapshot_2026-01-01.json"
+    unreadable.mkdir()
+    with pytest.raises(InvalidSnapshotError, match="could not read"):
+        build_trend_report(tmp_path, strict_rubric)
+
+
+def test_build_trend_report_reports_invalid_json(tmp_path, strict_rubric):
+    (tmp_path / "snapshot_2026-01-01.json").write_text("{", encoding="utf-8")
+    with pytest.raises(InvalidSnapshotError, match="not valid JSON"):
+        build_trend_report(tmp_path, strict_rubric)
+
+
 def test_build_trend_report_rejects_directory_with_only_undated_files(tmp_path):
     base = (FIXTURES / "cja_snapshot_messy.json").read_text(encoding="utf-8")
     (tmp_path / "anonymous.json").write_text(base, encoding="utf-8")
@@ -113,7 +152,7 @@ def test_render_trend_self_contained():
     svg = sparkline_svg(pct_series, width=200, height=50)
     assert "<svg" in svg
     assert "polyline" in svg
-    assert "http://" not in svg.replace("xmlns=\"http://www.w3.org/2000/svg\"", "")
+    assert "http://" not in svg.replace('xmlns="http://www.w3.org/2000/svg"', "")
 
 
 def test_sparkline_handles_single_point():
@@ -121,12 +160,62 @@ def test_sparkline_handles_single_point():
     assert "<svg" in svg
 
 
+def test_sparkline_handles_empty_series():
+    svg = sparkline_svg([], width=120, height=30)
+    assert svg == ('<svg viewBox="0 0 120 30" xmlns="http://www.w3.org/2000/svg"></svg>')
+
+
+def test_category_traces_carry_forward_a_missing_middle_value():
+    from datetime import UTC, datetime
+
+    from fixtures.demo_report import build_demo_report
+    from sdr_grader.trend.models import TrendPoint, TrendReport
+    from sdr_grader.trend.renderer import _category_slug, _category_traces
+
+    report = build_demo_report()
+    first_category = report.categories[0]
+    slug = _category_slug(first_category.name)
+    reports = [
+        dataclasses.replace(report, categories=[first_category]),
+        dataclasses.replace(report, categories=[]),
+        dataclasses.replace(
+            report,
+            categories=[dataclasses.replace(first_category, pct=first_category.pct + 1)],
+        ),
+    ]
+    points = [
+        TrendPoint(
+            timestamp=datetime(2026, 1, day, tzinfo=UTC),
+            source=f"snapshot-{day}.json",
+            report=point_report,
+        )
+        for day, point_report in enumerate(reports, start=1)
+    ]
+    trend = TrendReport(
+        instance_id="test",
+        instance_name="Test",
+        platform="cja",
+        pack="strict",
+        pack_version="1.0",
+        points=points,
+    )
+
+    traces = {trace.name: trace for trace in _category_traces(trend)}
+    assert traces[slug].points[1] == traces[slug].points[0]
+
+
+def test_negative_delta_uses_downward_style():
+    from sdr_grader.trend.renderer import _delta_class
+
+    assert _delta_class(-1) == "trend-down"
+
+
 def test_render_trend_escapes_untrusted_fields(tmp_path):
     """Instance names come from snapshot data and must be escaped; the
     inlined CSS and server-side sparkline SVG must pass through raw."""
     _build_series(tmp_path)
     trend = build_trend_report(tmp_path, load_rubric(STRICT_PACK))
-    evil = dataclasses.replace(trend, instance_name='Acme <script>alert(1)</script>')
+    evil = dataclasses.replace(trend, instance_name="Acme <script>alert(1)</script>")
     html = render_trend(evil)
     assert "<script>alert(1)</script>" not in html
     assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html
@@ -146,23 +235,29 @@ def test_cli_trend_mode_writes_html(tmp_path):
     series_dir.mkdir()
     _build_series(series_dir)
     out = tmp_path / "trend.html"
-    rc = main([
-        str(series_dir),
-        "--trend",
-        "--output", str(out),
-        "--quiet",
-    ])
+    rc = main(
+        [
+            str(series_dir),
+            "--trend",
+            "--output",
+            str(out),
+            "--quiet",
+        ]
+    )
     assert rc == SUCCESS
     html = out.read_text(encoding="utf-8")
     assert "trend-table" in html
 
 
 def test_cli_trend_mode_rejects_non_directory(tmp_path):
-    rc = main([
-        str(FIXTURES / "cja_snapshot_messy.json"),
-        "--trend",
-        "--output", str(tmp_path / "out.html"),
-    ])
+    rc = main(
+        [
+            str(FIXTURES / "cja_snapshot_messy.json"),
+            "--trend",
+            "--output",
+            str(tmp_path / "out.html"),
+        ]
+    )
     assert rc == RUNTIME_ERROR
 
 
@@ -299,11 +394,7 @@ def test_trend_view_converts_each_raw_timestamp_once_and_omits_dead_cell_keys(
     view = trend_renderer._build_view(trend)
 
     assert converted == [point.timestamp for point in trend.points]
-    assert all(
-        set(cell) == {"pct"}
-        for row in view["rows"]
-        for cell in row["categories"]
-    )
+    assert all(set(cell) == {"pct"} for row in view["rows"] for cell in row["categories"])
 
 
 def test_trend_table_rows_align_with_header_union(tmp_path):
@@ -315,9 +406,7 @@ def test_trend_table_rows_align_with_header_union(tmp_path):
     # Drop the last category from the first snapshot to simulate a series
     # whose per-snapshot category sets differ.
     first = trend.points[0]
-    reduced = dataclasses.replace(
-        first.report, categories=first.report.categories[:-1]
-    )
+    reduced = dataclasses.replace(first.report, categories=first.report.categories[:-1])
     points = [dataclasses.replace(first, report=reduced), *trend.points[1:]]
     html = render_trend(dataclasses.replace(trend, points=points))
 
@@ -362,9 +451,17 @@ def test_header_classes_have_top_level_css_rules():
     from sdr_grader.trend import renderer as trend_renderer
 
     header_classes = [
-        "report", "report-header", "header-row", "kicker",
-        "instance-name", "instance-meta", "grade-block",
-        "grade-letter", "grade-pct", "grade-meta", "delta",
+        "report",
+        "report-header",
+        "header-row",
+        "kicker",
+        "instance-name",
+        "instance-meta",
+        "grade-block",
+        "grade-letter",
+        "grade-pct",
+        "grade-meta",
+        "delta",
     ]
     css = trend_renderer._css()
     missing = [
