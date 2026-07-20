@@ -14,7 +14,9 @@ from sdr_grader.input.detect import detect_platform
 from sdr_grader.rules.rubric import load_rubric
 
 FIXTURES = Path(__file__).parent / "fixtures"
-STRICT_PACK = Path(__file__).resolve().parent.parent / "src" / "sdr_grader" / "rules" / "packs" / "strict"
+STRICT_PACK = (
+    Path(__file__).resolve().parent.parent / "src" / "sdr_grader" / "rules" / "packs" / "strict"
+)
 
 
 @pytest.fixture(scope="module")
@@ -116,9 +118,7 @@ def test_missing_dimensions_key_raises():
 def test_stringified_tags_parse_as_list():
     from sdr_grader.adapters.aa import _component_from_record
 
-    comp = _component_from_record(
-        {"id": "evar1", "tags": '["marketing", "web"]'}, "dimension", {}
-    )
+    comp = _component_from_record({"id": "evar1", "tags": '["marketing", "web"]'}, "dimension", {})
     assert comp.tags == ["marketing", "web"]
 
 
@@ -145,8 +145,11 @@ def test_single_container_segment_depth_is_one():
         "container": {
             "func": "container",
             "context": "visits",
-            "pred": {"func": "streq", "str": "Home",
-                     "val": {"func": "attr", "name": "variables/page"}},
+            "pred": {
+                "func": "streq",
+                "str": "Home",
+                "val": {"func": "attr", "name": "variables/page"},
+            },
         },
     }
     depth, contexts = _walk_segment_definition(definition)
@@ -157,10 +160,12 @@ def test_single_container_segment_depth_is_one():
 def test_nested_containers_count_only_containers():
     from sdr_grader.adapters.aa import _walk_segment_definition
 
-    inner = {"func": "container", "context": "hits",
-             "pred": {"func": "exists", "val": {"func": "attr", "name": "variables/evar1"}}}
-    outer = {"func": "container", "context": "visits",
-             "pred": {"func": "without", "arg": inner}}
+    inner = {
+        "func": "container",
+        "context": "hits",
+        "pred": {"func": "exists", "val": {"func": "attr", "name": "variables/evar1"}},
+    }
+    outer = {"func": "container", "context": "visits", "pred": {"func": "without", "arg": inner}}
     depth, contexts = _walk_segment_definition({"func": "segment", "container": outer})
     assert depth == 2
     assert contexts == ["visits", "hits"]
@@ -295,3 +300,177 @@ def test_tuple_length_mismatch_versions_compare_correctly():
 
     assert generator_version_warning("1.19") is not None
     assert generator_version_warning("1.18") is None
+
+
+# ---------------------------------------------------------------------------
+# Deterministic normalization and validation characterization
+# ---------------------------------------------------------------------------
+
+
+def _minimal_snapshot(**overrides):
+    snapshot = {
+        "report_suite": {"rsid": "rs1", "name": "Main suite"},
+        "dimensions": [],
+        "metrics": [],
+    }
+    snapshot.update(overrides)
+    return snapshot
+
+
+def test_report_suite_alias_and_snapshot_metadata_normalize():
+    impl = adapt(
+        {
+            "reportSuite": {"RSID": "rs-alias", "name": "Alias suite"},
+            "dimensions": [],
+            "metrics": [],
+            "captured": " 2026-07-18T12:00:00Z ",
+            "tool_version": 7,
+        },
+        source="alias.json",
+    )
+
+    assert impl.instance_id == "rs-alias"
+    assert impl.instance_name == "Alias suite"
+    assert impl.snapshot_taken_at == "2026-07-18T12:00:00Z"
+    assert impl.adapter_version == "7"
+    assert impl.snapshot_source == "alias.json"
+
+
+def test_aa_rejects_non_object_top_level_and_report_suite():
+    with pytest.raises(InvalidSnapshotError, match="top-level JSON object, got list"):
+        adapt([])  # type: ignore[arg-type]
+
+    with pytest.raises(InvalidSnapshotError, match="report_suite.*object.*str"):
+        adapt(_minimal_snapshot(report_suite="rs1"))
+
+
+@pytest.mark.parametrize("key", ["dimensions", "metrics"])
+def test_required_collections_reject_wrong_types(key):
+    with pytest.raises(InvalidSnapshotError, match=rf"'{key}'.*list.*dict"):
+        adapt(_minimal_snapshot(**{key: {}}))
+
+
+@pytest.mark.parametrize(
+    ("record", "message"),
+    [
+        (7, "expected dimension record to be an object, got int"),
+        ({"name": "No ID"}, "dimension record is missing 'id'"),
+    ],
+)
+def test_dimension_records_reject_invalid_shapes(record, message):
+    with pytest.raises(InvalidSnapshotError, match=message):
+        adapt(_minimal_snapshot(dimensions=[record]))
+
+
+def test_classification_index_skips_invalid_entries_and_uses_id_fallback():
+    from sdr_grader.adapters.aa import _index_classifications
+
+    assert _index_classifications("not-a-list") == {}
+    assert _index_classifications(
+        [
+            "not-an-object",
+            {"name": "No parent"},
+            {"parent": "variables/evar1", "id": "classifications/region"},
+        ]
+    ) == {"variables/evar1": ["classifications/region"]}
+
+
+def test_formula_helpers_characterize_empty_scalar_and_recursive_shapes():
+    from sdr_grader.adapters.aa import (
+        _extract_aa_calc_refs,
+        _stringify_formula,
+    )
+
+    assert _stringify_formula({}) == ""
+    assert _stringify_formula({"func": "sum", "args": "metrics/orders"}) == ("sum(metrics/orders)")
+    # Strings buried in an arbitrary nested list are walked but are not
+    # promoted to references; only direct formula args carry reference meaning.
+    assert _extract_aa_calc_refs(
+        {
+            "func": "add",
+            "args": [
+                ["metrics/orders", "variables/evar1", "not-a-reference"],
+                {"func": "segment", "args": ["segments/buyers"]},
+                "metrics/orders",
+            ],
+        }
+    ) == ["segments/buyers", "metrics/orders"]
+
+
+@pytest.mark.parametrize(
+    ("section", "record", "message"),
+    [
+        ("calculated_metrics", 7, "expected calculated metric to be an object"),
+        ("calculated_metrics", {"name": "No ID"}, "calc metric missing 'id'"),
+        ("segments", 7, "expected segment to be an object"),
+        ("segments", {"name": "No ID"}, "segment missing 'id'"),
+    ],
+)
+def test_optional_component_records_reject_invalid_shapes(section, record, message):
+    with pytest.raises(InvalidSnapshotError, match=message):
+        adapt(_minimal_snapshot(**{section: [record]}))
+
+
+def test_governance_component_fields_and_malformed_tags_preserve_contract():
+    snapshot = _minimal_snapshot(
+        dimensions=[
+            {
+                "id": "variables/evar1",
+                "description": 7,
+                "polarity": " Positive ",
+                "tags": "not-json",
+                "owner_id": 42,
+                "allocation": "most-recent",
+            }
+        ],
+        metrics=[{"id": "metrics/orders", "polarity": "upward"}],
+        calculated_metrics=[
+            {
+                "id": "cm1",
+                "extra": {
+                    "publishingStatus": {"published": False},
+                    "shares": ["group-a", "group-b"],
+                },
+            }
+        ],
+        segments=[
+            {
+                "id": "s1",
+                "extra": {
+                    "publishingStatus": {"published": True},
+                    "shares": [],
+                },
+            }
+        ],
+    )
+
+    impl = adapt(snapshot)
+    dimension = impl.dimensions[0]
+    assert dimension.description is None
+    assert dimension.polarity == "positive"
+    assert dimension.tags == []
+    assert dimension.owner == "42"
+    assert dimension.platform_specific["allocation"] == "most-recent"
+    assert impl.metrics[0].polarity is None
+    assert (impl.calculated_metrics[0].approved, impl.calculated_metrics[0].shared_to_count) == (
+        False,
+        2,
+    )
+    assert (impl.segments[0].approved, impl.segments[0].shared_to_count) == (True, 0)
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [(True, 0.0), (3, 3.0), (float("inf"), 0.0), (" 2.5 ", 2.5)],
+)
+def test_numeric_coercion_accepts_only_finite_non_boolean_values(value, expected):
+    from sdr_grader.adapters.aa import _safe_float
+
+    assert _safe_float(value) == expected
+
+
+def test_cja_snapshot_forced_through_aa_keeps_platform_validation_failure():
+    cja = json.loads((FIXTURES / "cja_snapshot_clean.json").read_text(encoding="utf-8"))
+
+    with pytest.raises(InvalidSnapshotError, match="not an AA snapshot"):
+        adapt(cja)

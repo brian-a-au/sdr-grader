@@ -34,9 +34,7 @@ def test_container_mixing_quiet_when_homogeneous():
 def test_orphan_segments_quiet_when_referenced():
     segs = [segment(f"segments/s_{i}") for i in range(10)]
     # 7 segments referenced -> 30% orphan rate, well under 50%.
-    referencing_calc = [
-        calc("calculatedMetrics/c", references=[s.id for s in segs[:7]])
-    ]
+    referencing_calc = [calc("calculatedMetrics/c", references=[s.id for s in segs[:7]])]
     findings = check_orphan_segments(
         impl(segments=segs, calc=referencing_calc),
         ctx("SEG-003", threshold=0.50),
@@ -48,6 +46,17 @@ def test_orphan_segments_fires_when_majority_orphan():
     segs = [segment(f"segments/s_{i}") for i in range(10)]
     findings = check_orphan_segments(impl(segments=segs), ctx("SEG-003", threshold=0.50))
     assert len(findings) == 1
+
+
+def test_orphan_segments_quiet_when_empty_or_every_segment_is_referenced():
+    context = ctx("SEG-003", threshold=0.50)
+    assert check_orphan_segments(impl(), context) == []
+
+    segs = [
+        segment("segments/a", references=["segments/a", "segments/b"]),
+        segment("segments/b"),
+    ]
+    assert check_orphan_segments(impl(segments=segs), context) == []
 
 
 # SEG-004
@@ -75,18 +84,20 @@ def test_circular_segments_quiet_in_DAG():
 # SEG-005
 def test_segments_missing_descriptions_fires():
     segs = [segment(f"segments/s_{i}", description=None) for i in range(7)]
-    segs += [segment(f"segments/s_{i+7}", description="ok") for i in range(3)]
+    segs += [segment(f"segments/s_{i + 7}", description="ok") for i in range(3)]
     findings = check_segments_missing_descriptions(
-        impl(segments=segs), ctx("SEG-005", threshold=0.30),
+        impl(segments=segs),
+        ctx("SEG-005", threshold=0.30),
     )
     assert len(findings) == 1
 
 
 def test_segments_missing_descriptions_quiet_under_threshold():
     segs = [segment(f"segments/s_{i}", description="ok") for i in range(8)]
-    segs += [segment(f"segments/s_{i+8}", description=None) for i in range(2)]
+    segs += [segment(f"segments/s_{i + 8}", description=None) for i in range(2)]
     findings = check_segments_missing_descriptions(
-        impl(segments=segs), ctx("SEG-005", threshold=0.30),
+        impl(segments=segs),
+        ctx("SEG-005", threshold=0.30),
     )
     assert findings == []
 

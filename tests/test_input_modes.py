@@ -31,6 +31,30 @@ def test_load_snapshot_from_file_returns_dict(tmp_path):
     assert source.endswith("cja_snapshot_clean.json")
 
 
+def test_load_snapshot_rejects_missing_path(tmp_path):
+    missing = tmp_path / "missing.json"
+
+    with pytest.raises(InvalidSnapshotError, match=f"snapshot path not found: {missing}"):
+        load_snapshot(str(missing))
+
+
+def test_load_snapshot_wraps_file_read_error(tmp_path, monkeypatch):
+    snapshot_path = tmp_path / "snapshot.json"
+    snapshot_path.write_text("{}", encoding="utf-8")
+    original_read_text = Path.read_text
+
+    def fail_target_read(path, *args, **kwargs):
+        if path == snapshot_path:
+            raise OSError("simulated read failure")
+        return original_read_text(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", fail_target_read)
+
+    with pytest.raises(InvalidSnapshotError, match="simulated read failure") as exc_info:
+        load_snapshot(str(snapshot_path))
+    assert str(snapshot_path) in str(exc_info.value)
+
+
 # ---------------------------------------------------------------------------
 # Mode 2: directory
 # ---------------------------------------------------------------------------
@@ -61,6 +85,13 @@ def test_load_snapshot_with_at_no_matches_raises(tmp_path):
     )
     with pytest.raises(InvalidSnapshotError, match="at or before"):
         load_snapshot(str(tmp_path), at="2026-04-01")
+
+
+def test_load_snapshot_rejects_invalid_at_timestamp(tmp_path):
+    (tmp_path / "snapshot_2026-04-01.json").write_text("{}", encoding="utf-8")
+
+    with pytest.raises(InvalidSnapshotError, match="not a recognized timestamp"):
+        load_snapshot(str(tmp_path), at="not-a-date")
 
 
 def test_load_snapshot_empty_directory_raises(tmp_path):
@@ -110,6 +141,21 @@ def test_directory_candidate_timestamps_are_utc_aware(tmp_path):
     )
 
 
+def test_directory_invalid_filename_timestamp_falls_back_to_mtime(tmp_path):
+    import os
+
+    valid = tmp_path / "snapshot_2000-01-01.json"
+    valid.write_text('{"which": "valid timestamp"}', encoding="utf-8")
+    invalid = tmp_path / "snapshot_2026-99-99.json"
+    invalid.write_text('{"which": "mtime fallback"}', encoding="utf-8")
+    os.utime(valid, (946684800, 946684800))
+
+    snapshot, source = load_snapshot(str(tmp_path))
+
+    assert snapshot == {"which": "mtime fallback"}
+    assert source == str(invalid)
+
+
 # ---------------------------------------------------------------------------
 # Mode 4: stdin
 # ---------------------------------------------------------------------------
@@ -126,6 +172,13 @@ def test_load_snapshot_from_stdin(monkeypatch):
 def test_load_snapshot_empty_stdin_raises(monkeypatch):
     monkeypatch.setattr(sys, "stdin", io.StringIO(""))
     with pytest.raises(InvalidSnapshotError, match="empty"):
+        load_snapshot("-")
+
+
+def test_load_snapshot_invalid_stdin_json_raises(monkeypatch):
+    monkeypatch.setattr(sys, "stdin", io.StringIO("not json"))
+
+    with pytest.raises(InvalidSnapshotError, match="stdin is not valid JSON"):
         load_snapshot("-")
 
 
@@ -216,6 +269,36 @@ def test_shell_cja_passes_include_all_inventory(monkeypatch):
     assert "--include-all-inventory" in captured["cmd"]
     # Flag must precede --output so cja_auto_sdr applies it to the JSON write.
     assert captured["cmd"].index("--include-all-inventory") < captured["cmd"].index("--output")
+
+
+def test_shell_aa_builds_report_suite_command_with_extra_args(monkeypatch):
+    import subprocess
+
+    from sdr_grader.input.shell_out import shell_aa
+
+    captured: dict = {}
+
+    def fake_run(cmd, **kwargs):
+        captured["cmd"] = cmd
+        return subprocess.CompletedProcess(cmd, 0, stdout='{"ok": true}', stderr="")
+
+    monkeypatch.setattr("shutil.which", lambda tool: f"/usr/bin/{tool}")
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    snapshot, source = shell_aa("prod.rsid", extra_args=["--company", "acme"])
+
+    assert snapshot == {"ok": True}
+    assert source == "shell-out:aa_auto_sdr prod.rsid"
+    assert captured["cmd"] == [
+        "/usr/bin/aa_auto_sdr",
+        "prod.rsid",
+        "--format",
+        "json",
+        "--output",
+        "-",
+        "--company",
+        "acme",
+    ]
 
 
 def test_shell_cja_raises_when_subprocess_exits_nonzero(monkeypatch):

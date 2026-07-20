@@ -6,6 +6,8 @@ from typing import Any
 
 from sdr_grader.core.models import CalculatedMetric, Component, Implementation, Segment
 from sdr_grader.rules.checks.naming import (
+    _classify_casing,
+    _target_display,
     check_casing_consistency,
     check_prefix_consistency,
     check_regex_match_id,
@@ -14,8 +16,14 @@ from sdr_grader.rules.checks.naming import (
 from sdr_grader.rules.engine import RuleContext
 
 
-def _component(idx: int, *, comp_type: str = "dimension", name: str | None = None,
-               cid: str | None = None, tags: list[str] | None = None) -> Component:
+def _component(
+    idx: int,
+    *,
+    comp_type: str = "dimension",
+    name: str | None = None,
+    cid: str | None = None,
+    tags: list[str] | None = None,
+) -> Component:
     return Component(
         id=cid or f"variables/evar{idx}",
         name=name or f"Custom Dimension {idx:02d}",
@@ -30,7 +38,8 @@ def _component(idx: int, *, comp_type: str = "dimension", name: str | None = Non
     )
 
 
-def _impl(*,
+def _impl(
+    *,
     metrics: list[Component] | None = None,
     dimensions: list[Component] | None = None,
     segments: list[Segment] | None = None,
@@ -70,7 +79,9 @@ def _ctx(rule_id: str, **params: Any) -> RuleContext:
 
 def test_prefix_consistency_skips_pool_smaller_than_five():
     dims = [_component(i, cid=f"variables/c_{i}", tags=["custom"]) for i in range(3)]
-    findings = check_prefix_consistency(_impl(dimensions=dims), _ctx("NAME-001", target="dimensions", tag_filter="custom"))
+    findings = check_prefix_consistency(
+        _impl(dimensions=dims), _ctx("NAME-001", target="dimensions", tag_filter="custom")
+    )
     assert findings == []
 
 
@@ -85,7 +96,9 @@ def test_prefix_consistency_passes_when_all_share_prefix():
 
 def test_prefix_consistency_fires_below_threshold():
     dims = [_component(i, cid=f"variables/c_dim_{i}", tags=["custom"]) for i in range(15)]
-    dims += [_component(50 + i, cid=f"variables/x_dim_{i}", tags=["custom"]) for i in range(5)]  # 25% outliers
+    dims += [
+        _component(50 + i, cid=f"variables/x_dim_{i}", tags=["custom"]) for i in range(5)
+    ]  # 25% outliers
     findings = check_prefix_consistency(
         _impl(dimensions=dims),
         _ctx("NAME-001", target="dimensions", tag_filter="custom", min_consistency=0.80),
@@ -99,7 +112,9 @@ def test_prefix_consistency_fires_below_threshold():
 
 def test_prefix_consistency_filters_by_tag():
     dims = [_component(i, cid=f"variables/c_d_{i}", tags=["custom"]) for i in range(10)]
-    dims += [_component(100 + i, cid=f"variables/native_{i}") for i in range(5)]  # untagged, ignored
+    dims += [
+        _component(100 + i, cid=f"variables/native_{i}") for i in range(5)
+    ]  # untagged, ignored
     findings = check_prefix_consistency(
         _impl(dimensions=dims),
         _ctx("NAME-001", target="dimensions", tag_filter="custom", min_consistency=0.80),
@@ -114,7 +129,9 @@ def test_prefix_consistency_filters_by_tag():
 
 def test_regex_match_id_passes_when_all_ids_compliant():
     dims = [_component(i, cid=f"variables/dim_{i}") for i in range(5)]
-    findings = check_regex_match_id(_impl(dimensions=dims), _ctx("NAME-002", targets=["dimensions"]))
+    findings = check_regex_match_id(
+        _impl(dimensions=dims), _ctx("NAME-002", targets=["dimensions"])
+    )
     assert findings == []
 
 
@@ -124,7 +141,9 @@ def test_regex_match_id_fires_on_whitespace_id():
         _component(2, cid="variables/bad id with spaces"),
         _component(3, cid="variables/another bad@one"),
     ]
-    findings = check_regex_match_id(_impl(dimensions=dims), _ctx("NAME-002", targets=["dimensions"]))
+    findings = check_regex_match_id(
+        _impl(dimensions=dims), _ctx("NAME-002", targets=["dimensions"])
+    )
     assert len(findings) == 1
     finding = findings[0]
     assert finding.id == "NAME-002"
@@ -134,7 +153,9 @@ def test_regex_match_id_fires_on_whitespace_id():
 
 def test_regex_match_id_uses_default_pattern_when_omitted():
     dims = [_component(1, cid="variables/with space")]
-    findings = check_regex_match_id(_impl(dimensions=dims), _ctx("NAME-002", targets=["dimensions"]))
+    findings = check_regex_match_id(
+        _impl(dimensions=dims), _ctx("NAME-002", targets=["dimensions"])
+    )
     assert len(findings) == 1
 
 
@@ -161,6 +182,37 @@ def test_casing_consistency_fires_on_mixed_styles():
     )
     assert len(findings) == 1
     assert findings[0].id == "NAME-003"
+
+
+def test_casing_consistency_skips_small_or_unclassifiable_pools():
+    small = [_component(i, name=f"camelCase{i}") for i in range(4)]
+    assert (
+        check_casing_consistency(
+            _impl(dimensions=small),
+            _ctx("NAME-003", target="dimensions"),
+        )
+        == []
+    )
+
+    unclassifiable = [_component(i, name=str(10000 + i)) for i in range(5)]
+    assert (
+        check_casing_consistency(
+            _impl(dimensions=unclassifiable),
+            _ctx("NAME-003", target="dimensions"),
+        )
+        == []
+    )
+
+
+def test_casing_helpers_cover_supported_styles_and_display_fallbacks():
+    assert _classify_casing("") is None
+    assert _classify_casing("   ") is None
+    assert _classify_casing("PascalCase") == "PascalCase"
+    assert _classify_casing("snake_case") == "snake_case"
+    assert _classify_casing("kebab-case") == "kebab-case"
+    assert _classify_casing("SCREAMING_SNAKE") == "SCREAMING_SNAKE"
+    assert _classify_casing("12345") is None
+    assert _target_display("custom_targets", None) == "custom targets"
 
 
 # ---------------------------------------------------------------------------
@@ -214,9 +266,7 @@ def test_semantic_consistency_default_groups_catch_adobe_domain_mismatches():
         ]
         findings = check_semantic_consistency(_impl(dimensions=dims), _ctx("NAME-004"))
         assert len(findings) == 1, f"expected one finding for {name_a!r} vs {name_b!r}"
-        items_text = " ".join(
-            " ".join(b.items or []) for b in findings[0].body if b.items
-        )
+        items_text = " ".join(" ".join(b.items or []) for b in findings[0].body if b.items)
         assert term_a in items_text and term_b in items_text, (
             f"expected both {term_a!r} and {term_b!r} in finding items "
             f"for {name_a!r} vs {name_b!r}; got: {items_text}"

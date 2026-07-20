@@ -20,9 +20,7 @@ def test_parses_fractional_seconds_with_z():
 
 
 def test_parses_space_separator_as_utc():
-    assert parse_timestamp("2026-05-20 14:00:00") == datetime(
-        2026, 5, 20, 14, 0, 0, tzinfo=UTC
-    )
+    assert parse_timestamp("2026-05-20 14:00:00") == datetime(2026, 5, 20, 14, 0, 0, tzinfo=UTC)
 
 
 def test_parses_date_only():
@@ -38,6 +36,10 @@ def test_normalizes_non_utc_offset_to_utc():
 def test_garbage_returns_none():
     assert parse_timestamp("not a date") is None
     assert parse_timestamp("") is None
+
+
+def test_non_string_returns_none():
+    assert parse_timestamp(None) is None  # type: ignore[arg-type]
 
 
 def test_grader_resolves_offset_timestamp_to_real_date():

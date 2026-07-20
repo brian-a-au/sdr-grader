@@ -14,6 +14,7 @@ from sdr_grader.cli.exit_codes import (
     SUCCESS,
 )
 from sdr_grader.cli.main import main
+from sdr_grader.core.exceptions import UnknownPlatformError
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -174,6 +175,48 @@ def test_cli_invalid_rubric_yaml_returns_validation_failure(tmp_path, capsys):
     assert "rubric error" in capsys.readouterr().err
 
 
+def test_cli_missing_explicit_suppression_config_is_runtime_error(tmp_path, capsys):
+    config = tmp_path / "missing-suppression.yaml"
+    output = tmp_path / "out.html"
+
+    rc = main(
+        [
+            str(FIXTURES / "cja_snapshot_clean.json"),
+            "--output",
+            str(output),
+            "--suppress-config",
+            str(config),
+        ]
+    )
+
+    assert rc == RUNTIME_ERROR
+    assert not output.exists()
+    assert f"suppression config not found: {config}" in capsys.readouterr().err
+
+
+def test_cli_invalid_existing_suppression_config_is_rubric_failure(tmp_path, capsys):
+    config = tmp_path / "invalid-suppression.yaml"
+    config.write_text("- not\n- a\n- mapping\n", encoding="utf-8")
+    output = tmp_path / "out.html"
+
+    rc = main(
+        [
+            str(FIXTURES / "cja_snapshot_clean.json"),
+            "--output",
+            str(output),
+            "--suppress-config",
+            str(config),
+        ]
+    )
+
+    assert rc == RUBRIC_VALIDATION_FAILURE
+    assert not output.exists()
+    err = capsys.readouterr().err
+    assert "rubric error" in err
+    assert str(config) in err
+    assert "must be a mapping" in err
+
+
 def test_cli_json_output_writes_machine_readable_report(tmp_path):
     import json
 
@@ -196,6 +239,40 @@ def test_cli_json_output_writes_machine_readable_report(tmp_path):
     assert isinstance(data["findings"], list)
     assert {"name", "pct", "grade"} <= set(data["categories"][0].keys())
     assert data["generated_at"].endswith("Z")
+
+
+def test_cli_html_write_failure_returns_runtime_error(tmp_path, capsys):
+    rc = main(
+        [
+            str(FIXTURES / "cja_snapshot_clean.json"),
+            "--output",
+            str(tmp_path),
+            "--quiet",
+        ]
+    )
+
+    assert rc == RUNTIME_ERROR
+    err = capsys.readouterr().err
+    assert f"could not write output {tmp_path}" in err
+
+
+def test_cli_json_write_failure_returns_runtime_error(tmp_path, capsys):
+    output = tmp_path / "out.html"
+
+    rc = main(
+        [
+            str(FIXTURES / "cja_snapshot_clean.json"),
+            "--output",
+            str(output),
+            "--json",
+            str(tmp_path),
+            "--quiet",
+        ]
+    )
+
+    assert rc == RUNTIME_ERROR
+    assert output.is_file()
+    assert f"could not write JSON {tmp_path}" in capsys.readouterr().err
 
 
 def test_cli_run_is_deterministic(tmp_path):
@@ -249,6 +326,77 @@ def test_trend_rejects_flags_it_cannot_honor(tmp_path, capsys):
     rc = main([str(d), "--trend", "--json", str(tmp_path / "out.json")])
     assert rc == RUNTIME_ERROR
     assert "--json" in capsys.readouterr().err
+
+
+def test_trend_requires_snapshot_directory_argument(capsys):
+    rc = main(["--trend"])
+
+    assert rc == RUNTIME_ERROR
+    assert "--trend requires a snapshot directory path" in capsys.readouterr().err
+
+
+def test_trend_rejects_directory_with_only_undated_snapshots(tmp_path, capsys):
+    snapshots = tmp_path / "snapshots"
+    snapshots.mkdir()
+    (snapshots / "latest.json").write_text(
+        (FIXTURES / "cja_snapshot_messy.json").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+
+    rc = main([str(snapshots), "--trend", "--output", str(tmp_path / "trend.html")])
+
+    assert rc == RUNTIME_ERROR
+    err = capsys.readouterr().err
+    assert "no snapshots" in err
+    assert "parseable filename timestamps" in err
+
+
+def test_trend_output_write_failure_returns_runtime_error(tmp_path, capsys):
+    snapshots = _make_trend_dir(tmp_path)
+
+    rc = main([str(snapshots), "--trend", "--output", str(tmp_path)])
+
+    assert rc == RUNTIME_ERROR
+    assert f"could not write trend output {tmp_path}" in capsys.readouterr().err
+
+
+def test_trend_success_reports_written_summary(tmp_path, capsys):
+    snapshots = _make_trend_dir(tmp_path)
+    output = tmp_path / "trend.html"
+
+    rc = main([str(snapshots), "--trend", "--output", str(output)])
+
+    assert rc == SUCCESS
+    err = capsys.readouterr().err
+    assert f"Wrote {output}: trend over 2 snapshots" in err
+    assert "dv_messy_prod_web" in err
+
+
+def test_cli_unknown_fail_below_grade_is_runtime_error(tmp_path, capsys):
+    rc = main(
+        [
+            str(FIXTURES / "cja_snapshot_clean.json"),
+            "--output",
+            str(tmp_path / "out.html"),
+            "--fail-below",
+            "platinum",
+        ]
+    )
+
+    assert rc == RUNTIME_ERROR
+    assert "'platinum' not found in rubric grade scale" in capsys.readouterr().err
+
+
+def test_adapter_dispatch_rejects_unrecognized_detected_platform(monkeypatch):
+    from sdr_grader.cli.main import _adapt_snapshot
+
+    monkeypatch.setattr(
+        "sdr_grader.input.detect.detect_platform",
+        lambda _snapshot: "future-platform",
+    )
+
+    with pytest.raises(UnknownPlatformError, match="future-platform"):
+        _adapt_snapshot({}, source="test", platform_override=None)
 
 
 def test_cli_html_caps_component_lists_but_json_keeps_full_list(tmp_path):
