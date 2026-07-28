@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import json
+import shutil
 from pathlib import Path
 
 import pytest
+import yaml
 
 from sdr_grader import __version__
 from sdr_grader.cli.exit_codes import (
@@ -264,6 +266,75 @@ def test_cli_invalid_rubric_yaml_returns_validation_failure(tmp_path, capsys):
     assert "rubric error" in capsys.readouterr().err
 
 
+def test_cli_malformed_rubric_yaml_is_exit_3_with_no_artifact(
+    tmp_path,
+    capsys,
+):
+    pack = tmp_path / "broken_pack"
+    pack.mkdir()
+    (pack / "_meta.yaml").write_text(
+        "category_weights: [unterminated\n",
+        encoding="utf-8",
+    )
+    output = tmp_path / "out.html"
+
+    rc = main(
+        [
+            str(FIXTURES / "cja_snapshot_messy.json"),
+            "--output",
+            str(output),
+            "--rubric",
+            str(pack),
+        ]
+    )
+
+    assert rc == RUBRIC_VALIDATION_FAILURE
+    assert not output.exists()
+    diagnostics = capsys.readouterr().err
+    assert "rubric error:" in diagnostics
+    assert "Traceback" not in diagnostics
+
+
+def test_cli_invalid_numeric_rubric_is_exit_3_with_no_artifact(
+    tmp_path,
+    capsys,
+):
+    source_pack = (
+        Path(__file__).resolve().parent.parent
+        / "src"
+        / "sdr_grader"
+        / "rules"
+        / "packs"
+        / "strict"
+    )
+    pack = tmp_path / "invalid_numeric_pack"
+    shutil.copytree(source_pack, pack)
+    meta_path = pack / "_meta.yaml"
+    meta = yaml.safe_load(meta_path.read_text(encoding="utf-8"))
+    meta["category_weights"]["schema_hygiene"] = True
+    meta_path.write_text(
+        yaml.safe_dump(meta, sort_keys=False),
+        encoding="utf-8",
+    )
+    output = tmp_path / "out.html"
+
+    rc = main(
+        [
+            str(FIXTURES / "cja_snapshot_messy.json"),
+            "--output",
+            str(output),
+            "--rubric",
+            str(pack),
+        ]
+    )
+
+    assert rc == RUBRIC_VALIDATION_FAILURE
+    assert not output.exists()
+    diagnostics = capsys.readouterr().err
+    assert "category_weights" in diagnostics
+    assert "Traceback" not in diagnostics
+
+
 def test_cli_missing_explicit_suppression_config_is_runtime_error(tmp_path, capsys):
     config = tmp_path / "missing-suppression.yaml"
     output = tmp_path / "out.html"
@@ -398,6 +469,27 @@ def test_cli_rejects_html_json_destination_alias(tmp_path, capsys):
     err = capsys.readouterr().err
     assert "resolve to the same file" in err
     assert "Wrote " not in err
+
+
+def test_cli_rejects_symlink_output_before_write(tmp_path, capsys):
+    target = tmp_path / "existing.html"
+    target.write_text("existing report", encoding="utf-8")
+    output = tmp_path / "report.html"
+    output.symlink_to(target)
+
+    rc = main(
+        [
+            str(FIXTURES / "cja_snapshot_clean.json"),
+            "--output",
+            str(output),
+        ]
+    )
+
+    assert rc == RUNTIME_ERROR
+    assert target.read_text(encoding="utf-8") == "existing report"
+    diagnostics = capsys.readouterr().err
+    assert "symlink" in diagnostics
+    assert "Wrote " not in diagnostics
 
 
 def test_cli_render_failure_preserves_existing_output_set(tmp_path, monkeypatch, capsys):
@@ -604,6 +696,118 @@ def test_trend_rejects_flags_it_cannot_honor(tmp_path, capsys):
     assert "--json" in capsys.readouterr().err
 
 
+def test_trend_unknown_platform_is_controlled_runtime_error(
+    tmp_path,
+    capsys,
+):
+    snapshots = tmp_path / "snapshots"
+    snapshots.mkdir()
+    (snapshots / "snapshot_2026-01-01.json").write_text(
+        '{"unknown": "shape"}',
+        encoding="utf-8",
+    )
+    output = tmp_path / "trend.html"
+
+    rc = main(
+        [
+            str(snapshots),
+            "--trend",
+            "--output",
+            str(output),
+        ]
+    )
+
+    assert rc == RUNTIME_ERROR
+    assert not output.exists()
+    diagnostics = capsys.readouterr().err
+    assert "could not auto-detect platform" in diagnostics
+    assert "Traceback" not in diagnostics
+
+
+@pytest.mark.parametrize(
+    ("platform", "version"),
+    [
+        ("cja", "99.0.0"),
+        ("aa", "99.0.0"),
+    ],
+)
+def test_cli_warns_once_for_newer_generator_without_snapshot_data(
+    tmp_path,
+    capsys,
+    platform,
+    version,
+):
+    snapshot = json.loads(
+        (FIXTURES / f"{platform}_snapshot_messy.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    canary = "PRIVATE-GENERATOR-WARNING-CANARY"
+    if platform == "cja":
+        snapshot["metadata"]["Tool Version"] = version
+        snapshot["metadata"]["private_canary"] = canary
+    else:
+        snapshot["tool_version"] = version
+        snapshot["private_canary"] = canary
+    source = tmp_path / f"{platform}.json"
+    source.write_text(json.dumps(snapshot), encoding="utf-8")
+
+    rc = main(
+        [
+            str(source),
+            "--output",
+            str(tmp_path / f"{platform}.html"),
+            "--quiet",
+        ]
+    )
+
+    assert rc == SUCCESS
+    diagnostics = capsys.readouterr().err
+    assert diagnostics.count("warning [generator-version]:") == 1
+    assert f"snapshot generator version {version}" in diagnostics
+    assert canary not in diagnostics
+
+
+@pytest.mark.parametrize(
+    ("platform", "version"),
+    [
+        ("cja", "3.5.17"),
+        ("cja", "3.5.0"),
+        ("cja", "unparseable"),
+        ("aa", "1.18.0"),
+        ("aa", "1.17.0"),
+        ("aa", "unparseable"),
+    ],
+)
+def test_cli_current_older_and_unparseable_generators_are_quiet(
+    tmp_path,
+    capsys,
+    platform,
+    version,
+):
+    snapshot = json.loads(
+        (FIXTURES / f"{platform}_snapshot_messy.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    if platform == "cja":
+        snapshot["metadata"]["Tool Version"] = version
+    else:
+        snapshot["tool_version"] = version
+    source = tmp_path / f"{platform}-{version}.json"
+    source.write_text(json.dumps(snapshot), encoding="utf-8")
+
+    rc = main(
+        [
+            str(source),
+            "--output",
+            str(tmp_path / f"{platform}-{version}.html"),
+            "--quiet",
+        ]
+    )
+
+    assert rc == SUCCESS
+    assert "generator-version" not in capsys.readouterr().err
 def test_trend_requires_snapshot_directory_argument(capsys):
     rc = main(["--trend"])
 

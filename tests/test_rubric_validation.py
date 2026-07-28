@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import pytest
@@ -115,6 +116,39 @@ def test_missing_meta_file_has_pack_context(tmp_path):
         load_rubric(tmp_path)
 
 
+@pytest.mark.parametrize("filename", ["_meta.yaml", "naming.yaml"])
+def test_malformed_yaml_is_translated_to_contextual_validation_error(
+    tmp_path,
+    filename,
+):
+    _write_structured_pack(tmp_path)
+    (tmp_path / filename).write_text("key: [unterminated\n", encoding="utf-8")
+
+    with pytest.raises(
+        RubricValidationError,
+        match=rf"{re.escape(filename)}: invalid YAML syntax",
+    ):
+        load_rubric(tmp_path)
+
+
+def test_rubric_yaml_read_failure_is_contextual(tmp_path, monkeypatch):
+    _write_structured_pack(tmp_path)
+    real_open = Path.open
+
+    def fail_meta(path, *args, **kwargs):
+        if path.name == "_meta.yaml":
+            raise OSError("injected read failure")
+        return real_open(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "open", fail_meta)
+
+    with pytest.raises(
+        RubricValidationError,
+        match=r"_meta\.yaml: could not read YAML",
+    ):
+        load_rubric(tmp_path)
+
+
 @pytest.mark.parametrize(
     ("meta", "message"),
     [
@@ -149,6 +183,22 @@ def test_category_weights_reject_missing_nonnumeric_and_nonunit_values(
         load_rubric(pack)
 
 
+@pytest.mark.parametrize("value", [True, float("nan"), float("inf"), -0.1, 1.1])
+def test_category_weights_reject_boolean_nonfinite_negative_and_oversized(
+    tmp_path,
+    value,
+):
+    meta = _valid_meta()
+    meta["category_weights"] = {
+        "naming_conventions": value,
+        "other": 1.0,
+    }
+    pack = _write_structured_pack(tmp_path, meta=meta)
+
+    with pytest.raises(RubricValidationError, match="category_weights"):
+        load_rubric(pack)
+
+
 @pytest.mark.parametrize(
     ("severity_weights", "message"),
     [
@@ -170,6 +220,24 @@ def test_severity_weights_reject_invalid_contracts(tmp_path, severity_weights, m
     pack = _write_structured_pack(tmp_path, meta=meta)
 
     with pytest.raises(RubricValidationError, match=message):
+        load_rubric(pack)
+
+
+@pytest.mark.parametrize("value", [True, 1.5, 0, -1])
+def test_severity_weights_require_positive_literal_integers(tmp_path, value):
+    meta = _valid_meta()
+    meta["severity_weights"] = {
+        "critical": 10,
+        "high": 5,
+        "medium": 3,
+        "low": value,
+    }
+    pack = _write_structured_pack(tmp_path, meta=meta)
+
+    with pytest.raises(
+        RubricValidationError,
+        match=r"severity_weights\['low'\].*positive integer",
+    ):
         load_rubric(pack)
 
 
@@ -199,6 +267,43 @@ def test_grade_scale_rejects_malformed_and_invalid_boundaries(tmp_path, grade_sc
         load_rubric(pack)
 
 
+@pytest.mark.parametrize(
+    "value",
+    [True, float("nan"), float("inf"), -1, 101],
+)
+def test_grade_scale_rejects_boolean_nonfinite_and_out_of_range_values(
+    tmp_path,
+    value,
+):
+    meta = _valid_meta()
+    meta["grade_scale"] = [
+        {"min": 90, "grade": "A"},
+        {"min": value, "grade": "F"},
+    ]
+    pack = _write_structured_pack(tmp_path, meta=meta)
+
+    with pytest.raises(
+        RubricValidationError,
+        match="grade_scale",
+    ):
+        load_rubric(pack)
+
+
+def test_grade_scale_requires_nonempty_string_labels(tmp_path):
+    meta = _valid_meta()
+    meta["grade_scale"] = [
+        {"min": 90, "grade": True},
+        {"min": 0, "grade": "F"},
+    ]
+    pack = _write_structured_pack(tmp_path, meta=meta)
+
+    with pytest.raises(
+        RubricValidationError,
+        match="grade_scale.*grade.*non-empty string",
+    ):
+        load_rubric(pack)
+
+
 def test_score_to_letter_honors_exact_and_fallback_boundaries():
     scale = [GradeBand(90, "A"), GradeBand(0, "F")]
 
@@ -218,6 +323,10 @@ def test_score_to_letter_honors_exact_and_fallback_boundaries():
         ),
         (
             {"category": "naming_conventions", "rules": {"id": "NAME-T01"}},
+            "'rules' must be a list",
+        ),
+        (
+            {"category": "naming_conventions", "rules": {}},
             "'rules' must be a list",
         ),
     ],
@@ -247,9 +356,11 @@ def test_duplicate_rule_ids_are_rejected_with_file_context(tmp_path):
         ({"name": "missing id"}, "missing 'id' string"),
         (_valid_rule(severity="urgent"), "NAME-T01: severity 'urgent'"),
         (_valid_rule(platforms="cja"), "NAME-T01: 'platforms' must be a list"),
+        (_valid_rule(platforms=None), "NAME-T01: 'platforms' must be a list"),
         (_valid_rule(check=None), "NAME-T01: missing 'check' string"),
         (_valid_rule(check="not_registered"), "check function 'not_registered'.*Known checks"),
         (_valid_rule(params="not a mapping"), "NAME-T01: 'params' must be a mapping"),
+        (_valid_rule(params=None), "NAME-T01: 'params' must be a mapping"),
         (_valid_rule(params={"pattern": 42}), "NAME-T01: 'pattern' must be a string"),
         (
             _valid_rule(params={"targets": "metrics"}),

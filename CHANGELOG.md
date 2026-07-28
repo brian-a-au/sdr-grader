@@ -28,6 +28,13 @@ spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
   suppressions or severity overrides, and unknown category-weight keys,
   now fail with rubric-validation exit code 3 before any report is
   published.
+- **Configuration failures are controlled.** Malformed rubric or
+  suppression YAML, boolean/non-finite/negative weights, fractional or
+  non-positive severity weights, and out-of-range grade bands now fail
+  with contextual exit code 3 and no output.
+- **Generator compatibility warnings are live.** Newer parseable
+  `cja_auto_sdr` and `aa_auto_sdr` versions warn once through the normal
+  CLI path; current, older, and unparseable versions stay quiet.
 
 ### Removed
 

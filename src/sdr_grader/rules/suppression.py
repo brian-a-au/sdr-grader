@@ -8,6 +8,7 @@ unmodified.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
@@ -60,18 +61,31 @@ def load_suppression(path: str | Path) -> Suppression:
     p = Path(path)
     if not p.exists():
         return Suppression()
-    with p.open(encoding="utf-8") as fh:
-        raw = yaml.safe_load(fh) or {}
+    try:
+        with p.open(encoding="utf-8") as handle:
+            loaded = yaml.safe_load(handle)
+            raw = {} if loaded is None else loaded
+    except yaml.YAMLError as exc:
+        raise RubricValidationError(
+            f"{p.name}: invalid YAML syntax"
+        ) from exc
+    except OSError as exc:
+        raise RubricValidationError(
+            f"{p.name}: could not read YAML"
+        ) from exc
     if not isinstance(raw, dict):
         raise RubricValidationError(
             f"{path}: suppression config must be a mapping, got {type(raw).__name__}"
         )
-    return _parse(raw, source=str(path))
+    return _parse(raw, source=p.name)
 
 
 def _parse(raw: dict[str, Any], *, source: str) -> Suppression:
     suppressed: list[SuppressedRule] = []
-    for entry in raw.get("suppress") or []:
+    suppressed_raw = raw.get("suppress", [])
+    if not isinstance(suppressed_raw, list):
+        raise RubricValidationError(f"{source}: suppress must be a list")
+    for entry in suppressed_raw:
         if not isinstance(entry, dict):
             raise RubricValidationError(
                 f"{source}: suppress entries must be mappings; got {entry!r}"
@@ -89,7 +103,7 @@ def _parse(raw: dict[str, Any], *, source: str) -> Suppression:
             SuppressedRule(rule_id=rule_id, reason=reason, components=[str(c) for c in components])
         )
 
-    severity_overrides_raw = raw.get("severity_overrides") or {}
+    severity_overrides_raw = raw.get("severity_overrides", {})
     if not isinstance(severity_overrides_raw, dict):
         raise RubricValidationError(f"{source}: severity_overrides must be a mapping")
     severity_overrides: dict[str, str] = {}
@@ -100,17 +114,22 @@ def _parse(raw: dict[str, Any], *, source: str) -> Suppression:
             )
         severity_overrides[str(rule_id)] = str(sev)
 
-    weight_overrides_raw = raw.get("category_weights") or {}
+    weight_overrides_raw = raw.get("category_weights", {})
     if not isinstance(weight_overrides_raw, dict):
         raise RubricValidationError(f"{source}: category_weights override must be a mapping")
     weight_overrides: dict[str, float] = {}
     for cat, w in weight_overrides_raw.items():
-        try:
-            weight_overrides[str(cat)] = float(w)
-        except (TypeError, ValueError) as exc:
+        if isinstance(w, bool) or not isinstance(w, (int, float)):
             raise RubricValidationError(
                 f"{source}: category_weights[{cat!r}] is not numeric ({w!r})"
-            ) from exc
+            )
+        number = float(w)
+        if not math.isfinite(number) or not 0 <= number <= 1:
+            raise RubricValidationError(
+                f"{source}: category_weights[{cat!r}] must be a finite "
+                f"number between 0 and 1 (got {w!r})"
+            )
+        weight_overrides[str(cat)] = number
 
     return Suppression(
         suppressed=suppressed,

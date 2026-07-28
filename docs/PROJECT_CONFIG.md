@@ -64,11 +64,14 @@ all six — unspecified categories keep their original ratios.
 
 Categories with weight 0 are excluded from the overall score entirely,
 which is useful when a whole category doesn't apply to your project.
+Override values must be finite YAML numbers from 0 through 1. Booleans,
+quoted numeric strings, negative values, NaN, and infinity are rejected.
 
 ## Validation
 
-Any structural problem in the file (non-mapping at the root, malformed
-suppress entry, invalid severity value, non-numeric weight) raises
+Any structural problem in the file (invalid YAML, non-mapping at the
+root, malformed suppress entry, invalid severity value, or invalid
+weight) raises
 `RubricValidationError` and exits with code 3. Failures are loud by
 design: a typo'd suppression should never silently let a rule keep firing
 when you thought you'd silenced it.

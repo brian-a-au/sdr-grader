@@ -27,7 +27,7 @@ The grader globs `*.yaml` in the pack directory; files starting with
 
 ```yaml
 pack: strict
-version: "1.0"
+version: "2.0"
 description: |
   Strict rubric encoding the opinions of an Adobe Master / CJA Developer
   about what a high-quality CJA or AA implementation looks like.
@@ -62,6 +62,18 @@ grade_scale:
 
 The loader rejects malformed `_meta.yaml` with `RubricValidationError`
 and exit code 3.
+
+Numeric fields are deliberately strict:
+
+- category weights are finite numbers from 0 through 1 and must sum to
+  1.0;
+- severity weights are positive YAML integers (booleans and fractional
+  values are not integers); and
+- grade-band minima are finite numbers from 0 through 100, in strictly
+  descending order, with a final band at 0.
+
+Quoted numeric strings, booleans, negative values, NaN, and infinity
+are rejected rather than coerced.
 
 ## Category file
 
@@ -99,6 +111,8 @@ When the grader loads a pack, it validates:
 - Rule IDs are unique within the pack.
 - Each category referenced by a rule appears in `_meta.yaml.category_weights`.
 - Two files can share the same `category:` slug — their rules merge.
+- Malformed YAML is reported with the affected filename and no parser
+  traceback.
 
 Any failure raises `RubricValidationError` and exits 3. Failures are
 loud by design: a malformed rubric should never silently degrade.

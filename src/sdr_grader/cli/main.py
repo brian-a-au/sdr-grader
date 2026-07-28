@@ -109,6 +109,10 @@ def main(argv: list[str] | None = None) -> int:
     except (InvalidSnapshotError, UnknownPlatformError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return RUNTIME_ERROR
+    _emit_generator_version_warning(
+        impl.platform,
+        impl.adapter_version,
+    )
 
     if args.snapshot and Path(args.snapshot).is_dir():
         from sdr_grader.input.history import matching_snapshot_sibling_exists
@@ -384,9 +388,18 @@ def _run_trend(args, rubric, suppression, rubric_dir, suppression_path) -> int:
     except RubricValidationError as exc:
         print(f"rubric error: {exc}", file=sys.stderr)
         return RUBRIC_VALIDATION_FAILURE
-    except _ISE as exc:
+    except (_ISE, UnknownPlatformError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return RUNTIME_ERROR
+
+    warned_generators: set[tuple[str, str]] = set()
+    for point in trend.points:
+        adapter = point.report.adapter
+        key = (adapter.platform.lower(), adapter.version)
+        if key in warned_generators:
+            continue
+        warned_generators.add(key)
+        _emit_generator_version_warning(*key)
 
     output_path = Path(args.output) if args.output else _default_trend_output_path(trend)
     read_paths = _read_paths_for_args(args, rubric_dir, suppression_path)
@@ -525,3 +538,23 @@ def _grade_to_min_pct(grade_label: str, rubric) -> float | None:
         if band.grade == normalized or band.grade == grade_label:
             return band.min_score
     return None
+
+
+def _emit_generator_version_warning(
+    platform: str,
+    adapter_version: str,
+) -> None:
+    warning = None
+    if platform.lower() == "cja":
+        from sdr_grader.adapters.cja import generator_version_warning
+
+        warning = generator_version_warning(adapter_version)
+    elif platform.lower() == "aa":
+        from sdr_grader.adapters.aa import generator_version_warning
+
+        warning = generator_version_warning(adapter_version)
+    if warning is not None:
+        print(
+            f"warning [generator-version]: {warning}",
+            file=sys.stderr,
+        )

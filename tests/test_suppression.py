@@ -94,10 +94,40 @@ def test_load_suppression_rejects_nonmapping_root(tmp_path):
         load_suppression(config)
 
 
+def test_load_suppression_translates_malformed_yaml(tmp_path):
+    config = tmp_path / ".sdr-grader.yaml"
+    config.write_text("suppress: [unterminated\n", encoding="utf-8")
+
+    with pytest.raises(
+        RubricValidationError,
+        match=r"\.sdr-grader\.yaml: invalid YAML syntax",
+    ):
+        load_suppression(config)
+
+
+def test_load_suppression_translates_read_failure(tmp_path, monkeypatch):
+    config = _write_suppression(tmp_path, {})
+    real_open = Path.open
+
+    def fail_config(path, *args, **kwargs):
+        if path == config:
+            raise OSError("injected read failure")
+        return real_open(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "open", fail_config)
+
+    with pytest.raises(
+        RubricValidationError,
+        match=r"\.sdr-grader\.yaml: could not read YAML",
+    ):
+        load_suppression(config)
+
+
 @pytest.mark.parametrize(
     ("content", "message"),
     [
         ({"suppress": ["NAME-002"]}, "suppress entries must be mappings"),
+        ({"suppress": {}}, "suppress must be a list"),
         ({"suppress": [{}]}, "suppress entry missing 'rule' string"),
         (
             {"suppress": [{"rule": "NAME-002", "components": "metric_1"}]},
@@ -120,6 +150,51 @@ def test_load_suppression_rejects_invalid_nested_shapes(tmp_path, content, messa
 
     with pytest.raises(RubricValidationError, match=message):
         load_suppression(config)
+
+
+@pytest.mark.parametrize(
+    "value",
+    [True, float("nan"), float("inf"), -0.1, 1.1],
+)
+def test_suppression_category_weights_require_finite_unit_interval(
+    tmp_path,
+    value,
+):
+    config = _write_suppression(
+        tmp_path,
+        {"category_weights": {"schema_hygiene": value}},
+    )
+
+    with pytest.raises(
+        RubricValidationError,
+        match=r"category_weights\['schema_hygiene'\]",
+    ):
+        load_suppression(config)
+
+
+def test_cli_malformed_suppression_is_exit_3_with_no_artifact(
+    tmp_path,
+    capsys,
+):
+    config = tmp_path / ".sdr-grader.yaml"
+    config.write_text("suppress: [unterminated\n", encoding="utf-8")
+    output = tmp_path / "report.html"
+
+    rc = main(
+        [
+            str(FIXTURES / "cja_snapshot_messy.json"),
+            "--output",
+            str(output),
+            "--suppress-config",
+            str(config),
+        ]
+    )
+
+    assert rc == RUBRIC_VALIDATION_FAILURE
+    assert not output.exists()
+    diagnostics = capsys.readouterr().err
+    assert "rubric error:" in diagnostics
+    assert "Traceback" not in diagnostics
 
 
 # ---------------------------------------------------------------------------
