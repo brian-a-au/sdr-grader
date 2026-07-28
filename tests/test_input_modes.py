@@ -5,6 +5,7 @@ from __future__ import annotations
 import io
 import json
 import shutil
+import subprocess
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -18,6 +19,19 @@ from sdr_grader.core.exceptions import InvalidSnapshotError
 from sdr_grader.input.loader import load_snapshot
 
 FIXTURES = Path(__file__).parent / "fixtures"
+
+
+def _write_cja_json_output(
+    cmd: list[str], content: str, *, stderr: str = ""
+) -> subprocess.CompletedProcess[str]:
+    output_dir = Path(cmd[cmd.index("--output-dir") + 1])
+    (output_dir / "current.json").write_text(content, encoding="utf-8")
+    return subprocess.CompletedProcess(
+        cmd,
+        0,
+        stdout="SDR JSON written to disk\n",
+        stderr=stderr,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -296,13 +310,10 @@ def test_shell_cja_builds_complete_inventory_command_with_extra_args(monkeypatch
 
     captured: dict = {}
 
-    class _FakeCompleted:
-        stdout = "{}"
-        stderr = ""
-
     def fake_run(cmd, **kwargs):
         captured["cmd"] = cmd
-        return _FakeCompleted()
+        captured["output_dir"] = Path(cmd[cmd.index("--output-dir") + 1])
+        return _write_cja_json_output(cmd, "{}")
 
     monkeypatch.setattr("shutil.which", lambda tool: f"/usr/bin/{tool}")
     monkeypatch.setattr(subprocess, "run", fake_run)
@@ -315,13 +326,14 @@ def test_shell_cja_builds_complete_inventory_command_with_extra_args(monkeypatch
         "dv_test",
         "--format",
         "json",
-        "--output",
-        "-",
+        "--output-dir",
+        str(captured["output_dir"]),
         "--include-all-inventory",
         "--quiet",
         "--log-level",
         "debug",
     ]
+    assert not captured["output_dir"].exists()
     assert captured["cmd"].count("--include-all-inventory") == 1
     assert captured["cmd"].count("--quiet") == 1
 
@@ -394,23 +406,28 @@ def test_shell_cja_raises_when_binary_missing_at_invocation(monkeypatch):
         shell_cja("dv_test")
 
 
-def test_shell_cja_raises_on_non_json_stdout(monkeypatch):
-    """Upstream succeeded but wrote garbage to stdout — fail loudly rather
-    than handing malformed input to the adapter."""
-    import subprocess
-
+def test_shell_cja_raises_on_non_json_output(monkeypatch):
+    """Upstream succeeded but wrote garbage to its JSON artifact — fail loudly
+    rather than handing malformed input to the adapter."""
     from sdr_grader.core.exceptions import InvalidSnapshotError
     from sdr_grader.input.shell_out import shell_cja
 
-    class _Completed:
-        stdout = "not json at all"
-        stderr = ""
+    captured = {}
+
+    def write_invalid_json(cmd, **_kwargs):
+        captured["output_dir"] = Path(cmd[cmd.index("--output-dir") + 1])
+        return _write_cja_json_output(cmd, "not json at all")
 
     monkeypatch.setattr("shutil.which", lambda tool: f"/usr/bin/{tool}")
-    monkeypatch.setattr(subprocess, "run", lambda cmd, **kw: _Completed())
+    monkeypatch.setattr(
+        subprocess,
+        "run",
+        write_invalid_json,
+    )
 
     with pytest.raises(InvalidSnapshotError, match="not valid JSON"):
         shell_cja("dv_test")
+    assert not captured["output_dir"].exists()
 
 
 def test_cli_rsid_uses_aa_adapter(tmp_path, capsys):
@@ -434,15 +451,17 @@ def test_cli_rsid_uses_aa_adapter(tmp_path, capsys):
 
 
 def test_shell_out_passes_timeout_and_encoding_and_surfaces_warnings(monkeypatch, capsys):
-    import subprocess as sp
-
     from sdr_grader.input import shell_out
 
     seen_kwargs = {}
 
     def fake_run(cmd, **kwargs):
         seen_kwargs.update(kwargs)
-        return sp.CompletedProcess(cmd, 0, stdout='{"ok": true}', stderr="token expires soon\n")
+        return _write_cja_json_output(
+            cmd,
+            '{"ok": true}',
+            stderr="token expires soon\n",
+        )
 
     monkeypatch.setattr(shell_out.shutil, "which", lambda tool: f"/fake/{tool}")
     monkeypatch.setattr(shell_out.subprocess, "run", fake_run)
@@ -452,6 +471,77 @@ def test_shell_out_passes_timeout_and_encoding_and_surfaces_warnings(monkeypatch
     assert seen_kwargs["timeout"] == shell_out.SHELL_OUT_TIMEOUT_SECONDS
     assert seen_kwargs["encoding"] == "utf-8"
     assert "token expires soon" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("output_count", [0, 2])
+def test_shell_cja_requires_exactly_one_generated_json(monkeypatch, output_count):
+    from sdr_grader.input import shell_out
+
+    captured = {}
+
+    def write_outputs(cmd, **_kwargs):
+        output_dir = Path(cmd[cmd.index("--output-dir") + 1])
+        captured["output_dir"] = output_dir
+        for index in range(output_count):
+            (output_dir / f"{index}.json").write_text("{}", encoding="utf-8")
+        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(shell_out.shutil, "which", lambda tool: f"/fake/{tool}")
+    monkeypatch.setattr(shell_out.subprocess, "run", write_outputs)
+
+    with pytest.raises(InvalidSnapshotError, match=rf"produced {output_count} JSON outputs"):
+        shell_out.shell_cja("dv_123")
+    assert not captured["output_dir"].exists()
+
+
+def test_shell_cja_output_inspection_error_is_domain_error(monkeypatch):
+    from sdr_grader.input import shell_out
+
+    monkeypatch.setattr(shell_out.shutil, "which", lambda tool: f"/fake/{tool}")
+    monkeypatch.setattr(
+        shell_out.subprocess,
+        "run",
+        lambda cmd, **_kwargs: subprocess.CompletedProcess(cmd, 0, stdout="", stderr=""),
+    )
+
+    def fail_glob(_path, _pattern):
+        raise PermissionError("inspection denied")
+
+    monkeypatch.setattr(Path, "glob", fail_glob)
+
+    with pytest.raises(InvalidSnapshotError, match="JSON outputs could not be inspected"):
+        shell_out.shell_cja("dv_123")
+
+
+def test_shell_cja_output_read_error_is_domain_error(monkeypatch):
+    from sdr_grader.input import shell_out
+
+    monkeypatch.setattr(shell_out.shutil, "which", lambda tool: f"/fake/{tool}")
+    monkeypatch.setattr(
+        shell_out.subprocess,
+        "run",
+        lambda cmd, **_kwargs: _write_cja_json_output(cmd, "{}"),
+    )
+
+    def fail_read(_path, **_kwargs):
+        raise PermissionError("read denied")
+
+    monkeypatch.setattr(Path, "read_text", fail_read)
+
+    with pytest.raises(InvalidSnapshotError, match="JSON output could not be read"):
+        shell_out.shell_cja("dv_123")
+
+
+def test_shell_cja_temporary_output_error_is_domain_error(monkeypatch):
+    from sdr_grader.input import shell_out
+
+    def fail_temporary_directory(**_kwargs):
+        raise PermissionError("temporary directory denied")
+
+    monkeypatch.setattr(shell_out.tempfile, "TemporaryDirectory", fail_temporary_directory)
+
+    with pytest.raises(InvalidSnapshotError, match="temporary output handling failed"):
+        shell_out.shell_cja("dv_123")
 
 
 def test_shell_out_timeout_raises_invalid_snapshot(monkeypatch):

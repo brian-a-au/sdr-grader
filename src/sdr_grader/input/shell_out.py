@@ -1,9 +1,8 @@
 """Mode 3: shell out to cja_auto_sdr / aa_auto_sdr (SPEC §7).
 
 The grader does not call Adobe APIs directly. To run against a live data
-view or report suite, it shells out to the upstream snapshot tool with
-`--format json --output -` and parses the captured stdout as if it were
-a Mode 1 file.
+view or report suite, it asks the upstream snapshot tool for JSON and
+parses the emitted snapshot as if it were a Mode 1 file.
 """
 
 from __future__ import annotations
@@ -12,6 +11,8 @@ import json
 import shutil
 import subprocess
 import sys
+import tempfile
+from pathlib import Path
 from typing import Any
 
 from sdr_grader.core.exceptions import InvalidSnapshotError
@@ -29,24 +30,28 @@ def shell_cja(
     Always passes ``--include-all-inventory --quiet`` so the snapshot ships
     calculated metrics and segments alongside dimensions/metrics —
     without it, those rule packs grade against empty inputs and stay
-    silent — while captured stdout remains JSON-only. See cja_auto_sdr's
-    Component Inventory Overview for the full set of ``--include-*``
-    switches.
+    silent. See cja_auto_sdr's Component Inventory Overview for the full
+    set of ``--include-*`` switches.
     """
-    return _shell_out(
-        "cja_auto_sdr",
-        [
-            dataview_id,
-            "--format",
-            "json",
-            "--output",
-            "-",
-            "--include-all-inventory",
-            "--quiet",
-            *(extra_args or []),
-        ],
-        flag="--dataview",
-    )
+    try:
+        with tempfile.TemporaryDirectory(prefix="sdr-grader-cja-") as output_dir:
+            return _shell_out(
+                "cja_auto_sdr",
+                [
+                    dataview_id,
+                    "--format",
+                    "json",
+                    "--output-dir",
+                    output_dir,
+                    "--include-all-inventory",
+                    "--quiet",
+                    *(extra_args or []),
+                ],
+                flag="--dataview",
+                json_output_dir=Path(output_dir),
+            )
+    except OSError as exc:
+        raise InvalidSnapshotError(f"cja_auto_sdr temporary output handling failed: {exc}") from exc
 
 
 def shell_aa(rsid: str, *, extra_args: list[str] | None = None) -> tuple[dict[str, Any], str]:
@@ -58,7 +63,13 @@ def shell_aa(rsid: str, *, extra_args: list[str] | None = None) -> tuple[dict[st
     )
 
 
-def _shell_out(tool: str, argv: list[str], *, flag: str) -> tuple[dict[str, Any], str]:
+def _shell_out(
+    tool: str,
+    argv: list[str],
+    *,
+    flag: str,
+    json_output_dir: Path | None = None,
+) -> tuple[dict[str, Any], str]:
     binary = shutil.which(tool)
     if not binary:
         raise InvalidSnapshotError(
@@ -96,8 +107,26 @@ def _shell_out(tool: str, argv: list[str], *, flag: str) -> tuple[dict[str, Any]
     if warnings:
         print(f"{tool} warnings:\n{warnings}", file=sys.stderr)
 
+    if json_output_dir is None:
+        snapshot_text = result.stdout
+    else:
+        try:
+            json_outputs = [path for path in json_output_dir.glob("*.json") if path.is_file()]
+        except OSError as exc:
+            raise InvalidSnapshotError(
+                f"{tool} JSON outputs could not be inspected: {exc}"
+            ) from exc
+        if len(json_outputs) != 1:
+            raise InvalidSnapshotError(
+                f"{tool} produced {len(json_outputs)} JSON outputs; expected exactly one"
+            )
+        try:
+            snapshot_text = json_outputs[0].read_text(encoding="utf-8")
+        except (OSError, UnicodeError) as exc:
+            raise InvalidSnapshotError(f"{tool} JSON output could not be read: {exc}") from exc
+
     try:
-        snapshot = json.loads(result.stdout)
+        snapshot = json.loads(snapshot_text)
     except json.JSONDecodeError as exc:
         detail = f" (stderr: {warnings})" if warnings else ""
         raise InvalidSnapshotError(
