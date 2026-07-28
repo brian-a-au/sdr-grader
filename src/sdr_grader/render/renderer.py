@@ -16,6 +16,7 @@ Design notes
 
 from __future__ import annotations
 
+import re
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from functools import lru_cache
@@ -23,6 +24,7 @@ from pathlib import Path
 from typing import Literal
 
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
+from markupsafe import Markup
 
 from sdr_grader import __version__ as _PACKAGE_VERSION
 from sdr_grader.render.dates import human_datetime, to_iso_z
@@ -57,20 +59,51 @@ class Category:
     grade: str              # "B-"
 
 
-@dataclass
+@dataclass(init=False)
 class Remediation:
     text: str
-    refs: list[str] = field(default_factory=list)
-    impact_pts: int = 0
+    refs: list[str]
+    priority_weight: int
+
+    def __init__(
+        self,
+        text: str,
+        refs: list[str] | None = None,
+        priority_weight: int | None = None,
+        *,
+        impact_pts: int | None = None,
+    ) -> None:
+        if (
+            priority_weight is not None
+            and impact_pts is not None
+            and priority_weight != impact_pts
+        ):
+            raise ValueError("priority_weight and impact_pts must agree")
+        self.text = text
+        self.refs = [] if refs is None else refs
+        self.priority_weight = (
+            priority_weight
+            if priority_weight is not None
+            else impact_pts if impact_pts is not None else 0
+        )
+
+    @property
+    def impact_pts(self) -> int:
+        """Deprecated 1.2.x compatibility alias for priority_weight."""
+        return self.priority_weight
+
+    @impact_pts.setter
+    def impact_pts(self, value: int) -> None:
+        self.priority_weight = value
 
 
 @dataclass
 class FindingBlock:
     """One block within a finding's body. `kind` selects the renderer."""
     kind: Literal["paragraph", "section", "components", "code"]
-    html: str | None = None         # for kind=paragraph (raw inline HTML allowed)
+    html: str | None = None         # for kind=paragraph (untrusted plain text)
     label: str | None = None        # for kind=section (uppercase label)
-    body_html: str | None = None    # for kind=section (paragraph after label)
+    body_html: str | None = None    # for kind=section (untrusted plain text)
     items: list[str] | None = None  # for kind=components (each line is a row)
     text: str | None = None         # for kind=code (raw, displayed as <pre>)
 
@@ -99,14 +132,14 @@ class SkippedRules:
 
 @dataclass
 class Methodology:
-    paragraphs: list[str]                       # raw inline HTML allowed
+    paragraphs: list[str | Markup]
     skipped: list[SkippedRules] = field(default_factory=list)
 
 
 @dataclass
 class DistributionChart:
     label: str
-    svg: str                                    # raw SVG markup
+    svg: str | Markup                           # only generated Markup is trusted
 
 
 @dataclass
@@ -118,6 +151,7 @@ class Distribution:
 class Report:
     id: str                                     # "SDR-2026-0425-PROD-WEB"
     instance_name: str                          # "Production Web Analytics"
+    instance_id: str                            # "dv_prod_web"
     grade: str                                  # "B-"
     overall_pct: int
     components_evaluated: int
@@ -126,7 +160,7 @@ class Report:
     adapter: Adapter
     rubric: Rubric
     generated_at: datetime
-    tldr_html: str                              # raw inline HTML allowed
+    tldr_html: str | Markup                     # only constructed Markup is trusted
     categories: list[Category]
     remediations: list[Remediation]
     findings: list[Finding]
@@ -143,6 +177,8 @@ class Report:
 _HERE = Path(__file__).parent
 _TEMPLATES = _HERE / "templates"
 _STATIC = _HERE / "static"
+_TOOL_URL = "https://github.com/brian-a-au/sdr-grader"
+_FRAGMENT_RE = re.compile(r"^#(?:[A-Za-z][A-Za-z0-9_.:-]*)?$")
 
 
 @lru_cache(maxsize=1)
@@ -165,24 +201,30 @@ def _css() -> str:
 def render(report: Report) -> str:
     """Produce a single self-contained HTML document."""
     template = _template()
-    css = _css()
+    css = Markup(_css())
 
     # Decorate findings with display metadata so the template stays declarative.
     findings_view = []
     for f in report.findings:
         findings_view.append({
             "id": f.id,
+            "anchor": _anchor(f.id),
             "severity_class": _SEV_CLASS[f.severity],
             "severity_label": _SEV_LABEL[f.severity],
             "category": f.category,
             "title": f.title,
             "body": [asdict(b) for b in f.body],
-            "actions": [asdict(a) for a in f.actions],
+            "actions": [
+                {"label": action.label, "href": action.href}
+                for action in f.actions
+                if _FRAGMENT_RE.fullmatch(action.href)
+            ],
         })
 
     report_view = {
         "id": report.id,
         "instance_name": report.instance_name,
+        "instance_id": report.instance_id,
         "grade": report.grade,
         "overall_pct": report.overall_pct,
         "components_evaluated": report.components_evaluated,
@@ -193,16 +235,40 @@ def render(report: Report) -> str:
         "generated_at_iso": to_iso_z(report.generated_at),
         "generated_at_human": human_datetime(report.generated_at),
         "tldr_html": report.tldr_html,
-        "categories": [asdict(c) for c in report.categories],
+        "categories": [
+            {
+                "name": category.name,
+                "pct": _bounded_pct(category.pct),
+                "grade": category.grade,
+            }
+            for category in report.categories
+        ],
         "remediations": [asdict(r) for r in report.remediations],
         "findings": findings_view,
         "methodology": {
             "paragraphs": report.methodology.paragraphs,
             "skipped": [asdict(s) for s in report.methodology.skipped],
         },
-        "distribution": {"charts": [asdict(c) for c in report.distribution.charts]} if report.distribution else None,
+        "distribution": {
+            "charts": [
+                {"label": chart.label, "svg": chart.svg}
+                for chart in report.distribution.charts
+            ]
+        } if report.distribution else None,
         "tool_version": report.tool_version,
-        "tool_url": report.tool_url,
+        "tool_url": report.tool_url if report.tool_url == _TOOL_URL else None,
     }
 
     return template.render(report=report_view, css=css)
+
+
+def _bounded_pct(value: object) -> int:
+    """Keep dynamic data out of inline CSS while preserving valid scores."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return 0
+    return max(0, min(100, round(value)))
+
+
+def _anchor(value: str) -> str:
+    token = re.sub(r"[^a-z0-9_-]+", "-", value.casefold()).strip("-")
+    return f"finding-{token or 'unknown'}"

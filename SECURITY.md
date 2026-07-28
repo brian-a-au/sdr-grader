@@ -7,7 +7,7 @@ that can be tricked into executing input, a path-traversal bug in the
 CLI, or anything else that lets a malicious snapshot affect the host
 running the grader — please report it privately.
 
-Open a GitHub Security Advisory at
+Open a private security advisory at
 <https://github.com/brian-a-au/sdr-grader/security/advisories/new>
 rather than a public issue. I aim to respond within a week.
 
@@ -17,35 +17,52 @@ The default rubric is calibrated against a corpus of real CJA + AA
 implementations. If a rule fires incorrectly on your snapshot, you
 have two options:
 
-1. **Open a public issue** with a synthetic, anonymized reduction of
-   the snapshot that reproduces the false positive. Use
-   `scripts/sanitize_sdr.py` to scrub tenant identifiers, then trim
-   the snapshot to the smallest shape that still triggers the bug.
-2. **Open a private security advisory** (link above) if the snapshot
-   itself is sensitive and you'd rather not anonymize it. Include the
-   raw snapshot in the advisory; I'll work with you to extract the
-   reduction needed to fix the rule.
+1. **Prefer a synthetic reduction** that reproduces the false positive
+   without using production-derived values.
+2. **If a production-derived reduction is necessary**, run
+   `scripts/sanitize_sdr.py`, trim the result to the smallest reproducer,
+   and manually inspect every key and value. The script emits a
+   restricted review candidate, not an approval to disclose it.
+
+Do not attach a raw snapshot to a public issue or security advisory.
+Contact the maintainer through a private advisory first and agree on the
+minimum data needed before uploading any production-derived candidate.
+GitHub is a third-party service and attachments are retained under its
+policies.
+
+The sanitizer prints a SHA-256 review digest without echoing private file
+paths. Record a share/abort decision against that digest so later edits do
+not inherit an earlier review. For release or calibration evidence, the
+maintainer performs a second review of the exact digest; the submitter's
+review is not sufficient by itself.
 
 ## Snapshot handling
 
-The grader is offline by design. It reads JSON snapshots from disk and
-writes HTML / JSON reports to disk. It does not transmit snapshot
-contents anywhere. The rendered HTML report embeds the snapshot's
-component IDs and names but does not embed the raw snapshot itself.
+File and stdin grading read JSON snapshots locally and write HTML / JSON
+reports locally. The rendered HTML report embeds the snapshot's component
+IDs and names but does not embed the raw snapshot itself.
 
 If you're concerned about leaking component names through a rendered
-report (e.g., naming conventions that reveal customer or project
-codes), redact those names in the snapshot before grading, or grade
-locally and gate which reports are shared.
+report (for example, naming conventions that reveal customer or project
+codes), keep the report local until a human has reviewed the complete
+artifact.
 
 ## Calibration corpus
 
 The corpus at `tests/fixtures/private/` is local-only and gitignored.
 It never appears in commits, CI runs, or published releases. See
 [`docs/CALIBRATION_CORPUS.md`](docs/CALIBRATION_CORPUS.md) for the
-intake workflow and anonymization checklist.
+intake workflow and privacy-review checklist.
 
 ## Supported versions
 
-Only the latest released version receives security fixes. If you're on
-an older version, upgrade before reporting issues.
+| Version | Security support |
+|---|---|
+| `1.2.x` | Supported after `1.2.0` is published |
+| `1.1.x` | Supported until `1.2.0` is published |
+| `<1.1` | Not supported |
+
+Only the latest supported minor line receives new security fixes. If
+you are on an older line, upgrade before reporting an issue. A report
+against an unsupported version is still useful when the behavior also
+reproduces on the supported line.

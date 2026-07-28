@@ -74,12 +74,21 @@ include:
 | `overall_pct`        | `int` — 0-100                          |
 | `categories`         | `[{name, pct, grade}]`                 |
 | `findings`           | `[{id, severity, category, title, body, actions}]` |
-| `remediations`       | `[{text, refs, impact_pts}]`           |
+| `remediations`       | `[{text, refs, priority_weight, impact_pts}]` |
 | `methodology`        | `{paragraphs, skipped}`                |
 | `generated_at`       | ISO-8601 timestamp in UTC              |
 
 Use `jq '.findings[].id'` to extract a list of fired rule IDs in shell,
 or load the file in Python via `json.load`.
+
+`priority_weight` is a severity-derived ordering weight, not a predicted
+overall-score increase. The equal-valued `impact_pts` field is retained as a
+deprecated compatibility alias throughout the `1.2.x` release line.
+
+CJA generator timestamps using `PDT` or `PST` are interpreted with fixed UTC
+offsets, as are explicit ISO offsets, `Z`, `UTC`, and `GMT`. Unknown timezone
+abbreviations never consult the host timezone; they follow the existing
+deterministic missing-timestamp fallback (`2026-01-01T00:00:00Z`).
 
 ## Suppressing rules in CI
 

@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import json
+import shutil
 from pathlib import Path
 
 import pytest
+import yaml
 
+from sdr_grader import __version__
 from sdr_grader.cli.exit_codes import (
     GRADE_BELOW_THRESHOLD,
     RUBRIC_VALIDATION_FAILURE,
@@ -19,6 +22,14 @@ from sdr_grader.core.exceptions import UnknownPlatformError
 FIXTURES = Path(__file__).parent / "fixtures"
 
 
+def test_cli_version_reports_installed_package_version(capsys):
+    with pytest.raises(SystemExit) as exc:
+        main(["--version"])
+
+    assert exc.value.code == 0
+    assert capsys.readouterr().out == f"sdr-grader {__version__}\n"
+
+
 def test_cli_runs_against_messy_fixture_and_writes_html(tmp_path, capsys):
     output = tmp_path / "report.html"
     rc = main([str(FIXTURES / "cja_snapshot_messy.json"), "--output", str(output)])
@@ -26,7 +37,7 @@ def test_cli_runs_against_messy_fixture_and_writes_html(tmp_path, capsys):
     html = output.read_text(encoding="utf-8")
     assert "<!doctype html>" in html.lower()
     assert "SCH-003" in html
-    assert "170 components lack descriptions" in html
+    assert "120 components lack descriptions" in html
     assert "Production Web Analytics" in html
     err = capsys.readouterr().err
     # stderr summary mentions the grade letter and the instance.
@@ -82,6 +93,35 @@ def test_cli_rejects_invalid_json(tmp_path, capsys):
     rc = main([str(bad), "--output", str(tmp_path / "out.html")])
     assert rc == RUNTIME_ERROR
     assert "not valid JSON" in capsys.readouterr().err
+
+
+def test_cli_adapter_error_does_not_echo_snapshot_values_or_private_path(
+    tmp_path, capsys
+):
+    private_dir = tmp_path / "PRIVATE-CLI-PATH"
+    private_dir.mkdir()
+    snapshot = private_dir / "PRIVATE-CLI-SNAPSHOT.json"
+    canary = "PRIVATE-CLI-RECORD-CANARY"
+    snapshot.write_text(
+        json.dumps(
+            {
+                "report_suite": {"rsid": "rs1"},
+                "dimensions": [{"name": canary, "secret": "\x1bPRIVATE"}],
+                "metrics": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    rc = main([str(snapshot), "--platform", "aa", "--quiet"])
+
+    assert rc == RUNTIME_ERROR
+    diagnostics = capsys.readouterr().err
+    assert "AA dimensions[0]" in diagnostics
+    assert canary not in diagnostics
+    assert "PRIVATE-CLI-PATH" not in diagnostics
+    assert "\x1b" not in diagnostics
+    assert "Traceback" not in diagnostics
 
 
 def test_cli_rejects_unknown_pack(tmp_path, capsys):
@@ -158,6 +198,57 @@ def test_cli_fail_below_passes_when_grade_meets_threshold(tmp_path):
     assert rc == SUCCESS
 
 
+def test_cli_aa_grade_is_consistent_across_file_stdin_and_json(
+    tmp_path,
+    monkeypatch,
+):
+    import io
+    import sys
+
+    snapshot_path = FIXTURES / "aa_snapshot_messy.json"
+    file_html = tmp_path / "file.html"
+    file_json = tmp_path / "file.json"
+    file_rc = main(
+        [
+            str(snapshot_path),
+            "--output",
+            str(file_html),
+            "--json",
+            str(file_json),
+            "--quiet",
+            "--fail-below",
+            "F",
+        ]
+    )
+
+    monkeypatch.setattr(
+        sys,
+        "stdin",
+        io.StringIO(snapshot_path.read_text(encoding="utf-8")),
+    )
+    stdin_html = tmp_path / "stdin.html"
+    stdin_json = tmp_path / "stdin.json"
+    stdin_rc = main(
+        [
+            "-",
+            "--output",
+            str(stdin_html),
+            "--json",
+            str(stdin_json),
+            "--quiet",
+            "--fail-below",
+            "D",
+        ]
+    )
+
+    assert file_rc == SUCCESS
+    assert stdin_rc == GRADE_BELOW_THRESHOLD
+    assert json.loads(file_json.read_text(encoding="utf-8"))["overall_pct"] == 55
+    assert json.loads(file_json.read_text(encoding="utf-8"))["grade"] == "F"
+    assert file_json.read_bytes() == stdin_json.read_bytes()
+    assert file_html.read_bytes() == stdin_html.read_bytes()
+
+
 def test_cli_invalid_rubric_yaml_returns_validation_failure(tmp_path, capsys):
     pack = tmp_path / "broken_pack"
     pack.mkdir()
@@ -173,6 +264,75 @@ def test_cli_invalid_rubric_yaml_returns_validation_failure(tmp_path, capsys):
     )
     assert rc == RUBRIC_VALIDATION_FAILURE
     assert "rubric error" in capsys.readouterr().err
+
+
+def test_cli_malformed_rubric_yaml_is_exit_3_with_no_artifact(
+    tmp_path,
+    capsys,
+):
+    pack = tmp_path / "broken_pack"
+    pack.mkdir()
+    (pack / "_meta.yaml").write_text(
+        "category_weights: [unterminated\n",
+        encoding="utf-8",
+    )
+    output = tmp_path / "out.html"
+
+    rc = main(
+        [
+            str(FIXTURES / "cja_snapshot_messy.json"),
+            "--output",
+            str(output),
+            "--rubric",
+            str(pack),
+        ]
+    )
+
+    assert rc == RUBRIC_VALIDATION_FAILURE
+    assert not output.exists()
+    diagnostics = capsys.readouterr().err
+    assert "rubric error:" in diagnostics
+    assert "Traceback" not in diagnostics
+
+
+def test_cli_invalid_numeric_rubric_is_exit_3_with_no_artifact(
+    tmp_path,
+    capsys,
+):
+    source_pack = (
+        Path(__file__).resolve().parent.parent
+        / "src"
+        / "sdr_grader"
+        / "rules"
+        / "packs"
+        / "strict"
+    )
+    pack = tmp_path / "invalid_numeric_pack"
+    shutil.copytree(source_pack, pack)
+    meta_path = pack / "_meta.yaml"
+    meta = yaml.safe_load(meta_path.read_text(encoding="utf-8"))
+    meta["category_weights"]["schema_hygiene"] = True
+    meta_path.write_text(
+        yaml.safe_dump(meta, sort_keys=False),
+        encoding="utf-8",
+    )
+    output = tmp_path / "out.html"
+
+    rc = main(
+        [
+            str(FIXTURES / "cja_snapshot_messy.json"),
+            "--output",
+            str(output),
+            "--rubric",
+            str(pack),
+        ]
+    )
+
+    assert rc == RUBRIC_VALIDATION_FAILURE
+    assert not output.exists()
+    diagnostics = capsys.readouterr().err
+    assert "category_weights" in diagnostics
+    assert "Traceback" not in diagnostics
 
 
 def test_cli_missing_explicit_suppression_config_is_runtime_error(tmp_path, capsys):
@@ -253,11 +413,13 @@ def test_cli_html_write_failure_returns_runtime_error(tmp_path, capsys):
 
     assert rc == RUNTIME_ERROR
     err = capsys.readouterr().err
-    assert f"could not write output {tmp_path}" in err
+    assert "could not publish report outputs" in err
+    assert str(tmp_path) not in err
 
 
 def test_cli_json_write_failure_returns_runtime_error(tmp_path, capsys):
     output = tmp_path / "out.html"
+    output.write_text("existing report", encoding="utf-8")
 
     rc = main(
         [
@@ -271,8 +433,124 @@ def test_cli_json_write_failure_returns_runtime_error(tmp_path, capsys):
     )
 
     assert rc == RUNTIME_ERROR
-    assert output.is_file()
-    assert f"could not write JSON {tmp_path}" in capsys.readouterr().err
+    assert output.read_text(encoding="utf-8") == "existing report"
+    assert "could not publish report outputs" in capsys.readouterr().err
+
+
+def test_cli_rejects_output_colliding_with_snapshot(tmp_path, capsys):
+    snapshot = tmp_path / "snapshot.json"
+    original = (FIXTURES / "cja_snapshot_clean.json").read_text(encoding="utf-8")
+    snapshot.write_text(original, encoding="utf-8")
+
+    rc = main([str(snapshot), "--output", str(snapshot)])
+
+    assert rc == RUNTIME_ERROR
+    assert snapshot.read_text(encoding="utf-8") == original
+    err = capsys.readouterr().err
+    assert "collides with an input path" in err
+    assert "Wrote " not in err
+
+
+def test_cli_rejects_html_json_destination_alias(tmp_path, capsys):
+    destination = tmp_path / "report.html"
+
+    rc = main(
+        [
+            str(FIXTURES / "cja_snapshot_clean.json"),
+            "--output",
+            str(destination),
+            "--json",
+            str(tmp_path / "." / "report.html"),
+        ]
+    )
+
+    assert rc == RUNTIME_ERROR
+    assert not destination.exists()
+    err = capsys.readouterr().err
+    assert "resolve to the same file" in err
+    assert "Wrote " not in err
+
+
+def test_cli_rejects_symlink_output_before_write(tmp_path, capsys):
+    target = tmp_path / "existing.html"
+    target.write_text("existing report", encoding="utf-8")
+    output = tmp_path / "report.html"
+    output.symlink_to(target)
+
+    rc = main(
+        [
+            str(FIXTURES / "cja_snapshot_clean.json"),
+            "--output",
+            str(output),
+        ]
+    )
+
+    assert rc == RUNTIME_ERROR
+    assert target.read_text(encoding="utf-8") == "existing report"
+    diagnostics = capsys.readouterr().err
+    assert "symlink" in diagnostics
+    assert "Wrote " not in diagnostics
+
+
+def test_cli_render_failure_preserves_existing_output_set(tmp_path, monkeypatch, capsys):
+    html = tmp_path / "report.html"
+    json_path = tmp_path / "report.json"
+    html.write_text("old html", encoding="utf-8")
+    json_path.write_text("old json", encoding="utf-8")
+
+    def fail_render(_report):
+        raise RuntimeError("injected render failure")
+
+    monkeypatch.setattr("sdr_grader.cli.main.render", fail_render)
+
+    rc = main(
+        [
+            str(FIXTURES / "cja_snapshot_clean.json"),
+            "--output",
+            str(html),
+            "--json",
+            str(json_path),
+        ]
+    )
+
+    assert rc == RUNTIME_ERROR
+    assert html.read_text(encoding="utf-8") == "old html"
+    assert json_path.read_text(encoding="utf-8") == "old json"
+    err = capsys.readouterr().err
+    assert "could not prepare report outputs" in err
+    assert "Wrote " not in err
+
+
+def test_cli_json_serialization_failure_preserves_existing_output_set(
+    tmp_path,
+    monkeypatch,
+    capsys,
+):
+    html = tmp_path / "report.html"
+    json_path = tmp_path / "report.json"
+    html.write_text("old html", encoding="utf-8")
+    json_path.write_text("old json", encoding="utf-8")
+    monkeypatch.setattr(
+        "sdr_grader.render.json_output.report_to_dict",
+        lambda _report: {"unserializable": object()},
+    )
+
+    rc = main(
+        [
+            str(FIXTURES / "cja_snapshot_clean.json"),
+            "--output",
+            str(html),
+            "--json",
+            str(json_path),
+        ]
+    )
+
+    assert rc == RUNTIME_ERROR
+    assert html.read_text(encoding="utf-8") == "old html"
+    assert json_path.read_text(encoding="utf-8") == "old json"
+    err = capsys.readouterr().err
+    assert "could not prepare report outputs" in err
+    assert "Wrote " not in err
 
 
 def test_cli_run_is_deterministic(tmp_path):
@@ -288,8 +566,8 @@ def test_cli_run_is_deterministic(tmp_path):
 def _changed_snapshot_path(tmp_path):
     """Copy of the messy snapshot with one description filled in."""
     src = json.loads((FIXTURES / "cja_snapshot_messy.json").read_text(encoding="utf-8"))
-    # First metric was empty ("-"); document it.
-    src["metrics"][0]["description"] = "Documented by test."
+    # The dimension target exceeds SCH-003's threshold; document one item.
+    src["dimensions"][0]["description"] = "Documented by test."
     out = tmp_path / "modified.json"
     out.write_text(json.dumps(src), encoding="utf-8")
     return out
@@ -300,8 +578,8 @@ def test_cli_finding_count_drops_when_descriptions_filled_in(tmp_path, _changed_
     rc = main([str(_changed_snapshot_path), "--output", str(output), "--quiet"])
     assert rc == SUCCESS
     html = output.read_text(encoding="utf-8")
-    # The finding count is 169 now (one fewer); rule still fires.
-    assert "169 components lack descriptions" in html
+    # The finding count is 119 now (one fewer); rule still fires.
+    assert "119 components lack descriptions" in html
 
 
 def _make_trend_dir(tmp_path: Path) -> Path:
@@ -312,6 +590,96 @@ def _make_trend_dir(tmp_path: Path) -> Path:
     (d / "snapshot_2026-01-01.json").write_text(src, encoding="utf-8")
     (d / "snapshot_2026-02-01.json").write_text(src, encoding="utf-8")
     return d
+
+
+def _write_directory_snapshot(
+    directory: Path,
+    name: str,
+    *,
+    platform: str = "cja",
+    instance_id: str | None = None,
+) -> Path:
+    snapshot = json.loads(
+        (FIXTURES / f"{platform}_snapshot_messy.json").read_text(encoding="utf-8")
+    )
+    if platform == "cja":
+        snapshot["metadata"]["Data View ID"] = instance_id or "shared-instance"
+        snapshot["metadata"].pop("history_present", None)
+    else:
+        snapshot["report_suite"]["rsid"] = instance_id or "shared-instance"
+    path = directory / name
+    path.write_text(json.dumps(snapshot), encoding="utf-8")
+    return path
+
+
+def test_directory_same_instance_sibling_supplies_history_evidence(tmp_path):
+    snapshots = tmp_path / "snapshots"
+    snapshots.mkdir()
+    _write_directory_snapshot(snapshots, "snapshot_2026-01-01.json")
+    _write_directory_snapshot(snapshots, "snapshot_2026-02-01.json")
+    output = tmp_path / "report.html"
+
+    assert main([str(snapshots), "--output", str(output), "--quiet"]) == SUCCESS
+    assert "No snapshot history detected" not in output.read_text(encoding="utf-8")
+
+
+@pytest.mark.parametrize("sibling_kind", ["unrelated", "mixed", "malformed", "none"])
+def test_directory_nonmatching_sibling_does_not_supply_history(
+    tmp_path,
+    sibling_kind,
+):
+    snapshots = tmp_path / "snapshots"
+    snapshots.mkdir()
+    _write_directory_snapshot(
+        snapshots,
+        "snapshot_2026-02-01.json",
+        instance_id="selected-instance",
+    )
+    if sibling_kind == "unrelated":
+        _write_directory_snapshot(
+            snapshots,
+            "snapshot_2026-01-01.json",
+            instance_id="other-instance",
+        )
+    elif sibling_kind == "mixed":
+        _write_directory_snapshot(
+            snapshots,
+            "snapshot_2026-01-01.json",
+            platform="aa",
+            instance_id="selected-instance",
+        )
+    elif sibling_kind == "malformed":
+        (snapshots / "snapshot_2026-01-01.json").write_text("{", encoding="utf-8")
+    output = tmp_path / "report.html"
+
+    assert main([str(snapshots), "--output", str(output), "--quiet"]) == SUCCESS
+    assert "No snapshot history detected" in output.read_text(encoding="utf-8")
+
+
+def test_directory_history_ignores_unknown_internal_platform_override(tmp_path):
+    from sdr_grader.adapters.cja import adapt
+    from sdr_grader.input.history import matching_snapshot_sibling_exists
+
+    snapshots = tmp_path / "snapshots"
+    snapshots.mkdir()
+    selected_path = _write_directory_snapshot(
+        snapshots,
+        "snapshot_2026-02-01.json",
+        instance_id="selected-instance",
+    )
+    _write_directory_snapshot(
+        snapshots,
+        "snapshot_2026-01-01.json",
+        instance_id="selected-instance",
+    )
+    selected = adapt(json.loads(selected_path.read_text(encoding="utf-8")))
+
+    assert not matching_snapshot_sibling_exists(
+        snapshots,
+        selected_source=selected_path,
+        selected=selected,
+        platform_override="unsupported",
+    )
 
 
 def test_trend_fail_below_gates_exit_code(tmp_path, monkeypatch):
@@ -328,6 +696,118 @@ def test_trend_rejects_flags_it_cannot_honor(tmp_path, capsys):
     assert "--json" in capsys.readouterr().err
 
 
+def test_trend_unknown_platform_is_controlled_runtime_error(
+    tmp_path,
+    capsys,
+):
+    snapshots = tmp_path / "snapshots"
+    snapshots.mkdir()
+    (snapshots / "snapshot_2026-01-01.json").write_text(
+        '{"unknown": "shape"}',
+        encoding="utf-8",
+    )
+    output = tmp_path / "trend.html"
+
+    rc = main(
+        [
+            str(snapshots),
+            "--trend",
+            "--output",
+            str(output),
+        ]
+    )
+
+    assert rc == RUNTIME_ERROR
+    assert not output.exists()
+    diagnostics = capsys.readouterr().err
+    assert "could not auto-detect platform" in diagnostics
+    assert "Traceback" not in diagnostics
+
+
+@pytest.mark.parametrize(
+    ("platform", "version"),
+    [
+        ("cja", "99.0.0"),
+        ("aa", "99.0.0"),
+    ],
+)
+def test_cli_warns_once_for_newer_generator_without_snapshot_data(
+    tmp_path,
+    capsys,
+    platform,
+    version,
+):
+    snapshot = json.loads(
+        (FIXTURES / f"{platform}_snapshot_messy.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    canary = "PRIVATE-GENERATOR-WARNING-CANARY"
+    if platform == "cja":
+        snapshot["metadata"]["Tool Version"] = version
+        snapshot["metadata"]["private_canary"] = canary
+    else:
+        snapshot["tool_version"] = version
+        snapshot["private_canary"] = canary
+    source = tmp_path / f"{platform}.json"
+    source.write_text(json.dumps(snapshot), encoding="utf-8")
+
+    rc = main(
+        [
+            str(source),
+            "--output",
+            str(tmp_path / f"{platform}.html"),
+            "--quiet",
+        ]
+    )
+
+    assert rc == SUCCESS
+    diagnostics = capsys.readouterr().err
+    assert diagnostics.count("warning [generator-version]:") == 1
+    assert f"snapshot generator version {version}" in diagnostics
+    assert canary not in diagnostics
+
+
+@pytest.mark.parametrize(
+    ("platform", "version"),
+    [
+        ("cja", "3.5.17"),
+        ("cja", "3.5.0"),
+        ("cja", "unparseable"),
+        ("aa", "1.18.0"),
+        ("aa", "1.17.0"),
+        ("aa", "unparseable"),
+    ],
+)
+def test_cli_current_older_and_unparseable_generators_are_quiet(
+    tmp_path,
+    capsys,
+    platform,
+    version,
+):
+    snapshot = json.loads(
+        (FIXTURES / f"{platform}_snapshot_messy.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    if platform == "cja":
+        snapshot["metadata"]["Tool Version"] = version
+    else:
+        snapshot["tool_version"] = version
+    source = tmp_path / f"{platform}-{version}.json"
+    source.write_text(json.dumps(snapshot), encoding="utf-8")
+
+    rc = main(
+        [
+            str(source),
+            "--output",
+            str(tmp_path / f"{platform}-{version}.html"),
+            "--quiet",
+        ]
+    )
+
+    assert rc == SUCCESS
+    assert "generator-version" not in capsys.readouterr().err
 def test_trend_requires_snapshot_directory_argument(capsys):
     rc = main(["--trend"])
 
@@ -357,7 +837,9 @@ def test_trend_output_write_failure_returns_runtime_error(tmp_path, capsys):
     rc = main([str(snapshots), "--trend", "--output", str(tmp_path)])
 
     assert rc == RUNTIME_ERROR
-    assert f"could not write trend output {tmp_path}" in capsys.readouterr().err
+    err = capsys.readouterr().err
+    assert "could not publish trend output" in err
+    assert str(tmp_path) not in err
 
 
 def test_trend_success_reports_written_summary(tmp_path, capsys):

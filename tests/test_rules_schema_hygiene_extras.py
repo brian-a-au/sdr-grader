@@ -1,4 +1,4 @@
-"""Tests for SCH-001/002/004/005/006 (Phase 4 additions)."""
+"""Tests for additional registered schema-hygiene checks."""
 
 from __future__ import annotations
 
@@ -12,7 +12,6 @@ from sdr_grader.core.models import (
 )
 from sdr_grader.rules.checks.schema_hygiene import (
     check_broken_references,
-    check_cardinality_concerns,
     check_deprecated_components,
     check_derived_field_broken_refs,
     check_derived_field_cycles,
@@ -161,12 +160,13 @@ def test_broken_references_fires_on_missing_target():
     assert "2 broken references" in findings[0].title
 
 
-def test_broken_references_truncates_to_show_top():
+def test_broken_references_preserves_complete_evidence():
     calc = [_calc(f"calc/{i}", refs=[f"missing/{i}"]) for i in range(15)]
     findings = check_broken_references(
         _impl(calc=calc), _ctx("SCH-002", severity="high", show_top=5)
     )
-    assert "showing first 5 of 15" in findings[0].title
+    assert findings[0].title == "15 broken references"
+    assert len(findings[0].body[1].items) == 15
 
 
 # ---------------------------------------------------------------------------
@@ -287,62 +287,6 @@ def test_deprecated_fires_on_old_marker_in_name():
         _impl(metrics=metrics, calc=calc), _ctx("SCH-005", severity="low")
     )
     assert len(findings) == 1
-
-
-# ---------------------------------------------------------------------------
-# SCH-006 cardinality (stub)
-# ---------------------------------------------------------------------------
-
-
-def test_cardinality_concerns_is_no_op_in_v0_1():
-    findings = check_cardinality_concerns(_impl(), _ctx("SCH-006"))
-    assert findings == []
-
-
-def test_cardinality_concerns_filters_invalid_counts_and_fires_for_named_flag():
-    dimensions = [
-        _component(1, cid="variables/status", name="Account Status", comp_type="dimension"),
-        _component(2, cid="variables/region", name="Region", comp_type="dimension"),
-        _component(3, cid="variables/tier", name="Account Tier", comp_type="dimension"),
-    ]
-    findings = check_cardinality_concerns(
-        _impl(
-            dimensions=dimensions,
-            supplementary={
-                "cardinality": {
-                    "variables/status": 12,
-                    "variables/region": 500,
-                    "variables/tier": "unknown",
-                }
-            },
-        ),
-        _ctx("SCH-006", low_cardinality_cap=10),
-    )
-    assert len(findings) == 1
-    assert "variables/status" in findings[0].body[1].items[0]
-
-
-def test_cardinality_concerns_quiet_for_wrong_typed_or_low_counts():
-    dimension = _component(
-        1,
-        cid="variables/status",
-        name="Account Status",
-        comp_type="dimension",
-    )
-    assert (
-        check_cardinality_concerns(
-            _impl(dimensions=[dimension], supplementary={"cardinality": "unknown"}),
-            _ctx("SCH-006"),
-        )
-        == []
-    )
-    assert (
-        check_cardinality_concerns(
-            _impl(dimensions=[dimension], supplementary={"cardinality": {dimension.id: 10}}),
-            _ctx("SCH-006", low_cardinality_cap=10),
-        )
-        == []
-    )
 
 
 # ---------------------------------------------------------------------------
@@ -619,13 +563,14 @@ def test_derived_field_broken_refs_quiet_on_aa():
     assert check_derived_field_broken_refs(impl, _ctx("SCH-009")) == []
 
 
-def test_derived_field_broken_refs_truncates_to_show_top():
+def test_derived_field_broken_refs_preserves_complete_evidence():
     derived = [_derived(f"variables/df_{i}", refs=[f"metrics/missing_{i}"]) for i in range(15)]
     findings = check_derived_field_broken_refs(
         _impl(derived=derived),
         _ctx("SCH-009", show_top=5),
     )
-    assert "showing first 5 of 15" in findings[0].title
+    assert findings[0].title == "15 broken derived-field references"
+    assert len(findings[0].body[1].items) == 15
 
 
 def test_derived_field_refs_ignore_non_list_platform_values():

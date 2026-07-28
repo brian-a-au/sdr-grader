@@ -10,7 +10,10 @@ from __future__ import annotations
 import math
 import re
 from collections import defaultdict
+from collections.abc import Sequence
 from typing import TYPE_CHECKING
+
+from markupsafe import Markup
 
 from sdr_grader.render import Finding, FindingBlock
 from sdr_grader.rules.checks._helpers import (
@@ -48,28 +51,19 @@ def check_missing_descriptions(
         ctx.params.get("targets", ["metrics", "dimensions", "derived_fields"])
     )
 
-    breakdown: list[tuple[str, int, int]] = []
-    for target in targets:
-        components = getattr(impl, target, None)
-        if not components:
-            continue
-        total = len(components)
-        missing = sum(1 for c in components if not c.description)
-        breakdown.append((target, missing, total))
-
-    over = [(t, m, n) for t, m, n in breakdown if n > 0 and (m / n) > threshold]
+    breakdown = missing_description_breakdown(impl, targets)
+    over = [(t, m, n) for t, m, n in breakdown if (m / n) > threshold]
     if not over:
         return []
 
     total_missing = sum(m for _, m, _ in over)
     parts_str = join_with_and([f"{m} {_human_target(t)}" for t, m, _ in over])
-    paragraph = (
-        f"{parts_str} in this {platform_noun(impl.platform)} have empty "
-        '<span class="mono">description</span> fields. Descriptions are the '
-        "primary way new analysts and AI agents understand what a component "
-        "measures; missing descriptions force readers to infer intent from "
-        "names alone, which is frequently wrong."
-    )
+    paragraph = Markup(
+        '{} in this {} have empty <span class="mono">description</span> fields. '
+        "Descriptions are the primary way new analysts and AI agents understand "
+        "what a component measures; missing descriptions force readers to infer "
+        "intent from names alone, which is frequently wrong."
+    ).format(parts_str, platform_noun(impl.platform))
     distribution = " ".join(
         f"{_human_target(t).title()}: {m} of {n} missing ({pct(m, n)}%)."
         for t, m, n in over
@@ -82,6 +76,21 @@ def check_missing_descriptions(
             distribution=distribution,
         )
     ]
+
+
+def missing_description_breakdown(
+    impl: Implementation, targets: Sequence[str]
+) -> list[tuple[str, int, int]]:
+    """Measure SCH-003's configured populations in configured order."""
+    breakdown: list[tuple[str, int, int]] = []
+    for target in targets:
+        components = getattr(impl, target, None)
+        if not components:
+            continue
+        total = len(components)
+        missing = sum(1 for c in components if not c.description)
+        breakdown.append((target, missing, total))
+    return breakdown
 
 
 # ---------------------------------------------------------------------------
@@ -118,8 +127,8 @@ def check_duplicate_component_names(
     paragraph = (
         f"{len(duplicates)} component name{'s are' if len(duplicates) != 1 else ' is'} "
         "shared across multiple distinct components. Duplicate names produce subtly "
-        "different numbers in different reports and surface as &ldquo;the dashboards "
-        "disagree&rdquo; complaints from executives."
+        "different numbers in different reports and surface as “the dashboards "
+        "disagree” complaints from executives."
     )
     return [
         _make_finding(
@@ -163,13 +172,10 @@ def check_broken_references(
         return []
 
     total = len(broken)
-    threshold = int(ctx.params.get("show_top", 10))
-    sample = broken[:threshold]
     items = [
         f"{ref_type} {referrer} -> missing {missing}"
-        for ref_type, referrer, missing in sample
+        for ref_type, referrer, missing in broken
     ]
-    suffix = "" if total <= threshold else f" (showing first {threshold} of {total})"
     paragraph = (
         f"{total} reference{'s are' if total != 1 else ' is'} broken — "
         "segments or calculated metrics point at component IDs that don't "
@@ -180,7 +186,7 @@ def check_broken_references(
     return [
         _make_finding(
             ctx,
-            title=f"{total} broken reference{'s' if total != 1 else ''}{suffix}",
+            title=f"{total} broken reference{'s' if total != 1 else ''}",
             paragraph=paragraph,
             extra_blocks=[FindingBlock(kind="components", items=items)],
         )
@@ -230,12 +236,14 @@ def check_type_name_mismatch(
 
     items = [f"{mid}: name={name!r}, data_type={dtype}" for mid, name, dtype in suspicious]
     plural = len(suspicious) != 1
-    paragraph = (
-        f"{len(suspicious)} metric{'s have names' if plural else ' has a name'} "
-        "implying a rate, percentage, or ratio (which should be a "
-        "decimal/float) but the underlying <span class=\"mono\">dataType</span> "
+    paragraph = Markup(
+        "{} metric{} implying a rate, percentage, or ratio (which should be a "
+        'decimal/float) but the underlying <span class="mono">dataType</span> '
         "is an integer. The metric will round to whole numbers and report 0% "
         "or 100% in most cells."
+    ).format(
+        len(suspicious),
+        "s have names" if plural else " has a name",
     )
     title = f"{len(suspicious)} metric type-name mismatch{'es' if plural else ''}"
     return [
@@ -304,7 +312,7 @@ def check_deprecated_components(
             ctx,
             title=f"{len(items)} deprecated component{'s' if len(items) != 1 else ''} still in use",
             paragraph=paragraph,
-            extra_blocks=[FindingBlock(kind="components", items=items[:25])],
+            extra_blocks=[FindingBlock(kind="components", items=items)],
         )
     ]
 
@@ -313,64 +321,6 @@ def _looks_deprecated(component_id: str, name: str, tags: list[str]) -> bool:
     if any(t.lower() in _DEPRECATED_TAGS for t in tags):
         return True
     return bool(_DEPRECATED_RE.search(name) or _DEPRECATED_RE.search(component_id))
-
-
-# ---------------------------------------------------------------------------
-# SCH-006: cardinality concerns (supplementary-input rule; not in default packs)
-# ---------------------------------------------------------------------------
-
-
-@register_check("cardinality_concerns")
-def check_cardinality_concerns(
-    impl: Implementation, ctx: RuleContext
-) -> list[Finding]:
-    """Fire when dimensions look low-cardinality by name but report many values.
-
-    Reads per-dimension distinct-value counts from
-    impl.supplementary_data['cardinality'] when present (a mapping of
-    component_id -> int). Operators populate it via --extra-input
-    cardinality=PATH where PATH is a JSON object like
-    {"variables/evar1": 142}.
-
-    Without that data, the rule is a no-op so it doesn't false-positive.
-    """
-    cardinalities = impl.supplementary_data.get("cardinality") or {}
-    if not isinstance(cardinalities, dict) or not cardinalities:
-        return []
-    low_cardinality_cap = int(ctx.params.get("low_cardinality_cap", 10))
-    keywords = {
-        s.lower() for s in (
-            ctx.params.get("low_cardinality_keywords") or
-            ["boolean", "bool", "flag", "status", "type", "tier"]
-        )
-    }
-    suspects: list[tuple[str, str, int]] = []
-    for d in impl.dimensions:
-        n = cardinalities.get(d.id)
-        if not isinstance(n, int) or n <= low_cardinality_cap:
-            continue
-        haystack = f"{d.name} {d.data_type or ''}".lower()
-        if not any(k in haystack for k in keywords):
-            continue
-        suspects.append((d.id, d.name, n))
-
-    if not suspects:
-        return []
-    items = [f"{cid}  name={name!r}  distinct={n}" for cid, name, n in suspects[:25]]
-    paragraph = (
-        f"{len(suspects)} dimension{'s look' if len(suspects) != 1 else ' looks'} "
-        "low-cardinality by name but reports more than "
-        f"{low_cardinality_cap} distinct values. Either the schema is wrong, "
-        "or upstream is leaking values that should be filtered out before ingest."
-    )
-    return [
-        _make_finding(
-            ctx,
-            title=f"{len(suspects)} cardinality concern{'s' if len(suspects) != 1 else ''}",
-            paragraph=paragraph,
-            extra_blocks=[FindingBlock(kind="components", items=items)],
-        )
-    ]
 
 
 # ---------------------------------------------------------------------------
@@ -437,7 +387,7 @@ def check_persistence_lookback_cap(
         return []
     items = [
         f"{cid}  name={name!r}  lookback={days} days"
-        for cid, name, days in violations[:25]
+        for cid, name, days in violations
     ]
     paragraph = (
         f"{len(violations)} dimension{'s set' if len(violations) != 1 else ' sets'} "
@@ -501,7 +451,7 @@ def check_derived_field_cycles(
     if not groups:
         return []
 
-    items = [", ".join(group) for group in groups[:25]]
+    items = [", ".join(group) for group in groups]
     plural = len(groups) != 1
     paragraph = (
         f"{len(groups)} derived-field cycle{'s' if plural else ''} detected in "
@@ -587,10 +537,7 @@ def check_derived_field_broken_refs(
 
     if not broken:
         return []
-    threshold = int(ctx.params.get("show_top", 10))
-    sample = broken[:threshold]
-    items = [f"{df_id} -> missing {ref}" for df_id, ref in sample]
-    suffix = "" if len(broken) <= threshold else f" (showing first {threshold} of {len(broken)})"
+    items = [f"{df_id} -> missing {ref}" for df_id, ref in broken]
     paragraph = (
         f"{len(broken)} derived-field reference{'s point' if len(broken) != 1 else ' points'} "
         "at a component that does not exist in this data view. Broken references "
@@ -603,7 +550,7 @@ def check_derived_field_broken_refs(
     return [
         _make_finding(
             ctx,
-            title=f"{len(broken)} broken derived-field reference{'s' if len(broken) != 1 else ''}{suffix}",
+            title=f"{len(broken)} broken derived-field reference{'s' if len(broken) != 1 else ''}",
             paragraph=paragraph,
             extra_blocks=[FindingBlock(kind="components", items=items)],
         )

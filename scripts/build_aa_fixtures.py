@@ -77,9 +77,8 @@ def build_messy_aa_snapshot() -> dict[str, Any]:
     evars: list[dict[str, Any]] = []
     for i in range(40):
         idx = i + 1
-        # 22/40 missing descriptions (55%) — above the calibrated SCH-003
-        # strict threshold of 0.35 so the messy fixture actually exercises
-        # the rule.
+        # 22/40 missing descriptions (55%), just below SCH-003 strict's
+        # current 0.56 per-target threshold.
         has_desc = i >= 22
         evars.append(
             _evar(
@@ -91,8 +90,8 @@ def build_messy_aa_snapshot() -> dict[str, Any]:
             )
         )
 
-    # 11/20 props missing descriptions, 9/15 events missing — overall ~55%
-    # missing-description rate across the messy fixture.
+    # 11/20 props are missing descriptions; 9/15 events are missing, so the
+    # metric target clears SCH-003 strict's 0.56 threshold.
     props = [_prop(i + 1, description=f"Prop {i+1} description." if i >= 11 else None) for i in range(20)]
     events = [_event(i + 1, description="Event description." if i >= 9 else None) for i in range(15)]
 

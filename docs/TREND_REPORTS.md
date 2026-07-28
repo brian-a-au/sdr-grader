@@ -48,10 +48,15 @@ prefix and extension don't matter.
 - `--rubric`, `--pack` — choose which rubric runs for every snapshot.
 - `--suppress-config` — same suppression config applies to every grade
   in the series, so churn reflects rule firings, not config changes.
-- `--json PATH` — writes the trend's machine-readable JSON next to the
-  HTML, suitable for dashboards.
+
+`--json`, `--extra-input`, `--distribution-data`, and `--at` are not
+supported with `--trend`; the CLI rejects them rather than silently
+ignoring an option.
 
 Re-running with a different rubric pack mid-series produces a
 visually clean trend but is semantically misleading — the grades
 aren't comparable across pack versions. Keep the pack stable for the
 duration of a trend you intend to act on.
+
+Pack `2.0` is a comparison boundary. Regenerate a series entirely with
+pack `2.0`; do not append its points to stored pack `1.0` results.

@@ -1,24 +1,35 @@
-name: release
+name: Release
 
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - "v*.*.*"
 
-# Minimal default; each job opts into exactly the scopes it needs.
 permissions:
   contents: read
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  build:
+  candidate:
+    name: Release candidate
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
-      contents: write   # create the GitHub release and attach the dist assets
+      contents: read
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.ref }}
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9 # v7
+        with:
+          enable-cache: true
+          prune-cache: false
 
       - name: Set up Python
         run: uv python install 3.12
@@ -26,54 +37,375 @@ jobs:
       - name: Sync dependencies
         run: uv sync --all-extras --dev
 
+      - name: Verify immutable candidate identity
+        run: |
+          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+          python3 scripts/check_version_sync.py --tag "${GITHUB_REF_NAME}"
+
       - name: Lint
         run: uv run ruff check
 
       - name: Test
         run: uv run pytest --cov=src/sdr_grader --cov-report=term
 
-      - name: Build distributions
-        run: uv build
+      - name: Validate and install Claude plugin
+        run: |
+          npm install --global @anthropic-ai/claude-code@2.1.220
+          claude plugin validate . --strict
+          mkdir -p "${RUNNER_TEMP}/marketplace/.claude-plugin"
+          mkdir -p "${RUNNER_TEMP}/marketplace/skills"
+          cp .claude-plugin/plugin.json "${RUNNER_TEMP}/marketplace/.claude-plugin/plugin.json"
+          cp .claude-plugin/marketplace.json "${RUNNER_TEMP}/marketplace/.claude-plugin/marketplace.json"
+          cp -R skills/sdr-grader "${RUNNER_TEMP}/marketplace/skills/"
+          mkdir -p "${RUNNER_TEMP}/strict-plugin/.claude-plugin"
+          mkdir -p "${RUNNER_TEMP}/strict-plugin/skills"
+          cp .claude-plugin/plugin.json "${RUNNER_TEMP}/strict-plugin/.claude-plugin/plugin.json"
+          cp -R skills/sdr-grader "${RUNNER_TEMP}/strict-plugin/skills/"
+          claude plugin validate "${RUNNER_TEMP}/strict-plugin" --strict
+          export CLAUDE_CONFIG_DIR="${RUNNER_TEMP}/claude-profile"
+          claude plugin marketplace add "${RUNNER_TEMP}/marketplace" --scope user
+          claude plugin install sdr-grader@sdr-grader --scope user
+          uv run sdr-grader tests/fixtures/cja_snapshot_messy.json \
+            --output "${RUNNER_TEMP}/plugin-grade.html" \
+            --json "${RUNNER_TEMP}/plugin-grade.json" --quiet
+          INSTALL_PATH="$(
+            claude plugin list --json |
+              python3 -c 'import json,sys; print(json.load(sys.stdin)[0]["installPath"])'
+          )"
+          HELPER="${INSTALL_PATH}/skills/sdr-grader/scripts/query_grade.py"
+          python3 "${HELPER}" summary "${RUNNER_TEMP}/plugin-grade.json"
+          python3 "${HELPER}" findings "${RUNNER_TEMP}/plugin-grade.json" --category "schema hygiene"
+          python3 "${HELPER}" show "${RUNNER_TEMP}/plugin-grade.json" CALC-014
+          python3 "${HELPER}" compare \
+            "${RUNNER_TEMP}/plugin-grade.json" \
+            "${RUNNER_TEMP}/plugin-grade.json"
 
-      - name: Drop uv's stray dist/.gitignore
-        # `uv build` writes a `.gitignore` (containing `*`) into dist/. Left
-        # in place it rides along into the uploaded artifact and shows up as
-        # a `default.gitignore` release asset.
-        run: rm -f dist/.gitignore
+      - name: Build wheel from sdist
+        run: uv build --no-sources --clear --no-create-gitignore
 
-      - name: Upload built distributions as a workflow artifact
-        uses: actions/upload-artifact@v7
+      - name: Verify artifact inventory and provenance
+        run: |
+          mkdir -p release-evidence
+          python3 scripts/verify_release_artifacts.py \
+            --dist-dir dist \
+            --expected-version "${GITHUB_REF_NAME#v}" \
+            --source-sha "${GITHUB_SHA}" \
+            --output release-evidence/release-artifacts.json
+
+      - name: Upload immutable distributions
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: dist
+          name: candidate-dist-${{ github.sha }}
           path: dist/
           if-no-files-found: error
+          retention-days: 7
 
-      - name: Upload distributions to GitHub release
-        uses: softprops/action-gh-release@v3
+      - name: Upload candidate evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
+          name: candidate-evidence-${{ github.sha }}
+          path: release-evidence/release-artifacts.json
+          if-no-files-found: error
+          retention-days: 30
+
+  install-smoke:
+    name: Artifact smoke / Python ${{ matrix.python-version }}
+    needs: candidate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.ref }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9 # v7
+
+      - name: Download immutable distributions
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: candidate-dist-${{ github.sha }}
+          path: dist/
+
+      - name: Install wheel and sdist outside checkout and compare behavior
+        shell: bash
+        run: |
+          set -euo pipefail
+          SMOKE_ROOT="${RUNNER_TEMP}/artifact-smoke-${{ matrix.python-version }}"
+          mkdir -p "${SMOKE_ROOT}"
+          for KIND in wheel sdist; do
+            if [ "${KIND}" = "wheel" ]; then
+              ARTIFACT=( "${GITHUB_WORKSPACE}"/dist/*.whl )
+            else
+              ARTIFACT=( "${GITHUB_WORKSPACE}"/dist/*.tar.gz )
+            fi
+            test "${#ARTIFACT[@]}" -eq 1
+            ENV_DIR="${SMOKE_ROOT}/${KIND}-venv"
+            OUTPUT_DIR="${SMOKE_ROOT}/${KIND}-output"
+            mkdir -p "${OUTPUT_DIR}"
+            uv venv --python "${{ matrix.python-version }}" "${ENV_DIR}"
+            uv pip install --python "${ENV_DIR}/bin/python" "${ARTIFACT[0]}"
+            (
+              cd "${OUTPUT_DIR}"
+              "${ENV_DIR}/bin/sdr-grader" --version
+              "${ENV_DIR}/bin/sdr-grader" \
+                "${GITHUB_WORKSPACE}/tests/fixtures/cja_snapshot_messy.json" \
+                --output cja.html --json cja.json --quiet
+              "${ENV_DIR}/bin/sdr-grader" \
+                "${GITHUB_WORKSPACE}/tests/fixtures/aa_snapshot_messy.json" \
+                --output aa.html --json aa.json --quiet
+              "${ENV_DIR}/bin/python" -c \
+                'from importlib.resources import files; root=files("sdr_grader"); required=("plugin/.claude-plugin/plugin.json","plugin/.claude-plugin/marketplace.json","plugin/skills/sdr-grader/SKILL.md","rules/packs/strict/_meta.yaml","render/templates/report.html.j2","render/static/report.css","data/distribution.json"); missing=[p for p in required if not root.joinpath(p).is_file()]; assert not missing, missing'
+            )
+          done
+          for OUTPUT in aa.html aa.json cja.html cja.json; do
+            cmp \
+              "${SMOKE_ROOT}/wheel-output/${OUTPUT}" \
+              "${SMOKE_ROOT}/sdist-output/${OUTPUT}"
+          done
+
+  draft-github:
+    name: Create immutable GitHub draft
+    needs: install-smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Download immutable distributions
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: candidate-dist-${{ github.sha }}
+          path: dist/
+
+      - name: Download candidate evidence
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: candidate-evidence-${{ github.sha }}
+          path: release-evidence/
+
+      - name: Create draft from tested bytes
+        uses: softprops/action-gh-release@c12583777ecdfd3be55c69cf75464299dc01057e # v3
+        with:
+          draft: true
+          generate_release_notes: true
+          fail_on_unmatched_files: true
           files: |
             dist/*.whl
             dist/*.tar.gz
-          generate_release_notes: true
+            release-evidence/release-artifacts.json
 
-  publish:
-    needs: build
+  publish-pypi:
+    name: Publish PyPI and attest
+    needs: draft-github
     runs-on: ubuntu-latest
-    # The `pypi` environment gates this job. Configure it on GitHub
-    # (Settings -> Environments -> pypi) with a required reviewer so the
-    # irreversible PyPI upload waits for a manual approval, and keep the
-    # matching "Environment name: pypi" on the PyPI trusted publisher.
+    timeout-minutes: 15
     environment:
       name: pypi
       url: https://pypi.org/p/sdr-grader
     permissions:
-      id-token: write   # OIDC token for PyPI trusted publishing; nothing else
+      contents: read
+      id-token: write
+      attestations: write
     steps:
-      - name: Download built distributions
-        uses: actions/download-artifact@v8
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          name: dist
+          persist-credentials: false
+          ref: ${{ github.ref }}
+
+      - name: Download immutable distributions
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: candidate-dist-${{ github.sha }}
           path: dist/
 
-      - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Verify recoverable PyPI state
+        id: pypi-state
+        run: |
+          STATE="$(
+            python3 scripts/check_pypi_release_state.py \
+              --dist-dir dist \
+              --project sdr-grader \
+              --version "${GITHUB_REF_NAME#v}"
+          )"
+          printf 'state=%s\n' "${STATE}" >> "${GITHUB_OUTPUT}"
+
+      - name: Publish exact candidate to PyPI
+        if: steps.pypi-state.outputs.state != 'matching'
+        uses: pypa/gh-action-pypi-publish@ba38be9e461d3875417946c167d0b5f3d385a247 # release/v1
+        with:
+          packages-dir: dist/
+          print-hash: true
+          skip-existing: true
+
+      - name: Attest published distributions
+        uses: actions/attest-build-provenance@43d14bc2b83dec42d39ecae14e916627a18bb661 # v3
+        with:
+          subject-path: "dist/*"
+
+  publish-github:
+    name: Publish GitHub release
+    needs: publish-pypi
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-release
+      url: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.ref }}
+
+      - name: Publish the existing draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+          gh release edit "${GITHUB_REF_NAME}" --draft=false --latest
+
+  verify-public:
+    name: Public endpoints / Python ${{ matrix.python-version }}
+    needs: publish-github
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.ref }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9 # v7
+
+      - name: Download candidate distributions
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: candidate-dist-${{ github.sha }}
+          path: candidate-dist/
+
+      - name: Download candidate evidence
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: candidate-evidence-${{ github.sha }}
+          path: release-evidence/
+
+      - name: Verify GitHub and PyPI bytes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ github.ref_name }}
+        run: |
+          mkdir -p github-dist pypi-dist
+          gh release download "${GITHUB_REF_NAME}" \
+            --pattern "*.whl" --pattern "*.tar.gz" --dir github-dist
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          import time
+          import urllib.error
+          import urllib.request
+          from pathlib import Path
+
+          version = os.environ["RELEASE_VERSION"].removeprefix("v")
+          evidence = json.loads(
+              Path("release-evidence/release-artifacts.json").read_text()
+          )
+          expected = {
+              item["filename"]: item for item in evidence["artifacts"]
+          }
+
+          def digest(path):
+              return hashlib.sha256(path.read_bytes()).hexdigest()
+
+          for root in (Path("candidate-dist"), Path("github-dist")):
+              for filename, record in expected.items():
+                  path = root / filename
+                  assert path.stat().st_size == record["size"]
+                  assert digest(path) == record["sha256"]
+
+          payload = None
+          for attempt in range(12):
+              try:
+                  with urllib.request.urlopen(
+                      f"https://pypi.org/pypi/sdr-grader/{version}/json",
+                      timeout=20,
+                  ) as response:
+                      payload = json.load(response)
+                  break
+              except (OSError, urllib.error.URLError, json.JSONDecodeError):
+                  if attempt == 11:
+                      raise
+                  time.sleep(10)
+          urls = {item["filename"]: item["url"] for item in payload["urls"]}
+          for filename, record in expected.items():
+              with urllib.request.urlopen(urls[filename], timeout=30) as response:
+                  data = response.read(128 * 1024 * 1024 + 1)
+              assert len(data) <= 128 * 1024 * 1024
+              path = Path("pypi-dist") / filename
+              path.write_bytes(data)
+              assert len(data) == record["size"]
+              assert hashlib.sha256(data).hexdigest() == record["sha256"]
+          PY
+
+      - name: Verify build provenance attestation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for ARTIFACT in candidate-dist/*; do
+            gh attestation verify "${ARTIFACT}" --repo "${GITHUB_REPOSITORY}"
+          done
+
+      - name: Compare fresh public install with candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          PUBLIC_ENV="${RUNNER_TEMP}/public-venv"
+          CANDIDATE_ENV="${RUNNER_TEMP}/candidate-venv"
+          PUBLIC_OUT="${RUNNER_TEMP}/public-output"
+          CANDIDATE_OUT="${RUNNER_TEMP}/candidate-output"
+          mkdir -p "${PUBLIC_OUT}" "${CANDIDATE_OUT}"
+          uv venv --python "${{ matrix.python-version }}" "${PUBLIC_ENV}"
+          uv venv --python "${{ matrix.python-version }}" "${CANDIDATE_ENV}"
+          uv pip install --python "${PUBLIC_ENV}/bin/python" "sdr-grader==${VERSION}"
+          uv pip install --python "${CANDIDATE_ENV}/bin/python" candidate-dist/*.whl
+          for TARGET in public candidate; do
+            if [ "${TARGET}" = "public" ]; then
+              ENV_DIR="${PUBLIC_ENV}"
+              OUTPUT_DIR="${PUBLIC_OUT}"
+            else
+              ENV_DIR="${CANDIDATE_ENV}"
+              OUTPUT_DIR="${CANDIDATE_OUT}"
+            fi
+            (
+              cd "${OUTPUT_DIR}"
+              "${ENV_DIR}/bin/sdr-grader" --version
+              "${ENV_DIR}/bin/sdr-grader" \
+                "${GITHUB_WORKSPACE}/tests/fixtures/cja_snapshot_messy.json" \
+                --output cja.html --json cja.json --quiet
+              "${ENV_DIR}/bin/sdr-grader" \
+                "${GITHUB_WORKSPACE}/tests/fixtures/aa_snapshot_messy.json" \
+                --output aa.html --json aa.json --quiet
+            )
+          done
+          for OUTPUT in aa.html aa.json cja.html cja.json; do
+            cmp "${PUBLIC_OUT}/${OUTPUT}" "${CANDIDATE_OUT}/${OUTPUT}"
+          done
+          "${PUBLIC_ENV}/bin/python" -c \
+            'from importlib.resources import files; root=files("sdr_grader"); required=("plugin/.claude-plugin/plugin.json","plugin/.claude-plugin/marketplace.json","plugin/skills/sdr-grader/SKILL.md","rules/packs/strict/_meta.yaml","render/templates/report.html.j2","render/static/report.css","data/distribution.json"); missing=[p for p in required if not root.joinpath(p).is_file()]; assert not missing, missing'

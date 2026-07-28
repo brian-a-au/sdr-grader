@@ -64,6 +64,24 @@ def test_build_trend_report_orders_chronologically(tmp_path):
     assert timestamps == sorted(timestamps)
     assert trend.instance_id == "dv_messy_prod_web"
     assert trend.platform == "cja"
+    assert all(
+        all(finding.id != "GOV-001" for finding in point.report.findings)
+        for point in trend.points
+    )
+
+
+def test_single_point_trend_does_not_claim_history(tmp_path, strict_rubric):
+    snapshot = json.loads(
+        (FIXTURES / "cja_snapshot_messy.json").read_text(encoding="utf-8")
+    )
+    (tmp_path / "snapshot_2026-04-25.json").write_text(
+        json.dumps(snapshot),
+        encoding="utf-8",
+    )
+
+    trend = build_trend_report(tmp_path, strict_rubric)
+
+    assert any(finding.id == "GOV-001" for finding in trend.points[0].report.findings)
 
 
 def test_build_trend_report_skips_undated_files(tmp_path):

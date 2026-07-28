@@ -34,7 +34,7 @@ def check_container_mixing(
         return []
     items = [
         f"{s.id}  containers: {', '.join(s.container_types)}  depth: {s.nesting_depth}"
-        for s in mixed[:25]
+        for s in mixed
     ]
     paragraph = (
         f"{len(mixed)} segment{'s mix' if len(mixed) != 1 else ' mixes'} "
@@ -83,7 +83,7 @@ def check_orphan_segments(
             ctx,
             title=f"{len(orphans)} orphan segment{'s' if len(orphans) != 1 else ''}",
             paragraph=paragraph,
-            extra_blocks=[FindingBlock(kind="components", items=[s.id for s in orphans[:25]])],
+            extra_blocks=[FindingBlock(kind="components", items=[s.id for s in orphans])],
         )
     ]
 
@@ -105,7 +105,7 @@ def check_circular_segments(
     groups = cycle_groups(graph)
     if not groups:
         return []
-    items = [", ".join(group) for group in groups[:10]]
+    items = [", ".join(group) for group in groups]
     paragraph = (
         f"{len(groups)} cycle{'s' if len(groups) != 1 else ''} detected in the "
         "segment reference graph. Circular references break linear evaluation "
@@ -175,7 +175,7 @@ def check_duplicate_segments(
         return []
     items = [
         f"{', '.join(s.id for s in grp)}  ({len(grp)} segments share definition)"
-        for grp in duplicates[:25]
+        for grp in duplicates
     ]
     paragraph = (
         f"{len(duplicates)} group{'s' if len(duplicates) != 1 else ''} of "
@@ -213,7 +213,7 @@ def check_segment_nesting_depth(
         return []
     items = [
         f"{s.id}  depth: {s.nesting_depth}  containers: {', '.join(s.container_types) or '-'}"
-        for s in deep[:25]
+        for s in deep
     ]
     paragraph = (
         f"{len(deep)} segment{'s exceed' if len(deep) != 1 else ' exceeds'} the "

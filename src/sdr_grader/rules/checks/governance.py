@@ -1,4 +1,4 @@
-"""Governance posture checks (GOV-001..GOV-008).
+"""Governance posture checks.
 
 Some governance signals (snapshot history, SDR documentation, doc/code
 parity) live outside the JSON snapshot the grader sees. Those rules accept
@@ -36,10 +36,9 @@ def check_snapshot_history_absent(
 ) -> list[Finding]:
     """Fire when no prior snapshots are reported alongside this one.
 
-    Resolution order: ctx.params['history_present'] (pack-level override) ->
-    snapshot metadata 'history_present' / 'History Present' -> assume worst
-    (fire). The directory-mode loader and CI integrations can inject the
-    metadata flag when they have evidence of history.
+    Resolution order: ctx.params['history_present'] (custom-pack override) ->
+    runtime-derived same-instance history -> snapshot metadata
+    'history_present' / 'History Present' -> assume worst (fire).
     """
     if _signal_present(impl, ctx, "history_present", "History Present"):
         return []
@@ -121,7 +120,7 @@ def check_sdr_doc_absent(
         "No Solution Design Reference (SDR) document was supplied alongside "
         "this snapshot. Without an SDR, definitions live only in the platform "
         "UI, which makes peer review and onboarding harder and obscures the "
-        "&ldquo;why&rdquo; behind component choices."
+        "“why” behind component choices."
     )
     return [
         _make_finding(
@@ -258,7 +257,7 @@ def check_doc_drift(
             ctx,
             title=f"{len(drifted)} components modified since last SDR update",
             paragraph=paragraph,
-            extra_blocks=[FindingBlock(kind="components", items=sorted(drifted)[:25])],
+            extra_blocks=[FindingBlock(kind="components", items=sorted(drifted))],
         )
     ]
 
@@ -276,114 +275,6 @@ def _supplementary_value(impl: Implementation, *keys: str):
 
 
 # ---------------------------------------------------------------------------
-# GOV-007: calculated metric shared widely but not approved
-# ---------------------------------------------------------------------------
-# (GOV-006 is reserved for the `doc_drift` check above.)
-#
-# Both CJA and AA expose approval + share-count signals on calc metrics
-# (CJA as first-class `approved` / `shared_to_count`; AA as
-# `extra.publishingStatus.published` / `len(extra.shares)`). The
-# adapters normalize both shapes to `CalculatedMetric.approved` and
-# `CalculatedMetric.shared_to_count` so the rule is platform-agnostic.
-# Fires only on the narrow subset where shares clear a threshold AND
-# approval is explicitly False — None means "no signal" and is skipped.
-
-
-@register_check("calc_metric_shared_unapproved")
-def check_calc_metric_shared_unapproved(
-    impl: Implementation, ctx: RuleContext
-) -> list[Finding]:
-    """Flag calculated metrics that are shared with several users / projects
-    yet carry no approval signoff. Approval normally precedes wide sharing
-    in mature governance — the inverse pattern is a classic "this got
-    around the SDR-review process" smell.
-    """
-    min_shares = int(ctx.params.get("min_shares", 5))
-    offenders: list[tuple[str, str, int, float]] = []
-    for cm in impl.calculated_metrics:
-        if cm.approved is not False:
-            continue  # None (no signal) or True (approved) -> don't fire
-        shares = cm.shared_to_count or 0
-        if shares < min_shares:
-            continue
-        offenders.append((cm.id, cm.name, shares, cm.complexity_score))
-
-    if not offenders:
-        return []
-    # Sort by shares desc, then complexity desc — the worst first.
-    offenders.sort(key=lambda t: (-t[2], -t[3]))
-    items = [
-        f"{cid}  name={name!r}  shared_to={shares}  complexity={complexity:.0f}"
-        for cid, name, shares, complexity in offenders[:25]
-    ]
-    plural = len(offenders) != 1
-    paragraph = (
-        f"{len(offenders)} calculated metric{'s are' if plural else ' is'} "
-        f"shared with at least {min_shares} users or projects but carry no "
-        "approval signoff. Approval normally precedes wide distribution in a "
-        "mature governance posture — the reverse pattern usually means the "
-        "metric got around the SDR review process and is now powering "
-        "stakeholder decisions without a vetted owner."
-    )
-    return [
-        _make_finding(
-            ctx,
-            title=f"{len(offenders)} shared-but-unapproved calculated metric{'s' if plural else ''}",
-            paragraph=paragraph,
-            extra_blocks=[FindingBlock(kind="components", items=items)],
-        )
-    ]
-
-
-# ---------------------------------------------------------------------------
-# GOV-008: segment shared widely but not approved
-# ---------------------------------------------------------------------------
-
-
-@register_check("segment_shared_unapproved")
-def check_segment_shared_unapproved(
-    impl: Implementation, ctx: RuleContext
-) -> list[Finding]:
-    """Same logic as GOV-007 but for segments. Segment distributions tend to
-    be tighter than calc metrics (one-off audience builds dominate); the
-    default threshold is correspondingly lower.
-    """
-    min_shares = int(ctx.params.get("min_shares", 3))
-    offenders: list[tuple[str, str, int]] = []
-    for seg in impl.segments:
-        if seg.approved is not False:
-            continue
-        shares = seg.shared_to_count or 0
-        if shares < min_shares:
-            continue
-        offenders.append((seg.id, seg.name, shares))
-
-    if not offenders:
-        return []
-    offenders.sort(key=lambda t: -t[2])
-    items = [
-        f"{sid}  name={name!r}  shared_to={shares}"
-        for sid, name, shares in offenders[:25]
-    ]
-    plural = len(offenders) != 1
-    paragraph = (
-        f"{len(offenders)} segment{'s are' if plural else ' is'} shared with "
-        f"at least {min_shares} users or projects but carry no approval "
-        "signoff. Widely-shared audiences without a vetted definition "
-        "fragment reporting consistency — different teams pull subtly "
-        "different cohorts under the same name."
-    )
-    return [
-        _make_finding(
-            ctx,
-            title=f"{len(offenders)} shared-but-unapproved segment{'s' if plural else ''}",
-            paragraph=paragraph,
-            extra_blocks=[FindingBlock(kind="components", items=items)],
-        )
-    ]
-
-
-# ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
@@ -397,6 +288,8 @@ def _signal_present(impl: Implementation, ctx: RuleContext, *keys: str) -> bool:
     for key in keys:
         if key in ctx.params:
             return bool(ctx.params[key])
+    if "history_present" in keys and impl.history_present is not None:
+        return impl.history_present
     metadata = impl.raw.get("metadata") if isinstance(impl.raw, dict) else None
     if isinstance(metadata, dict):
         for key in keys:

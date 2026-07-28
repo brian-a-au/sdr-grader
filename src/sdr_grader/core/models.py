@@ -98,3 +98,7 @@ class Implementation:
     # are simply skipped so rules that need supplementary data can opt-in
     # gracefully.
     supplementary_data: dict[str, Any] = field(default_factory=dict)
+    # Runtime-derived evidence that another snapshot exists for this exact
+    # platform + instance. None means the input mode could not establish
+    # either presence or absence.
+    history_present: bool | None = None

@@ -2,7 +2,14 @@
 
 from __future__ import annotations
 
+import random
+import time
+from collections import defaultdict
+
+import pytest
+
 from _rule_test_helpers import calc, component, ctx, impl, segment
+from sdr_grader.rules.checks import calc_metrics
 from sdr_grader.rules.checks.calc_metrics import (
     check_calc_complexity_threshold,
     check_calc_deprecated_allocations,
@@ -157,6 +164,75 @@ def test_near_duplicates_deduplicates_repeated_component_ids():
     )
     assert len(findings) == 1
     assert findings[0].body[1].items == ["duplicate"]
+
+
+def _near_duplicate_oracle(cms, threshold: float) -> list[str]:
+    clusters: dict[frozenset[str], list[str]] = defaultdict(list)
+    for metric in cms:
+        if metric.references:
+            clusters[frozenset(metric.references)].append(metric.id)
+    suspects = [ids for ids in clusters.values() if len(ids) >= 2]
+    references = list(clusters)
+    for index, left in enumerate(references):
+        for right in references[index + 1 :]:
+            similarity = len(left & right) / len(left | right)
+            if similarity >= threshold:
+                suspects.append([*clusters[left], *clusters[right]])
+
+    items: list[str] = []
+    seen: set[tuple[str, ...]] = set()
+    for ids in suspects:
+        key = tuple(sorted(set(ids)))
+        if key not in seen:
+            seen.add(key)
+            items.append(", ".join(key))
+    return items
+
+
+@pytest.mark.parametrize("threshold", [0.0, 0.25, 0.5, 0.85, 1.1])
+def test_near_duplicate_index_matches_pairwise_oracle(threshold):
+    rng = random.Random(20260728)
+    reference_pool = [f"metrics/{index}" for index in range(40)]
+    cms = [
+        calc(
+            f"calc/{index}",
+            references=rng.sample(reference_pool, rng.randint(1, 8)),
+        )
+        for index in range(250)
+    ]
+
+    findings = check_calc_near_duplicates(
+        impl(calc=cms),
+        ctx("CALC-014", category="calc_metric_maint", min_similarity=threshold),
+    )
+    actual = findings[0].body[1].items if findings else []
+    assert actual == _near_duplicate_oracle(cms, threshold)
+
+
+def test_near_duplicate_index_avoids_all_pairs_for_10k_disjoint_metrics(monkeypatch):
+    cms = [
+        calc(f"calc/{index}", references=[f"metrics/disjoint-{index}"])
+        for index in range(10_000)
+    ]
+    comparisons = 0
+    original_jaccard = calc_metrics._jaccard
+
+    def counted_jaccard(left, right):
+        nonlocal comparisons
+        comparisons += 1
+        return original_jaccard(left, right)
+
+    monkeypatch.setattr(calc_metrics, "_jaccard", counted_jaccard)
+    started = time.perf_counter()
+    findings = check_calc_near_duplicates(
+        impl(calc=cms),
+        ctx("CALC-014", category="calc_metric_maint", min_similarity=0.85),
+    )
+    elapsed = time.perf_counter() - started
+
+    assert findings == []
+    assert comparisons == 0
+    assert elapsed < 2.0
 
 
 # CALC-015

@@ -129,11 +129,50 @@ def test_aa_adapter_rejects_snapshot_without_rsid():
         adapt({"report_suite": {}, "dimensions": [], "metrics": []})
 
 
+@pytest.mark.parametrize(
+    ("collection", "record", "expected"),
+    [
+        ("dimensions", {"name": "PRIVATE-AA-VALUE", "secret": "\x1bPRIVATE"}, "missing"),
+        ("metrics", "PRIVATE-AA-VALUE", "got str"),
+        ("calculated_metrics", {"name": "PRIVATE-AA-VALUE"}, "missing"),
+        ("segments", {"name": "PRIVATE-AA-VALUE"}, "missing"),
+    ],
+)
+def test_aa_adapter_record_errors_are_structural(
+    collection: str, record, expected: str
+) -> None:
+    snapshot = {
+        "report_suite": {"rsid": "rs1"},
+        "dimensions": [],
+        "metrics": [],
+        collection: [record],
+    }
+
+    with pytest.raises(InvalidSnapshotError) as raised:
+        adapt(snapshot)
+
+    message = str(raised.value)
+    assert f"AA {collection}[0]" in message
+    assert expected in message
+    assert "PRIVATE-AA-VALUE" not in message
+    assert "\x1b" not in message
+
+
 def test_aa_clean_grades_better_than_aa_messy(messy_aa, clean_aa):
     rubric = load_rubric(STRICT_PACK)
     messy_pct = grade(adapt(messy_aa), rubric).overall_pct
     clean_pct = grade(adapt(clean_aa), rubric).overall_pct
     assert clean_pct > messy_pct
+
+
+def test_aa_messy_grade_uses_only_platform_applicable_rules(messy_aa):
+    report = grade(adapt(messy_aa), load_rubric(STRICT_PACK))
+
+    assert (report.overall_pct, report.grade) == (55, "F")
+    assert "encodes 23 rules across 6 active categories" in report.methodology.paragraphs[0]
+    assert {"ATTR-004", "SCH-007", "SCH-008", "SCH-009"}.isdisjoint(
+        finding.id for finding in report.findings
+    )
 
 
 def test_missing_dimensions_key_raises():
@@ -422,6 +461,33 @@ def test_formula_helpers_characterize_empty_scalar_and_recursive_shapes():
             ],
         }
     ) == ["segments/buyers", "metrics/orders"]
+
+
+def test_segment_definition_references_are_normalized():
+    raw = _minimal_snapshot(
+        segments=[
+            {
+                "id": "segments/a",
+                "name": "A",
+                "definition": {
+                    "func": "container",
+                    "pred": {
+                        "args": [
+                            "segments/b",
+                            "metrics/orders",
+                            "not-a-reference",
+                            "segments/b",
+                        ]
+                    },
+                },
+            }
+        ]
+    )
+
+    assert adapt(raw).segments[0].references == [
+        "segments/b",
+        "metrics/orders",
+    ]
 
 
 @pytest.mark.parametrize(

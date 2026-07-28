@@ -51,7 +51,10 @@ The adapter must:
    `None` so rules don't have to learn each platform's convention.
 6. **Self-report version.** Read the upstream tool's version from the
    snapshot metadata and put it in `Implementation.adapter_version`.
-   This goes into the rendered report's "Adapter" field.
+   This goes into the rendered report's "Adapter" field. The normal CLI
+   path emits one warning when a parseable generator version is newer
+   than the release's tested-through version; current, older, and
+   unparseable versions remain quiet.
 
 ## Auto-detection
 
@@ -66,7 +69,7 @@ If your shape is similar to one of these, prefer a more specific marker
 
 ## CLI dispatch
 
-Add a branch to `src/sdr_grader/cli/main.py::_adapt_snapshot()`:
+Add a branch to `src/sdr_grader/input/adapt.py::adapt_snapshot()`:
 
 ```python
 if platform == "your_platform":

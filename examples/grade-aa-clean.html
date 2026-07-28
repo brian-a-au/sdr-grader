@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
 <title>SDR-2026-0425-CLEAN-PROD — Clean Production</title>
 <style>/* ---------- Reset & base ---------- */
 *, *::before, *::after { box-sizing: border-box; }
@@ -200,7 +202,7 @@ ol.remediations .text .ref {
   letter-spacing: 0.04em;
   margin-left: 6px;
 }
-ol.remediations .impact {
+ol.remediations .priority-weight {
   font-family: "Söhne", "Inter", system-ui, sans-serif;
   font-size: 12px;
   color: #2a5934;
@@ -364,11 +366,11 @@ pre.code {
 <body>
 <main class="page">
 
-  
+
   <div class="eyebrow">SDR-2026-0425-CLEAN-PROD</div>
   <h1>Clean Production</h1>
 
-  
+
   <div class="meta-strip">
     <div class="item grade-cell">
       <span class="label">Grade</span>
@@ -388,7 +390,7 @@ pre.code {
     </div>
     <div class="item">
       <span class="label">Rubric</span>
-      <span class="value">strict@1.0</span>
+      <span class="value">strict@2.0</span>
     </div>
     <div class="item">
       <span class="label">Generated</span>
@@ -396,30 +398,30 @@ pre.code {
     </div>
   </div>
 
-  
+
   <nav class="toc">
     <span class="label">On this page</span>
     <a href="#tldr">Summary</a>
     <a href="#categories">Category scores</a>
     <a href="#remediations">Top remediations</a>
     <a href="#findings">All findings</a>
-    
+
     <a href="#methodology">Methodology</a>
   </nav>
 
-  
+
   <section id="tldr">
     <div class="tldr">Summary</div>
-    <p class="tldr-body">This implementation graded <strong>A</strong> (100%). The grader evaluated 19 components in this report suite using the <span class="mono">strict@1.0</span> rubric pack.</p>
+    <p class="tldr-body">This implementation graded <strong>A</strong> (100%). The grader evaluated 19 components in this report suite using the <span class="mono">strict@2.0</span> rubric pack.</p>
   </section>
 
-  
+
   <section id="categories">
     <h2>Category scores</h2>
     <div class="section-rule"></div>
 
     <div class="category-grid">
-      
+
       <div class="cat">
         <div class="name">schema hygiene</div>
         <div class="score">
@@ -430,7 +432,7 @@ pre.code {
           <span style="width:100%"></span>
         </div>
       </div>
-      
+
       <div class="cat">
         <div class="name">naming consistency</div>
         <div class="score">
@@ -441,7 +443,7 @@ pre.code {
           <span style="width:100%"></span>
         </div>
       </div>
-      
+
       <div class="cat">
         <div class="name">segment complexity</div>
         <div class="score">
@@ -452,7 +454,7 @@ pre.code {
           <span style="width:100%"></span>
         </div>
       </div>
-      
+
       <div class="cat">
         <div class="name">calc metric maint</div>
         <div class="score">
@@ -463,7 +465,7 @@ pre.code {
           <span style="width:100%"></span>
         </div>
       </div>
-      
+
       <div class="cat">
         <div class="name">attribution coverage</div>
         <div class="score">
@@ -474,7 +476,7 @@ pre.code {
           <span style="width:100%"></span>
         </div>
       </div>
-      
+
       <div class="cat">
         <div class="name">governance posture</div>
         <div class="score">
@@ -485,52 +487,52 @@ pre.code {
           <span style="width:100%"></span>
         </div>
       </div>
-      
+
     </div>
   </section>
 
-  
+
   <section id="remediations">
     <h2>Top remediations</h2>
     <div class="section-rule"></div>
 
     <ol class="remediations">
-      
+
     </ol>
   </section>
 
-  
+
   <section id="findings">
     <h2>All findings</h2>
     <div class="section-rule"></div>
 
-    
+
   </section>
 
-  
-  
 
-  
+
+
+
   <section id="methodology">
     <h2>Methodology</h2>
     <div class="section-rule"></div>
 
     <div class="finding-body" style="max-width: 720px;">
-      
-        <p>This grade was produced by <span class="mono">sdr-grader</span> using the <span class="mono">strict@1.0</span> rubric pack. The rubric encodes 30 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.</p>
-      
-        <p>The grader is rule-based and deterministic — the same input always produces the same grade. Findings are auditable: every rule's source YAML is linked from its finding, and rules can be suppressed or reweighted via a project-level <span class="mono">.sdr-grader.yaml</span>.</p>
-      
 
-      
+        <p>This grade was produced by <span class="mono">sdr-grader</span> using the <span class="mono">strict@2.0</span> rubric pack. The rubric encodes 23 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.</p>
+
+        <p>The grader is rule-based and deterministic — the same input always produces the same grade. Findings are auditable: every rule's source YAML is linked from its finding, and rules can be suppressed or reweighted via a project-level <span class="mono">.sdr-grader.yaml</span>.</p>
+
+
+
     </div>
   </section>
 
-  
+
   <div class="provenance">
-    Generated by <a href="https://github.com/brian-a-au/sdr-grader">sdr-grader v1.1.5</a>
+    Generated by <a href="https://github.com/brian-a-au/sdr-grader">sdr-grader v1.2.0</a>
     against snapshot <span class="mono">2026-04-25T09:14:00Z</span>.
-    Rubric: <span class="mono">strict@1.0</span>.
+    Rubric: <span class="mono">strict@2.0</span>.
     Adapter: <span class="mono">aa_auto_sdr@1.0.0</span>.
     19 components evaluated; 0 components skipped
     .

@@ -33,6 +33,7 @@ def _stub_report(overall_pct: int = 54) -> Report:
     return Report(
         id="SDR-TEST",
         instance_name="Test",
+        instance_id="dv_test",
         grade="F",
         overall_pct=overall_pct,
         components_evaluated=100,

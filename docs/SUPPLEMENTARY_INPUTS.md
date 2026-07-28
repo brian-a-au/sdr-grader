@@ -37,7 +37,7 @@ The flag is repeatable; pass it once per attached file:
 ```bash
 sdr-grader snapshot.json \
   --extra-input launch=launch_property.json \
-  --extra-input cardinality=evar_cardinality.json
+  --extra-input workspace=workspace_project.json
 ```
 
 The CLI loads each file and stores its parsed JSON under

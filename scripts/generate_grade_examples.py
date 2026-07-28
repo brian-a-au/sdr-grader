@@ -32,12 +32,17 @@ EXAMPLES = REPO_ROOT / "examples"
 ADAPTERS = {"cja": adapt_cja, "aa": adapt_aa}
 
 
+def _normalize_generated_html(html: str) -> str:
+    """Keep checked-in examples free of template-only trailing whitespace."""
+    return "\n".join(line.rstrip() for line in html.splitlines()) + "\n"
+
+
 def render_fixture(platform: str, snapshot_path: Path, output_path: Path) -> None:
     snap = json.loads(snapshot_path.read_text(encoding="utf-8"))
     impl = ADAPTERS[platform](snap, source=str(snapshot_path.relative_to(REPO_ROOT)))
     rubric = load_rubric(STRICT_PACK)
     report = grade(impl, rubric)
-    html = render(cap_component_items(report))
+    html = _normalize_generated_html(render(cap_component_items(report)))
     output_path.write_text(html, encoding="utf-8")
     print(
         f"Wrote {output_path.relative_to(REPO_ROOT)}: "

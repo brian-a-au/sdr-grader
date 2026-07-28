@@ -18,12 +18,16 @@ from typing import Any
 from sdr_grader.render.dates import to_iso_z
 from sdr_grader.render.renderer import Report
 
+REPORT_SCHEMA_VERSION = 1
+
 
 def report_to_dict(report: Report) -> dict[str, Any]:
     """Convert a Report to a JSON-serializable dictionary."""
     data = asdict(report)
     data["generated_at"] = _normalize_datetime(report.generated_at)
-    return data
+    for remediation in data["remediations"]:
+        remediation["impact_pts"] = remediation["priority_weight"]
+    return {"schema_version": REPORT_SCHEMA_VERSION, **data}
 
 
 def _normalize_datetime(value: datetime) -> str:
