@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -134,6 +135,36 @@ def test_shell_out_caps_child_streams(
     assert "shell error [output-limit]" in message
     assert stream_name in message
     assert "x" * 20 not in message
+
+
+def test_shell_out_stops_child_when_stream_limit_is_crossed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(shell_out, "MAX_STDOUT_BYTES", 128)
+    started = time.monotonic()
+
+    with pytest.raises(InvalidSnapshotError, match=r"shell error \[output-limit\]"):
+        _run_python(
+            monkeypatch,
+            "import sys,time;sys.stdout.write('x' * 4096);sys.stdout.flush();time.sleep(1)",
+        )
+
+    assert time.monotonic() - started < 0.5
+
+
+def test_bounded_capture_requires_both_binary_pipes() -> None:
+    process = subprocess.Popen(
+        [sys.executable, "-c", "import time;time.sleep(1)"],
+        start_new_session=True,
+    )
+
+    with pytest.raises(InvalidSnapshotError, match=r"shell error \[io-failed\]"):
+        shell_out._communicate_bounded(  # noqa: SLF001 - boundary failure proof
+            process,
+            tool="fake_snapshot_tool",
+        )
+
+    process.wait(timeout=1)
 
 
 def test_shell_out_timeout_terminates_direct_child(

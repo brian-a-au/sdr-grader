@@ -5,7 +5,6 @@ from __future__ import annotations
 import io
 import json
 import shutil
-import subprocess
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -255,25 +254,20 @@ class _FakeShellProcess:
         timeout_once: bool = False,
     ):
         self.cmd = cmd
-        self.stdout_bytes = stdout
-        self.stderr_bytes = stderr
+        self.stdout = io.BytesIO(stdout)
+        self.stderr = io.BytesIO(stderr)
         self.returncode = returncode
-        self.timeout_once = timeout_once
-        self.timeouts: list[float] = []
+        self.running = timeout_once
         self.pid = 999_999
 
-    def communicate(self, timeout=None):
-        if timeout is not None:
-            self.timeouts.append(timeout)
-        if self.timeout_once:
-            self.timeout_once = False
-            raise subprocess.TimeoutExpired(self.cmd, timeout)
-        return self.stdout_bytes, self.stderr_bytes
-
     def poll(self):
+        return None if self.running else self.returncode
+
+    def wait(self):
         return self.returncode
 
     def kill(self):
+        self.running = False
         self.returncode = -9
 
 
@@ -398,7 +392,7 @@ def test_cli_rsid_uses_aa_adapter(tmp_path, capsys):
     assert rc == SUCCESS
 
 
-def test_shell_out_passes_timeout_and_encoding_and_surfaces_warnings(monkeypatch, capsys):
+def test_shell_out_uses_bounded_pipes_and_surfaces_warnings(monkeypatch, capsys):
     from sdr_grader.input import shell_out
 
     process = _FakeShellProcess(
@@ -412,7 +406,6 @@ def test_shell_out_passes_timeout_and_encoding_and_surfaces_warnings(monkeypatch
 
     snapshot, source = shell_out.shell_cja("dv_123")
     assert snapshot == {"ok": True}
-    assert process.timeouts == [shell_out.SHELL_OUT_TIMEOUT_SECONDS]
     diagnostics = capsys.readouterr().err
     assert "shell-child-diagnostics" in diagnostics
     assert "token expires soon" not in diagnostics
@@ -425,6 +418,7 @@ def test_shell_out_timeout_raises_invalid_snapshot(monkeypatch):
 
     monkeypatch.setattr(shell_out.shutil, "which", lambda tool: f"/fake/{tool}")
     monkeypatch.setattr(shell_out.subprocess, "Popen", lambda cmd, **kwargs: process)
+    monkeypatch.setattr(shell_out, "SHELL_OUT_TIMEOUT_SECONDS", 0.01)
 
     with pytest.raises(InvalidSnapshotError, match=r"shell error \[timeout\]"):
         shell_out.shell_cja("dv_123")

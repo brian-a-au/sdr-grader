@@ -8,13 +8,16 @@ a Mode 1 file.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import shutil
 import signal
 import subprocess
 import sys
-from typing import Any
+import threading
+import time
+from typing import Any, BinaryIO
 
 from sdr_grader.core.exceptions import InvalidSnapshotError
 
@@ -23,6 +26,8 @@ from sdr_grader.core.exceptions import InvalidSnapshotError
 SHELL_OUT_TIMEOUT_SECONDS = 600
 MAX_STDOUT_BYTES = 32 * 1024 * 1024
 MAX_STDERR_BYTES = 256 * 1024
+_READ_CHUNK_BYTES = 64 * 1024
+_READER_JOIN_SECONDS = 1.0
 
 
 def shell_cja(
@@ -76,26 +81,12 @@ def _shell_out(tool: str, argv: list[str], *, flag: str) -> tuple[dict[str, Any]
 
     try:
         process = subprocess.Popen(cmd, **popen_options)
-        stdout, stderr = process.communicate(timeout=SHELL_OUT_TIMEOUT_SECONDS)
-    except subprocess.TimeoutExpired:
-        _terminate_process_tree(process)
-        process.communicate()
-        raise InvalidSnapshotError(
-            f"shell error [timeout]: {tool} exceeded the execution deadline"
-        ) from None
     except OSError:
         raise InvalidSnapshotError(
             f"shell error [invoke-failed]: {tool} could not be started"
         ) from None
 
-    if len(stdout) > MAX_STDOUT_BYTES:
-        raise InvalidSnapshotError(
-            f"shell error [output-limit]: {tool} stdout exceeded the byte limit"
-        )
-    if len(stderr) > MAX_STDERR_BYTES:
-        raise InvalidSnapshotError(
-            f"shell error [output-limit]: {tool} stderr exceeded the byte limit"
-        )
+    stdout, stderr = _communicate_bounded(process, tool=tool)
     if process.returncode:
         raise InvalidSnapshotError(
             f"shell error [child-exit]: {tool} returned status {process.returncode}"
@@ -127,6 +118,112 @@ def _shell_out(tool: str, argv: list[str], *, flag: str) -> tuple[dict[str, Any]
     return snapshot, f"shell-out:{tool}"
 
 
+def _communicate_bounded(
+    process: subprocess.Popen[bytes],
+    *,
+    tool: str,
+) -> tuple[bytes, bytes]:
+    """Capture fixed-size child streams and stop the process at either limit."""
+    if process.stdout is None or process.stderr is None:
+        _terminate_process_tree(process)
+        raise InvalidSnapshotError(
+            f"shell error [io-failed]: {tool} output pipes were unavailable"
+        )
+
+    buffers: dict[str, bytes] = {}
+    over_limit: set[str] = set()
+    read_failures: set[str] = set()
+    stop_requested = threading.Event()
+    state_lock = threading.Lock()
+
+    def read_stream(name: str, stream: BinaryIO, limit: int) -> None:
+        captured = bytearray()
+        try:
+            while True:
+                remaining = limit - len(captured)
+                read_size = min(_READ_CHUNK_BYTES, max(1, remaining + 1))
+                chunk = stream.read(read_size)
+                if not chunk:
+                    break
+                if len(chunk) > remaining:
+                    with state_lock:
+                        over_limit.add(name)
+                    stop_requested.set()
+                    _terminate_process_tree(process)
+                    break
+                captured.extend(chunk)
+        except (OSError, ValueError):
+            with state_lock:
+                read_failures.add(name)
+            stop_requested.set()
+            _terminate_process_tree(process)
+        finally:
+            buffers[name] = bytes(captured)
+
+    streams = (
+        ("stdout", process.stdout, MAX_STDOUT_BYTES),
+        ("stderr", process.stderr, MAX_STDERR_BYTES),
+    )
+    readers = [
+        threading.Thread(
+            target=read_stream,
+            args=(name, stream, limit),
+            name=f"sdr-grader-{name}-reader",
+            daemon=True,
+        )
+        for name, stream, limit in streams
+    ]
+    for reader in readers:
+        reader.start()
+
+    deadline = time.monotonic() + SHELL_OUT_TIMEOUT_SECONDS
+    timed_out = False
+    while process.poll() is None:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            timed_out = True
+            _terminate_process_tree(process)
+            break
+        if stop_requested.wait(min(0.05, remaining)):
+            _terminate_process_tree(process)
+            break
+
+    try:
+        process.wait()
+    except OSError:
+        _terminate_process_tree(process)
+        raise InvalidSnapshotError(
+            f"shell error [io-failed]: {tool} process status was unavailable"
+        ) from None
+
+    for reader in readers:
+        reader.join(timeout=_READER_JOIN_SECONDS)
+    readers_still_alive = any(reader.is_alive() for reader in readers)
+    for _name, stream, _limit in streams:
+        stream.close()
+    if readers_still_alive:
+        for reader in readers:
+            reader.join(timeout=0.1)
+    if any(reader.is_alive() for reader in readers):
+        raise InvalidSnapshotError(
+            f"shell error [io-failed]: {tool} output pipes did not close"
+        )
+    if timed_out:
+        raise InvalidSnapshotError(
+            f"shell error [timeout]: {tool} exceeded the execution deadline"
+        )
+    if over_limit:
+        stream_name = "stdout" if "stdout" in over_limit else "stderr"
+        raise InvalidSnapshotError(
+            f"shell error [output-limit]: {tool} {stream_name} exceeded the byte limit"
+        )
+    if read_failures:
+        raise InvalidSnapshotError(
+            f"shell error [io-failed]: {tool} output could not be captured"
+        )
+    return buffers["stdout"], buffers["stderr"]
+
+
 def _popen_options(platform_name: str) -> dict[str, Any]:
     options: dict[str, Any] = {
         "stdout": subprocess.PIPE,
@@ -152,5 +249,6 @@ def _terminate_process_tree(process: subprocess.Popen[bytes]) -> None:
             os.killpg(process.pid, signal.SIGKILL)
         else:
             process.kill()
-    except (OSError, ProcessLookupError):
-        process.kill()
+    except OSError:
+        with contextlib.suppress(OSError):
+            process.kill()

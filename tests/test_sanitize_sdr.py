@@ -299,6 +299,6 @@ def test_residue_check_rejects_user_supplied_canary() -> None:
     with pytest.raises(sanitize_sdr.SanitizationError, match="residue-detected"):
         sanitize_sdr._assert_no_residue(  # noqa: SLF001 - direct boundary proof
             {"description": USER_CANARY},
-            sensitive_values=[],
+            replacements=sanitize_sdr._replacement_plan([]),  # noqa: SLF001
             redact_patterns=_patterns(USER_CANARY),
         )

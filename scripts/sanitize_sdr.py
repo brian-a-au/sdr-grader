@@ -38,6 +38,7 @@ import os
 import re
 import sys
 import tempfile
+from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -78,6 +79,12 @@ class _SensitiveValue:
     original: str
     replacement: Any
     global_replace: bool
+
+
+@dataclass(frozen=True)
+class _ReplacementPlan:
+    exact: dict[str, str]
+    patterns: tuple[tuple[re.Pattern[str], str], ...]
 
 
 def _normalized_key(key: str) -> str:
@@ -259,25 +266,32 @@ def _sensitive_values(doc: dict[str, Any]) -> list[_SensitiveValue]:
     )
 
 
+def _replacement_plan(sensitive_values: list[_SensitiveValue]) -> _ReplacementPlan:
+    global_values = tuple(item for item in sensitive_values if item.global_replace)
+    return _ReplacementPlan(
+        exact={
+            item.original.casefold(): str(item.replacement)
+            for item in global_values
+        },
+        patterns=tuple(
+            (_sensitive_pattern(item.original), str(item.replacement))
+            for item in global_values
+        ),
+    )
+
+
 def _replace_text(
     text: str,
-    sensitive_values: list[_SensitiveValue],
+    replacements: _ReplacementPlan,
     redact_patterns: list[re.Pattern[str]],
 ) -> str:
-    exact = {
-        item.original.casefold(): str(item.replacement)
-        for item in sensitive_values
-        if item.global_replace
-    }
-    replacement = exact.get(text.casefold())
+    replacement = replacements.exact.get(text.casefold())
     if replacement is not None:
         text = replacement
     else:
-        for item in sensitive_values:
-            if not item.global_replace:
-                continue
-            text = _sensitive_pattern(item.original).sub(
-                lambda _match, token=str(item.replacement): token,
+        for pattern, token in replacements.patterns:
+            text = pattern.sub(
+                lambda _match, replacement=token: replacement,
                 text,
             )
     return _redact_words(text, redact_patterns)
@@ -285,7 +299,7 @@ def _replace_text(
 
 def _walk_replace(
     node: Any,
-    sensitive_values: list[_SensitiveValue],
+    replacements: _ReplacementPlan,
     redact_patterns: list[re.Pattern[str]],
     *,
     path: tuple[str, ...] = (),
@@ -293,7 +307,7 @@ def _walk_replace(
     if isinstance(node, dict):
         output: dict[str, Any] = {}
         for key, value in node.items():
-            replaced_key = _replace_text(key, sensitive_values, redact_patterns)
+            replaced_key = _replace_text(key, replacements, redact_patterns)
             if replaced_key in output:
                 raise SanitizationError(
                     "key-collision", "redaction would collapse distinct object keys"
@@ -320,13 +334,13 @@ def _walk_replace(
                 output[replaced_key] = _replace_sensitive_node(
                     value,
                     prefix=prefix,
-                    sensitive_values=sensitive_values,
+                    replacements=replacements,
                     redact_patterns=redact_patterns,
                 )
             else:
                 output[replaced_key] = _walk_replace(
                     value,
-                    sensitive_values,
+                    replacements,
                     redact_patterns,
                     path=(*path, normalized),
                 )
@@ -335,21 +349,16 @@ def _walk_replace(
         return [
             _walk_replace(
                 value,
-                sensitive_values,
+                replacements,
                 redact_patterns,
                 path=path,
             )
             for value in node
         ]
     if isinstance(node, str):
-        return _replace_text(node, sensitive_values, redact_patterns)
+        return _replace_text(node, replacements, redact_patterns)
     if node is not None and not isinstance(node, bool):
-        exact = {
-            item.original.casefold(): str(item.replacement)
-            for item in sensitive_values
-            if item.global_replace
-        }
-        replacement = exact.get(str(node).casefold())
+        replacement = replacements.exact.get(str(node).casefold())
         if replacement is not None:
             return replacement
     return node
@@ -359,13 +368,13 @@ def _replace_sensitive_node(
     node: Any,
     *,
     prefix: str,
-    sensitive_values: list[_SensitiveValue],
+    replacements: _ReplacementPlan,
     redact_patterns: list[re.Pattern[str]],
 ) -> Any:
     if isinstance(node, dict):
         output: dict[str, Any] = {}
         for key, value in node.items():
-            replaced_key = _replace_text(key, sensitive_values, redact_patterns)
+            replaced_key = _replace_text(key, replacements, redact_patterns)
             if replaced_key in output:
                 raise SanitizationError(
                     "key-collision", "redaction would collapse distinct object keys"
@@ -373,7 +382,7 @@ def _replace_sensitive_node(
             output[replaced_key] = _replace_sensitive_node(
                 value,
                 prefix=prefix,
-                sensitive_values=sensitive_values,
+                replacements=replacements,
                 redact_patterns=redact_patterns,
             )
         return output
@@ -382,7 +391,7 @@ def _replace_sensitive_node(
             _replace_sensitive_node(
                 value,
                 prefix=prefix,
-                sensitive_values=sensitive_values,
+                replacements=replacements,
                 redact_patterns=redact_patterns,
             )
             for value in node
@@ -392,31 +401,26 @@ def _replace_sensitive_node(
     return _stable_sensitive_scalar(node, prefix=prefix)
 
 
-def _iter_strings(node: Any) -> list[str]:
-    values: list[str] = []
+def _iter_strings(node: Any) -> Iterator[str]:
     if isinstance(node, dict):
         for key, value in node.items():
-            values.append(key)
-            values.extend(_iter_strings(value))
+            yield key
+            yield from _iter_strings(value)
     elif isinstance(node, list):
         for value in node:
-            values.extend(_iter_strings(value))
+            yield from _iter_strings(value)
     elif isinstance(node, str):
-        values.append(node)
-    return values
+        yield node
 
 
 def _assert_no_residue(
     doc: Any,
     *,
-    sensitive_values: list[_SensitiveValue],
+    replacements: _ReplacementPlan,
     redact_patterns: list[re.Pattern[str]],
 ) -> None:
     for text in _iter_strings(doc):
-        if any(
-            item.global_replace and _sensitive_pattern(item.original).search(text)
-            for item in sensitive_values
-        ):
+        if any(pattern.search(text) for pattern, _replacement in replacements.patterns):
             raise SanitizationError("residue-detected", "a recognized private value remains")
         if any(pattern.search(text) for pattern in redact_patterns):
             raise SanitizationError("residue-detected", "a requested redaction value remains")
@@ -433,12 +437,13 @@ def sanitize(
     _validate_structure(doc)
     _validate_platform_shape(doc, platform)
     sensitive_values = _sensitive_values(doc)
-    cleaned = _walk_replace(doc, sensitive_values, redact_patterns)
+    replacements = _replacement_plan(sensitive_values)
+    cleaned = _walk_replace(doc, replacements, redact_patterns)
     _validate_structure(cleaned)
     _validate_platform_shape(cleaned, platform)
     _assert_no_residue(
         cleaned,
-        sensitive_values=sensitive_values,
+        replacements=replacements,
         redact_patterns=redact_patterns,
     )
     return cleaned
