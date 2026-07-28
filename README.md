@@ -19,7 +19,7 @@ them against a versioned, pluggable YAML rubric, and produces a single
 self-contained HTML report card plus a machine-readable JSON output. No
 LLMs, no API calls — same input + same rubric always yields the same grade.
 
-![sdr-grader report card: a CJA implementation graded F at 51%, with per-category scores](https://raw.githubusercontent.com/brian-a-au/sdr-grader/main/docs/assets/report-card.png)
+![sdr-grader report card: a CJA implementation graded F at 47%, with per-category scores](https://raw.githubusercontent.com/brian-a-au/sdr-grader/main/docs/assets/report-card.png)
 
 ## What it grades
 
@@ -128,10 +128,12 @@ CJA and AA snapshots in separate folders.
 ## Output
 
 - **HTML report card** at `--output PATH` (default
-  `grade-{timestamp}.html`) — single self-contained file, no external
+  `grade-{report-id}.html`) — single self-contained file, no external
   CSS/JS, prints in black-and-white, screenshots cleanly into decks.
-- **JSON output** at `--json PATH` — machine-readable representation of
-  the same Report. Suitable for CI dashboards and leaderboards.
+- **JSON output** at `--json PATH` — schema `1` with stable
+  `instance_id`, platform/adapter identity, rubric pack/version, grader
+  version, and the same complete Report data. Suitable for CI
+  dashboards and leaderboards.
 
 Sample report cards (rendered from the bundled fixtures):
 
@@ -180,9 +182,11 @@ The repo ships a Claude Code skill bundle at
 [`skills/sdr-grader/`](skills/sdr-grader/) for asking follow-up
 questions about a `sdr-grader --json` output without re-running the
 grader — filter findings by severity / category / rule, pull up the
-body and remediation for one rule, or diff two grades from different
-snapshot dates. Install as a plugin (`/plugin install
-brian-a-au/sdr-grader`) or as a personal skill; the bundled helper
+body and remediation for one rule, or diff two compatible grades from
+different snapshot dates. Install with `/plugin marketplace add
+brian-a-au/sdr-grader`, `/plugin install sdr-grader@sdr-grader`, and
+`/reload-plugins`. Invoke the plugin as `/sdr-grader:sdr-grader`; a
+personal skill remains `/sdr-grader`. The bundled helper
 script also runs as plain Python with no extra dependencies. See
 [`skills/sdr-grader/README.md`](skills/sdr-grader/README.md) for
 install and usage details, or

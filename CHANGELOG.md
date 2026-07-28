@@ -3,10 +3,18 @@
 All notable changes follow the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
-## Unreleased
+## 1.2.0 — Unreleased
 
 ### Changed
 
+- **The report JSON contract is now schema `1`.** JSON includes stable
+  `instance_id` alongside platform/adapter, rubric, and grader version
+  context. The deprecated `impact_pts` remediation alias remains equal
+  to `priority_weight` throughout `1.2.x`.
+- **Claude report comparisons are context-gated.** The bundled helper
+  compares only schema-1 reports for the same instance, platform,
+  adapter family, and rubric pack/version. Legacy reports remain
+  readable for single-report operations with a visible warning.
 - **Bundled rubric packs are now `2.0`.** Strict and pragmatic contain
   27 rules. Scores produced by pack `2.0` are not comparable with pack
   `1.0`; re-baseline CI thresholds, regenerate stored trends, and
@@ -33,6 +41,19 @@ spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
   `segment_shared_unapproved` have been removed. Replacement rules must
   measure a normalized rate, structural invariant, or explicit policy
   rather than raw tenant size.
+
+### Added
+
+- A valid repository Claude Code marketplace. Install with `/plugin
+  marketplace add brian-a-au/sdr-grader`, `/plugin install
+  sdr-grader@sdr-grader`, and `/reload-plugins`; invoke the plugin skill
+  as `/sdr-grader:sdr-grader`.
+
+### Security
+
+- The Claude helper bounds and validates its input, rejects duplicate
+  keys and non-finite values, performs no writes/network/subprocess
+  operations, and pre-approves only its exact Python command prefix.
 
 ## 1.1.5 — 2026-07-19
 

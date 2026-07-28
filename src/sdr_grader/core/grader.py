@@ -86,6 +86,7 @@ def grade(
     return Report(
         id=_report_id(impl, generated_at),
         instance_name=impl.instance_name,
+        instance_id=impl.instance_id,
         grade=result.overall_grade,
         overall_pct=result.overall_pct,
         components_evaluated=components_evaluated,

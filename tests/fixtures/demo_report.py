@@ -35,13 +35,14 @@ def build_demo_report() -> Report:
     report = Report(
         id="SDR-2026-0425-PROD-WEB",
         instance_name="Production Web Analytics",
+        instance_id="dv_prod_web",
         grade="B−",
         overall_pct=71,
         components_evaluated=487,
         components_skipped=23,
         components_skipped_reason="missing required schema fields",
         adapter=Adapter(platform="CJA", tool="cja_auto_sdr", version="3.5.17"),
-        rubric=Rubric(pack="strict", version="1.2"),
+        rubric=Rubric(pack="strict", version="2.0"),
         generated_at=datetime(2026, 4, 25, 9, 14, tzinfo=UTC),
         tldr_html=(
             "This implementation graded <strong>B−</strong>, sitting near the median for self-graded "

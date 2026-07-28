@@ -151,6 +151,7 @@ class Distribution:
 class Report:
     id: str                                     # "SDR-2026-0425-PROD-WEB"
     instance_name: str                          # "Production Web Analytics"
+    instance_id: str                            # "dv_prod_web"
     grade: str                                  # "B-"
     overall_pct: int
     components_evaluated: int
@@ -223,6 +224,7 @@ def render(report: Report) -> str:
     report_view = {
         "id": report.id,
         "instance_name": report.instance_name,
+        "instance_id": report.instance_id,
         "grade": report.grade,
         "overall_pct": report.overall_pct,
         "components_evaluated": report.components_evaluated,

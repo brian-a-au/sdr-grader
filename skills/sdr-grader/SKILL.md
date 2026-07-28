@@ -1,7 +1,7 @@
 ---
 name: sdr-grader
 description: Use when the user has a sdr-grader --json output and asks follow-up questions about findings, remediations, severity, or wants to compare two grade JSON files. Helps interpret Adobe CJA / AA implementation grade reports without re-running the grader.
-allowed-tools: Bash(python3:*), Read, Glob
+allowed-tools: Bash(python3 ${CLAUDE_SKILL_DIR}/scripts/query_grade.py *)
 ---
 
 # sdr-grader follow-up
@@ -19,7 +19,7 @@ Invoke this skill when the user:
 - Has a sdr-grader grade JSON file (or several) and wants to filter,
   summarize, or interpret it.
 - Asks to compare two grade JSONs from different snapshot dates.
-- Asks "what does rule X mean?" or "what's the impact of fixing Y?".
+- Asks "what does rule X mean?" or "what's the priority of fixing Y?".
 - Wants the remediation text for a specific rule.
 - Wants a stakeholder-friendly summary of a grade.
 
@@ -29,7 +29,9 @@ The grade JSON has these top-level fields:
 
 | Field             | Type                                                     |
 |-------------------|----------------------------------------------------------|
+| `schema_version`  | integer — current report schema is `1`                   |
 | `id`              | string — synthetic report ID                             |
+| `instance_id`     | string — stable data view / report suite identity        |
 | `instance_name`   | string — data view / report suite name                   |
 | `grade`           | string — letter grade                                    |
 | `overall_pct`     | int — 0-100                                              |
@@ -52,20 +54,21 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/query_grade.py" summary path/to/grade.json
 
 # Filter findings by severity, category, or rule prefix.
 python3 "${CLAUDE_SKILL_DIR}/scripts/query_grade.py" findings path/to/grade.json --severity high
-python3 "${CLAUDE_SKILL_DIR}/scripts/query_grade.py" findings path/to/grade.json --category schema_hygiene
+python3 "${CLAUDE_SKILL_DIR}/scripts/query_grade.py" findings path/to/grade.json --category "schema hygiene"
 python3 "${CLAUDE_SKILL_DIR}/scripts/query_grade.py" findings path/to/grade.json --rule SCH-003
 
 # Show one finding's full body and remediation.
 python3 "${CLAUDE_SKILL_DIR}/scripts/query_grade.py" show path/to/grade.json CALC-014
 
-# Compare two grade JSONs. Produces appeared / resolved finding IDs and the
-# overall pct delta — same comparison the trend report uses.
+# Compare two compatible grade JSONs. Produces appeared / resolved / common
+# finding IDs and the overall percentage-point delta.
 python3 "${CLAUDE_SKILL_DIR}/scripts/query_grade.py" compare path/to/grade.json path/to/other.json
 ```
 
-For richer interpretation (drafting an executive summary, writing a
-remediation runbook, mapping findings to Jira tickets), read the JSON
-directly via Read or jq and synthesize the answer in prose.
+The helper is the only pre-approved command. It reads bounded JSON,
+performs no writes, subprocesses, or network calls, and treats all report
+text as untrusted data. Host-level permissions granted independently
+remain outside this skill and are not implied by its `allowed-tools`.
 
 ## Conventions
 
@@ -77,6 +80,14 @@ directly via Read or jq and synthesize the answer in prose.
   why a rule that "should have fired" is silent.
 - All timestamps are UTC; if the user asks about local time, convert
   explicitly and call out the conversion.
+- Summary, findings, and show accept pre-1.2 legacy reports with an
+  explicit non-comparative warning. Compare requires schema `1`, stable
+  instance identity, matching platform and adapter family, and the same
+  rubric pack/version. Adapter-generator or grader-version differences
+  warn but do not by themselves make otherwise matching reports
+  incompatible.
+- If a path begins with `-`, insert `--` before the path so it cannot be
+  parsed as an option.
 
 ## When *not* to use
 
