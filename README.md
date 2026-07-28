@@ -72,6 +72,7 @@ a line of grader code. The scoring algorithm itself is in
 ```bash
 # 1. Install (uv tool, pipx, or any other Python installer).
 uv tool install sdr-grader
+sdr-grader --version
 
 # 2. Generate a snapshot of your data view (CJA) or report suite (AA).
 cja_auto_sdr dv_prod_web --include-all-inventory --format json --output snapshot.json   # CJA

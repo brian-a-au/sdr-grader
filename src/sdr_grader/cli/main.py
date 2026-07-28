@@ -11,6 +11,7 @@ import argparse
 import sys
 from pathlib import Path
 
+from sdr_grader import __version__
 from sdr_grader.cli.exit_codes import (
     GRADE_BELOW_THRESHOLD,
     RUBRIC_VALIDATION_FAILURE,
@@ -192,6 +193,11 @@ def _build_parser() -> argparse.ArgumentParser:
             "Reads a cja_auto_sdr / aa_auto_sdr JSON snapshot and emits an HTML "
             "report card."
         ),
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {__version__}",
     )
     parser.add_argument(
         "snapshot",

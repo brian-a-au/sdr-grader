@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from sdr_grader import __version__
 from sdr_grader.cli.exit_codes import (
     GRADE_BELOW_THRESHOLD,
     RUBRIC_VALIDATION_FAILURE,
@@ -17,6 +18,14 @@ from sdr_grader.cli.main import main
 from sdr_grader.core.exceptions import UnknownPlatformError
 
 FIXTURES = Path(__file__).parent / "fixtures"
+
+
+def test_cli_version_reports_installed_package_version(capsys):
+    with pytest.raises(SystemExit) as exc:
+        main(["--version"])
+
+    assert exc.value.code == 0
+    assert capsys.readouterr().out == f"sdr-grader {__version__}\n"
 
 
 def test_cli_runs_against_messy_fixture_and_writes_html(tmp_path, capsys):

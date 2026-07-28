@@ -48,12 +48,19 @@ spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
   marketplace add brian-a-au/sdr-grader`, `/plugin install
   sdr-grader@sdr-grader`, and `/reload-plugins`; invoke the plugin skill
   as `/sdr-grader:sdr-grader`.
+- Installed release identity is available through `sdr-grader
+  --version`. Release candidates now require one sdist and one
+  sdist-built wheel whose versions, inventories, packaged resources,
+  source bytes, and SHA-256 provenance all pass the repository verifier.
 
 ### Security
 
 - The Claude helper bounds and validates its input, rejects duplicate
   keys and non-finite values, performs no writes/network/subprocess
   operations, and pre-approves only its exact Python command prefix.
+- Release archives reject path escapes, links, duplicate members,
+  expanded-size overruns, and private/local/cache/test content before
+  their digests can become publishable evidence.
 
 ## 1.1.5 — 2026-07-19
 
