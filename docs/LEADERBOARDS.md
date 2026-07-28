@@ -9,6 +9,11 @@ across the portfolio.
 The grader supports this via a separate "distribution data" file that
 the report renders alongside the grade.
 
+> **Pack `2.0` migration:** results from pack `1.0` and `2.0` are not
+> comparable. Delete or archive old aggregate distributions, regrade the
+> source snapshots with one pack version, and rebuild the leaderboard
+> before using it for decisions.
+
 ## What ships in the box
 
 The bundled `src/sdr_grader/data/distribution.json` is seed percentile

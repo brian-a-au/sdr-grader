@@ -1,9 +1,11 @@
 # Calibration corpus
 
-The default `strict` and `pragmatic` thresholds shipped in v1.0 are
-calibrated against a corpus of 108 real CJA + AA production snapshots —
-see [`threshold_calibration.md`](threshold_calibration.md) for the
-per-rule distributions and confidence ratings behind each threshold.
+The default `strict` and `pragmatic` thresholds are measured against a
+corpus of 108 real CJA + AA production snapshots. The corpus is private and
+unavailable in a clean checkout. The current
+[`threshold_calibration.md`](threshold_calibration.md) report was regenerated
+for pack 2.0 on 2026-07-28; final release approval still requires binding the
+run to the candidate SHA and corpus revision in `RELEASE_CHECKLIST.md`.
 
 This doc covers how the corpus is assembled and how to extend it.
 `scripts/calibrate_thresholds.py` consumes the corpus and (re)generates

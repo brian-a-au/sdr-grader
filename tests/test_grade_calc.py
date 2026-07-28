@@ -114,6 +114,30 @@ def test_compute_grade_one_fired_rule_drops_category_by_severity_weight(grade_sc
     assert result.categories[0].rules_total == 3
 
 
+def test_compute_grade_uses_the_engine_rule_inventory_for_denominators(grade_scale):
+    applicable = _rule("AA-RULE", "high")
+    inapplicable = _rule("CJA-RULE", "critical")
+    rubric = Rubric(
+        pack="t",
+        version="1",
+        description="",
+        category_weights={"schema_hygiene": 1.0},
+        severity_weights={"critical": 4, "high": 3, "medium": 2, "low": 1},
+        grade_scale=grade_scale,
+        rules=[applicable, inapplicable],
+    )
+
+    result = compute_grade(
+        rubric,
+        [_finding("AA-RULE", severity="high")],
+        rule_inventory=(applicable,),
+    )
+
+    assert result.overall_pct == 0
+    assert result.categories[0].rules_total == 1
+    assert result.categories[0].rules_failed == 1
+
+
 def test_compute_grade_zero_weight_categories_excluded(grade_scale):
     rubric = Rubric(
         pack="t",

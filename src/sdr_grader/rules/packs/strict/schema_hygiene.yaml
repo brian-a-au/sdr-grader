@@ -25,8 +25,7 @@ rules:
     severity: high
     platforms: [cja, aa]
     check: broken_references
-    params:
-      show_top: 10
+    params: {}
     rationale: |
       Broken references are usually a symptom of components renamed or
       deleted without updating their consumers. They produce silent zeros
@@ -41,7 +40,9 @@ rules:
     platforms: [cja, aa]
     check: missing_descriptions
     params:
-      threshold: 0.35           # calibrated p75 across 108-snapshot corpus
+      # Calibrated p75 on 2026-07-28 across 108 snapshots using the pack 2.0
+      # maximum per-target statistic (metrics, dimensions).
+      threshold: 0.56
       targets: [metrics, dimensions]
     rationale: |
       Descriptions are the primary way new analysts and AI agents understand
@@ -122,8 +123,7 @@ rules:
     severity: high
     platforms: [cja]
     check: derived_field_broken_refs
-    params:
-      show_top: 10
+    params: {}
     rationale: |
       A derived field referencing a deleted or renamed base component
       silently produces NULLs in reports. The check filters CJA platform
@@ -136,4 +136,3 @@ rules:
       legitimately stale (e.g. migrated to a new XDM field), update the
       derived field's `definition_json` and verify the resolved field
       type still matches the derived field's output type.
-

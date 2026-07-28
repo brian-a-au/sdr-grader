@@ -18,8 +18,7 @@ rules:
     severity: high
     platforms: [cja, aa]
     check: broken_references
-    params:
-      show_top: 10
+    params: {}
     rationale: Same as strict.
     remediation: Same as strict.
 
@@ -29,7 +28,9 @@ rules:
     platforms: [cja, aa]
     check: missing_descriptions
     params:
-      threshold: 0.51            # calibrated p95 across 108-snapshot corpus
+      # Calibrated p95 on 2026-07-28 across 108 snapshots using the pack 2.0
+      # maximum per-target statistic (metrics, dimensions).
+      threshold: 0.81
       targets: [metrics, dimensions]
     rationale: Same as strict.
     remediation: Same as strict.
@@ -76,8 +77,6 @@ rules:
     severity: medium             # demoted from strict's high
     platforms: [cja]
     check: derived_field_broken_refs
-    params:
-      show_top: 10
+    params: {}
     rationale: Same as strict.
     remediation: Same as strict.
-

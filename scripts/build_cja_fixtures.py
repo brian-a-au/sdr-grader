@@ -131,7 +131,7 @@ def build_calculated_metrics() -> dict[str, Any]:
         ("cm_rev_per_visit_final",     "r.kim@example.com",    "2026-02-03"),
     ]
     for mid, owner, created in revenue_authors:
-        # First variant is shared broadly but not approved — exercises GOV-007.
+        # Preserve representative approval and sharing metadata for adapter tests.
         is_gov007_trigger = mid == "cm_revenue_per_visit"
         gov007_shares = (
             [{"shareToType": "user", "shareToId": f"u{i + 1}"} for i in range(6)]
@@ -253,7 +253,7 @@ def build_segments() -> dict[str, Any]:
     ]
     segments = []
     for sid, depth, contexts in deep_specs:
-        # First deep segment is shared broadly but not approved — exercises GOV-008.
+        # Preserve representative approval and sharing metadata for adapter tests.
         is_gov008_trigger = sid == "seg_qualified_lead_v3"
         gov008_shares = (
             [{"shareToType": "user", "shareToId": f"u{i + 1}"} for i in range(4)]
@@ -561,11 +561,11 @@ def build_clean_snapshot() -> dict[str, Any]:
 
 
 def build_messy_snapshot() -> dict[str, Any]:
-    # Component-level missing-description counts are tuned so the overall
-    # rate lands above the calibrated SCH-003 strict threshold (0.35) but
-    # below the pragmatic threshold (0.51). 220/487 ≈ 45%.
+    # SCH-003 evaluates each configured target separately. Dimensions are
+    # tuned to 120/203 ≈ 59%, above the strict 0.56 threshold and below the
+    # pragmatic 0.81 threshold; metrics remain below strict at 70/142 ≈ 49%.
     metrics = build_metrics(count=142, missing_descriptions=70)
-    dimensions = build_dimensions(count=203, missing_descriptions=100)
+    dimensions = build_dimensions(count=203, missing_descriptions=120)
     derived = build_derived_fields(count=142, missing_descriptions=50)
     calc_metrics = build_calculated_metrics()
     segments = build_segments()

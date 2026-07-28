@@ -11,11 +11,19 @@ import argparse
 import sys
 from pathlib import Path
 
+from sdr_grader import __version__
 from sdr_grader.cli.exit_codes import (
     GRADE_BELOW_THRESHOLD,
     RUBRIC_VALIDATION_FAILURE,
     RUNTIME_ERROR,
     SUCCESS,
+)
+from sdr_grader.cli.output import (
+    OutputPathError,
+    OutputPublishError,
+    portable_leaf,
+    publish_text_artifacts,
+    validate_output_paths,
 )
 from sdr_grader.core.exceptions import (
     InvalidSnapshotError,
@@ -23,6 +31,7 @@ from sdr_grader.core.exceptions import (
     UnknownPlatformError,
 )
 from sdr_grader.core.grader import grade
+from sdr_grader.input.adapt import adapt_snapshot as _adapt_snapshot
 from sdr_grader.input.loader import STDIN_TOKEN, load_snapshot
 from sdr_grader.input.shell_out import shell_aa, shell_cja
 from sdr_grader.render import cap_component_items, render
@@ -81,7 +90,13 @@ def main(argv: list[str] | None = None) -> int:
                 file=sys.stderr,
             )
             return RUNTIME_ERROR
-        return _run_trend(args, rubric, suppression)
+        return _run_trend(
+            args,
+            rubric,
+            suppression,
+            rubric_dir,
+            suppression_path,
+        )
 
     try:
         snapshot, source = _load_snapshot_for_args(args)
@@ -94,6 +109,20 @@ def main(argv: list[str] | None = None) -> int:
     except (InvalidSnapshotError, UnknownPlatformError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return RUNTIME_ERROR
+    _emit_generator_version_warning(
+        impl.platform,
+        impl.adapter_version,
+    )
+
+    if args.snapshot and Path(args.snapshot).is_dir():
+        from sdr_grader.input.history import matching_snapshot_sibling_exists
+
+        impl.history_present = matching_snapshot_sibling_exists(
+            Path(args.snapshot),
+            selected_source=Path(source),
+            selected=impl,
+            platform_override=args.platform,
+        )
 
     try:
         _attach_extra_inputs(impl, args.extra_input)
@@ -101,36 +130,47 @@ def main(argv: list[str] | None = None) -> int:
         print(f"error: {exc}", file=sys.stderr)
         return RUNTIME_ERROR
 
-    report = grade(impl, rubric, suppression=suppression)
+    try:
+        report = grade(impl, rubric, suppression=suppression)
+    except RubricValidationError as exc:
+        print(f"rubric error: {exc}", file=sys.stderr)
+        return RUBRIC_VALIDATION_FAILURE
     report = _maybe_attach_distribution(report, args)
     if report is None:
         return RUNTIME_ERROR
-    # HTML gets the display-capped copy; --json below serializes the full
-    # report so no component list is ever lost to the cap (issue #5).
-    html = render(cap_component_items(report))
     output_path = Path(args.output) if args.output else _default_output_path(report)
+    json_path = Path(args.json_output) if args.json_output else None
+    destinations = [output_path, *([json_path] if json_path is not None else [])]
+    read_paths = _read_paths_for_args(args, rubric_dir, suppression_path)
+
     try:
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        output_path.write_text(html, encoding="utf-8")
-    except OSError as exc:
-        print(f"error: could not write output {output_path}: {exc}", file=sys.stderr)
+        validate_output_paths(destinations, read_paths=read_paths)
+    except OutputPathError as exc:
+        print(f"error: could not publish report outputs: {exc}", file=sys.stderr)
         return RUNTIME_ERROR
 
-    if args.json_output:
-        import json as _json
+    try:
+        # HTML gets the display-capped copy; JSON serializes the full report.
+        # Both artifacts are fully rendered before either reaches a final path.
+        html = render(cap_component_items(report))
+        artifacts = {output_path: html}
+        if json_path is not None:
+            import json as _json
 
-        from sdr_grader.render.json_output import report_to_dict
+            from sdr_grader.render.json_output import report_to_dict
 
-        json_path = Path(args.json_output)
-        try:
-            json_path.parent.mkdir(parents=True, exist_ok=True)
-            json_path.write_text(
-                _json.dumps(report_to_dict(report), indent=2, ensure_ascii=False) + "\n",
-                encoding="utf-8",
+            artifacts[json_path] = (
+                _json.dumps(report_to_dict(report), indent=2, ensure_ascii=False) + "\n"
             )
-        except OSError as exc:
-            print(f"error: could not write JSON {json_path}: {exc}", file=sys.stderr)
-            return RUNTIME_ERROR
+    except Exception:
+        print("error: could not prepare report outputs", file=sys.stderr)
+        return RUNTIME_ERROR
+
+    try:
+        publish_text_artifacts(artifacts, read_paths=read_paths)
+    except (OutputPathError, OutputPublishError) as exc:
+        print(f"error: could not publish report outputs: {exc}", file=sys.stderr)
+        return RUNTIME_ERROR
 
     if not args.quiet:
         print(
@@ -157,6 +197,11 @@ def _build_parser() -> argparse.ArgumentParser:
             "Reads a cja_auto_sdr / aa_auto_sdr JSON snapshot and emits an HTML "
             "report card."
         ),
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {__version__}",
     )
     parser.add_argument(
         "snapshot",
@@ -318,7 +363,7 @@ def _maybe_attach_distribution(report, args):
 # ---------------------------------------------------------------------------
 
 
-def _run_trend(args, rubric, suppression) -> int:
+def _run_trend(args, rubric, suppression, rubric_dir, suppression_path) -> int:
     """Drive the trend pipeline. Requires snapshot to be a directory path."""
     from sdr_grader.core.exceptions import InvalidSnapshotError as _ISE
     from sdr_grader.trend import build_trend_report, render_trend
@@ -340,21 +385,40 @@ def _run_trend(args, rubric, suppression) -> int:
             suppression=suppression,
             platform_override=args.platform,
         )
-    except _ISE as exc:
+    except RubricValidationError as exc:
+        print(f"rubric error: {exc}", file=sys.stderr)
+        return RUBRIC_VALIDATION_FAILURE
+    except (_ISE, UnknownPlatformError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return RUNTIME_ERROR
 
-    html = render_trend(trend)
-    output_path = (
-        Path(args.output)
-        if args.output
-        else Path(f"trend-{trend.instance_id}-{trend.latest.timestamp:%Y%m%d}.html")
-    )
+    warned_generators: set[tuple[str, str]] = set()
+    for point in trend.points:
+        adapter = point.report.adapter
+        key = (adapter.platform.lower(), adapter.version)
+        if key in warned_generators:
+            continue
+        warned_generators.add(key)
+        _emit_generator_version_warning(*key)
+
+    output_path = Path(args.output) if args.output else _default_trend_output_path(trend)
+    read_paths = _read_paths_for_args(args, rubric_dir, suppression_path)
     try:
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        output_path.write_text(html, encoding="utf-8")
-    except OSError as exc:
-        print(f"error: could not write trend output {output_path}: {exc}", file=sys.stderr)
+        validate_output_paths([output_path], read_paths=read_paths)
+    except OutputPathError as exc:
+        print(f"error: could not publish trend output: {exc}", file=sys.stderr)
+        return RUNTIME_ERROR
+
+    try:
+        html = render_trend(trend)
+    except Exception:
+        print("error: could not prepare trend output", file=sys.stderr)
+        return RUNTIME_ERROR
+
+    try:
+        publish_text_artifacts({output_path: html}, read_paths=read_paths)
+    except (OutputPathError, OutputPublishError) as exc:
+        print(f"error: could not publish trend output: {exc}", file=sys.stderr)
         return RUNTIME_ERROR
 
     if not args.quiet:
@@ -400,26 +464,6 @@ def _load_snapshot_for_args(args) -> tuple[dict, str]:
 
 
 # ---------------------------------------------------------------------------
-# Adapter dispatch
-# ---------------------------------------------------------------------------
-
-
-def _adapt_snapshot(snapshot, *, source: str, platform_override: str | None):
-    """Detect platform (or use override) and dispatch to the right adapter."""
-    # Lazy imports keep the CLI startup fast.
-    from sdr_grader.adapters.aa import adapt as adapt_aa
-    from sdr_grader.adapters.cja import adapt as adapt_cja
-    from sdr_grader.input.detect import detect_platform
-
-    platform = platform_override or detect_platform(snapshot)
-    if platform == "cja":
-        return adapt_cja(snapshot, source=source)
-    if platform == "aa":
-        return adapt_aa(snapshot, source=source)
-    raise UnknownPlatformError(f"unknown platform {platform!r}; expected 'cja' or 'aa'")
-
-
-# ---------------------------------------------------------------------------
 # Rubric resolution
 # ---------------------------------------------------------------------------
 
@@ -453,7 +497,25 @@ def _default_output_path(report) -> Path:
     # instance, so batch runs across many instances don't collide on
     # filename. Same-instance re-runs on the same day overwrite, which
     # mirrors --trend's `trend-{instance}-{YYYYMMDD}.html` convention.
-    return Path(f"grade-{report.id}.html")
+    return Path(portable_leaf("grade-", report.id, ".html"))
+
+
+def _default_trend_output_path(trend) -> Path:
+    identity = f"{trend.instance_id}-{trend.latest.timestamp:%Y%m%d}"
+    return Path(portable_leaf("trend-", identity, ".html"))
+
+
+def _read_paths_for_args(args, rubric_dir: Path, suppression_path: Path) -> list[Path]:
+    paths = [Path(rubric_dir), Path(suppression_path)]
+    if args.snapshot and args.snapshot != STDIN_TOKEN:
+        paths.append(Path(args.snapshot))
+    for spec in args.extra_input:
+        if "=" in spec:
+            _key, _separator, path = spec.partition("=")
+            paths.append(Path(path.strip()))
+    if args.distribution_data and args.distribution_data != "bundled":
+        paths.append(Path(args.distribution_data))
+    return paths
 
 
 def _check_threshold(report, threshold_grade: str, rubric) -> int:
@@ -476,3 +538,23 @@ def _grade_to_min_pct(grade_label: str, rubric) -> float | None:
         if band.grade == normalized or band.grade == grade_label:
             return band.min_score
     return None
+
+
+def _emit_generator_version_warning(
+    platform: str,
+    adapter_version: str,
+) -> None:
+    warning = None
+    if platform.lower() == "cja":
+        from sdr_grader.adapters.cja import generator_version_warning
+
+        warning = generator_version_warning(adapter_version)
+    elif platform.lower() == "aa":
+        from sdr_grader.adapters.aa import generator_version_warning
+
+        warning = generator_version_warning(adapter_version)
+    if warning is not None:
+        print(
+            f"warning [generator-version]: {warning}",
+            file=sys.stderr,
+        )

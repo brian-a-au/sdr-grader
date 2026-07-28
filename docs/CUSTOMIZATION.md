@@ -86,7 +86,7 @@ function, deterministic, returns `list[Finding]`. See
 ## Grading against external data
 
 Some rules need data the snapshot itself doesn't carry — Launch
-property exports, eVar cardinality, an SDR doc's last-updated
+property exports, downstream Workspace usage, an SDR doc's last-updated
 timestamp. The CLI attaches arbitrary JSON via
 `--extra-input KEY=PATH`; rules opt in by reading
 `impl.supplementary_data[KEY]` and stay silent when the key is

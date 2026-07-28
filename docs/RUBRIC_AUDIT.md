@@ -1,9 +1,14 @@
 # Rubric audit — May 2026
 
-A category-by-category audit of the 26 rules in the default `strict` and
-`pragmatic` packs against Adobe's published documentation for CJA and AA,
+A category-by-category audit of the 27 rules in the `2.0` default
+`strict` and `pragmatic` packs against Adobe's published documentation for CJA and AA,
 plus the calibration evidence that already exists in
 [`docs/threshold_calibration.md`](threshold_calibration.md).
+
+> **Status:** this remains a historical May 2026 premise audit, not pack 2.0
+> release-candidate approval. The threshold report was regenerated on
+> 2026-07-28 with SCH-003's corrected statistic; final approval still requires
+> binding all release evidence to the candidate SHA.
 
 The goal is to separate three buckets:
 
@@ -17,12 +22,12 @@ The goal is to separate three buckets:
   doesn't grade at all. The opportunity cost of these gaps is often
   larger than the cost of any individual weak rule.
 
-This is not a calibration report — `docs/threshold_calibration.md` is the
-authority on whether a threshold is data-backed. This is a *premise*
+This is not a calibration report — `docs/threshold_calibration.md` retains
+the historical measurement record. This is a *premise*
 audit: does the rule grade something the platform actually models, and
 does the signal mean what the rule says it means?
 
-**Verified against:** the 108-fixture private corpus
+**Historically verified against (May 2026):** the 108-fixture private corpus
 (`tests/fixtures/private/{aa,cja}/`) loaded through the live adapters,
 plus `docs/threshold_calibration.md` and current Adobe Experience League
 documentation. Empirical counts cited below come from that vetting pass.
@@ -44,7 +49,7 @@ For each rule:
 |------|-------------|-------|
 | SCH-001 duplicate component names | **solid** | Adobe doesn't prevent name collisions within a type. Two metrics named "Revenue" with different IDs is a real bug that causes the classic "dashboards disagree" complaint. Structural rule, no calibration needed. |
 | SCH-002 broken references | **solid** | Segments and calc metrics carry reference IDs; checking they resolve against `all_component_ids ∪ all_segment_ids ∪ calc_metric_ids` is correct. Critical for AA where the API can return zombie references after a deletion. |
-| SCH-003 missing descriptions | **solid (calibrated)** | Threshold `0.35` set at p75 across 108 snapshots. Description fields exist on AA eVars/events and on CJA Data View components. Calibration explicit in `threshold_calibration.md`. |
+| SCH-003 missing descriptions | **solid (recalibrated for pack 2.0)** | Description fields exist on AA eVars/events and CJA Data View components. The 2026-07-28 run uses the maximum configured-target ratio: p75=`0.56` for strict and p95=`0.81` for pragmatic across 108 snapshots. |
 | SCH-004 type-name mismatch | **solid as a shape-mismatch detector; counter branch is structurally inert** | Premise (rate/percent name + integer type → silently broken) is real. **Corrected end-to-end trace (2026-05, verified against Adobe's 2.0 swagger and the pitchmuc/aanalytics2 wrapper):** the earlier audit draft claimed `aa_auto_sdr` normalizes `counter → int` upstream — that's wrong, but the broader picture is that **Adobe itself collapses `counter` and `numeric` success events to `INT` server-side** in the 2.0 `/metrics` response. The official 2.0 swagger enum for `AnalyticsMetric.type` is `{STRING, INT, DECIMAL, CURRENCY, PERCENT, TIME, ENUM, ORDERED_ENUM}` — `counter` is not a value the 2.0 API can return. `aa_auto_sdr/api/fetch.py:395` and `sdr_grader/adapters/aa.py:100,116` both pass `type` through verbatim, but the verbatim value is `INT`. The synthetic `aa_auto_sdr/sample_outputs/demo_prod.json` showing `"type": "counter"` is hand-crafted fixture content, not a real API response. **Implications for SCH-004:** (a) the rate/percent + INT/DECIMAL shape check is the load-bearing logic and is correctly wired; (b) the `counter` entry in `_INTEGER_TYPES` (added 1c2abf3) is dead code in the 2.0-API world — it would only fire if a supplementary admin-source (legacy 1.4 `ReportSuite.GetSuccessEvents` or an admin-console export) carrying raw counter types were merged into the snapshot. Keep the entry as forward-compatible scaffolding, but don't expect it to fire against any 2.0-API-sourced snapshot. The 4 hits in the current corpus all fire on the shape-mismatch path, not the counter path. |
 | SCH-005 deprecated components still in use | **refined — possibly over-corrected** | Premise is real. The original default regex `\b(deprecated\|legacy\|old\|deleteme\|do_not_use\|v0\|tmp\|temp)\b` was narrowed in 1c2abf3 to drop `old`, `tmp`, `temp`, `v0`. The named false-positive risks (`Holdovers`, `Order Total`, `temperature`, `eVar0`) can't actually trigger the original regex because of word-boundary semantics: `\bold\b` requires a word boundary on both sides, `\bv0\b` won't match inside `eVar0`. On the 108-fixture corpus the old regex fired 149 times and the new regex fires 146 — the 3 dropped components (`"Account Name (old)"`, `"Old Order Status"`, `"Old Page Type"`) all look like genuine deprecation markers. Either re-add `\bold\b` (the abstract false-positive risk didn't materialize) or document the trade-off explicitly. |
 
@@ -88,12 +93,12 @@ audit; summary here.
 | ATTR-002 calc metrics lacking explicit attribution > 30% | **demoted to opt-in (degenerate)** | Calibration via `scripts/calibrate_thresholds.py` (run 2026-05-22) confirms p25 = p50 = p75 = p90 = p95 = **1.00** across n=31 tenants with any calc metrics; the script flags the distribution as **degenerate** — every observation sits at 1.00, so no threshold (0.30, 0.99, anywhere in between) distinguishes signal from baseline. Until tenants routinely populate `attribution_model` on calc metrics, the rule cannot discriminate. **Action taken (2026-05):** removed from default packs in 35a57c8; check function stays registered. ATTR-* row added to `threshold_calibration.md` by the same run. |
 | ATTR-003 same-refs different-attribution inconsistency | **solid in principle, rare in practice (confirmed)** | When fired, signal is genuine. Conflict requires ≥2 calc metrics with same input refs AND ≥2 distinct non-None attribution models — rare prerequisite. Calibration (2026-05-22) confirms: **0 observations** across 108 corpus entries (no tenant carries the prerequisite data). Keep as-is — the rule earns its keep on the day a tenant DOES populate attribution models on overlapping calc metrics. Structural, no threshold to calibrate. |
 
-## Governance (4 rules)
+## Governance (3 bundled rules, 1 custom-pack check)
 
 | Rule | Disposition | Notes |
 |------|-------------|-------|
-| GOV-001 no snapshot history | **defensible** | Extrinsic signal — the snapshot itself can't carry "is there a directory of older snapshots". Rule fires by default and is silenced by `history_present=true` from the loader / CI when evidence exists. Functions more like a nag-default than a measured rule. |
-| GOV-002 snapshot age | **solid** | Real, simple, parses ISO timestamp from `snapshot_taken_at`. |
+| GOV-001 no snapshot history | **defensible** | Extrinsic signal. Directory mode silences the rule only when a readable sibling has the same platform and instance ID; a multi-point trend applies that evidence to every point. File, stdin, and shell-out modes can still use an explicit metadata signal. |
+| GOV-002 snapshot age | **custom-pack only** | The check is deterministic when a custom rule supplies an explicit `reference_date`, but bundled runs have no such interface. Removed from pack `2.0`; `snapshot_age` remains registered for custom packs. |
 | GOV-003 no SDR documentation | **defensible** | Same shape as GOV-001 — fires by default, silenced by signal. Conceptually thin but useful as a default reminder. |
 | GOV-005 missing tags (>15%) | **solid (calibrated)** | Threshold 0.15, rounded from p75 = 0.14 (p90 = 0.26). Calibration explicit. |
 | (GOV-004 missing owners — already excluded from defaults post-calibration as degenerate.) | n/a | Correctly demoted. |
@@ -225,34 +230,13 @@ rules with `platforms: [aa]` could read directly from there.
 
 ### Both platforms
 
-8. **Owner / approval / shared-to-count signals on calc metrics and
-   segments.** ~~No rule grades this.~~ **Shipped (2026-05) as GOV-007
-   (calculated metrics) and GOV-008 (segments).** End-to-end findings:
-   the data IS in the snapshot — CJA carries first-class
-   `approved` / `shared_to_count` / `shares`; AA carries the same
-   semantic in `extra.publishingStatus.published` and `len(extra.shares)`.
-   But the sdr_grader adapters originally dropped these fields on the
-   floor because `CalculatedMetric` and `Segment` lacked
-   `platform_specific` (unlike `Component`). Implementation required:
-   (a) adding `approved: bool | None`, `shared_to_count: int | None`,
-   and `platform_specific: dict[str, Any]` as top-level fields on both
-   dataclasses;
-   (b) updating the CJA adapter to extract the first-class fields and
-   preserve the rest in `platform_specific`;
-   (c) updating the AA adapter to normalize `extra.publishingStatus`
-   and `extra.shares` to the same shape;
-   (d) writing `check_calc_metric_shared_unapproved` and
-   `check_segment_shared_unapproved` that fire only when
-   `approved is False` (not None — None means "no signal") AND
-   `shared_to_count` clears a threshold.
-   Cross-platform — same rule body works on both. Strict thresholds
-   (`min_shares: 5` for calc metrics, `min_shares: 3` for segments)
-   land at the inflection of the CJA corpus distributions
-   (shared_to_count clusters at 0 / 1 / 6+ for calc metrics; at 0 / 1 / 5
-   for segments). On the 100-CJA-fixture corpus, GOV-007 fires on 2
-   tenants surfacing 4 calc metrics; GOV-008 fires on 1 tenant
-   surfacing 1 segment — narrow, meaningful, the exact
-   high-leverage-no-signoff pattern the audit proposed.
+8. **Owner / approval signals on calc metrics and segments.**
+   Pack `1.0` shipped `GOV-007` and `GOV-008`, which combined approval
+   state with absolute `shared_to_count` thresholds. Pack `2.0` removes
+   both rules and their registered checks: an absolute count measures
+   tenant size and sharing volume, not a normalized quality rate or a
+   structural defect. The adapters retain the normalized fields so a
+   future rule can use an explicit policy or denominator-backed signal.
 
 ## Recommendations ranked by leverage
 

@@ -60,6 +60,10 @@ path = "src/sdr_grader/__init__.py"
 [tool.hatch.build.targets.wheel]
 packages = ["src/sdr_grader"]
 
+[tool.hatch.build.targets.wheel.force-include]
+".claude-plugin" = "sdr_grader/plugin/.claude-plugin"
+"skills/sdr-grader" = "sdr_grader/plugin/skills/sdr-grader"
+
 [tool.hatch.build.targets.sdist]
 # hatchling already honors .gitignore, but exclude local working artifacts
 # explicitly so they can never leak into the published sdist even if the
@@ -69,7 +73,17 @@ exclude = [
     "/.claude",
     "/.superpowers",
     "/.hypothesis",
+    "/.github",
+    "/.venv",
+    "/.env",
+    "/.env.local",
     "/docs/assets",
+    "/docs/plans",
+    "/docs/specs",
+    "/tests",
+    "/dist",
+    "**/__pycache__",
+    "**/*.pyc",
     "**/.DS_Store",
 ]
 

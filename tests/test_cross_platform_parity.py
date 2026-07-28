@@ -20,6 +20,7 @@ suppressed it via category weighting.
 
 from __future__ import annotations
 
+import copy
 import json
 from pathlib import Path
 
@@ -35,20 +36,8 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 FIXTURES = PROJECT_ROOT / "tests" / "fixtures"
 STRICT_PACK = PROJECT_ROOT / "src" / "sdr_grader" / "rules" / "packs" / "strict"
 
-# Cross-platform rules that don't currently fire on either messy fixture.
-# This is the Phase 4 (rubric quality pass) backlog: each rule either needs
-# a messy fixture that exercises it, or the rule logic is dead and should
-# be redesigned or removed. Removing an ID from this set will cause the
-# strict "fires on messy" assertion to take effect — that's the proof a
-# Phase 4 fix landed.
-KNOWN_PHASE4_GAPS: frozenset[str] = frozenset({
-    # NAME-001 and NAME-003 were restored to default packs in PR 2 (post-
-    # adapter-fix) with `tag_filter: custom` dropped. The synthetic
-    # messy fixtures use uniformly-shaped names ("Dimension 001"…),
-    # so they don't exercise prefix/casing variation — fixture-coverage
-    # gap, separate from rule correctness.
+PURPOSE_BUILT_RAW_TRIGGER_RULES: frozenset[str] = frozenset({
     "ATTR-003",
-    "GOV-002",
     "NAME-001",
     "NAME-002",
     "NAME-003",
@@ -59,17 +48,10 @@ KNOWN_PHASE4_GAPS: frozenset[str] = frozenset({
     "SEG-006",
 })
 
-# Cross-platform rules deliberately calibrated to fire only on extreme
-# tenants (near-saturation thresholds). Real-corpus distributions for
-# these metrics are so skewed toward "missing" that any threshold below
-# saturation would fire on most healthy tenants, defeating the rule.
-# Synthetic messy fixtures aren't pushed to ≥95% missing on these
-# populations because that would be artificial — production data shows
-# that IS the normal state.
-INTENTIONALLY_QUIET: frozenset[str] = frozenset({
-    "SEG-005",   # threshold 0.95 — see docs/threshold_calibration.md
-    "CALC-001",  # threshold 0.95 — see docs/threshold_calibration.md
-})
+INTENTIONALLY_QUIET: dict[str, str] = {
+    "SEG-005": "near-saturation threshold; see docs/threshold_calibration.md",
+    "CALC-001": "near-saturation threshold; see docs/threshold_calibration.md",
+}
 
 
 def _load_json(name: str) -> dict:
@@ -88,6 +70,107 @@ def _impls():
 def _cross_platform_rules():
     rubric = load_rubric(STRICT_PACK)
     return [r for r in rubric.rules if set(r.platforms) >= {"cja", "aa"}]
+
+
+def _records(snapshot: dict, platform: str, section: str) -> list[dict]:
+    value = snapshot[section]
+    if platform == "cja" and isinstance(value, dict):
+        key = "metrics" if section == "calculated_metrics" else "segments"
+        return value[key]
+    return value
+
+
+def _mutate_raw_trigger(snapshot: dict, platform: str, rule_id: str) -> None:
+    dimensions = _records(snapshot, platform, "dimensions")
+    metrics = _records(snapshot, platform, "metrics")
+    calc_metrics = _records(snapshot, platform, "calculated_metrics")
+    segments = _records(snapshot, platform, "segments")
+
+    if rule_id == "SCH-001":
+        dimensions[0]["name"] = "Duplicate dimension"
+        dimensions[1]["name"] = "Duplicate dimension"
+    elif rule_id == "SCH-004":
+        metrics[0]["name"] = "Checkout Conversion Rate"
+        metrics[0]["type"] = "int"
+        metrics[0]["dataType"] = "integer"
+    elif rule_id == "SCH-005":
+        metrics[0]["tags"] = ["deprecated"]
+    elif rule_id == "NAME-001":
+        prefixes = ("aa_", "bb_", "cc_")
+        for index, dimension in enumerate(dimensions):
+            dimension["id"] = f"variables/{prefixes[index % 3]}field{index}"
+    elif rule_id == "NAME-002":
+        dimensions[0]["id"] = "variables/invalid id"
+    elif rule_id == "NAME-003":
+        names = (
+            lambda index: f"Customer Value {index}",
+            lambda index: f"customer_value_{index}",
+            lambda index: f"customerValue{index}",
+        )
+        for index, dimension in enumerate(dimensions):
+            dimension["name"] = names[index % 3](index)
+    elif rule_id == "ATTR-003":
+        if platform == "cja":
+            for metric in calc_metrics[:2]:
+                metric["metric_references"] = ["metrics/cm_clean_metric_01"]
+                metric["segment_references"] = []
+            calc_metrics[0]["definition_json"] = json.dumps(
+                {"func": "metric", "attribution": "linear"}
+            )
+            calc_metrics[1]["definition_json"] = json.dumps(
+                {"func": "metric", "attribution": "first-touch"}
+            )
+        else:
+            shared_formula = {
+                "func": "metric",
+                "args": ["metrics/event1"],
+            }
+            calc_metrics[0]["definition"] = {"formula": copy.deepcopy(shared_formula)}
+            calc_metrics[1]["definition"] = {"formula": copy.deepcopy(shared_formula)}
+            calc_metrics[0]["attribution"] = "linear"
+            calc_metrics[1]["attribution"] = "first-touch"
+    elif rule_id == "SEG-004":
+        id_key = "segment_id" if platform == "cja" else "id"
+        first_id = segments[0][id_key]
+        second_id = segments[1][id_key]
+        if platform == "cja":
+            segments[0]["other_segment_references"] = [second_id]
+            segments[1]["other_segment_references"] = [first_id]
+        else:
+            segments[0]["definition"] = {"args": [second_id]}
+            segments[1]["definition"] = {"args": [first_id]}
+    elif rule_id == "SEG-006":
+        if platform == "cja":
+            segments[1]["definition_json"] = segments[0]["definition_json"]
+        else:
+            segments[1]["definition"] = copy.deepcopy(segments[0]["definition"])
+    else:
+        raise AssertionError(f"missing raw trigger mutation for {rule_id}")
+
+
+def test_bundled_pack_2_removes_inert_and_raw_count_rules():
+    for pack_name in ("strict", "pragmatic"):
+        rubric = load_rubric(STRICT_PACK.parent / pack_name)
+        ids = {rule.id for rule in rubric.rules}
+
+        assert rubric.version == "2.0"
+        assert len(rubric.rules) == 27
+        assert ids.isdisjoint({"GOV-002", "GOV-007", "GOV-008"})
+
+
+@pytest.mark.parametrize(
+    "check_name",
+    [
+        "cardinality_concerns",
+        "calc_metric_shared_unapproved",
+        "segment_shared_unapproved",
+    ],
+)
+def test_raw_count_checks_are_not_registered(check_name):
+    load_rubric(STRICT_PACK)
+
+    with pytest.raises(KeyError, match="no check function registered"):
+        get_check(check_name)
 
 
 def _ctx(rule) -> RuleContext:
@@ -140,22 +223,17 @@ def test_cross_platform_rule_fires_on_at_least_one_messy(rule, impls):
     broken (it measures a field neither fixture populates). Either is a
     rubric quality issue. Update fixtures or redesign the rule.
 
-    Rules currently in KNOWN_PHASE4_GAPS are tracked as expected failures;
-    if one of them starts firing, the test fails XPASS to force the gap
-    set to be updated.
+    Rules whose shared messy fixture does not naturally exercise the premise
+    have separate purpose-built raw trigger proofs below.
     """
+    if rule.id in PURPOSE_BUILT_RAW_TRIGGER_RULES:
+        return
+
     check = get_check(rule.check)
     ctx = _ctx(rule)
     cja_fired = bool(check(impls["cja_messy"], ctx))
     aa_fired = bool(check(impls["aa_messy"], ctx))
     fired = cja_fired or aa_fired
-
-    if rule.id in KNOWN_PHASE4_GAPS:
-        assert not fired, (
-            f"{rule.id} now fires on a messy fixture — remove it from "
-            "KNOWN_PHASE4_GAPS in this test file."
-        )
-        return
 
     if rule.id in INTENTIONALLY_QUIET:
         # No assertion either way — calibration says these should fire
@@ -168,6 +246,33 @@ def test_cross_platform_rule_fires_on_at_least_one_messy(rule, impls):
     assert fired, (
         f"{rule.id} ({rule.check}) didn't fire on either messy fixture — "
         "rule may be dead, or messy fixtures need to exercise it. "
-        "Add to KNOWN_PHASE4_GAPS (gap to close) or INTENTIONALLY_QUIET "
-        "(calibrated to near-saturation)."
+        "Add a purpose-built raw trigger proof or document it in "
+        "INTENTIONALLY_QUIET with a calibration rationale."
     )
+
+
+@pytest.mark.parametrize(
+    "rule_id",
+    sorted(PURPOSE_BUILT_RAW_TRIGGER_RULES),
+)
+@pytest.mark.parametrize(
+    ("platform", "fixture_name", "adapter"),
+    [
+        ("cja", "cja_snapshot_clean.json", cja_adapter),
+        ("aa", "aa_snapshot_clean.json", aa_adapter),
+    ],
+)
+def test_cross_platform_rule_has_raw_trigger_proof(
+    rule_id,
+    platform,
+    fixture_name,
+    adapter,
+):
+    snapshot = copy.deepcopy(_load_json(fixture_name))
+    _mutate_raw_trigger(snapshot, platform, rule_id)
+    implementation = adapter.adapt(snapshot)
+    rule = next(rule for rule in _cross_platform_rules() if rule.id == rule_id)
+
+    findings = get_check(rule.check)(implementation, _ctx(rule))
+
+    assert [finding.id for finding in findings] == [rule_id]

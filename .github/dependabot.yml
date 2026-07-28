@@ -6,8 +6,10 @@ version: 2
 updates:
   - package-ecosystem: "github-actions"
     directory: "/"
+    target-branch: "main"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 5
     commit-message:
       prefix: "ci"
     groups:
@@ -16,8 +18,10 @@ updates:
 
   - package-ecosystem: "uv"
     directory: "/"
+    target-branch: "main"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 5
     commit-message:
       prefix: "chore"
     groups:

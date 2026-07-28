@@ -9,6 +9,7 @@ from sdr_grader.core.structure_limits import (
     MAX_DEFINITION_NODES,
     MAX_STRUCTURE_DEPTH,
     MAX_STRUCTURE_NODES,
+    measure_structure,
     validate_definition_structure,
     validate_snapshot_structure,
 )
@@ -19,6 +20,17 @@ def _nested(depth: int):
     for _ in range(depth):
         node = {"child": node}
     return node
+
+
+def test_measure_structure_counts_mixed_containers_iteratively():
+    value = {
+        "items": [
+            1,
+            {"nested": [2, 3]},
+        ]
+    }
+
+    assert measure_structure(value) == (7, 4)
 
 
 def test_snapshot_depth_boundary_accepts_100_and_rejects_101():

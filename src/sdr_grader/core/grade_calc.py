@@ -4,7 +4,7 @@ Algorithm (SPEC §6 makes the inputs explicit; the algorithm itself is
 calibrated here):
 
 - For each category with non-zero weight:
-    rules_in_category = rubric rules where rule.category == slug
+    rules_in_category = resolved effective rules where rule.category == slug
     sev_total = sum(severity_weight[r.severity] for r in rules_in_category)
     sev_failed = sum(severity_weight[r.severity] for r in rules_in_category
                      if any finding has id == r.id)
@@ -21,10 +21,11 @@ non-linear penalties) is left for a later release once more rules ship.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 from sdr_grader.render import Finding
-from sdr_grader.rules.rubric import GradeBand, Rubric
+from sdr_grader.rules.rubric import GradeBand, Rubric, RuleDefinition
 
 
 @dataclass(frozen=True)
@@ -44,8 +45,14 @@ class GradeResult:
     categories: list[CategoryScore]
 
 
-def compute_grade(rubric: Rubric, findings: list[Finding]) -> GradeResult:
-    """Compute the full grade result from a rubric and the engine's findings."""
+def compute_grade(
+    rubric: Rubric,
+    findings: list[Finding],
+    *,
+    rule_inventory: Sequence[RuleDefinition] | None = None,
+) -> GradeResult:
+    """Compute a grade from the same resolved rules the engine executed."""
+    rules = rubric.rules if rule_inventory is None else rule_inventory
     fired_rule_ids = {f.id for f in findings}
     categories: list[CategoryScore] = []
     weighted_sum = 0.0
@@ -54,7 +61,7 @@ def compute_grade(rubric: Rubric, findings: list[Finding]) -> GradeResult:
     for slug, weight in rubric.category_weights.items():
         if weight <= 0:
             continue
-        rules_in_cat = [r for r in rubric.rules if r.category == slug]
+        rules_in_cat = [r for r in rules if r.category == slug]
         sev_total = sum(rubric.severity_weights[r.severity] for r in rules_in_cat)
         sev_failed = sum(
             rubric.severity_weights[r.severity]

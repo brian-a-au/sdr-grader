@@ -3,6 +3,100 @@
 All notable changes follow the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
+## 1.2.0 — Unreleased
+
+### Changed
+
+- **The report JSON contract is now schema `1`.** JSON includes stable
+  `instance_id` alongside platform/adapter, rubric, and grader version
+  context. The deprecated `impact_pts` remediation alias remains equal
+  to `priority_weight` throughout `1.2.x`.
+- **Claude report comparisons are context-gated.** The bundled helper
+  compares only schema-1 reports for the same instance, platform,
+  adapter family, and rubric pack/version. Legacy reports remain
+  readable for single-report operations with a visible warning.
+- **Bundled rubric packs are now `2.0`.** Strict and pragmatic contain
+  27 rules. Scores produced by pack `2.0` are not comparable with pack
+  `1.0`; re-baseline CI thresholds, regenerate stored trends, and
+  rebuild leaderboard distributions before comparing results.
+- **Snapshot history is evidence-based.** Directory and trend modes
+  recognize history only when another readable snapshot has the same
+  platform and instance ID. Every point in a multi-snapshot trend uses
+  the same history evidence; unrelated, mixed-platform, malformed, and
+  single-snapshot inputs do not silence `GOV-001`.
+- **Suppression references are validated.** Unknown rule IDs in
+  suppressions or severity overrides, and unknown category-weight keys,
+  now fail with rubric-validation exit code 3 before any report is
+  published.
+- **Configuration failures are controlled.** Malformed rubric or
+  suppression YAML, boolean/non-finite/negative weights, fractional or
+  non-positive severity weights, and out-of-range grade bands now fail
+  with contextual exit code 3 and no output.
+- **Generator compatibility warnings are live.** Newer parseable
+  `cja_auto_sdr` and `aa_auto_sdr` versions warn once through the normal
+  CLI path; current, older, and unparseable versions stay quiet.
+- **Finding evidence is complete in JSON.** Rule checks no longer discard
+  component evidence before serialization. HTML remains bounded to 50
+  displayed items per component block and reports the hidden-item count.
+- **SCH-003 now calibrates the statistic it grades.** The bundled rule and
+  calibration script both evaluate configured targets independently and use
+  the maximum missing-description ratio. A 2026-07-28 run over the
+  108-snapshot private corpus set strict to p75 (`0.56`) and pragmatic to p95
+  (`0.81`).
+- **AA segment references are normalized.** Component and segment IDs embedded
+  in AA segment definitions now reach cross-reference, broken-reference, and
+  circular-segment checks.
+
+### Removed
+
+- `GOV-002`, `GOV-007`, and `GOV-008` are no longer bundled. `GOV-002`
+  had no deterministic reference-date input in a default run, while
+  `GOV-007` and `GOV-008` treated raw share counts as grading evidence.
+  The deterministic `snapshot_age` check remains registered for custom
+  packs that provide an explicit `reference_date`.
+- The registered raw-count checks `cardinality_concerns`,
+  `calc_metric_shared_unapproved`, and
+  `segment_shared_unapproved` have been removed. Replacement rules must
+  measure a normalized rate, structural invariant, or explicit policy
+  rather than raw tenant size.
+
+### Added
+
+- A valid repository Claude Code marketplace. Install with `/plugin
+  marketplace add brian-a-au/sdr-grader`, `/plugin install
+  sdr-grader@sdr-grader`, and `/reload-plugins`; invoke the plugin skill
+  as `/sdr-grader:sdr-grader`.
+- Installed release identity is available through `sdr-grader
+  --version`. Release candidates now require one sdist and one
+  sdist-built wheel whose versions, inventories, packaged resources,
+  source bytes, and SHA-256 provenance all pass the repository verifier.
+- Release automation now keeps pull-request checks read-only, creates a
+  tested GitHub draft before publication, gates trusted PyPI publishing
+  and GitHub publication through separate environments, attests the
+  exact candidate bytes, and verifies both public endpoints afterward.
+- The repository now includes CodeQL and dependency review workflows,
+  CODEOWNERS, a Code of Conduct, a supported-version security policy,
+  and a maintainer release/recovery checklist.
+
+### Security
+
+- The Claude helper bounds and validates its input, rejects duplicate
+  keys and non-finite values, performs no writes/network/subprocess
+  operations, and pre-approves only its exact Python command prefix.
+- Release archives reject path escapes, links, duplicate members,
+  expanded-size overruns, and private/local/cache/test content before
+  their digests can become publishable evidence.
+- Every GitHub Action is pinned to a reviewed full commit SHA, checkout
+  credentials are not persisted, and OIDC authority exists only in the
+  protected PyPI publisher job.
+
+### Performance
+
+- `CALC-014` uses a deterministic inverted index to avoid comparing disjoint
+  calculated-metric reference sets. Its output is oracle-equivalent to the
+  previous pairwise implementation, and a 10,000-disjoint-metric regression
+  performs zero Jaccard comparisons within the registered budget.
+
 ## 1.1.5 — 2026-07-19
 
 Test and reliability hardening for validation, adapter normalization,

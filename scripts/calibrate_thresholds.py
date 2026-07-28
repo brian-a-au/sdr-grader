@@ -27,7 +27,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import statistics
 import sys
 from collections import defaultdict
@@ -46,6 +45,22 @@ sys.path.insert(0, str(PROJECT_ROOT / "src"))
 from sdr_grader.adapters import aa as aa_adapter  # noqa: E402
 from sdr_grader.adapters import cja as cja_adapter  # noqa: E402
 from sdr_grader.core.models import Implementation  # noqa: E402
+from sdr_grader.rules.checks._helpers import (  # noqa: E402
+    all_components,
+    collect_referenced_ids,
+)
+from sdr_grader.rules.checks.attribution import (  # noqa: E402
+    _looks_revenue,
+    _looks_silent_last_touch,
+)
+from sdr_grader.rules.checks.naming import (  # noqa: E402
+    _classify_casing,
+    _extract_prefix,
+)
+from sdr_grader.rules.checks.schema_hygiene import (  # noqa: E402
+    missing_description_breakdown,
+)
+from sdr_grader.rules.rubric import load_rubric  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Per-rule measurement functions
@@ -66,13 +81,7 @@ def _orphan_ratio(impl: Implementation) -> tuple[float, int | None]:
     n = len(impl.segments)
     if n == 0:
         return (0.0, 0)
-    referenced: set[str] = set()
-    for seg in impl.segments:
-        for ref in seg.references:
-            referenced.add(ref)
-    for cm in impl.calculated_metrics:
-        for ref in cm.references:
-            referenced.add(ref)
+    referenced = collect_referenced_ids(impl)
     orphans = sum(1 for s in impl.segments if s.id not in referenced)
     return (orphans / n, n)
 
@@ -103,13 +112,7 @@ def _calc_orphan_ratio(impl: Implementation) -> tuple[float, int | None]:
     n = len(impl.calculated_metrics)
     if n == 0:
         return (0.0, 0)
-    referenced: set[str] = set()
-    for seg in impl.segments:
-        for ref in seg.references:
-            referenced.add(ref)
-    for cm in impl.calculated_metrics:
-        for ref in cm.references:
-            referenced.add(ref)
+    referenced = collect_referenced_ids(impl)
     orphans = sum(1 for cm in impl.calculated_metrics if cm.id not in referenced)
     return (orphans / n, n)
 
@@ -121,27 +124,34 @@ def _calc_max_complexity(impl: Implementation) -> tuple[float, int | None]:
             len(impl.calculated_metrics))
 
 
-def _all_components(impl: Implementation) -> list:
-    """Match the population the SCH-* / GOV-* rules grade against.
+def _configured_rule_targets(rule_id: str) -> tuple[str, ...]:
+    strict_pack = PROJECT_ROOT / "src" / "sdr_grader" / "rules" / "packs" / "strict"
+    rubric = load_rubric(strict_pack)
+    rule = next((candidate for candidate in rubric.rules if candidate.id == rule_id), None)
+    if rule is None:
+        raise RuntimeError(f"strict rubric is missing {rule_id}")
+    targets = rule.params.get("targets")
+    if not isinstance(targets, list) or not targets:
+        raise RuntimeError(f"strict rubric {rule_id} must configure non-empty targets")
+    return tuple(str(target) for target in targets)
 
-    Mirrors rules.checks._helpers.all_components: metrics + dimensions +
-    derived fields. Segments and calc metrics have distinct ownership /
-    tagging semantics and are graded by their own rule families.
-    """
-    return [*impl.metrics, *impl.dimensions, *impl.derived_fields]
+
+SCH_003_TARGETS = _configured_rule_targets("SCH-003")
 
 
 def _sch_missing_desc_ratio(impl: Implementation) -> tuple[float, int | None]:
-    components = _all_components(impl)
-    n = len(components)
-    if n == 0:
+    breakdown = missing_description_breakdown(impl, SCH_003_TARGETS)
+    if not breakdown:
         return (0.0, 0)
-    missing = sum(1 for c in components if not c.description)
-    return (missing / n, n)
+    _target, missing, total = max(
+        breakdown,
+        key=lambda population: population[1] / population[2],
+    )
+    return (missing / total, total)
 
 
 def _gov_missing_owners_ratio(impl: Implementation) -> tuple[float, int | None]:
-    components = _all_components(impl)
+    components = all_components(impl)
     n = len(components)
     if n == 0:
         return (0.0, 0)
@@ -150,55 +160,12 @@ def _gov_missing_owners_ratio(impl: Implementation) -> tuple[float, int | None]:
 
 
 def _gov_missing_tags_ratio(impl: Implementation) -> tuple[float, int | None]:
-    components = _all_components(impl)
+    components = all_components(impl)
     n = len(components)
     if n == 0:
         return (0.0, 0)
     missing = sum(1 for c in components if not getattr(c, "tags", None))
     return (missing / n, n)
-
-
-# Revenue/conversion regex must mirror the one in
-# src/sdr_grader/rules/checks/attribution.py so calibration measures the
-# same population the rule fires on.
-_ATTR_REVENUE_RE = re.compile(
-    r"\b(revenue|conversion|order|booking|sale|signup|subscribe)\b",
-    re.IGNORECASE,
-)
-
-
-# Mirror the prefix regex used by rules.checks.naming so calibration
-# measures the same population the rule fires on.
-_NAME_PREFIX_RE = re.compile(r"^([a-z]{1,5}[_-])", re.IGNORECASE)
-
-
-def _extract_prefix(component_id: str) -> str | None:
-    bare = component_id.rsplit("/", 1)[-1]
-    m = _NAME_PREFIX_RE.match(bare)
-    return m.group(1) if m else None
-
-
-def _classify_casing(name: str) -> str | None:
-    """Mirror rules.checks.naming._classify_casing."""
-    if not name:
-        return None
-    stripped = name.strip()
-    if not stripped:
-        return None
-    if " " in stripped:
-        first = stripped.split()[0]
-        return "title-case" if first[:1].isupper() else "lowercase-phrase"
-    if re.match(r"^[a-z]+(?:[A-Z][a-z0-9]*)+$", stripped):
-        return "camelCase"
-    if re.match(r"^(?:[A-Z][a-z0-9]*)+$", stripped):
-        return "PascalCase"
-    if re.match(r"^[a-z][a-z0-9]*(?:_[a-z0-9]+)+$", stripped):
-        return "snake_case"
-    if re.match(r"^[a-z][a-z0-9]*(?:-[a-z0-9]+)+$", stripped):
-        return "kebab-case"
-    if re.match(r"^[A-Z][A-Z0-9_]*$", stripped):
-        return "SCREAMING_SNAKE"
-    return None
 
 
 def _name_prefix_consistency(impl: Implementation) -> tuple[float, int | None]:
@@ -259,19 +226,12 @@ def _attr_silent_last_touch_ratio(impl: Implementation) -> tuple[float, int | No
     revenue_calcs = [
         cm
         for cm in impl.calculated_metrics
-        if _ATTR_REVENUE_RE.search(cm.name) or _ATTR_REVENUE_RE.search(cm.id)
+        if _looks_revenue(cm)
     ]
     n = len(revenue_calcs)
     if n == 0:
         return (0.0, 0)
-    silent = 0
-    for cm in revenue_calcs:
-        model = (cm.attribution_model or "").lower().replace(" ", "-")
-        if model and model not in {"", "last-touch", "lasttouch"}:
-            continue
-        if cm.description and re.search(r"attribution", cm.description, re.IGNORECASE):
-            continue
-        silent += 1
+    silent = sum(_looks_silent_last_touch(cm) for cm in revenue_calcs)
     return (silent / n, n)
 
 
@@ -316,8 +276,13 @@ MEASUREMENTS: list[Measurement] = [
                 "value", _calc_max_complexity),
     Measurement("CALC-005", "Orphan calculated metrics / total",
                 "ratio", _calc_orphan_ratio),
-    Measurement("SCH-003", "Dimensions+metrics missing descriptions / total components",
-                "ratio", _sch_missing_desc_ratio),
+    Measurement(
+        "SCH-003",
+        "Maximum configured-target missing-description ratio "
+        f"(targets: {', '.join(SCH_003_TARGETS)})",
+        "ratio",
+        _sch_missing_desc_ratio,
+    ),
     Measurement("GOV-004", "Components missing owner attribution / total components",
                 "ratio", _gov_missing_owners_ratio),
     Measurement("GOV-005", "Components missing tags / total components",
@@ -440,15 +405,17 @@ def _render_report(distributions: dict[str, list[tuple[float, int | None]]]) -> 
         f"_Generated by `scripts/calibrate_thresholds.py` on "
         f"{datetime.now(UTC).strftime('%Y-%m-%d')}._",
         "",
-        "This report measures the underlying ratio or structural value for ",
-        "each thresholded rule across the calibration corpus. Thresholds in ",
-        "the rubric packs should land at the inflection between healthy and ",
-        "unhealthy populations visible in these distributions — not at round ",
-        "numbers. The **confidence** column captures how data-backed each ",
-        "row actually is; treat **low** confidence rows as expert judgment, ",
+        "This report measures the underlying ratio or structural value for",
+        "each thresholded rule across the calibration corpus. Thresholds in",
+        "the rubric packs should land at the inflection between healthy and",
+        "unhealthy populations visible in these distributions — not at round",
+        "numbers. The **confidence** column captures how data-backed each",
+        "row actually is; treat **low** confidence rows as expert judgment,",
         "not measurement.",
         "",
         "See `docs/CALIBRATION_CORPUS.md` for how the corpus is assembled.",
+        "Bind release evidence to a candidate SHA and corpus revision in",
+        "`docs/RELEASE_CHECKLIST.md`; a generated file alone is not approval.",
         "",
     ]
 
@@ -514,10 +481,10 @@ def _render_report(distributions: dict[str, list[tuple[float, int | None]]]) -> 
             )
             lines.append("")
         elif confidence == "low":
-            lines.append("> **Low confidence.** Either fewer than 4 observations, ")
-            lines.append("> or the underlying denominator on at least one tenant is ")
-            lines.append("> small enough (< 5) that the ratio is unstable. The ")
-            lines.append("> threshold in the rubric pack is expert judgment, not ")
+            lines.append("> **Low confidence.** Either fewer than 4 observations,")
+            lines.append("> or the underlying denominator on at least one tenant is")
+            lines.append("> small enough (< 5) that the ratio is unstable. The")
+            lines.append("> threshold in the rubric pack is expert judgment, not")
             lines.append("> data calibration.")
             lines.append("")
 

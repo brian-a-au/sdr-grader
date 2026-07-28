@@ -12,7 +12,18 @@ governance.py keeps its own stricter parser until the minor release
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+import re
+from datetime import UTC, datetime, timedelta, timezone
+
+_ABBREVIATION_SUFFIX = re.compile(
+    r"^(?P<local>.+?)\s+(?P<abbreviation>[A-Za-z]{2,5})$"
+)
+_ABBREVIATION_OFFSETS = {
+    "GMT": 0,
+    "PDT": -7,
+    "PST": -8,
+    "UTC": 0,
+}
 
 
 def to_utc(value: datetime) -> datetime:
@@ -23,12 +34,32 @@ def to_utc(value: datetime) -> datetime:
 
 
 def parse_timestamp(value: str) -> datetime | None:
-    """Parse a timestamp string to a UTC-aware datetime, or None."""
+    """Parse a timestamp string to aware UTC, or None for unknown formats.
+
+    Timezone abbreviations are accepted only from the fixed allowlist above.
+    Unknown or ambiguous abbreviations fail deterministically rather than
+    consulting the host locale or timezone database.
+    """
     if not isinstance(value, str):
         return None
     candidate = value.strip()
     if not candidate:
         return None
+    abbreviation_match = _ABBREVIATION_SUFFIX.fullmatch(candidate)
+    if abbreviation_match is not None:
+        abbreviation = abbreviation_match.group("abbreviation").upper()
+        offset_hours = _ABBREVIATION_OFFSETS.get(abbreviation)
+        if offset_hours is None:
+            return None
+        try:
+            local = datetime.fromisoformat(abbreviation_match.group("local"))
+        except ValueError:
+            return None
+        if local.tzinfo is not None:
+            return None
+        return local.replace(
+            tzinfo=timezone(timedelta(hours=offset_hours))
+        ).astimezone(UTC)
     try:
         parsed = datetime.fromisoformat(candidate)
     except ValueError:

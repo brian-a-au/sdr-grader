@@ -11,6 +11,8 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
+from markupsafe import Markup
+
 from sdr_grader.render import (
     Adapter,
     Category,
@@ -30,24 +32,25 @@ from sdr_grader.render.svg import category_comparison_chart, histogram_chart
 
 def build_demo_report() -> Report:
     """Construct the canonical demo Report (B− CJA implementation)."""
-    return Report(
+    report = Report(
         id="SDR-2026-0425-PROD-WEB",
         instance_name="Production Web Analytics",
+        instance_id="dv_prod_web",
         grade="B−",
         overall_pct=71,
         components_evaluated=487,
         components_skipped=23,
         components_skipped_reason="missing required schema fields",
         adapter=Adapter(platform="CJA", tool="cja_auto_sdr", version="3.5.17"),
-        rubric=Rubric(pack="strict", version="1.2"),
+        rubric=Rubric(pack="strict", version="2.0"),
         generated_at=datetime(2026, 4, 25, 9, 14, tzinfo=UTC),
         tldr_html=(
             "This implementation graded <strong>B−</strong>, sitting near the median for self-graded "
             "production CJA instances. <strong>Schema hygiene</strong> and <strong>naming consistency</strong> "
             "are strong; the largest gaps are in <strong>calculated metric maintainability</strong> (61%) and "
             "<strong>governance posture</strong> (54%), driven by a long tail of duplicate-near-equivalent "
-            "metrics and the absence of any tracked snapshot history. The five highest-impact remediations "
-            "are listed below; addressing the top three would move the overall grade to B+."
+            "metrics and the absence of any tracked snapshot history. The five highest-priority remediations "
+            "are listed below in severity-derived priority order."
         ),
         categories=[
             Category("Schema hygiene", 82, "B"),
@@ -61,31 +64,31 @@ def build_demo_report() -> Report:
             Remediation(
                 text="Consolidate the seven near-duplicate revenue calculated metrics into a single canonical metric.",
                 refs=["CALC-014", "CALC-015", "CALC-022"],
-                impact_pts=6,
+                priority_weight=6,
             ),
             Remediation(
                 text=("Establish snapshot tracking for the data view via cja_auto_sdr and commit "
                       "the baseline to version control."),
                 refs=["GOV-001"],
-                impact_pts=4,
+                priority_weight=4,
             ),
             Remediation(
                 text=("Add descriptions to the 38 metrics and 51 dimensions currently lacking them. "
                       "Required fields exist in the data view; populate them via the API."),
                 refs=["SCH-003"],
-                impact_pts=3,
+                priority_weight=3,
             ),
             Remediation(
                 text=("Refactor the four segments with nesting depth ≥ 5 into composed sub-segments "
                       "to make their intent reviewable."),
                 refs=["SEG-007"],
-                impact_pts=2,
+                priority_weight=2,
             ),
             Remediation(
                 text=("Document attribution model selection in calculated metrics — 12 metrics use "
                       "last-touch implicitly without justification."),
                 refs=["ATTR-002"],
-                impact_pts=2,
+                priority_weight=2,
             ),
         ],
         findings=[
@@ -316,3 +319,17 @@ def build_demo_report() -> Report:
             ),
         ]),
     )
+    # This fixture owns its static presentation fragments. Production report
+    # values remain plain text unless their renderer construction site marks
+    # them explicitly after escaping dynamic insertions.
+    report.tldr_html = Markup(report.tldr_html)
+    report.methodology.paragraphs = [
+        Markup(paragraph) for paragraph in report.methodology.paragraphs
+    ]
+    for finding in report.findings:
+        for block in finding.body:
+            if block.html is not None:
+                block.html = Markup(block.html)
+            if block.body_html is not None:
+                block.body_html = Markup(block.body_html)
+    return report

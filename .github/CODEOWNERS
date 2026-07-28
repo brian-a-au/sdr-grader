@@ -1,0 +1,9 @@
+* @brian-a-au
+/.github/workflows/ @brian-a-au
+/.github/dependabot.yml @brian-a-au
+/.github/CODEOWNERS @brian-a-au
+/scripts/check_version_sync.py @brian-a-au
+/scripts/verify_release_artifacts.py @brian-a-au
+/pyproject.toml @brian-a-au
+/SECURITY.md @brian-a-au
+/docs/RELEASE_CHECKLIST.md @brian-a-au
