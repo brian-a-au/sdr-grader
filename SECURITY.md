@@ -7,7 +7,7 @@ that can be tricked into executing input, a path-traversal bug in the
 CLI, or anything else that lets a malicious snapshot affect the host
 running the grader — please report it privately.
 
-Open a GitHub Security Advisory at
+Open a private security advisory at
 <https://github.com/brian-a-au/sdr-grader/security/advisories/new>
 rather than a public issue. I aim to respond within a week.
 
@@ -56,5 +56,13 @@ intake workflow and privacy-review checklist.
 
 ## Supported versions
 
-Only the latest released version receives security fixes. If you're on
-an older version, upgrade before reporting issues.
+| Version | Security support |
+|---|---|
+| `1.2.x` | Supported after `1.2.0` is published |
+| `1.1.x` | Supported until `1.2.0` is published |
+| `<1.1` | Not supported |
+
+Only the latest supported minor line receives new security fixes. If
+you are on an older line, upgrade before reporting an issue. A report
+against an unsupported version is still useful when the behavior also
+reproduces on the supported line.

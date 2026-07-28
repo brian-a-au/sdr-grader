@@ -1,7 +1,9 @@
 # Contributing to sdr-grader
 
 The grader is intentionally a small, deterministic tool. Contributions
-should preserve that.
+should preserve that. Participation is governed by the
+[Code of Conduct](CODE_OF_CONDUCT.md); report vulnerabilities through
+the private route in [SECURITY.md](SECURITY.md), not a public issue.
 
 ## Invariants
 

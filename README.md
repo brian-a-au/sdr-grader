@@ -240,3 +240,12 @@ Running and reporting:
 Tooling:
 
 - [skills/sdr-grader/README.md](skills/sdr-grader/README.md) — Claude Code skill bundle for grade follow-up Q&A
+- [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md) — immutable
+  artifact, hosted-control, recovery, publication, and announcement
+  gates
+
+Community:
+
+- [CONTRIBUTING.md](CONTRIBUTING.md) — contribution workflow and project invariants
+- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) — participation and enforcement policy
+- [SECURITY.md](SECURITY.md) — supported versions and private vulnerability reporting

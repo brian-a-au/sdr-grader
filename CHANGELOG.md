@@ -52,6 +52,13 @@ spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
   --version`. Release candidates now require one sdist and one
   sdist-built wheel whose versions, inventories, packaged resources,
   source bytes, and SHA-256 provenance all pass the repository verifier.
+- Release automation now keeps pull-request checks read-only, creates a
+  tested GitHub draft before publication, gates trusted PyPI publishing
+  and GitHub publication through separate environments, attests the
+  exact candidate bytes, and verifies both public endpoints afterward.
+- The repository now includes CodeQL and dependency review workflows,
+  CODEOWNERS, a Code of Conduct, a supported-version security policy,
+  and a maintainer release/recovery checklist.
 
 ### Security
 
@@ -61,6 +68,9 @@ spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 - Release archives reject path escapes, links, duplicate members,
   expanded-size overruns, and private/local/cache/test content before
   their digests can become publishable evidence.
+- Every GitHub Action is pinned to a reviewed full commit SHA, checkout
+  credentials are not persisted, and OIDC authority exists only in the
+  protected PyPI publisher job.
 
 ## 1.1.5 — 2026-07-19
 
