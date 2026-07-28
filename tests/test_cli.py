@@ -37,7 +37,7 @@ def test_cli_runs_against_messy_fixture_and_writes_html(tmp_path, capsys):
     html = output.read_text(encoding="utf-8")
     assert "<!doctype html>" in html.lower()
     assert "SCH-003" in html
-    assert "170 components lack descriptions" in html
+    assert "120 components lack descriptions" in html
     assert "Production Web Analytics" in html
     err = capsys.readouterr().err
     # stderr summary mentions the grade letter and the instance.
@@ -566,8 +566,8 @@ def test_cli_run_is_deterministic(tmp_path):
 def _changed_snapshot_path(tmp_path):
     """Copy of the messy snapshot with one description filled in."""
     src = json.loads((FIXTURES / "cja_snapshot_messy.json").read_text(encoding="utf-8"))
-    # First metric was empty ("-"); document it.
-    src["metrics"][0]["description"] = "Documented by test."
+    # The dimension target exceeds SCH-003's threshold; document one item.
+    src["dimensions"][0]["description"] = "Documented by test."
     out = tmp_path / "modified.json"
     out.write_text(json.dumps(src), encoding="utf-8")
     return out
@@ -578,8 +578,8 @@ def test_cli_finding_count_drops_when_descriptions_filled_in(tmp_path, _changed_
     rc = main([str(_changed_snapshot_path), "--output", str(output), "--quiet"])
     assert rc == SUCCESS
     html = output.read_text(encoding="utf-8")
-    # The finding count is 169 now (one fewer); rule still fires.
-    assert "169 components lack descriptions" in html
+    # The finding count is 119 now (one fewer); rule still fires.
+    assert "119 components lack descriptions" in html
 
 
 def _make_trend_dir(tmp_path: Path) -> Path:

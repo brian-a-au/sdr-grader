@@ -257,7 +257,7 @@ def check_doc_drift(
             ctx,
             title=f"{len(drifted)} components modified since last SDR update",
             paragraph=paragraph,
-            extra_blocks=[FindingBlock(kind="components", items=sorted(drifted)[:25])],
+            extra_blocks=[FindingBlock(kind="components", items=sorted(drifted))],
         )
     ]
 

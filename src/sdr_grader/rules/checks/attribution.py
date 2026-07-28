@@ -35,18 +35,11 @@ def check_attribution_default_last_touch(
     impl: Implementation, ctx: RuleContext
 ) -> list[Finding]:
     candidates = [cm for cm in impl.calculated_metrics if _looks_revenue(cm)]
-    suspects: list[CalculatedMetric] = []
-    for cm in candidates:
-        model = (cm.attribution_model or "").lower().replace(" ", "-")
-        if model and model not in {"", "last-touch", "lasttouch"}:
-            continue
-        if cm.description and re.search(r"attribution", cm.description, re.IGNORECASE):
-            continue
-        suspects.append(cm)
+    suspects = [cm for cm in candidates if _looks_silent_last_touch(cm)]
 
     if not suspects:
         return []
-    items = [f"{cm.id}  attribution={cm.attribution_model or '—'}" for cm in suspects[:25]]
+    items = [f"{cm.id}  attribution={cm.attribution_model or '—'}" for cm in suspects]
     paragraph = (
         f"{len(suspects)} revenue / conversion metric{'s default' if len(suspects) != 1 else ' defaults'} "
         "to last-touch attribution without a documented rationale. Last-touch "
@@ -119,7 +112,7 @@ def check_attribution_inconsistency(
     if not conflicts:
         return []
     items = []
-    for _refs, members in conflicts[:25]:
+    for _refs, members in conflicts:
         items.append(", ".join(f"{cid}={model}" for cid, model in members))
     paragraph = (
         f"{len(conflicts)} group{'s of' if len(conflicts) != 1 else ' of'} calculated "
@@ -183,7 +176,7 @@ def check_attribution_setting_undocumented(
         return []
     items = [
         f"{mid}  name={name!r}  model={func}"
-        for mid, name, func in offenders[:25]
+        for mid, name, func in offenders
     ]
     plural = len(offenders) != 1
     paragraph = (
@@ -211,6 +204,16 @@ def check_attribution_setting_undocumented(
 
 def _looks_revenue(cm: CalculatedMetric) -> bool:
     return bool(_REVENUE_NAME_RE.search(cm.name) or _REVENUE_NAME_RE.search(cm.id))
+
+
+def _looks_silent_last_touch(cm: CalculatedMetric) -> bool:
+    model = (cm.attribution_model or "").lower().replace(" ", "-")
+    if model and model not in {"last-touch", "lasttouch"}:
+        return False
+    return not (
+        cm.description
+        and re.search(r"attribution", cm.description, re.IGNORECASE)
+    )
 
 
 def _make_finding(

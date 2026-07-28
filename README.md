@@ -224,9 +224,9 @@ Calibration and audit:
 - [docs/PLATFORM_COVERAGE.md](docs/PLATFORM_COVERAGE.md) — CJA vs AA
   coverage, calibration corpus, and known AA gaps
 - [docs/CALIBRATION_CORPUS.md](docs/CALIBRATION_CORPUS.md) — how the
-  108-snapshot corpus behind the default thresholds is assembled
+  private corpus behind the default thresholds is assembled
 - [docs/threshold_calibration.md](docs/threshold_calibration.md) —
-  per-rule distributions + confidence ratings (auto-generated)
+  current per-rule distributions; candidate binding is a release gate
 - [docs/RUBRIC_AUDIT.md](docs/RUBRIC_AUDIT.md) — premise audit of each
   rule against Adobe documentation; gaps Adobe carries but the rubric
   doesn't grade

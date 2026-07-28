@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from collections.abc import Iterator
 from typing import TYPE_CHECKING
 
 from sdr_grader.render import Finding, FindingBlock
@@ -71,7 +72,7 @@ def check_calc_formula_broken_refs(impl: Implementation, ctx: RuleContext) -> li
 
     if not broken:
         return []
-    items = [f"{cm_id} -> {missing}" for cm_id, missing in broken[:25]]
+    items = [f"{cm_id} -> {missing}" for cm_id, missing in broken]
     paragraph = (
         f"{len(broken)} calculated metric reference{'s are' if len(broken) != 1 else ' is'} "
         "broken — the formula points at components, segments, or other "
@@ -99,7 +100,7 @@ def check_calc_complexity_threshold(impl: Implementation, ctx: RuleContext) -> l
     if not over:
         return []
     over.sort(key=lambda cm: -cm.complexity_score)
-    items = [f"{cm.id}  complexity={cm.complexity_score:.0f}" for cm in over[:25]]
+    items = [f"{cm.id}  complexity={cm.complexity_score:.0f}" for cm in over]
     paragraph = (
         f"{len(over)} calculated metric{'s have' if len(over) != 1 else ' has'} a complexity "
         f"score above the rubric threshold of {max_complexity:.0f}. High-complexity "
@@ -143,7 +144,7 @@ def check_orphan_calc_metrics(impl: Implementation, ctx: RuleContext) -> list[Fi
             ctx,
             title=f"{len(orphans)} orphan calculated metric{'s' if len(orphans) != 1 else ''}",
             paragraph=paragraph,
-            extra_blocks=[FindingBlock(kind="components", items=[cm.id for cm in orphans[:25]])],
+            extra_blocks=[FindingBlock(kind="components", items=[cm.id for cm in orphans])],
         )
     ]
 
@@ -155,7 +156,13 @@ def check_orphan_calc_metrics(impl: Implementation, ctx: RuleContext) -> list[Fi
 
 @register_check("calc_near_duplicates")
 def check_calc_near_duplicates(impl: Implementation, ctx: RuleContext) -> list[Finding]:
-    """Pairwise Jaccard over reference sets; fire on pairs >= threshold."""
+    """Find identical and near-identical reference sets.
+
+    Distinct reference sets are compared only when they share at least one
+    reference. For the positive thresholds used by bundled packs, disjoint
+    sets can never meet the Jaccard threshold, so an inverted index avoids
+    the old all-pairs scan without changing finding semantics.
+    """
     threshold = float(ctx.params.get("min_similarity", 0.85))
     metrics = [cm for cm in impl.calculated_metrics if cm.references]
     clusters: dict[frozenset[str], list[str]] = defaultdict(list)
@@ -163,13 +170,12 @@ def check_calc_near_duplicates(impl: Implementation, ctx: RuleContext) -> list[F
         clusters[frozenset(cm.references)].append(cm.id)
 
     suspects = [(refs, ids) for refs, ids in clusters.items() if len(ids) >= 2]
-    # Also approximate: pairs with Jaccard >= threshold but not identical.
     refs_seen = list(clusters.keys())
-    for i, refs_a in enumerate(refs_seen):
-        for refs_b in refs_seen[i + 1 :]:
-            jaccard = len(refs_a & refs_b) / len(refs_a | refs_b)
-            if jaccard >= threshold and refs_a != refs_b:
-                suspects.append((refs_a | refs_b, [*clusters[refs_a], *clusters[refs_b]]))
+    for left, right in _near_duplicate_candidates(refs_seen, threshold):
+        refs_a = refs_seen[left]
+        refs_b = refs_seen[right]
+        if _jaccard(refs_a, refs_b) >= threshold:
+            suspects.append((refs_a | refs_b, [*clusters[refs_a], *clusters[refs_b]]))
 
     if not suspects:
         return []
@@ -192,7 +198,7 @@ def check_calc_near_duplicates(impl: Implementation, ctx: RuleContext) -> list[F
             ctx,
             title=f"{len(items)} near-duplicate calculated metric group{'s' if len(items) != 1 else ''}",
             paragraph=paragraph,
-            extra_blocks=[FindingBlock(kind="components", items=items[:25])],
+            extra_blocks=[FindingBlock(kind="components", items=items)],
         )
     ]
 
@@ -212,7 +218,10 @@ def check_calc_identical_formula_text(impl: Implementation, ctx: RuleContext) ->
     duplicates = {text: ids for text, ids in groups.items() if len(ids) > 1}
     if not duplicates:
         return []
-    items = [f"{text!r}: {', '.join(sorted(ids))}" for text, ids in sorted(duplicates.items())[:25]]
+    items = [
+        f"{text!r}: {', '.join(sorted(ids))}"
+        for text, ids in sorted(duplicates.items())
+    ]
     paragraph = (
         f"{len(duplicates)} formula text{'s appear' if len(duplicates) != 1 else ' appears'} "
         "verbatim on more than one calculated metric. Identical formulas are a "
@@ -247,7 +256,7 @@ def check_calc_deprecated_allocations(impl: Implementation, ctx: RuleContext) ->
     hits = [cm for cm in impl.calculated_metrics if cm.allocation in deprecated]
     if not hits:
         return []
-    items = [f"{cm.id} allocation={cm.allocation}" for cm in hits[:25]]
+    items = [f"{cm.id} allocation={cm.allocation}" for cm in hits]
     paragraph = (
         f"{len(hits)} calculated metric{'s use' if len(hits) != 1 else ' uses'} a "
         "deprecated allocation value. Deprecated allocations may behave "
@@ -266,6 +275,41 @@ def check_calc_deprecated_allocations(impl: Implementation, ctx: RuleContext) ->
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+
+def _near_duplicate_candidates(
+    reference_sets: list[frozenset[str]], threshold: float
+) -> Iterator[tuple[int, int]]:
+    """Return deterministic candidate pairs that can meet ``threshold``.
+
+    A non-positive threshold intentionally falls back to all pairs because
+    disjoint sets meet that threshold under the historical implementation.
+    """
+    if threshold <= 0:
+        for left in range(len(reference_sets)):
+            for right in range(left + 1, len(reference_sets)):
+                yield left, right
+        return
+
+    postings: dict[str, list[int]] = defaultdict(list)
+    for index, references in enumerate(reference_sets):
+        for reference in sorted(references):
+            postings[reference].append(index)
+
+    for left, references in enumerate(reference_sets):
+        rights: set[int] = set()
+        for reference in sorted(references):
+            rights.update(
+                right
+                for right in postings[reference]
+                if right > left
+            )
+        for right in sorted(rights):
+            yield left, right
+
+
+def _jaccard(left: frozenset[str], right: frozenset[str]) -> float:
+    return len(left & right) / len(left | right)
 
 
 def _make_finding(

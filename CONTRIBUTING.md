@@ -37,9 +37,10 @@ shapes.
 ## Calibration: what's PR-able vs. maintainer-gated
 
 The default thresholds in `packs/strict/` and `packs/pragmatic/` are
-calibrated against a 108-snapshot corpus of real CJA + AA tenants. The
-corpus is private (gitignored under `tests/fixtures/private/`) and only
-the maintainer can re-run calibration end-to-end. This shapes what kinds
+measured using a 108-snapshot corpus of real CJA + AA tenants.
+The corpus is private (gitignored under `tests/fixtures/private/`) and only
+the maintainer can re-run calibration end-to-end. A report not bound to the
+candidate does not substitute for the release gate. This shapes what kinds
 of PRs are easy to merge:
 
 - **PR-able by anyone:**

@@ -160,12 +160,13 @@ def test_broken_references_fires_on_missing_target():
     assert "2 broken references" in findings[0].title
 
 
-def test_broken_references_truncates_to_show_top():
+def test_broken_references_preserves_complete_evidence():
     calc = [_calc(f"calc/{i}", refs=[f"missing/{i}"]) for i in range(15)]
     findings = check_broken_references(
         _impl(calc=calc), _ctx("SCH-002", severity="high", show_top=5)
     )
-    assert "showing first 5 of 15" in findings[0].title
+    assert findings[0].title == "15 broken references"
+    assert len(findings[0].body[1].items) == 15
 
 
 # ---------------------------------------------------------------------------
@@ -562,13 +563,14 @@ def test_derived_field_broken_refs_quiet_on_aa():
     assert check_derived_field_broken_refs(impl, _ctx("SCH-009")) == []
 
 
-def test_derived_field_broken_refs_truncates_to_show_top():
+def test_derived_field_broken_refs_preserves_complete_evidence():
     derived = [_derived(f"variables/df_{i}", refs=[f"metrics/missing_{i}"]) for i in range(15)]
     findings = check_derived_field_broken_refs(
         _impl(derived=derived),
         _ctx("SCH-009", show_top=5),
     )
-    assert "showing first 5 of 15" in findings[0].title
+    assert findings[0].title == "15 broken derived-field references"
+    assert len(findings[0].body[1].items) == 15
 
 
 def test_derived_field_refs_ignore_non_list_platform_values():

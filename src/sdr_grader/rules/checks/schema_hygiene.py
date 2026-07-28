@@ -10,6 +10,7 @@ from __future__ import annotations
 import math
 import re
 from collections import defaultdict
+from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 from markupsafe import Markup
@@ -50,16 +51,8 @@ def check_missing_descriptions(
         ctx.params.get("targets", ["metrics", "dimensions", "derived_fields"])
     )
 
-    breakdown: list[tuple[str, int, int]] = []
-    for target in targets:
-        components = getattr(impl, target, None)
-        if not components:
-            continue
-        total = len(components)
-        missing = sum(1 for c in components if not c.description)
-        breakdown.append((target, missing, total))
-
-    over = [(t, m, n) for t, m, n in breakdown if n > 0 and (m / n) > threshold]
+    breakdown = missing_description_breakdown(impl, targets)
+    over = [(t, m, n) for t, m, n in breakdown if (m / n) > threshold]
     if not over:
         return []
 
@@ -83,6 +76,21 @@ def check_missing_descriptions(
             distribution=distribution,
         )
     ]
+
+
+def missing_description_breakdown(
+    impl: Implementation, targets: Sequence[str]
+) -> list[tuple[str, int, int]]:
+    """Measure SCH-003's configured populations in configured order."""
+    breakdown: list[tuple[str, int, int]] = []
+    for target in targets:
+        components = getattr(impl, target, None)
+        if not components:
+            continue
+        total = len(components)
+        missing = sum(1 for c in components if not c.description)
+        breakdown.append((target, missing, total))
+    return breakdown
 
 
 # ---------------------------------------------------------------------------
@@ -164,13 +172,10 @@ def check_broken_references(
         return []
 
     total = len(broken)
-    threshold = int(ctx.params.get("show_top", 10))
-    sample = broken[:threshold]
     items = [
         f"{ref_type} {referrer} -> missing {missing}"
-        for ref_type, referrer, missing in sample
+        for ref_type, referrer, missing in broken
     ]
-    suffix = "" if total <= threshold else f" (showing first {threshold} of {total})"
     paragraph = (
         f"{total} reference{'s are' if total != 1 else ' is'} broken — "
         "segments or calculated metrics point at component IDs that don't "
@@ -181,7 +186,7 @@ def check_broken_references(
     return [
         _make_finding(
             ctx,
-            title=f"{total} broken reference{'s' if total != 1 else ''}{suffix}",
+            title=f"{total} broken reference{'s' if total != 1 else ''}",
             paragraph=paragraph,
             extra_blocks=[FindingBlock(kind="components", items=items)],
         )
@@ -307,7 +312,7 @@ def check_deprecated_components(
             ctx,
             title=f"{len(items)} deprecated component{'s' if len(items) != 1 else ''} still in use",
             paragraph=paragraph,
-            extra_blocks=[FindingBlock(kind="components", items=items[:25])],
+            extra_blocks=[FindingBlock(kind="components", items=items)],
         )
     ]
 
@@ -382,7 +387,7 @@ def check_persistence_lookback_cap(
         return []
     items = [
         f"{cid}  name={name!r}  lookback={days} days"
-        for cid, name, days in violations[:25]
+        for cid, name, days in violations
     ]
     paragraph = (
         f"{len(violations)} dimension{'s set' if len(violations) != 1 else ' sets'} "
@@ -446,7 +451,7 @@ def check_derived_field_cycles(
     if not groups:
         return []
 
-    items = [", ".join(group) for group in groups[:25]]
+    items = [", ".join(group) for group in groups]
     plural = len(groups) != 1
     paragraph = (
         f"{len(groups)} derived-field cycle{'s' if plural else ''} detected in "
@@ -532,10 +537,7 @@ def check_derived_field_broken_refs(
 
     if not broken:
         return []
-    threshold = int(ctx.params.get("show_top", 10))
-    sample = broken[:threshold]
-    items = [f"{df_id} -> missing {ref}" for df_id, ref in sample]
-    suffix = "" if len(broken) <= threshold else f" (showing first {threshold} of {len(broken)})"
+    items = [f"{df_id} -> missing {ref}" for df_id, ref in broken]
     paragraph = (
         f"{len(broken)} derived-field reference{'s point' if len(broken) != 1 else ' points'} "
         "at a component that does not exist in this data view. Broken references "
@@ -548,7 +550,7 @@ def check_derived_field_broken_refs(
     return [
         _make_finding(
             ctx,
-            title=f"{len(broken)} broken derived-field reference{'s' if len(broken) != 1 else ''}{suffix}",
+            title=f"{len(broken)} broken derived-field reference{'s' if len(broken) != 1 else ''}",
             paragraph=paragraph,
             extra_blocks=[FindingBlock(kind="components", items=items)],
         )

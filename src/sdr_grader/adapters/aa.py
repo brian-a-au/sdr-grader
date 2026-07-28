@@ -289,8 +289,9 @@ def _segment_from_record(record: Any, *, index: int | None = None) -> Segment:
     name = record.get("name") or segment_id
     description = _normalize_description(record.get("description"))
     definition = record.get("definition") or {}
-    nesting_depth, container_types = _walk_segment_definition(definition)
-    references: list[str] = []  # AA segments don't expose direct cross-refs in the basic shape
+    nesting_depth, container_types, references = _analyze_segment_definition(
+        definition
+    )
 
     extra = record.get("extra") if isinstance(record.get("extra"), dict) else {}
     approved, shared_to_count = _aa_governance_signals(extra)
@@ -334,8 +335,18 @@ def _aa_governance_signals(extra: dict[str, Any]) -> tuple[bool | None, int | No
 
 def _walk_segment_definition(definition: Any) -> tuple[int, list[str]]:
     """Compute nesting depth and distinct container contexts from an AA segment def."""
+    depth, contexts, _references = _analyze_segment_definition(definition)
+    return depth, contexts
+
+
+def _analyze_segment_definition(
+    definition: Any,
+) -> tuple[int, list[str], list[str]]:
+    """Collect depth, container contexts, and references in one traversal."""
     contexts: list[str] = []
-    seen: set[str] = set()
+    seen_contexts: set[str] = set()
+    references: list[str] = []
+    seen_references: set[str] = set()
 
     def visit(node: Any, depth: int) -> int:
         """Depth counts container nesting only — wrapper dicts/lists
@@ -346,8 +357,8 @@ def _walk_segment_definition(definition: Any) -> tuple[int, list[str]]:
             is_container = node.get("func") == "container" and node.get("context")
             if is_container:
                 ctx = str(node["context"])
-                if ctx not in seen:
-                    seen.add(ctx)
+                if ctx not in seen_contexts:
+                    seen_contexts.add(ctx)
                     contexts.append(ctx)
                 max_depth = max(max_depth, depth + 1)
             child_depth = depth + 1 if is_container else depth
@@ -356,9 +367,19 @@ def _walk_segment_definition(definition: Any) -> tuple[int, list[str]]:
         elif isinstance(node, list):
             for item in node:
                 max_depth = max(max_depth, visit(item, depth))
+        elif isinstance(node, str):
+            if node.startswith(_AA_REF_PREFIXES) and node not in seen_references:
+                seen_references.add(node)
+                references.append(node)
         return max_depth
 
-    return visit(definition, 0), contexts
+    return visit(definition, 0), contexts, references
+
+
+def _extract_aa_segment_refs(definition: Any) -> list[str]:
+    """Collect component references embedded in an AA segment definition."""
+    _depth, _contexts, references = _analyze_segment_definition(definition)
+    return references
 
 
 # ---------------------------------------------------------------------------

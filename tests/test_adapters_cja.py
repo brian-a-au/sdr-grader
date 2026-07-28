@@ -2,11 +2,11 @@
 
 Per SPEC §8 Phase 2: round-trip every field, segment depth and calc metric
 complexity computed correctly, references extracted. The messy fixture
-encodes specific known counts (487 components, 220 missing descriptions,
+encodes specific known counts (487 components, 240 missing descriptions,
 4 deep segments, 7 near-duplicate revenue calc metrics) — those numbers
 are part of the test contract and downstream rule tests rely on them.
 Counts were retuned post-calibration so the messy fixture exercises the
-calibrated SCH-003 strict threshold (0.35); see docs/threshold_calibration.md.
+calibrated SCH-003 strict threshold (0.56); see docs/threshold_calibration.md.
 """
 
 from __future__ import annotations
@@ -83,16 +83,16 @@ def test_messy_total_components_is_487(messy_impl: Implementation) -> None:
     assert total == 487
 
 
-def test_messy_missing_descriptions_total_220(messy_impl: Implementation) -> None:
+def test_messy_missing_descriptions_total_240(messy_impl: Implementation) -> None:
     """Adapter must surface missing descriptions; cja_auto_sdr writes '-' for them."""
     components = [*messy_impl.metrics, *messy_impl.dimensions, *messy_impl.derived_fields]
     missing = [c for c in components if c.description is None]
-    assert len(missing) == 220
+    assert len(missing) == 240
     metrics_missing = sum(1 for c in messy_impl.metrics if c.description is None)
     dims_missing = sum(1 for c in messy_impl.dimensions if c.description is None)
     derived_missing = sum(1 for c in messy_impl.derived_fields if c.description is None)
     assert metrics_missing == 70
-    assert dims_missing == 100
+    assert dims_missing == 120
     assert derived_missing == 50
 
 

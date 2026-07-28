@@ -5,6 +5,11 @@ A category-by-category audit of the 27 rules in the `2.0` default
 plus the calibration evidence that already exists in
 [`docs/threshold_calibration.md`](threshold_calibration.md).
 
+> **Status:** this remains a historical May 2026 premise audit, not pack 2.0
+> release-candidate approval. The threshold report was regenerated on
+> 2026-07-28 with SCH-003's corrected statistic; final approval still requires
+> binding all release evidence to the candidate SHA.
+
 The goal is to separate three buckets:
 
 - **Solid.** Premise matches how the platform actually models the field,
@@ -17,12 +22,12 @@ The goal is to separate three buckets:
   doesn't grade at all. The opportunity cost of these gaps is often
   larger than the cost of any individual weak rule.
 
-This is not a calibration report — `docs/threshold_calibration.md` is the
-authority on whether a threshold is data-backed. This is a *premise*
+This is not a calibration report — `docs/threshold_calibration.md` retains
+the historical measurement record. This is a *premise*
 audit: does the rule grade something the platform actually models, and
 does the signal mean what the rule says it means?
 
-**Verified against:** the 108-fixture private corpus
+**Historically verified against (May 2026):** the 108-fixture private corpus
 (`tests/fixtures/private/{aa,cja}/`) loaded through the live adapters,
 plus `docs/threshold_calibration.md` and current Adobe Experience League
 documentation. Empirical counts cited below come from that vetting pass.
@@ -44,7 +49,7 @@ For each rule:
 |------|-------------|-------|
 | SCH-001 duplicate component names | **solid** | Adobe doesn't prevent name collisions within a type. Two metrics named "Revenue" with different IDs is a real bug that causes the classic "dashboards disagree" complaint. Structural rule, no calibration needed. |
 | SCH-002 broken references | **solid** | Segments and calc metrics carry reference IDs; checking they resolve against `all_component_ids ∪ all_segment_ids ∪ calc_metric_ids` is correct. Critical for AA where the API can return zombie references after a deletion. |
-| SCH-003 missing descriptions | **solid (calibrated)** | Threshold `0.35` set at p75 across 108 snapshots. Description fields exist on AA eVars/events and on CJA Data View components. Calibration explicit in `threshold_calibration.md`. |
+| SCH-003 missing descriptions | **solid (recalibrated for pack 2.0)** | Description fields exist on AA eVars/events and CJA Data View components. The 2026-07-28 run uses the maximum configured-target ratio: p75=`0.56` for strict and p95=`0.81` for pragmatic across 108 snapshots. |
 | SCH-004 type-name mismatch | **solid as a shape-mismatch detector; counter branch is structurally inert** | Premise (rate/percent name + integer type → silently broken) is real. **Corrected end-to-end trace (2026-05, verified against Adobe's 2.0 swagger and the pitchmuc/aanalytics2 wrapper):** the earlier audit draft claimed `aa_auto_sdr` normalizes `counter → int` upstream — that's wrong, but the broader picture is that **Adobe itself collapses `counter` and `numeric` success events to `INT` server-side** in the 2.0 `/metrics` response. The official 2.0 swagger enum for `AnalyticsMetric.type` is `{STRING, INT, DECIMAL, CURRENCY, PERCENT, TIME, ENUM, ORDERED_ENUM}` — `counter` is not a value the 2.0 API can return. `aa_auto_sdr/api/fetch.py:395` and `sdr_grader/adapters/aa.py:100,116` both pass `type` through verbatim, but the verbatim value is `INT`. The synthetic `aa_auto_sdr/sample_outputs/demo_prod.json` showing `"type": "counter"` is hand-crafted fixture content, not a real API response. **Implications for SCH-004:** (a) the rate/percent + INT/DECIMAL shape check is the load-bearing logic and is correctly wired; (b) the `counter` entry in `_INTEGER_TYPES` (added 1c2abf3) is dead code in the 2.0-API world — it would only fire if a supplementary admin-source (legacy 1.4 `ReportSuite.GetSuccessEvents` or an admin-console export) carrying raw counter types were merged into the snapshot. Keep the entry as forward-compatible scaffolding, but don't expect it to fire against any 2.0-API-sourced snapshot. The 4 hits in the current corpus all fire on the shape-mismatch path, not the counter path. |
 | SCH-005 deprecated components still in use | **refined — possibly over-corrected** | Premise is real. The original default regex `\b(deprecated\|legacy\|old\|deleteme\|do_not_use\|v0\|tmp\|temp)\b` was narrowed in 1c2abf3 to drop `old`, `tmp`, `temp`, `v0`. The named false-positive risks (`Holdovers`, `Order Total`, `temperature`, `eVar0`) can't actually trigger the original regex because of word-boundary semantics: `\bold\b` requires a word boundary on both sides, `\bv0\b` won't match inside `eVar0`. On the 108-fixture corpus the old regex fired 149 times and the new regex fires 146 — the 3 dropped components (`"Account Name (old)"`, `"Old Order Status"`, `"Old Page Type"`) all look like genuine deprecation markers. Either re-add `\bold\b` (the abstract false-positive risk didn't materialize) or document the trade-off explicitly. |
 

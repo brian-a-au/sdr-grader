@@ -625,7 +625,7 @@ pre.code {
         <span class="sev high">High</span>
         <span class="finding-cat">schema hygiene</span>
       </div>
-      <h3 class="finding-title">60 broken references (showing first 10 of 60)</h3>
+      <h3 class="finding-title">60 broken references</h3>
       <div class="finding-body">
         
           
@@ -633,7 +633,7 @@ pre.code {
           
         
           
-            <div class="finding-section-label">Affected components (10)</div>
+            <div class="finding-section-label">Affected components (50)</div>
 <pre class="components-list">calc_metric calculatedMetrics/cm_revenue_per_visit -&gt; missing metrics/revenue
 calc_metric calculatedMetrics/cm_revenue_per_visit -&gt; missing metrics/visits
 calc_metric calculatedMetrics/cm_rev_per_visit_v2 -&gt; missing metrics/revenue
@@ -644,10 +644,54 @@ calc_metric calculatedMetrics/cm_rev_visit_linear -&gt; missing metrics/revenue
 calc_metric calculatedMetrics/cm_rev_visit_linear -&gt; missing metrics/visits
 calc_metric calculatedMetrics/cm_revenue_visit_corrected -&gt; missing metrics/revenue
 calc_metric calculatedMetrics/cm_revenue_visit_corrected -&gt; missing metrics/visits
+calc_metric calculatedMetrics/cm_rpv_marketing -&gt; missing metrics/revenue
+calc_metric calculatedMetrics/cm_rpv_marketing -&gt; missing metrics/visits
+calc_metric calculatedMetrics/cm_rev_per_visit_final -&gt; missing metrics/revenue
+calc_metric calculatedMetrics/cm_rev_per_visit_final -&gt; missing metrics/visits
+calc_metric calculatedMetrics/cm_orders_per_visit -&gt; missing metrics/orders
+calc_metric calculatedMetrics/cm_orders_per_visit -&gt; missing metrics/visits
+calc_metric calculatedMetrics/cm_avg_order_value -&gt; missing metrics/revenue
+calc_metric calculatedMetrics/cm_avg_order_value -&gt; missing metrics/orders
+calc_metric calculatedMetrics/cm_bounce_rate_filtered -&gt; missing metrics/bounces
+calc_metric calculatedMetrics/cm_bounce_rate_filtered -&gt; missing metrics/visits
+calc_metric calculatedMetrics/cm_engagement_rate -&gt; missing metrics/engaged
+calc_metric calculatedMetrics/cm_engagement_rate -&gt; missing metrics/visits
+calc_metric calculatedMetrics/cm_signup_conversion -&gt; missing metrics/signups
+calc_metric calculatedMetrics/cm_signup_conversion -&gt; missing metrics/visits
+calc_metric calculatedMetrics/cm_paid_ratio -&gt; missing metrics/paid_visits
+calc_metric calculatedMetrics/cm_paid_ratio -&gt; missing metrics/visits
+calc_metric calculatedMetrics/cm_organic_share -&gt; missing metrics/organic
+calc_metric calculatedMetrics/cm_organic_share -&gt; missing metrics/visits
+calc_metric calculatedMetrics/cm_repeat_buyer_rate -&gt; missing metrics/repeat
+calc_metric calculatedMetrics/cm_repeat_buyer_rate -&gt; missing metrics/buyers
+calc_metric calculatedMetrics/cm_cart_to_order -&gt; missing metrics/orders
+calc_metric calculatedMetrics/cm_cart_to_order -&gt; missing metrics/carts
+calc_metric calculatedMetrics/cm_search_to_view -&gt; missing metrics/views
+calc_metric calculatedMetrics/cm_search_to_view -&gt; missing metrics/searches
+calc_metric calculatedMetrics/cm_video_completion -&gt; missing metrics/completes
+calc_metric calculatedMetrics/cm_video_completion -&gt; missing metrics/starts
+calc_metric calculatedMetrics/cm_email_ctr -&gt; missing metrics/clicks
+calc_metric calculatedMetrics/cm_email_ctr -&gt; missing metrics/sends
+calc_metric calculatedMetrics/cm_form_submit_rate -&gt; missing metrics/submits
+calc_metric calculatedMetrics/cm_form_submit_rate -&gt; missing metrics/form_views
+calc_metric calculatedMetrics/cm_promo_redemption -&gt; missing metrics/redeems
+calc_metric calculatedMetrics/cm_promo_redemption -&gt; missing metrics/impressions
+calc_metric calculatedMetrics/cm_help_resolution -&gt; missing metrics/resolved
+calc_metric calculatedMetrics/cm_help_resolution -&gt; missing metrics/tickets
+calc_metric calculatedMetrics/cm_pages_per_visit -&gt; missing metrics/pageviews
+calc_metric calculatedMetrics/cm_pages_per_visit -&gt; missing metrics/visits
+calc_metric calculatedMetrics/cm_active_user_rate -&gt; missing metrics/active
+calc_metric calculatedMetrics/cm_active_user_rate -&gt; missing metrics/users
+calc_metric calculatedMetrics/cm_returning_share -&gt; missing metrics/returning
+calc_metric calculatedMetrics/cm_returning_share -&gt; missing metrics/users
 </pre>
           
         
           
+            <p>… and 10 more (see JSON output)</p>
+
+
+
             <div class="finding-section-label">How to remediate</div>
             <p>Re-create the missing component, or update the segment / calculated metric to point at the current canonical equivalent.</p>
           
@@ -670,7 +714,7 @@ calc_metric calculatedMetrics/cm_revenue_visit_corrected -&gt; missing metrics/v
           
         
           
-            <div class="finding-section-label">Affected components (25)</div>
+            <div class="finding-section-label">Affected components (50)</div>
 <pre class="components-list">calculatedMetrics/cm_revenue_per_visit -&gt; metrics/revenue
 calculatedMetrics/cm_revenue_per_visit -&gt; metrics/visits
 calculatedMetrics/cm_rev_per_visit_v2 -&gt; metrics/revenue
@@ -696,10 +740,39 @@ calculatedMetrics/cm_engagement_rate -&gt; metrics/visits
 calculatedMetrics/cm_signup_conversion -&gt; metrics/signups
 calculatedMetrics/cm_signup_conversion -&gt; metrics/visits
 calculatedMetrics/cm_paid_ratio -&gt; metrics/paid_visits
+calculatedMetrics/cm_paid_ratio -&gt; metrics/visits
+calculatedMetrics/cm_organic_share -&gt; metrics/organic
+calculatedMetrics/cm_organic_share -&gt; metrics/visits
+calculatedMetrics/cm_repeat_buyer_rate -&gt; metrics/repeat
+calculatedMetrics/cm_repeat_buyer_rate -&gt; metrics/buyers
+calculatedMetrics/cm_cart_to_order -&gt; metrics/orders
+calculatedMetrics/cm_cart_to_order -&gt; metrics/carts
+calculatedMetrics/cm_search_to_view -&gt; metrics/views
+calculatedMetrics/cm_search_to_view -&gt; metrics/searches
+calculatedMetrics/cm_video_completion -&gt; metrics/completes
+calculatedMetrics/cm_video_completion -&gt; metrics/starts
+calculatedMetrics/cm_email_ctr -&gt; metrics/clicks
+calculatedMetrics/cm_email_ctr -&gt; metrics/sends
+calculatedMetrics/cm_form_submit_rate -&gt; metrics/submits
+calculatedMetrics/cm_form_submit_rate -&gt; metrics/form_views
+calculatedMetrics/cm_promo_redemption -&gt; metrics/redeems
+calculatedMetrics/cm_promo_redemption -&gt; metrics/impressions
+calculatedMetrics/cm_help_resolution -&gt; metrics/resolved
+calculatedMetrics/cm_help_resolution -&gt; metrics/tickets
+calculatedMetrics/cm_pages_per_visit -&gt; metrics/pageviews
+calculatedMetrics/cm_pages_per_visit -&gt; metrics/visits
+calculatedMetrics/cm_active_user_rate -&gt; metrics/active
+calculatedMetrics/cm_active_user_rate -&gt; metrics/users
+calculatedMetrics/cm_returning_share -&gt; metrics/returning
+calculatedMetrics/cm_returning_share -&gt; metrics/users
 </pre>
           
         
           
+            <p>… and 10 more (see JSON output)</p>
+
+
+
             <div class="finding-section-label">How to remediate</div>
             <p>Update the formula to reference the current canonical component or retire the calculated metric.</p>
           
@@ -742,16 +815,16 @@ calculatedMetrics/cm_paid_ratio -&gt; metrics/paid_visits
         <span class="sev med">Medium</span>
         <span class="finding-cat">schema hygiene</span>
       </div>
-      <h3 class="finding-title">170 components lack descriptions</h3>
+      <h3 class="finding-title">120 components lack descriptions</h3>
       <div class="finding-body">
         
           
-            <p>70 metrics and 100 dimensions in this data view have empty <span class="mono">description</span> fields. Descriptions are the primary way new analysts and AI agents understand what a component measures; missing descriptions force readers to infer intent from names alone, which is frequently wrong.</p>
+            <p>120 dimensions in this data view have empty <span class="mono">description</span> fields. Descriptions are the primary way new analysts and AI agents understand what a component measures; missing descriptions force readers to infer intent from names alone, which is frequently wrong.</p>
           
         
           
             <div class="finding-section-label">Distribution</div>
-            <p>Metrics: 70 of 142 missing (49%). Dimensions: 100 of 203 missing (49%). The rubric threshold is 35%.</p>
+            <p>Dimensions: 120 of 203 missing (59%). The rubric threshold is 56%.</p>
           
         
           
@@ -837,7 +910,7 @@ segments/seg_b2b_account_engaged  depth: 6  containers: event, session
           
         
           
-            <div class="finding-section-label">Affected components (25)</div>
+            <div class="finding-section-label">Affected components (30)</div>
 <pre class="components-list">calculatedMetrics/cm_amer_share  complexity=47
 calculatedMetrics/cm_emea_share  complexity=46
 calculatedMetrics/cm_apac_share  complexity=45
@@ -863,6 +936,11 @@ calculatedMetrics/cm_cart_to_order  complexity=33
 calculatedMetrics/cm_repeat_buyer_rate  complexity=32
 calculatedMetrics/cm_organic_share  complexity=31
 calculatedMetrics/cm_paid_ratio  complexity=30
+calculatedMetrics/cm_signup_conversion  complexity=29
+calculatedMetrics/cm_engagement_rate  complexity=28
+calculatedMetrics/cm_bounce_rate_filtered  complexity=27
+calculatedMetrics/cm_avg_order_value  complexity=26
+calculatedMetrics/cm_orders_per_visit  complexity=25
 </pre>
           
         

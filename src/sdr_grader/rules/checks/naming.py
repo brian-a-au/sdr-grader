@@ -58,7 +58,7 @@ def check_prefix_consistency(
     ]
     items = [
         f"{c.id} (expected: {dominant_prefix}{_strip_existing_prefix(c.id)})"
-        for c in outliers[:25]
+        for c in outliers
     ]
     paragraph = Markup(
         '{}% of {} follow the <span class="mono">{}</span> prefix convention. '
@@ -116,7 +116,7 @@ def check_regex_match_id(
     if not violators:
         return []
 
-    items = [f"{ident}  ({target})" for ident, target in violators[:25]]
+    items = [f"{ident}  ({target})" for ident, target in violators]
     paragraph = Markup(
         '{} ID{} not match the allowed pattern <span class="mono">{}</span>. '
         "Whitespace or special characters in IDs break tooling that splits on "
@@ -166,7 +166,7 @@ def check_casing_consistency(
     outliers = [
         c for c, s in zip(pool, styles, strict=True) if s != dominant_style
     ]
-    items = [f"{c.id}  name={c.name!r}" for c in outliers[:25]]
+    items = [f"{c.id}  name={c.name!r}" for c in outliers]
     paragraph = (
         f"{pct(dominant_count, len(pool))}% of "
         f"{_target_display(target, tag_filter)} use {dominant_style}. The "

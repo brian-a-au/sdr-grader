@@ -447,6 +447,33 @@ def test_formula_helpers_characterize_empty_scalar_and_recursive_shapes():
     ) == ["segments/buyers", "metrics/orders"]
 
 
+def test_segment_definition_references_are_normalized():
+    raw = _minimal_snapshot(
+        segments=[
+            {
+                "id": "segments/a",
+                "name": "A",
+                "definition": {
+                    "func": "container",
+                    "pred": {
+                        "args": [
+                            "segments/b",
+                            "metrics/orders",
+                            "not-a-reference",
+                            "segments/b",
+                        ]
+                    },
+                },
+            }
+        ]
+    )
+
+    assert adapt(raw).segments[0].references == [
+        "segments/b",
+        "metrics/orders",
+    ]
+
+
 @pytest.mark.parametrize(
     ("section", "record", "message"),
     [

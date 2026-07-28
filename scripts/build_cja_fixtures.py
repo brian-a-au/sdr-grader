@@ -561,11 +561,11 @@ def build_clean_snapshot() -> dict[str, Any]:
 
 
 def build_messy_snapshot() -> dict[str, Any]:
-    # Component-level missing-description counts are tuned so the overall
-    # rate lands above the calibrated SCH-003 strict threshold (0.35) but
-    # below the pragmatic threshold (0.51). 220/487 ≈ 45%.
+    # SCH-003 evaluates each configured target separately. Dimensions are
+    # tuned to 120/203 ≈ 59%, above the strict 0.56 threshold and below the
+    # pragmatic 0.81 threshold; metrics remain below strict at 70/142 ≈ 49%.
     metrics = build_metrics(count=142, missing_descriptions=70)
-    dimensions = build_dimensions(count=203, missing_descriptions=100)
+    dimensions = build_dimensions(count=203, missing_descriptions=120)
     derived = build_derived_fields(count=142, missing_descriptions=50)
     calc_metrics = build_calculated_metrics()
     segments = build_segments()

@@ -9,14 +9,14 @@ Bundled pack `2.0` contains 27 rule definitions. All 27 apply to CJA;
 23 apply to AA. The four CJA-only definitions below are excluded from
 AA execution and from its scoring denominator.
 
-**Calibration corpus.** Default thresholds were measured against
-108 real-world snapshots: 100 CJA Data Views and 8 AA report suites.
-Every threshold in the rubric ships with its source in
-[`threshold_calibration.md`](threshold_calibration.md)
-(percentile + confidence per rule). CJA-derived thresholds apply to
-AA on rules where the underlying field shape is equivalent
-(descriptions, tags, complexity, nesting) — see the audit for the
-per-rule rationale.
+**Calibration corpus.** Thresholds were measured against 108 real-world
+snapshots: 100 CJA Data Views and 8 AA report suites. The current
+[`threshold_calibration.md`](threshold_calibration.md) report was regenerated
+for pack 2.0 on 2026-07-28 and records percentile and confidence evidence per
+rule. Final approval still binds the run to the candidate SHA and corpus
+revision. CJA-derived thresholds apply to AA only where the underlying field
+shape is equivalent (descriptions, tags, complexity, nesting); see the audit
+for the per-rule rationale.
 
 **CJA-only rules** grade Data View configuration that AA's 2.0
 Reporting API doesn't expose. They no-op on AA snapshots rather than

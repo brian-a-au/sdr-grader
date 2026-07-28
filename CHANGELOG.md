@@ -35,6 +35,17 @@ spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 - **Generator compatibility warnings are live.** Newer parseable
   `cja_auto_sdr` and `aa_auto_sdr` versions warn once through the normal
   CLI path; current, older, and unparseable versions stay quiet.
+- **Finding evidence is complete in JSON.** Rule checks no longer discard
+  component evidence before serialization. HTML remains bounded to 50
+  displayed items per component block and reports the hidden-item count.
+- **SCH-003 now calibrates the statistic it grades.** The bundled rule and
+  calibration script both evaluate configured targets independently and use
+  the maximum missing-description ratio. A 2026-07-28 run over the
+  108-snapshot private corpus set strict to p75 (`0.56`) and pragmatic to p95
+  (`0.81`).
+- **AA segment references are normalized.** Component and segment IDs embedded
+  in AA segment definitions now reach cross-reference, broken-reference, and
+  circular-segment checks.
 
 ### Removed
 
@@ -78,6 +89,13 @@ spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 - Every GitHub Action is pinned to a reviewed full commit SHA, checkout
   credentials are not persisted, and OIDC authority exists only in the
   protected PyPI publisher job.
+
+### Performance
+
+- `CALC-014` uses a deterministic inverted index to avoid comparing disjoint
+  calculated-metric reference sets. Its output is oracle-equivalent to the
+  previous pairwise implementation, and a 10,000-disjoint-metric regression
+  performs zero Jaccard comparisons within the registered budget.
 
 ## 1.1.5 — 2026-07-19
 

@@ -18,6 +18,7 @@ from sdr_grader.render import (
     cap_component_items,
     render,
 )
+from sdr_grader.render.json_output import report_to_dict
 
 
 def _report_with_items(count: int):
@@ -70,6 +71,10 @@ def test_input_report_is_not_mutated():
     cap_component_items(report)
     assert len(report.findings[0].body) == 3
     assert len(report.findings[0].body[1].items) == MAX_COMPONENT_ITEMS + 3
+    assert (
+        len(report_to_dict(report)["findings"][0]["body"][1]["items"])
+        == MAX_COMPONENT_ITEMS + 3
+    )
 
 
 def test_cap_is_idempotent():
