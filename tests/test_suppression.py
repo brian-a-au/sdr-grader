@@ -227,6 +227,9 @@ def test_grader_with_suppression_skips_suppressed_findings(tmp_path):
     suppression = Suppression(suppressed=[SuppressedRule("SCH-003", reason="working through it")])
     suppressed_report = grade(impl, rubric, suppression=suppression)
     assert all(f.id != "SCH-003" for f in suppressed_report.findings)
+    assert "encodes 29 rules across 6 active categories" in (
+        suppressed_report.methodology.paragraphs[0]
+    )
     # Suppression appears in methodology skipped section.
     assert any("SCH-003" in s.ids for s in suppressed_report.methodology.skipped)
 

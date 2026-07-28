@@ -34,7 +34,7 @@ from sdr_grader.render import (
 from sdr_grader.render import (
     Rubric as RenderRubric,
 )
-from sdr_grader.rules.engine import run_rules
+from sdr_grader.rules.engine import RuleInventory, resolve_effective_rules, run_rules
 from sdr_grader.rules.rubric import Rubric, RuleDefinition
 from sdr_grader.rules.suppression import (
     Suppression,
@@ -63,17 +63,24 @@ def grade(
     """Run the rubric over an Implementation and return a render-ready Report."""
     if suppression is not None:
         rubric = apply_to_rubric(rubric, suppression)
-    raw_findings = run_rules(impl, rubric)
+    rule_inventory = resolve_effective_rules(
+        impl,
+        rubric,
+        excluded_rule_ids=(
+            suppression.fully_suppressed_ids if suppression is not None else ()
+        ),
+    )
+    raw_findings = run_rules(impl, rubric, rule_inventory=rule_inventory)
     findings = (
         apply_to_findings(raw_findings, suppression) if suppression else raw_findings
     )
-    result = compute_grade(rubric, findings)
+    result = compute_grade(rubric, findings, rule_inventory=rule_inventory)
 
     generated_at = _resolve_generated_at(impl.snapshot_taken_at)
     components_evaluated = (
         len(impl.metrics) + len(impl.dimensions) + len(impl.derived_fields)
     )
-    rules_by_id = {r.id: r for r in rubric.rules}
+    rules_by_id = {r.id: r for r in rule_inventory}
 
     return Report(
         id=_report_id(impl, generated_at),
@@ -94,7 +101,13 @@ def grade(
         categories=[_render_category(cs) for cs in result.categories],
         remediations=_derive_remediations(rules_by_id, findings),
         findings=_sort_findings(findings),
-        methodology=_build_methodology(rubric, result, findings, suppression),
+        methodology=_build_methodology(
+            rubric,
+            result,
+            findings,
+            rule_inventory,
+            suppression,
+        ),
         distribution=None,  # attached later by the CLI when --distribution-data is set
     )
 
@@ -183,9 +196,10 @@ def _build_methodology(
     rubric: Rubric,
     result: GradeResult,
     findings: list[Finding],
+    rule_inventory: RuleInventory,
     suppression: Suppression | None = None,
 ) -> Methodology:
-    rule_count = len(rubric.rules)
+    rule_count = len(rule_inventory)
     fired_count = len({f.id for f in findings})
     category_count = len(result.categories)
     sev_w = rubric.severity_weights

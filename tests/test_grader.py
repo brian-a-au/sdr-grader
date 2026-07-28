@@ -2,9 +2,121 @@
 
 from __future__ import annotations
 
+import pytest
+
 from sdr_grader.core.grader import _derive_remediations
+from sdr_grader.core.models import Implementation
 from sdr_grader.render import Finding, FindingBlock
-from sdr_grader.rules.rubric import RuleDefinition
+from sdr_grader.rules.engine import resolve_effective_rules, run_rules
+from sdr_grader.rules.rubric import GradeBand, Rubric, RuleDefinition
+
+
+def _impl(platform: str = "aa") -> Implementation:
+    return Implementation(
+        platform=platform,  # type: ignore[arg-type]
+        instance_id="test",
+        instance_name="Test",
+        snapshot_taken_at=None,
+        snapshot_source="test",
+        adapter_version="1",
+        metrics=[],
+        dimensions=[],
+        segments=[],
+        calculated_metrics=[],
+        derived_fields=[],
+        raw={},
+    )
+
+
+def _rule(rule_id: str, platforms: list[str]) -> RuleDefinition:
+    return RuleDefinition(
+        id=rule_id,
+        name=rule_id,
+        severity="medium",
+        platforms=platforms,
+        check="test-check",
+        category="schema_hygiene",
+    )
+
+
+def _rubric(rules: list[RuleDefinition]) -> Rubric:
+    return Rubric(
+        pack="test",
+        version="1",
+        description="",
+        category_weights={"schema_hygiene": 1.0},
+        severity_weights={"critical": 4, "high": 3, "medium": 2, "low": 1},
+        grade_scale=[GradeBand(min_score=0, grade="F")],
+        rules=rules,
+    )
+
+
+def test_effective_rules_preserve_order_and_exclude_platform_and_suppressed_rules():
+    rules = [
+        _rule("COMMON-1", []),
+        _rule("CJA-1", ["cja"]),
+        _rule("AA-1", ["aa"]),
+        _rule("COMMON-2", ["aa", "cja"]),
+    ]
+
+    inventory = resolve_effective_rules(
+        _impl("aa"),
+        _rubric(rules),
+        excluded_rule_ids={"COMMON-2"},
+    )
+
+    assert [rule.id for rule in inventory] == ["COMMON-1", "AA-1"]
+
+
+def test_rule_engine_defaults_to_the_platform_inventory(monkeypatch):
+    rules = [
+        _rule("COMMON-1", []),
+        _rule("CJA-1", ["cja"]),
+        _rule("AA-1", ["aa"]),
+    ]
+    executed: list[str] = []
+
+    def get_recording_check(_name):
+        def record(_impl, context):
+            executed.append(context.rule_id)
+            return []
+
+        return record
+
+    monkeypatch.setattr("sdr_grader.rules.engine.get_check", get_recording_check)
+
+    assert run_rules(_impl("aa"), _rubric(rules)) == []
+    assert executed == ["COMMON-1", "AA-1"]
+
+
+def test_rule_engine_propagates_check_exceptions(monkeypatch):
+    rule = _rule("AA-1", ["aa"])
+
+    def explode(_impl, _context):
+        raise RuntimeError("check failed")
+
+    monkeypatch.setattr("sdr_grader.rules.engine.get_check", lambda _name: explode)
+
+    with pytest.raises(RuntimeError, match="check failed"):
+        run_rules(_impl(), _rubric([rule]), rule_inventory=(rule,))
+
+
+def test_rule_engine_rejects_findings_for_another_rule(monkeypatch):
+    rule = _rule("AA-1", ["aa"])
+    wrong_finding = Finding(
+        id="OTHER-1",
+        severity="medium",
+        category="schema hygiene",
+        title="Wrong rule",
+        body=[FindingBlock(kind="paragraph", html="x")],
+    )
+    monkeypatch.setattr(
+        "sdr_grader.rules.engine.get_check",
+        lambda _name: lambda _impl, _context: [wrong_finding],
+    )
+
+    with pytest.raises(ValueError, match="finding IDs for other rules"):
+        run_rules(_impl(), _rubric([rule]), rule_inventory=(rule,))
 
 
 def test_remediations_skip_rules_without_remediation_text():

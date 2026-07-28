@@ -158,6 +158,57 @@ def test_cli_fail_below_passes_when_grade_meets_threshold(tmp_path):
     assert rc == SUCCESS
 
 
+def test_cli_aa_grade_is_consistent_across_file_stdin_and_json(
+    tmp_path,
+    monkeypatch,
+):
+    import io
+    import sys
+
+    snapshot_path = FIXTURES / "aa_snapshot_messy.json"
+    file_html = tmp_path / "file.html"
+    file_json = tmp_path / "file.json"
+    file_rc = main(
+        [
+            str(snapshot_path),
+            "--output",
+            str(file_html),
+            "--json",
+            str(file_json),
+            "--quiet",
+            "--fail-below",
+            "D",
+        ]
+    )
+
+    monkeypatch.setattr(
+        sys,
+        "stdin",
+        io.StringIO(snapshot_path.read_text(encoding="utf-8")),
+    )
+    stdin_html = tmp_path / "stdin.html"
+    stdin_json = tmp_path / "stdin.json"
+    stdin_rc = main(
+        [
+            "-",
+            "--output",
+            str(stdin_html),
+            "--json",
+            str(stdin_json),
+            "--quiet",
+            "--fail-below",
+            "D+",
+        ]
+    )
+
+    assert file_rc == SUCCESS
+    assert stdin_rc == GRADE_BELOW_THRESHOLD
+    assert json.loads(file_json.read_text(encoding="utf-8"))["overall_pct"] == 66
+    assert json.loads(file_json.read_text(encoding="utf-8"))["grade"] == "D"
+    assert file_json.read_bytes() == stdin_json.read_bytes()
+    assert file_html.read_bytes() == stdin_html.read_bytes()
+
+
 def test_cli_invalid_rubric_yaml_returns_validation_failure(tmp_path, capsys):
     pack = tmp_path / "broken_pack"
     pack.mkdir()

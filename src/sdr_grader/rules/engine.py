@@ -7,6 +7,7 @@ this module is the only place that calls them.
 
 from __future__ import annotations
 
+from collections.abc import Collection, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -30,15 +31,47 @@ class RuleContext:
     remediation: str = ""
 
 
-def run_rules(impl: Implementation, rubric: Rubric) -> list[Finding]:
-    """Execute every rule in the rubric applicable to the implementation."""
+RuleInventory = tuple[RuleDefinition, ...]
+
+
+def resolve_effective_rules(
+    impl: Implementation,
+    rubric: Rubric,
+    *,
+    excluded_rule_ids: Collection[str] = (),
+) -> RuleInventory:
+    """Return the ordered rules that can affect this implementation."""
+    excluded = set(excluded_rule_ids)
+    return tuple(
+        rule
+        for rule in rubric.rules
+        if rule.id not in excluded and _applies_to_platform(rule, impl)
+    )
+
+
+def run_rules(
+    impl: Implementation,
+    rubric: Rubric,
+    *,
+    rule_inventory: Sequence[RuleDefinition] | None = None,
+) -> list[Finding]:
+    """Execute one resolved rule inventory for the implementation."""
+    rules = (
+        resolve_effective_rules(impl, rubric)
+        if rule_inventory is None
+        else rule_inventory
+    )
     findings: list[Finding] = []
-    for rule in rubric.rules:
-        if not _applies_to_platform(rule, impl):
-            continue
+    for rule in rules:
         ctx = _build_context(rule)
         check = get_check(rule.check)
         produced = check(impl, ctx)
+        unexpected_ids = {finding.id for finding in produced if finding.id != rule.id}
+        if unexpected_ids:
+            raise ValueError(
+                f"check {rule.check!r} for rule {rule.id!r} returned "
+                f"finding IDs for other rules: {sorted(unexpected_ids)!r}"
+            )
         findings.extend(produced)
     return findings
 

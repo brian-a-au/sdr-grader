@@ -127,9 +127,10 @@ def _parse(raw: dict[str, Any], *, source: str) -> Suppression:
 def apply_to_rubric(rubric: Rubric, suppression: Suppression) -> Rubric:
     """Return a new Rubric with severity + weight overrides applied.
 
-    Suppressed rules stay in the rubric so the engine can still know about
-    them — application happens at finding-time. Category weights are
-    re-normalized so they continue to sum to 1.0.
+    Suppressed rules stay in the rubric for methodology summaries; the grader
+    excludes fully suppressed IDs when it resolves the effective rule
+    inventory. Category weights are re-normalized so they continue to sum to
+    1.0.
     """
     new_rules = [
         replace(r, severity=suppression.severity_overrides.get(r.id, r.severity))
