@@ -45,7 +45,7 @@ from sdr_grader.rules.suppression import (
 )
 
 TOP_REMEDIATIONS = 5
-SEVERITY_TO_IMPACT_PTS = {"critical": 10, "high": 5, "medium": 3, "low": 1}
+SEVERITY_TO_PRIORITY_WEIGHT = {"critical": 10, "high": 5, "medium": 3, "low": 1}
 SEVERITY_RANK = {"critical": 0, "high": 1, "medium": 2, "low": 3}
 
 # Stable fallback timestamp when the snapshot has none. Documented so the
@@ -157,12 +157,12 @@ def _derive_remediations(
             Remediation(
                 text=_compact_text(rule.remediation),
                 refs=[rule_id],
-                impact_pts=SEVERITY_TO_IMPACT_PTS.get(severity, 1),
+                priority_weight=SEVERITY_TO_PRIORITY_WEIGHT.get(severity, 1),
             )
         )
 
     items.sort(
-        key=lambda r: (-r.impact_pts, r.refs[0] if r.refs else ""),
+        key=lambda r: (-r.priority_weight, r.refs[0] if r.refs else ""),
     )
     return items[:TOP_REMEDIATIONS]
 

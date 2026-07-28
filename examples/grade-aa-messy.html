@@ -202,7 +202,7 @@ ol.remediations .text .ref {
   letter-spacing: 0.04em;
   margin-left: 6px;
 }
-ol.remediations .impact {
+ol.remediations .priority-weight {
   font-family: "Söhne", "Inter", system-ui, sans-serif;
   font-size: 12px;
   color: #2a5934;
@@ -503,7 +503,7 @@ pre.code {
           Establish a snapshot directory in version control and schedule regular runs of cja_auto_sdr / aa_auto_sdr to populate it.
           <span class="ref">GOV-001</span>
         </span>
-        <span class="impact">+5 pts overall</span>
+        <span class="priority-weight">Priority weight 5</span>
       </li>
       
       <li>
@@ -511,7 +511,7 @@ pre.code {
           Generate the SDR via cja_auto_sdr / aa_auto_sdr and commit it alongside this snapshot. Suppress this rule via .sdr-grader.yaml if the SDR lives somewhere the grader cannot see.
           <span class="ref">GOV-003</span>
         </span>
-        <span class="impact">+5 pts overall</span>
+        <span class="priority-weight">Priority weight 5</span>
       </li>
       
       <li>
@@ -519,7 +519,7 @@ pre.code {
           Re-create the missing component, or update the segment / calculated metric to point at the current canonical equivalent.
           <span class="ref">SCH-002</span>
         </span>
-        <span class="impact">+5 pts overall</span>
+        <span class="priority-weight">Priority weight 5</span>
       </li>
       
       <li>
@@ -527,7 +527,7 @@ pre.code {
           Update the formula to reference the current canonical component or retire the calculated metric.
           <span class="ref">CALC-002</span>
         </span>
-        <span class="impact">+3 pts overall</span>
+        <span class="priority-weight">Priority weight 3</span>
       </li>
       
       <li>
@@ -535,7 +535,7 @@ pre.code {
           Pick one term per concept, document it, and rename existing components to align. The losing synonyms should be deprecated, not silently kept around.
           <span class="ref">NAME-004</span>
         </span>
-        <span class="impact">+3 pts overall</span>
+        <span class="priority-weight">Priority weight 3</span>
       </li>
       
     </ol>

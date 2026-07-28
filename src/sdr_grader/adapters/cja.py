@@ -55,8 +55,9 @@ def adapt(snapshot: dict[str, Any], *, source: str = "<unknown>") -> Implementat
         or metadata.get("generation_timestamp")
         or metadata.get("generated_at")
         # The key real cja_auto_sdr exports actually carry (value like
-        # "2026-05-20 10:56:29 PDT"; consumed as an opaque string, never
-        # date-parsed). Found via the private corpus, 2026-07-17.
+        # "2026-05-20 10:56:29 PDT"). The grader parses the explicit
+        # timezone allowlist without consulting host locale settings.
+        # Found via the private corpus, 2026-07-17.
         or metadata.get("Generated Date & timestamp and timezone")
     )
     if isinstance(snapshot_taken_at, str):

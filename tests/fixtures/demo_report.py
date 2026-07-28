@@ -48,8 +48,8 @@ def build_demo_report() -> Report:
             "production CJA instances. <strong>Schema hygiene</strong> and <strong>naming consistency</strong> "
             "are strong; the largest gaps are in <strong>calculated metric maintainability</strong> (61%) and "
             "<strong>governance posture</strong> (54%), driven by a long tail of duplicate-near-equivalent "
-            "metrics and the absence of any tracked snapshot history. The five highest-impact remediations "
-            "are listed below; addressing the top three would move the overall grade to B+."
+            "metrics and the absence of any tracked snapshot history. The five highest-priority remediations "
+            "are listed below in severity-derived priority order."
         ),
         categories=[
             Category("Schema hygiene", 82, "B"),
@@ -63,31 +63,31 @@ def build_demo_report() -> Report:
             Remediation(
                 text="Consolidate the seven near-duplicate revenue calculated metrics into a single canonical metric.",
                 refs=["CALC-014", "CALC-015", "CALC-022"],
-                impact_pts=6,
+                priority_weight=6,
             ),
             Remediation(
                 text=("Establish snapshot tracking for the data view via cja_auto_sdr and commit "
                       "the baseline to version control."),
                 refs=["GOV-001"],
-                impact_pts=4,
+                priority_weight=4,
             ),
             Remediation(
                 text=("Add descriptions to the 38 metrics and 51 dimensions currently lacking them. "
                       "Required fields exist in the data view; populate them via the API."),
                 refs=["SCH-003"],
-                impact_pts=3,
+                priority_weight=3,
             ),
             Remediation(
                 text=("Refactor the four segments with nesting depth ≥ 5 into composed sub-segments "
                       "to make their intent reviewable."),
                 refs=["SEG-007"],
-                impact_pts=2,
+                priority_weight=2,
             ),
             Remediation(
                 text=("Document attribution model selection in calculated metrics — 12 metrics use "
                       "last-touch implicitly without justification."),
                 refs=["ATTR-002"],
-                impact_pts=2,
+                priority_weight=2,
             ),
         ],
         findings=[

@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; connect-src 'none'; base-uri 'none'; form-action 'none'"/>
+<meta name="referrer" content="no-referrer"/>
 <title>SDR Grade Trend — Production Web Analytics</title>
 <style>
 /* ---------- Reset & base ---------- */
@@ -201,7 +203,7 @@ ol.remediations .text .ref {
   letter-spacing: 0.04em;
   margin-left: 6px;
 }
-ol.remediations .impact {
+ol.remediations .priority-weight {
   font-family: "Söhne", "Inter", system-ui, sans-serif;
   font-size: 12px;
   color: #2a5934;

@@ -54,6 +54,14 @@ def test_render_contains_six_categories():
         assert category.name in html
 
 
+def test_render_labels_remediation_as_priority_not_predicted_score():
+    html = render(build_demo_report())
+
+    assert "Priority weight 6" in html
+    assert "pts overall" not in html
+    assert "would move the overall grade" not in html
+
+
 def test_render_is_self_contained():
     html = render(build_demo_report())
     assert "<link rel=\"stylesheet\"" not in html

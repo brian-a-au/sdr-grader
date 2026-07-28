@@ -23,6 +23,8 @@ def report_to_dict(report: Report) -> dict[str, Any]:
     """Convert a Report to a JSON-serializable dictionary."""
     data = asdict(report)
     data["generated_at"] = _normalize_datetime(report.generated_at)
+    for remediation in data["remediations"]:
+        remediation["impact_pts"] = remediation["priority_weight"]
     return data
 
 

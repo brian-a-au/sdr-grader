@@ -157,7 +157,8 @@ def _show(report: dict[str, Any], rule_id: str) -> int:
     if matching_remediations:
         print("Remediations:")
         for r in matching_remediations:
-            print(f"  · {r.get('text', '')} (impact: {r.get('impact_pts', 0)} pts)")
+            weight = r.get("priority_weight", r.get("impact_pts", 0))
+            print(f"  · {r.get('text', '')} (priority weight: {weight})")
     return 0
 
 

@@ -35,9 +35,13 @@ The grade JSON has these top-level fields:
 | `overall_pct`     | int — 0-100                                              |
 | `categories`      | list of `{name, pct, grade}`                             |
 | `findings`        | list of `{id, severity, category, title, body, actions}` |
-| `remediations`    | list of `{text, refs, impact_pts}`                       |
+| `remediations`    | list of `{text, refs, priority_weight, impact_pts}`      |
 | `methodology`     | `{paragraphs, skipped}`                                  |
 | `generated_at`    | ISO-8601 timestamp in UTC                                |
+
+`priority_weight` is the severity-derived remediation ordering value; it is
+not a predicted score gain. `impact_pts` is an equal-valued deprecated alias
+kept only for `1.2.x` compatibility.
 
 For routine queries use the bundled helper. It runs as a one-shot script
 (no install steps); the Bash tool already has permission to call it.

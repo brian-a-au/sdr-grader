@@ -93,7 +93,7 @@
           {{ r.text }}
           {% if r.refs %}<span class="ref">{{ r.refs | join(' · ') }}</span>{% endif %}
         </span>
-        <span class="impact">+{{ r.impact_pts }} pts overall</span>
+        <span class="priority-weight">Priority weight {{ r.priority_weight }}</span>
       </li>
       {% endfor %}
     </ol>

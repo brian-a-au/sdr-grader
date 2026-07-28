@@ -59,11 +59,42 @@ class Category:
     grade: str              # "B-"
 
 
-@dataclass
+@dataclass(init=False)
 class Remediation:
     text: str
-    refs: list[str] = field(default_factory=list)
-    impact_pts: int = 0
+    refs: list[str]
+    priority_weight: int
+
+    def __init__(
+        self,
+        text: str,
+        refs: list[str] | None = None,
+        priority_weight: int | None = None,
+        *,
+        impact_pts: int | None = None,
+    ) -> None:
+        if (
+            priority_weight is not None
+            and impact_pts is not None
+            and priority_weight != impact_pts
+        ):
+            raise ValueError("priority_weight and impact_pts must agree")
+        self.text = text
+        self.refs = [] if refs is None else refs
+        self.priority_weight = (
+            priority_weight
+            if priority_weight is not None
+            else impact_pts if impact_pts is not None else 0
+        )
+
+    @property
+    def impact_pts(self) -> int:
+        """Deprecated 1.2.x compatibility alias for priority_weight."""
+        return self.priority_weight
+
+    @impact_pts.setter
+    def impact_pts(self, value: int) -> None:
+        self.priority_weight = value
 
 
 @dataclass

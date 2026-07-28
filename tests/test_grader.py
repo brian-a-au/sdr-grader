@@ -6,10 +6,12 @@ from dataclasses import replace
 
 import pytest
 
+from sdr_grader.adapters.cja import adapt
 from sdr_grader.core.grade_calc import CategoryScore, GradeResult
-from sdr_grader.core.grader import _build_tldr, _derive_remediations
+from sdr_grader.core.grader import _build_tldr, _derive_remediations, grade
 from sdr_grader.core.models import Implementation
-from sdr_grader.render import Finding, FindingBlock
+from sdr_grader.render import Finding, FindingBlock, render
+from sdr_grader.render.json_output import report_to_dict
 from sdr_grader.rules.engine import resolve_effective_rules, run_rules
 from sdr_grader.rules.rubric import GradeBand, Rubric, RuleDefinition
 
@@ -140,6 +142,53 @@ def test_remediations_skip_rules_without_remediation_text():
         body=[FindingBlock(kind="paragraph", html="Observed behavior")],
     )
     assert _derive_remediations({rule.id: rule}, [finding]) == []
+
+
+def test_remediation_uses_truthful_priority_weight_with_legacy_alias():
+    rule = RuleDefinition(
+        id="TEST-HIGH",
+        name="High-priority repair",
+        severity="high",
+        platforms=["cja"],
+        check="unused-in-direct-test",
+        category="schema_hygiene",
+        remediation="Repair the observed configuration.",
+    )
+    finding = Finding(
+        id=rule.id,
+        severity="high",
+        category="schema hygiene",
+        title="Observed gap",
+        body=[FindingBlock(kind="paragraph", html="Observed behavior")],
+    )
+
+    remediation = _derive_remediations({rule.id: rule}, [finding])[0]
+
+    assert remediation.priority_weight == 5
+    assert remediation.impact_pts == remediation.priority_weight
+
+
+def test_real_cja_pdt_timestamp_flows_to_report_html_and_json():
+    impl = adapt(
+        {
+            "metadata": {
+                "Data View ID": "dv-real",
+                "Data View Name": "Real export",
+                "Generated Date & timestamp and timezone": "2026-05-20 10:56:29 PDT",
+            },
+            "metrics": [],
+            "dimensions": [],
+        }
+    )
+
+    report = grade(impl, _rubric([]))
+    html = render(report)
+    data = report_to_dict(report)
+
+    assert report.generated_at.isoformat() == "2026-05-20T17:56:29+00:00"
+    assert report.id == "SDR-2026-0520-DV-REAL"
+    assert "May 20 2026 · 17:56 UTC" in html
+    assert data["generated_at"] == "2026-05-20T17:56:29Z"
 
 
 def test_tldr_trusted_markup_escapes_dynamic_rubric_values():
