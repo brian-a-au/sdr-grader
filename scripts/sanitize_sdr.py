@@ -86,6 +86,7 @@ class _SensitiveValue:
 @dataclass(frozen=True)
 class _ReplacementPlan:
     exact: dict[str, str]
+    prefilter: re.Pattern[str] | None
     pattern: re.Pattern[str] | None
 
 
@@ -257,11 +258,26 @@ def _sensitive_values(doc: dict[str, Any]) -> list[_SensitiveValue]:
 def _replacement_plan(sensitive_values: list[_SensitiveValue]) -> _ReplacementPlan:
     global_values = tuple(item for item in sensitive_values if item.global_replace)
     alternatives = "|".join(re.escape(item.original) for item in global_values)
+    prefix_alternatives = "|".join(
+        re.escape(prefix)
+        for prefix in sorted(
+            {
+                item.original[: min(4, len(item.original))]
+                for item in global_values
+            },
+            key=lambda prefix: (-len(prefix), prefix.casefold()),
+        )
+    )
     return _ReplacementPlan(
         exact={
             item.original.casefold(): str(item.replacement)
             for item in global_values
         },
+        prefilter=(
+            re.compile(rf"(?:{prefix_alternatives})", re.IGNORECASE)
+            if prefix_alternatives
+            else None
+        ),
         pattern=(
             re.compile(
                 rf"(?<![A-Za-z0-9_])(?:{alternatives})(?![A-Za-z0-9_])",
@@ -281,7 +297,11 @@ def _replace_text(
     replacement = replacements.exact.get(text.casefold())
     if replacement is not None:
         text = replacement
-    elif replacements.pattern is not None:
+    elif (
+        replacements.pattern is not None
+        and replacements.prefilter is not None
+        and replacements.prefilter.search(text)
+    ):
         text = replacements.pattern.sub(
             lambda match: replacements.exact[match.group(0).casefold()],
             text,
@@ -412,7 +432,12 @@ def _assert_no_residue(
     redact_patterns: list[re.Pattern[str]],
 ) -> None:
     for text in _iter_strings(doc):
-        if replacements.pattern is not None and replacements.pattern.search(text):
+        if (
+            replacements.pattern is not None
+            and replacements.prefilter is not None
+            and replacements.prefilter.search(text)
+            and replacements.pattern.search(text)
+        ):
             raise SanitizationError("residue-detected", "a recognized private value remains")
         if any(pattern.search(text) for pattern in redact_patterns):
             raise SanitizationError("residue-detected", "a requested redaction value remains")

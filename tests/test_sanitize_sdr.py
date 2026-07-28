@@ -8,9 +8,9 @@ import os
 import re
 import stat
 import sys
-import time
 from pathlib import Path
 from types import ModuleType
+from typing import Any
 
 import pytest
 
@@ -155,7 +155,9 @@ def test_negative_numeric_owner_is_redacted_and_idempotent(
     assert sanitize_sdr.sanitize(cleaned, platform="aa", redact_patterns=[]) == cleaned
 
 
-def test_many_sensitive_values_are_sanitized_with_bounded_work() -> None:
+def test_many_sensitive_values_are_sanitized_with_bounded_work(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     snapshot = {
         "report_suite": {"rsid": "private-suite"},
         "dimensions": [
@@ -169,11 +171,38 @@ def test_many_sensitive_values_are_sanitized_with_bounded_work() -> None:
         "metrics": [],
     }
 
-    started = time.perf_counter()
-    cleaned = sanitize_sdr.sanitize(snapshot, platform="aa", redact_patterns=[])
-    elapsed = time.perf_counter() - started
+    calls = {"search": 0, "sub": 0}
+    real_replacement_plan = sanitize_sdr._replacement_plan
 
-    assert elapsed < 2.0
+    class CountingPattern:
+        def __init__(self, wrapped: re.Pattern[str]) -> None:
+            self._wrapped = wrapped
+
+        def search(self, text: str):
+            calls["search"] += 1
+            return self._wrapped.search(text)
+
+        def sub(self, replacement: Any, text: str) -> str:
+            calls["sub"] += 1
+            return self._wrapped.sub(replacement, text)
+
+    def instrumented_replacement_plan(sensitive_values):
+        plan = real_replacement_plan(sensitive_values)
+        assert plan.pattern is not None
+        return sanitize_sdr._ReplacementPlan(
+            exact=plan.exact,
+            prefilter=plan.prefilter,
+            pattern=CountingPattern(plan.pattern),
+        )
+
+    monkeypatch.setattr(
+        sanitize_sdr,
+        "_replacement_plan",
+        instrumented_replacement_plan,
+    )
+    cleaned = sanitize_sdr.sanitize(snapshot, platform="aa", redact_patterns=[])
+
+    assert calls == {"search": 0, "sub": 0}
     assert cleaned["dimensions"][0]["owner_id"].startswith("own_")
     assert cleaned["dimensions"][-1]["owner_id"].startswith("own_")
 
