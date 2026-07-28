@@ -132,6 +132,30 @@ def apply_to_rubric(rubric: Rubric, suppression: Suppression) -> Rubric:
     inventory. Category weights are re-normalized so they continue to sum to
     1.0.
     """
+    rule_ids = {rule.id for rule in rubric.rules}
+    unknown_suppressed = sorted(
+        {entry.rule_id for entry in suppression.suppressed} - rule_ids
+    )
+    if unknown_suppressed:
+        raise RubricValidationError(
+            f"unknown suppressed rule ID: {unknown_suppressed[0]}"
+        )
+    unknown_severity = sorted(
+        set(suppression.severity_overrides) - rule_ids
+    )
+    if unknown_severity:
+        raise RubricValidationError(
+            f"unknown severity override rule ID: {unknown_severity[0]}"
+        )
+    unknown_categories = sorted(
+        set(suppression.category_weight_overrides)
+        - set(rubric.category_weights)
+    )
+    if unknown_categories:
+        raise RubricValidationError(
+            f"unknown category weight override: {unknown_categories[0]}"
+        )
+
     new_rules = [
         replace(r, severity=suppression.severity_overrides.get(r.id, r.severity))
         for r in rubric.rules

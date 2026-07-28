@@ -1,4 +1,4 @@
-"""Tests for SCH-001/002/004/005/006 (Phase 4 additions)."""
+"""Tests for additional registered schema-hygiene checks."""
 
 from __future__ import annotations
 
@@ -12,7 +12,6 @@ from sdr_grader.core.models import (
 )
 from sdr_grader.rules.checks.schema_hygiene import (
     check_broken_references,
-    check_cardinality_concerns,
     check_deprecated_components,
     check_derived_field_broken_refs,
     check_derived_field_cycles,
@@ -287,62 +286,6 @@ def test_deprecated_fires_on_old_marker_in_name():
         _impl(metrics=metrics, calc=calc), _ctx("SCH-005", severity="low")
     )
     assert len(findings) == 1
-
-
-# ---------------------------------------------------------------------------
-# SCH-006 cardinality (stub)
-# ---------------------------------------------------------------------------
-
-
-def test_cardinality_concerns_is_no_op_in_v0_1():
-    findings = check_cardinality_concerns(_impl(), _ctx("SCH-006"))
-    assert findings == []
-
-
-def test_cardinality_concerns_filters_invalid_counts_and_fires_for_named_flag():
-    dimensions = [
-        _component(1, cid="variables/status", name="Account Status", comp_type="dimension"),
-        _component(2, cid="variables/region", name="Region", comp_type="dimension"),
-        _component(3, cid="variables/tier", name="Account Tier", comp_type="dimension"),
-    ]
-    findings = check_cardinality_concerns(
-        _impl(
-            dimensions=dimensions,
-            supplementary={
-                "cardinality": {
-                    "variables/status": 12,
-                    "variables/region": 500,
-                    "variables/tier": "unknown",
-                }
-            },
-        ),
-        _ctx("SCH-006", low_cardinality_cap=10),
-    )
-    assert len(findings) == 1
-    assert "variables/status" in findings[0].body[1].items[0]
-
-
-def test_cardinality_concerns_quiet_for_wrong_typed_or_low_counts():
-    dimension = _component(
-        1,
-        cid="variables/status",
-        name="Account Status",
-        comp_type="dimension",
-    )
-    assert (
-        check_cardinality_concerns(
-            _impl(dimensions=[dimension], supplementary={"cardinality": "unknown"}),
-            _ctx("SCH-006"),
-        )
-        == []
-    )
-    assert (
-        check_cardinality_concerns(
-            _impl(dimensions=[dimension], supplementary={"cardinality": {dimension.id: 10}}),
-            _ctx("SCH-006", low_cardinality_cap=10),
-        )
-        == []
-    )
 
 
 # ---------------------------------------------------------------------------

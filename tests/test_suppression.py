@@ -9,7 +9,7 @@ import pytest
 import yaml
 
 from sdr_grader.adapters.cja import adapt
-from sdr_grader.cli.exit_codes import SUCCESS
+from sdr_grader.cli.exit_codes import RUBRIC_VALIDATION_FAILURE, SUCCESS
 from sdr_grader.cli.main import main
 from sdr_grader.core.exceptions import RubricValidationError
 from sdr_grader.core.grader import grade
@@ -190,6 +190,28 @@ def test_apply_to_rubric_overrides_severity_per_rule():
     assert sch003.severity == "low"
 
 
+@pytest.mark.parametrize(
+    ("suppression", "message"),
+    [
+        (
+            Suppression(suppressed=[SuppressedRule("UNKNOWN-1", reason="typo")]),
+            "unknown suppressed rule ID",
+        ),
+        (
+            Suppression(severity_overrides={"UNKNOWN-2": "low"}),
+            "unknown severity override rule ID",
+        ),
+        (
+            Suppression(category_weight_overrides={"governance_postuer": 0.5}),
+            "unknown category weight override",
+        ),
+    ],
+)
+def test_apply_to_rubric_rejects_unknown_references(suppression, message):
+    with pytest.raises(RubricValidationError, match=message):
+        apply_to_rubric(load_rubric(STRICT_PACK), suppression)
+
+
 @pytest.mark.parametrize("override", [0.0, -0.25])
 def test_apply_to_rubric_clamps_nonpositive_category_weight_to_zero(override):
     rubric = load_rubric(STRICT_PACK)
@@ -227,7 +249,7 @@ def test_grader_with_suppression_skips_suppressed_findings(tmp_path):
     suppression = Suppression(suppressed=[SuppressedRule("SCH-003", reason="working through it")])
     suppressed_report = grade(impl, rubric, suppression=suppression)
     assert all(f.id != "SCH-003" for f in suppressed_report.findings)
-    assert "encodes 29 rules across 6 active categories" in (
+    assert "encodes 26 rules across 6 active categories" in (
         suppressed_report.methodology.paragraphs[0]
     )
     # Suppression appears in methodology skipped section.
@@ -252,6 +274,69 @@ def test_cli_loads_suppression_config(tmp_path):
     html = output.read_text(encoding="utf-8")
     assert "89 components lack descriptions" not in html  # SCH-003 suppressed
     assert "SCH-003" in html  # but listed as skipped
+
+
+@pytest.mark.parametrize(
+    "content",
+    [
+        {"suppress": [{"rule": "UNKNOWN-1", "reason": "typo"}]},
+        {"severity_overrides": {"UNKNOWN-2": "low"}},
+        {"category_weights": {"governance_postuer": 0.5}},
+    ],
+)
+def test_cli_rejects_unknown_suppression_references_before_output(
+    tmp_path,
+    capsys,
+    content,
+):
+    config = _write_suppression(tmp_path, content)
+    output = tmp_path / "report.html"
+
+    rc = main(
+        [
+            str(FIXTURES / "cja_snapshot_messy.json"),
+            "--output",
+            str(output),
+            "--suppress-config",
+            str(config),
+            "--quiet",
+        ]
+    )
+
+    assert rc == RUBRIC_VALIDATION_FAILURE
+    assert not output.exists()
+    assert "rubric error:" in capsys.readouterr().err
+
+
+def test_cli_trend_rejects_unknown_suppression_reference_before_output(
+    tmp_path,
+    capsys,
+):
+    config = _write_suppression(
+        tmp_path,
+        {"suppress": [{"rule": "UNKNOWN-1", "reason": "typo"}]},
+    )
+    snapshots = tmp_path / "snapshots"
+    snapshots.mkdir()
+    source = (FIXTURES / "cja_snapshot_messy.json").read_text(encoding="utf-8")
+    (snapshots / "snapshot_2026-01-01.json").write_text(source, encoding="utf-8")
+    output = tmp_path / "trend.html"
+
+    rc = main(
+        [
+            str(snapshots),
+            "--trend",
+            "--output",
+            str(output),
+            "--suppress-config",
+            str(config),
+            "--quiet",
+        ]
+    )
+
+    assert rc == RUBRIC_VALIDATION_FAILURE
+    assert not output.exists()
+    assert "rubric error:" in capsys.readouterr().err
 
 
 # ---------------------------------------------------------------------------

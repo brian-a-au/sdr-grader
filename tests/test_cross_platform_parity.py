@@ -48,7 +48,6 @@ KNOWN_PHASE4_GAPS: frozenset[str] = frozenset({
     # so they don't exercise prefix/casing variation — fixture-coverage
     # gap, separate from rule correctness.
     "ATTR-003",
-    "GOV-002",
     "NAME-001",
     "NAME-002",
     "NAME-003",
@@ -88,6 +87,31 @@ def _impls():
 def _cross_platform_rules():
     rubric = load_rubric(STRICT_PACK)
     return [r for r in rubric.rules if set(r.platforms) >= {"cja", "aa"}]
+
+
+def test_bundled_pack_2_removes_inert_and_raw_count_rules():
+    for pack_name in ("strict", "pragmatic"):
+        rubric = load_rubric(STRICT_PACK.parent / pack_name)
+        ids = {rule.id for rule in rubric.rules}
+
+        assert rubric.version == "2.0"
+        assert len(rubric.rules) == 27
+        assert ids.isdisjoint({"GOV-002", "GOV-007", "GOV-008"})
+
+
+@pytest.mark.parametrize(
+    "check_name",
+    [
+        "cardinality_concerns",
+        "calc_metric_shared_unapproved",
+        "segment_shared_unapproved",
+    ],
+)
+def test_raw_count_checks_are_not_registered(check_name):
+    load_rubric(STRICT_PACK)
+
+    with pytest.raises(KeyError, match="no check function registered"):
+        get_check(check_name)
 
 
 def _ctx(rule) -> RuleContext:

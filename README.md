@@ -33,7 +33,9 @@ LLMs, no API calls — same input + same rubric always yields the same grade.
 Both packs cover the same six categories — schema hygiene, naming
 consistency, segment complexity, calculated metric maintainability,
 attribution coverage, and governance posture — and share the same
-rule IDs; `pragmatic` just loosens thresholds and demotes severities.
+27 rule IDs in bundled pack `2.0`; `pragmatic` just loosens thresholds
+and demotes severities. Pack `2.0` scores are not comparable with pack
+`1.0`; re-baseline CI thresholds, trends, and leaderboards after upgrading.
 Every rule in the default packs grades against data the snapshot
 itself carries, so out-of-the-box runs need no extra files. A few
 additional check functions ship registered but unwired — they read
@@ -117,8 +119,9 @@ aa_auto_sdr prod_us --format json --output - | \
 One run grades one platform. CJA and AA snapshots are not mixed: the
 platform is auto-detected per snapshot from its JSON shape, and the
 normalized model holds exactly one platform. In single-file or
-directory mode, only one snapshot is graded per invocation (siblings
-in a directory are ignored). In `--trend` mode, the runner explicitly
+directory mode, only one snapshot is graded per invocation. Directory
+siblings are inspected only for same-platform, same-instance history
+evidence. In `--trend` mode, the runner explicitly
 errors out (`snapshots in {dir} mix platforms …`) on a mismatch — keep
 CJA and AA snapshots in separate folders.
 

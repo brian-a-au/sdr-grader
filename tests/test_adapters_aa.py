@@ -152,8 +152,8 @@ def test_aa_clean_grades_better_than_aa_messy(messy_aa, clean_aa):
 def test_aa_messy_grade_uses_only_platform_applicable_rules(messy_aa):
     report = grade(adapt(messy_aa), load_rubric(STRICT_PACK))
 
-    assert (report.overall_pct, report.grade) == (66, "D")
-    assert "encodes 26 rules across 6 active categories" in report.methodology.paragraphs[0]
+    assert (report.overall_pct, report.grade) == (55, "F")
+    assert "encodes 23 rules across 6 active categories" in report.methodology.paragraphs[0]
     assert {"ATTR-004", "SCH-007", "SCH-008", "SCH-009"}.isdisjoint(
         finding.id for finding in report.findings
     )

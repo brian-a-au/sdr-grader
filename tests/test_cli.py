@@ -206,7 +206,7 @@ def test_cli_aa_grade_is_consistent_across_file_stdin_and_json(
             str(file_json),
             "--quiet",
             "--fail-below",
-            "D",
+            "F",
         ]
     )
 
@@ -226,14 +226,14 @@ def test_cli_aa_grade_is_consistent_across_file_stdin_and_json(
             str(stdin_json),
             "--quiet",
             "--fail-below",
-            "D+",
+            "D",
         ]
     )
 
     assert file_rc == SUCCESS
     assert stdin_rc == GRADE_BELOW_THRESHOLD
-    assert json.loads(file_json.read_text(encoding="utf-8"))["overall_pct"] == 66
-    assert json.loads(file_json.read_text(encoding="utf-8"))["grade"] == "D"
+    assert json.loads(file_json.read_text(encoding="utf-8"))["overall_pct"] == 55
+    assert json.loads(file_json.read_text(encoding="utf-8"))["grade"] == "F"
     assert file_json.read_bytes() == stdin_json.read_bytes()
     assert file_html.read_bytes() == stdin_html.read_bytes()
 
@@ -489,6 +489,96 @@ def _make_trend_dir(tmp_path: Path) -> Path:
     (d / "snapshot_2026-01-01.json").write_text(src, encoding="utf-8")
     (d / "snapshot_2026-02-01.json").write_text(src, encoding="utf-8")
     return d
+
+
+def _write_directory_snapshot(
+    directory: Path,
+    name: str,
+    *,
+    platform: str = "cja",
+    instance_id: str | None = None,
+) -> Path:
+    snapshot = json.loads(
+        (FIXTURES / f"{platform}_snapshot_messy.json").read_text(encoding="utf-8")
+    )
+    if platform == "cja":
+        snapshot["metadata"]["Data View ID"] = instance_id or "shared-instance"
+        snapshot["metadata"].pop("history_present", None)
+    else:
+        snapshot["report_suite"]["rsid"] = instance_id or "shared-instance"
+    path = directory / name
+    path.write_text(json.dumps(snapshot), encoding="utf-8")
+    return path
+
+
+def test_directory_same_instance_sibling_supplies_history_evidence(tmp_path):
+    snapshots = tmp_path / "snapshots"
+    snapshots.mkdir()
+    _write_directory_snapshot(snapshots, "snapshot_2026-01-01.json")
+    _write_directory_snapshot(snapshots, "snapshot_2026-02-01.json")
+    output = tmp_path / "report.html"
+
+    assert main([str(snapshots), "--output", str(output), "--quiet"]) == SUCCESS
+    assert "No snapshot history detected" not in output.read_text(encoding="utf-8")
+
+
+@pytest.mark.parametrize("sibling_kind", ["unrelated", "mixed", "malformed", "none"])
+def test_directory_nonmatching_sibling_does_not_supply_history(
+    tmp_path,
+    sibling_kind,
+):
+    snapshots = tmp_path / "snapshots"
+    snapshots.mkdir()
+    _write_directory_snapshot(
+        snapshots,
+        "snapshot_2026-02-01.json",
+        instance_id="selected-instance",
+    )
+    if sibling_kind == "unrelated":
+        _write_directory_snapshot(
+            snapshots,
+            "snapshot_2026-01-01.json",
+            instance_id="other-instance",
+        )
+    elif sibling_kind == "mixed":
+        _write_directory_snapshot(
+            snapshots,
+            "snapshot_2026-01-01.json",
+            platform="aa",
+            instance_id="selected-instance",
+        )
+    elif sibling_kind == "malformed":
+        (snapshots / "snapshot_2026-01-01.json").write_text("{", encoding="utf-8")
+    output = tmp_path / "report.html"
+
+    assert main([str(snapshots), "--output", str(output), "--quiet"]) == SUCCESS
+    assert "No snapshot history detected" in output.read_text(encoding="utf-8")
+
+
+def test_directory_history_ignores_unknown_internal_platform_override(tmp_path):
+    from sdr_grader.adapters.cja import adapt
+    from sdr_grader.input.history import matching_snapshot_sibling_exists
+
+    snapshots = tmp_path / "snapshots"
+    snapshots.mkdir()
+    selected_path = _write_directory_snapshot(
+        snapshots,
+        "snapshot_2026-02-01.json",
+        instance_id="selected-instance",
+    )
+    _write_directory_snapshot(
+        snapshots,
+        "snapshot_2026-01-01.json",
+        instance_id="selected-instance",
+    )
+    selected = adapt(json.loads(selected_path.read_text(encoding="utf-8")))
+
+    assert not matching_snapshot_sibling_exists(
+        snapshots,
+        selected_source=selected_path,
+        selected=selected,
+        platform_override="unsupported",
+    )
 
 
 def test_trend_fail_below_gates_exit_code(tmp_path, monkeypatch):

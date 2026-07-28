@@ -131,7 +131,7 @@ def build_calculated_metrics() -> dict[str, Any]:
         ("cm_rev_per_visit_final",     "r.kim@example.com",    "2026-02-03"),
     ]
     for mid, owner, created in revenue_authors:
-        # First variant is shared broadly but not approved — exercises GOV-007.
+        # Preserve representative approval and sharing metadata for adapter tests.
         is_gov007_trigger = mid == "cm_revenue_per_visit"
         gov007_shares = (
             [{"shareToType": "user", "shareToId": f"u{i + 1}"} for i in range(6)]
@@ -253,7 +253,7 @@ def build_segments() -> dict[str, Any]:
     ]
     segments = []
     for sid, depth, contexts in deep_specs:
-        # First deep segment is shared broadly but not approved — exercises GOV-008.
+        # Preserve representative approval and sharing metadata for adapter tests.
         is_gov008_trigger = sid == "seg_qualified_lead_v3"
         gov008_shares = (
             [{"shareToType": "user", "shareToId": f"u{i + 1}"} for i in range(4)]

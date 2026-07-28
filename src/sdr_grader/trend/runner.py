@@ -7,15 +7,15 @@ HTML; the JSON serializer can write it to disk for downstream tooling.
 
 from __future__ import annotations
 
-import json
+from datetime import datetime
 from pathlib import Path
 
-from sdr_grader.adapters.aa import adapt as adapt_aa
-from sdr_grader.adapters.cja import adapt as adapt_cja
 from sdr_grader.core.exceptions import InvalidSnapshotError
 from sdr_grader.core.grader import grade
-from sdr_grader.input.detect import detect_platform
-from sdr_grader.input.loader import _extract_timestamp
+from sdr_grader.core.models import Implementation
+from sdr_grader.input.adapt import adapt_snapshot
+from sdr_grader.input.history import same_history_identity
+from sdr_grader.input.loader import _extract_timestamp, _load_from_file
 from sdr_grader.rules.rubric import Rubric
 from sdr_grader.rules.suppression import Suppression
 from sdr_grader.trend.models import TrendPoint, TrendReport
@@ -42,46 +42,54 @@ def build_trend_report(
     if not candidates:
         raise InvalidSnapshotError(f"no .json snapshots found in {directory}")
 
+    timestamped_candidates: list[tuple[datetime, Path]] = []
+    for path in candidates:
+        timestamp = _extract_timestamp(path)
+        if timestamp is not None:
+            timestamped_candidates.append((timestamp, path))
+    if not timestamped_candidates:
+        raise InvalidSnapshotError(
+            f"no snapshots in {directory} have parseable filename timestamps; "
+            "trend reports require timestamped filenames "
+            "(e.g. snapshot_2026-04-25.json)."
+        )
+
     points: list[TrendPoint] = []
+    first_impl: Implementation | None = None
     instance_id: str | None = None
     instance_name: str | None = None
     platform: str | None = None
+    history_present = len(timestamped_candidates) > 1
 
-    for path in candidates:
-        ts = _extract_timestamp(path)
-        if ts is None:
-            # Trends require a stable ordering; skip files we can't date.
-            continue
-        snapshot = _read_json(path)
-        impl_platform = platform_override or detect_platform(snapshot)
-        impl = (adapt_cja if impl_platform == "cja" else adapt_aa)(
-            snapshot, source=str(path)
+    for timestamp, path in timestamped_candidates:
+        snapshot, source = _load_from_file(path)
+        impl = adapt_snapshot(
+            snapshot,
+            source=source,
+            platform_override=platform_override,
         )
-        if instance_id is None:
+        if first_impl is None:
+            first_impl = impl
             instance_id = impl.instance_id
             instance_name = impl.instance_name
             platform = impl.platform
         else:
-            if impl.instance_id != instance_id:
-                raise InvalidSnapshotError(
-                    f"snapshots in {directory} cover multiple instance IDs "
-                    f"({instance_id!r} and {impl.instance_id!r}); trend reports "
-                    "are per-instance."
-                )
             if impl.platform != platform:
                 raise InvalidSnapshotError(
                     f"snapshots in {directory} mix platforms "
                     f"({platform!r} and {impl.platform!r}); trend reports are "
                     "per-platform."
                 )
+            if not same_history_identity(first_impl, impl):
+                raise InvalidSnapshotError(
+                    f"snapshots in {directory} cover multiple instance IDs "
+                    f"({instance_id!r} and {impl.instance_id!r}); trend reports "
+                    "are per-instance."
+                )
+        impl.history_present = history_present
         report = grade(impl, rubric, suppression=suppression)
-        points.append(TrendPoint(timestamp=ts, source=str(path), report=report))
-
-    if not points:
-        raise InvalidSnapshotError(
-            f"no snapshots in {directory} have parseable filename timestamps; "
-            "trend reports require timestamped filenames "
-            "(e.g. snapshot_2026-04-25.json)."
+        points.append(
+            TrendPoint(timestamp=timestamp, source=str(path), report=report)
         )
 
     points.sort(key=lambda p: p.timestamp)
@@ -94,14 +102,3 @@ def build_trend_report(
         pack_version=rubric.version,
         points=points,
     )
-
-
-def _read_json(path: Path) -> dict:
-    try:
-        text = path.read_text(encoding="utf-8")
-    except OSError as exc:
-        raise InvalidSnapshotError(f"could not read {path}: {exc}") from exc
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError as exc:
-        raise InvalidSnapshotError(f"{path}: not valid JSON: {exc}") from exc

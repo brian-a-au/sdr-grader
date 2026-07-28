@@ -3,6 +3,37 @@
 All notable changes follow the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
+## Unreleased
+
+### Changed
+
+- **Bundled rubric packs are now `2.0`.** Strict and pragmatic contain
+  27 rules. Scores produced by pack `2.0` are not comparable with pack
+  `1.0`; re-baseline CI thresholds, regenerate stored trends, and
+  rebuild leaderboard distributions before comparing results.
+- **Snapshot history is evidence-based.** Directory and trend modes
+  recognize history only when another readable snapshot has the same
+  platform and instance ID. Every point in a multi-snapshot trend uses
+  the same history evidence; unrelated, mixed-platform, malformed, and
+  single-snapshot inputs do not silence `GOV-001`.
+- **Suppression references are validated.** Unknown rule IDs in
+  suppressions or severity overrides, and unknown category-weight keys,
+  now fail with rubric-validation exit code 3 before any report is
+  published.
+
+### Removed
+
+- `GOV-002`, `GOV-007`, and `GOV-008` are no longer bundled. `GOV-002`
+  had no deterministic reference-date input in a default run, while
+  `GOV-007` and `GOV-008` treated raw share counts as grading evidence.
+  The deterministic `snapshot_age` check remains registered for custom
+  packs that provide an explicit `reference_date`.
+- The registered raw-count checks `cardinality_concerns`,
+  `calc_metric_shared_unapproved`, and
+  `segment_shared_unapproved` have been removed. Replacement rules must
+  measure a normalized rate, structural invariant, or explicit policy
+  rather than raw tenant size.
+
 ## 1.1.5 — 2026-07-19
 
 Test and reliability hardening for validation, adapter normalization,

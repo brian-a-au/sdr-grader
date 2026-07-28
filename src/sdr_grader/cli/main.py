@@ -30,6 +30,7 @@ from sdr_grader.core.exceptions import (
     UnknownPlatformError,
 )
 from sdr_grader.core.grader import grade
+from sdr_grader.input.adapt import adapt_snapshot as _adapt_snapshot
 from sdr_grader.input.loader import STDIN_TOKEN, load_snapshot
 from sdr_grader.input.shell_out import shell_aa, shell_cja
 from sdr_grader.render import cap_component_items, render
@@ -108,13 +109,27 @@ def main(argv: list[str] | None = None) -> int:
         print(f"error: {exc}", file=sys.stderr)
         return RUNTIME_ERROR
 
+    if args.snapshot and Path(args.snapshot).is_dir():
+        from sdr_grader.input.history import matching_snapshot_sibling_exists
+
+        impl.history_present = matching_snapshot_sibling_exists(
+            Path(args.snapshot),
+            selected_source=Path(source),
+            selected=impl,
+            platform_override=args.platform,
+        )
+
     try:
         _attach_extra_inputs(impl, args.extra_input)
     except InvalidSnapshotError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return RUNTIME_ERROR
 
-    report = grade(impl, rubric, suppression=suppression)
+    try:
+        report = grade(impl, rubric, suppression=suppression)
+    except RubricValidationError as exc:
+        print(f"rubric error: {exc}", file=sys.stderr)
+        return RUBRIC_VALIDATION_FAILURE
     report = _maybe_attach_distribution(report, args)
     if report is None:
         return RUNTIME_ERROR
@@ -360,6 +375,9 @@ def _run_trend(args, rubric, suppression, rubric_dir, suppression_path) -> int:
             suppression=suppression,
             platform_override=args.platform,
         )
+    except RubricValidationError as exc:
+        print(f"rubric error: {exc}", file=sys.stderr)
+        return RUBRIC_VALIDATION_FAILURE
     except _ISE as exc:
         print(f"error: {exc}", file=sys.stderr)
         return RUNTIME_ERROR
@@ -424,26 +442,6 @@ def _load_snapshot_for_args(args) -> tuple[dict, str]:
         # explicit-file failure mode.
         raise InvalidSnapshotError(f"snapshot file not found: {args.snapshot}")
     return load_snapshot(args.snapshot, at=args.at)
-
-
-# ---------------------------------------------------------------------------
-# Adapter dispatch
-# ---------------------------------------------------------------------------
-
-
-def _adapt_snapshot(snapshot, *, source: str, platform_override: str | None):
-    """Detect platform (or use override) and dispatch to the right adapter."""
-    # Lazy imports keep the CLI startup fast.
-    from sdr_grader.adapters.aa import adapt as adapt_aa
-    from sdr_grader.adapters.cja import adapt as adapt_cja
-    from sdr_grader.input.detect import detect_platform
-
-    platform = platform_override or detect_platform(snapshot)
-    if platform == "cja":
-        return adapt_cja(snapshot, source=source)
-    if platform == "aa":
-        return adapt_aa(snapshot, source=source)
-    raise UnknownPlatformError(f"unknown platform {platform!r}; expected 'cja' or 'aa'")
 
 
 # ---------------------------------------------------------------------------

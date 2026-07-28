@@ -5,6 +5,10 @@ expose different configuration surfaces — so coverage is broader on
 CJA than on AA, and thresholds are calibrated on the platform where
 the data lives.
 
+Bundled pack `2.0` contains 27 rule definitions. All 27 apply to CJA;
+23 apply to AA. The four CJA-only definitions below are excluded from
+AA execution and from its scoring denominator.
+
 **Calibration corpus.** Default thresholds were measured against
 108 real-world snapshots: 100 CJA Data Views and 8 AA report suites.
 Every threshold in the rubric ships with its source in
@@ -37,7 +41,7 @@ the data is.
 
 **Honest framing.** The grader works on AA today and catches real
 bugs there (broken references, naming inconsistency, segment
-complexity, governance signals — all calibrated and verified). It
+complexity, and documentation/governance gaps). It
 just isn't yet a full audit of every AA configuration choice the way
 it is for CJA. If you're picking a launch tier:
 

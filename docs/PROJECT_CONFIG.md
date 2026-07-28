@@ -73,6 +73,16 @@ suppress entry, invalid severity value, non-numeric weight) raises
 design: a typo'd suppression should never silently let a rule keep firing
 when you thought you'd silenced it.
 
+References are validated against the selected rubric before grading:
+
+- every `suppress[].rule` must name a rule in that pack;
+- every `severity_overrides` key must name a rule in that pack; and
+- every `category_weights` key must exactly match a pack category slug.
+
+An unknown reference exits with code 3 before HTML or JSON output is
+published. When moving to bundled pack `2.0`, remove suppressions or
+severity overrides for `GOV-002`, `GOV-007`, and `GOV-008`.
+
 ## How suppressions show up in the report
 
 The rendered HTML's methodology section lists suppressed rule IDs

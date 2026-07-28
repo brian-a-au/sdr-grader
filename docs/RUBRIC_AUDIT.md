@@ -1,7 +1,7 @@
 # Rubric audit — May 2026
 
-A category-by-category audit of the 26 rules in the default `strict` and
-`pragmatic` packs against Adobe's published documentation for CJA and AA,
+A category-by-category audit of the 27 rules in the `2.0` default
+`strict` and `pragmatic` packs against Adobe's published documentation for CJA and AA,
 plus the calibration evidence that already exists in
 [`docs/threshold_calibration.md`](threshold_calibration.md).
 
@@ -88,12 +88,12 @@ audit; summary here.
 | ATTR-002 calc metrics lacking explicit attribution > 30% | **demoted to opt-in (degenerate)** | Calibration via `scripts/calibrate_thresholds.py` (run 2026-05-22) confirms p25 = p50 = p75 = p90 = p95 = **1.00** across n=31 tenants with any calc metrics; the script flags the distribution as **degenerate** — every observation sits at 1.00, so no threshold (0.30, 0.99, anywhere in between) distinguishes signal from baseline. Until tenants routinely populate `attribution_model` on calc metrics, the rule cannot discriminate. **Action taken (2026-05):** removed from default packs in 35a57c8; check function stays registered. ATTR-* row added to `threshold_calibration.md` by the same run. |
 | ATTR-003 same-refs different-attribution inconsistency | **solid in principle, rare in practice (confirmed)** | When fired, signal is genuine. Conflict requires ≥2 calc metrics with same input refs AND ≥2 distinct non-None attribution models — rare prerequisite. Calibration (2026-05-22) confirms: **0 observations** across 108 corpus entries (no tenant carries the prerequisite data). Keep as-is — the rule earns its keep on the day a tenant DOES populate attribution models on overlapping calc metrics. Structural, no threshold to calibrate. |
 
-## Governance (4 rules)
+## Governance (3 bundled rules, 1 custom-pack check)
 
 | Rule | Disposition | Notes |
 |------|-------------|-------|
-| GOV-001 no snapshot history | **defensible** | Extrinsic signal — the snapshot itself can't carry "is there a directory of older snapshots". Rule fires by default and is silenced by `history_present=true` from the loader / CI when evidence exists. Functions more like a nag-default than a measured rule. |
-| GOV-002 snapshot age | **solid** | Real, simple, parses ISO timestamp from `snapshot_taken_at`. |
+| GOV-001 no snapshot history | **defensible** | Extrinsic signal. Directory mode silences the rule only when a readable sibling has the same platform and instance ID; a multi-point trend applies that evidence to every point. File, stdin, and shell-out modes can still use an explicit metadata signal. |
+| GOV-002 snapshot age | **custom-pack only** | The check is deterministic when a custom rule supplies an explicit `reference_date`, but bundled runs have no such interface. Removed from pack `2.0`; `snapshot_age` remains registered for custom packs. |
 | GOV-003 no SDR documentation | **defensible** | Same shape as GOV-001 — fires by default, silenced by signal. Conceptually thin but useful as a default reminder. |
 | GOV-005 missing tags (>15%) | **solid (calibrated)** | Threshold 0.15, rounded from p75 = 0.14 (p90 = 0.26). Calibration explicit. |
 | (GOV-004 missing owners — already excluded from defaults post-calibration as degenerate.) | n/a | Correctly demoted. |
@@ -225,34 +225,13 @@ rules with `platforms: [aa]` could read directly from there.
 
 ### Both platforms
 
-8. **Owner / approval / shared-to-count signals on calc metrics and
-   segments.** ~~No rule grades this.~~ **Shipped (2026-05) as GOV-007
-   (calculated metrics) and GOV-008 (segments).** End-to-end findings:
-   the data IS in the snapshot — CJA carries first-class
-   `approved` / `shared_to_count` / `shares`; AA carries the same
-   semantic in `extra.publishingStatus.published` and `len(extra.shares)`.
-   But the sdr_grader adapters originally dropped these fields on the
-   floor because `CalculatedMetric` and `Segment` lacked
-   `platform_specific` (unlike `Component`). Implementation required:
-   (a) adding `approved: bool | None`, `shared_to_count: int | None`,
-   and `platform_specific: dict[str, Any]` as top-level fields on both
-   dataclasses;
-   (b) updating the CJA adapter to extract the first-class fields and
-   preserve the rest in `platform_specific`;
-   (c) updating the AA adapter to normalize `extra.publishingStatus`
-   and `extra.shares` to the same shape;
-   (d) writing `check_calc_metric_shared_unapproved` and
-   `check_segment_shared_unapproved` that fire only when
-   `approved is False` (not None — None means "no signal") AND
-   `shared_to_count` clears a threshold.
-   Cross-platform — same rule body works on both. Strict thresholds
-   (`min_shares: 5` for calc metrics, `min_shares: 3` for segments)
-   land at the inflection of the CJA corpus distributions
-   (shared_to_count clusters at 0 / 1 / 6+ for calc metrics; at 0 / 1 / 5
-   for segments). On the 100-CJA-fixture corpus, GOV-007 fires on 2
-   tenants surfacing 4 calc metrics; GOV-008 fires on 1 tenant
-   surfacing 1 segment — narrow, meaningful, the exact
-   high-leverage-no-signoff pattern the audit proposed.
+8. **Owner / approval signals on calc metrics and segments.**
+   Pack `1.0` shipped `GOV-007` and `GOV-008`, which combined approval
+   state with absolute `shared_to_count` thresholds. Pack `2.0` removes
+   both rules and their registered checks: an absolute count measures
+   tenant size and sharing volume, not a normalized quality rate or a
+   structural defect. The adapters retain the normalized fields so a
+   future rule can use an explicit policy or denominator-backed signal.
 
 ## Recommendations ranked by leverage
 
