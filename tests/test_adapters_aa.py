@@ -113,6 +113,35 @@ def test_aa_adapter_rejects_snapshot_without_rsid():
         adapt({"report_suite": {}, "dimensions": [], "metrics": []})
 
 
+@pytest.mark.parametrize(
+    ("collection", "record", "expected"),
+    [
+        ("dimensions", {"name": "PRIVATE-AA-VALUE", "secret": "\x1bPRIVATE"}, "missing"),
+        ("metrics", "PRIVATE-AA-VALUE", "got str"),
+        ("calculated_metrics", {"name": "PRIVATE-AA-VALUE"}, "missing"),
+        ("segments", {"name": "PRIVATE-AA-VALUE"}, "missing"),
+    ],
+)
+def test_aa_adapter_record_errors_are_structural(
+    collection: str, record, expected: str
+) -> None:
+    snapshot = {
+        "report_suite": {"rsid": "rs1"},
+        "dimensions": [],
+        "metrics": [],
+        collection: [record],
+    }
+
+    with pytest.raises(InvalidSnapshotError) as raised:
+        adapt(snapshot)
+
+    message = str(raised.value)
+    assert f"AA {collection}[0]" in message
+    assert expected in message
+    assert "PRIVATE-AA-VALUE" not in message
+    assert "\x1b" not in message
+
+
 def test_aa_clean_grades_better_than_aa_messy(messy_aa, clean_aa):
     rubric = load_rubric(STRICT_PACK)
     messy_pct = grade(adapt(messy_aa), rubric).overall_pct

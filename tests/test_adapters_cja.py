@@ -289,6 +289,36 @@ def test_adapt_rejects_non_list_metrics() -> None:
         )
 
 
+@pytest.mark.parametrize(
+    ("collection", "record", "expected"),
+    [
+        ("metrics", {"name": "PRIVATE-CJA-VALUE", "secret": "\x1bPRIVATE"}, "missing"),
+        ("dimensions", "PRIVATE-CJA-VALUE", "got str"),
+        ("derived_fields", {"name": "PRIVATE-CJA-VALUE"}, "missing"),
+        ("calculated_metrics", {"name": "PRIVATE-CJA-VALUE"}, "missing"),
+        ("segments", {"name": "PRIVATE-CJA-VALUE"}, "missing"),
+    ],
+)
+def test_cja_adapter_record_errors_are_structural(
+    collection: str, record, expected: str
+) -> None:
+    snapshot = {
+        "metadata": {"Data View ID": "dv_x"},
+        "metrics": [],
+        "dimensions": [],
+        collection: [record],
+    }
+
+    with pytest.raises(InvalidSnapshotError) as raised:
+        adapt(snapshot)
+
+    message = str(raised.value)
+    assert f"CJA {collection}[0]" in message
+    assert expected in message
+    assert "PRIVATE-CJA-VALUE" not in message
+    assert "\x1b" not in message
+
+
 # ---------------------------------------------------------------------------
 # Field-shape tolerance — cja_auto_sdr ships some list/dict fields as
 # JSON-encoded strings. The adapter must round-trip those into real lists.

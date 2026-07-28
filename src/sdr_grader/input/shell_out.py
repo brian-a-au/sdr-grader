@@ -9,7 +9,9 @@ a Mode 1 file.
 from __future__ import annotations
 
 import json
+import os
 import shutil
+import signal
 import subprocess
 import sys
 from typing import Any
@@ -19,6 +21,8 @@ from sdr_grader.core.exceptions import InvalidSnapshotError
 # Upstream tools make live Adobe API calls; a stalled connection should
 # fail loudly, not hang a CI job forever.
 SHELL_OUT_TIMEOUT_SECONDS = 600
+MAX_STDOUT_BYTES = 32 * 1024 * 1024
+MAX_STDERR_BYTES = 256 * 1024
 
 
 def shell_cja(
@@ -64,41 +68,89 @@ def _shell_out(tool: str, argv: list[str], *, flag: str) -> tuple[dict[str, Any]
             "pass a snapshot file path / stdin instead."
         )
     cmd = [binary, *argv]
+
+    # This bounds and cleans up a normal child-process boundary; it is not a
+    # sandbox. The invoked snapshot tool retains the OS/network authority of
+    # the user who launched sdr-grader.
+    popen_options = _popen_options(os.name)
+
     try:
-        result = subprocess.run(
-            cmd,
-            check=True,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            timeout=SHELL_OUT_TIMEOUT_SECONDS,
+        process = subprocess.Popen(cmd, **popen_options)
+        stdout, stderr = process.communicate(timeout=SHELL_OUT_TIMEOUT_SECONDS)
+    except subprocess.TimeoutExpired:
+        _terminate_process_tree(process)
+        process.communicate()
+        raise InvalidSnapshotError(
+            f"shell error [timeout]: {tool} exceeded the execution deadline"
+        ) from None
+    except OSError:
+        raise InvalidSnapshotError(
+            f"shell error [invoke-failed]: {tool} could not be started"
+        ) from None
+
+    if len(stdout) > MAX_STDOUT_BYTES:
+        raise InvalidSnapshotError(
+            f"shell error [output-limit]: {tool} stdout exceeded the byte limit"
         )
-    except subprocess.TimeoutExpired as exc:
+    if len(stderr) > MAX_STDERR_BYTES:
         raise InvalidSnapshotError(
-            f"{tool} did not finish within {SHELL_OUT_TIMEOUT_SECONDS}s; "
-            "check network access to Adobe APIs or run the tool manually."
-        ) from exc
-    except subprocess.CalledProcessError as exc:
-        stderr = exc.stderr or ""
+            f"shell error [output-limit]: {tool} stderr exceeded the byte limit"
+        )
+    if process.returncode:
         raise InvalidSnapshotError(
-            f"{tool} exited {exc.returncode}: {stderr.strip() or '(no stderr)'}"
-        ) from exc
-    except FileNotFoundError as exc:
-        raise InvalidSnapshotError(f"{tool} could not be invoked: {exc}") from exc
-    except UnicodeDecodeError as exc:
-        raise InvalidSnapshotError(
-            f"{tool} produced output that could not be decoded as UTF-8: {exc}"
-        ) from exc
+            f"shell error [child-exit]: {tool} returned status {process.returncode}"
+        )
 
-    warnings = (result.stderr or "").strip()
-    if warnings:
-        print(f"{tool} warnings:\n{warnings}", file=sys.stderr)
+    if stderr:
+        print(
+            f"warning [shell-child-diagnostics]: "
+            f"{tool} emitted diagnostics; content suppressed",
+            file=sys.stderr,
+        )
 
     try:
-        snapshot = json.loads(result.stdout)
-    except json.JSONDecodeError as exc:
-        detail = f" (stderr: {warnings})" if warnings else ""
+        decoded = stdout.decode("utf-8")
+    except UnicodeDecodeError:
         raise InvalidSnapshotError(
-            f"{tool} produced output that is not valid JSON: {exc}{detail}"
-        ) from exc
-    return snapshot, f"shell-out:{tool} {argv[0]}"
+            f"shell error [invalid-encoding]: {tool} stdout was not UTF-8"
+        ) from None
+    try:
+        snapshot = json.loads(decoded)
+    except json.JSONDecodeError:
+        raise InvalidSnapshotError(
+            f"shell error [invalid-json]: {tool} stdout was not valid JSON"
+        ) from None
+    if not isinstance(snapshot, dict):
+        raise InvalidSnapshotError(
+            f"shell error [invalid-shape]: {tool} stdout must be a JSON object"
+        )
+    return snapshot, f"shell-out:{tool}"
+
+
+def _popen_options(platform_name: str) -> dict[str, Any]:
+    options: dict[str, Any] = {
+        "stdout": subprocess.PIPE,
+        "stderr": subprocess.PIPE,
+    }
+    if platform_name == "posix":
+        options["start_new_session"] = True
+    elif platform_name == "nt":
+        options["creationflags"] = getattr(
+            subprocess,
+            "CREATE_NEW_PROCESS_GROUP",
+            0x00000200,
+        )
+    return options
+
+
+def _terminate_process_tree(process: subprocess.Popen[bytes]) -> None:
+    """Best-effort termination of the child and its descendants."""
+    if process.poll() is not None:
+        return
+    try:
+        if os.name == "posix":
+            os.killpg(process.pid, signal.SIGKILL)
+        else:
+            process.kill()
+    except (OSError, ProcessLookupError):
+        process.kill()

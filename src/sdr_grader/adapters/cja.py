@@ -89,14 +89,24 @@ def adapt(snapshot: dict[str, Any], *, source: str = "<unknown>") -> Implementat
         return inline_id is not None and str(inline_id) in derived_ids
 
     metrics = [
-        _component_from_record(r, "metric")
-        for r in metrics_raw
-        if not _echoes_derived_field(r)
+        _component_from_record(
+            record,
+            "metric",
+            collection="metrics",
+            index=index,
+        )
+        for index, record in enumerate(metrics_raw)
+        if not _echoes_derived_field(record)
     ]
     dimensions = [
-        _component_from_record(r, "dimension")
-        for r in dimensions_raw
-        if not _echoes_derived_field(r)
+        _component_from_record(
+            record,
+            "dimension",
+            collection="dimensions",
+            index=index,
+        )
+        for index, record in enumerate(dimensions_raw)
+        if not _echoes_derived_field(record)
     ]
     calculated_metrics = _adapt_calculated_metrics(snapshot.get("calculated_metrics"))
     segments = _adapt_segments(snapshot.get("segments"))
@@ -122,15 +132,26 @@ def adapt(snapshot: dict[str, Any], *, source: str = "<unknown>") -> Implementat
 # ---------------------------------------------------------------------------
 
 
-def _component_from_record(record: dict[str, Any], component_type: str) -> Component:
+def _component_from_record(
+    record: dict[str, Any],
+    component_type: str,
+    *,
+    collection: str | None = None,
+    index: int | None = None,
+) -> Component:
+    context = _record_context(collection or f"{component_type}s", index)
     if not isinstance(record, dict):
         raise InvalidSnapshotError(
-            f"expected {component_type} record to be an object, got {type(record).__name__}"
+            f"{context}: expected {component_type} record to be an object, "
+            f"got {type(record).__name__}"
         )
 
     component_id = record.get("id") or record.get("component_id") or record.get("metric_id")
     if not component_id:
-        raise InvalidSnapshotError(f"{component_type} record is missing 'id': {record!r}")
+        raise InvalidSnapshotError(
+            f"{context}: {component_type} record is missing 'id' "
+            "(required identifier key: 'id', 'component_id', or 'metric_id')"
+        )
 
     name = record.get("name") or record.get("title") or component_id
     description = _normalize_description(record.get("description"))
@@ -165,17 +186,27 @@ def _adapt_derived_fields(section: Any) -> list[Component]:
     if section is None:
         return []
     fields = _section_records(section, "fields")
-    return [_derived_field_from_record(r) for r in fields]
+    return [
+        _derived_field_from_record(record, index=index)
+        for index, record in enumerate(fields)
+    ]
 
 
-def _derived_field_from_record(record: dict[str, Any]) -> Component:
+def _derived_field_from_record(
+    record: dict[str, Any], *, index: int | None = None
+) -> Component:
+    context = _record_context("derived_fields", index)
     if not isinstance(record, dict):
         raise InvalidSnapshotError(
-            f"expected derived field record to be an object, got {type(record).__name__}"
+            f"{context}: expected derived field record to be an object, "
+            f"got {type(record).__name__}"
         )
     component_id = record.get("component_id") or record.get("id")
     if not component_id:
-        raise InvalidSnapshotError(f"derived field record is missing 'component_id': {record!r}")
+        raise InvalidSnapshotError(
+            f"{context}: derived field record is missing 'component_id' "
+            "(required identifier key: 'component_id' or 'id')"
+        )
 
     name = record.get("component_name") or record.get("name") or component_id
     description = _normalize_description(record.get("description"))
@@ -207,18 +238,26 @@ def _adapt_calculated_metrics(section: Any) -> list[CalculatedMetric]:
     if section is None:
         return []
     records = _section_records(section, "metrics")
-    return [_calc_metric_from_record(r) for r in records]
+    return [
+        _calc_metric_from_record(record, index=index)
+        for index, record in enumerate(records)
+    ]
 
 
-def _calc_metric_from_record(record: dict[str, Any]) -> CalculatedMetric:
+def _calc_metric_from_record(
+    record: dict[str, Any], *, index: int | None = None
+) -> CalculatedMetric:
+    context = _record_context("calculated_metrics", index)
     if not isinstance(record, dict):
         raise InvalidSnapshotError(
-            f"expected calculated metric record to be an object, got {type(record).__name__}"
+            f"{context}: expected calculated metric record to be an object, "
+            f"got {type(record).__name__}"
         )
     metric_id = record.get("metric_id") or record.get("id")
     if not metric_id:
         raise InvalidSnapshotError(
-            f"calculated metric record is missing 'metric_id': {record!r}"
+            f"{context}: calculated metric record is missing 'metric_id' "
+            "(required identifier key: 'metric_id' or 'id')"
         )
 
     name = record.get("metric_name") or record.get("name") or metric_id
@@ -300,17 +339,25 @@ def _adapt_segments(section: Any) -> list[Segment]:
     if section is None:
         return []
     records = _section_records(section, "segments")
-    return [_segment_from_record(r) for r in records]
+    return [
+        _segment_from_record(record, index=index)
+        for index, record in enumerate(records)
+    ]
 
 
-def _segment_from_record(record: dict[str, Any]) -> Segment:
+def _segment_from_record(record: dict[str, Any], *, index: int | None = None) -> Segment:
+    context = _record_context("segments", index)
     if not isinstance(record, dict):
         raise InvalidSnapshotError(
-            f"expected segment record to be an object, got {type(record).__name__}"
+            f"{context}: expected segment record to be an object, "
+            f"got {type(record).__name__}"
         )
     segment_id = record.get("segment_id") or record.get("id")
     if not segment_id:
-        raise InvalidSnapshotError(f"segment record is missing 'segment_id': {record!r}")
+        raise InvalidSnapshotError(
+            f"{context}: segment record is missing 'segment_id' "
+            "(required identifier key: 'segment_id' or 'id')"
+        )
 
     name = record.get("segment_name") or record.get("name") or segment_id
     description = _normalize_description(record.get("description"))
@@ -464,6 +511,12 @@ def _section_records(section: Any, records_key: str) -> list[dict[str, Any]]:
     raise InvalidSnapshotError(
         f"section must be object or list, got {type(section).__name__}"
     )
+
+
+def _record_context(collection: str, index: int | None) -> str:
+    """Return bounded structural context without including record values."""
+    suffix = f"[{index}]" if index is not None else " record"
+    return f"CJA {collection}{suffix}"
 
 
 def _parse_definition_json(value: Any) -> dict[str, Any]:

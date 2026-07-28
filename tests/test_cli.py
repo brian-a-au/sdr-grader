@@ -84,6 +84,35 @@ def test_cli_rejects_invalid_json(tmp_path, capsys):
     assert "not valid JSON" in capsys.readouterr().err
 
 
+def test_cli_adapter_error_does_not_echo_snapshot_values_or_private_path(
+    tmp_path, capsys
+):
+    private_dir = tmp_path / "PRIVATE-CLI-PATH"
+    private_dir.mkdir()
+    snapshot = private_dir / "PRIVATE-CLI-SNAPSHOT.json"
+    canary = "PRIVATE-CLI-RECORD-CANARY"
+    snapshot.write_text(
+        json.dumps(
+            {
+                "report_suite": {"rsid": "rs1"},
+                "dimensions": [{"name": canary, "secret": "\x1bPRIVATE"}],
+                "metrics": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    rc = main([str(snapshot), "--platform", "aa", "--quiet"])
+
+    assert rc == RUNTIME_ERROR
+    diagnostics = capsys.readouterr().err
+    assert "AA dimensions[0]" in diagnostics
+    assert canary not in diagnostics
+    assert "PRIVATE-CLI-PATH" not in diagnostics
+    assert "\x1b" not in diagnostics
+    assert "Traceback" not in diagnostics
+
+
 def test_cli_rejects_unknown_pack(tmp_path, capsys):
     rc = main(
         [
