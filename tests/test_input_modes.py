@@ -243,7 +243,7 @@ def test_cli_dataview_requires_cja_auto_sdr_on_path(tmp_path, capsys, monkeypatc
     assert "cja_auto_sdr not found" in capsys.readouterr().err
 
 
-def test_shell_cja_passes_include_all_inventory(monkeypatch):
+def test_shell_cja_builds_complete_inventory_command_with_extra_args(monkeypatch):
     """CJA shell-out must request the full inventory so calc-metric and
     segment rule packs grade against populated inputs."""
     import subprocess
@@ -263,12 +263,23 @@ def test_shell_cja_passes_include_all_inventory(monkeypatch):
     monkeypatch.setattr("shutil.which", lambda tool: f"/usr/bin/{tool}")
     monkeypatch.setattr(subprocess, "run", fake_run)
 
-    snapshot, source = shell_cja("dv_test")
+    snapshot, source = shell_cja("dv_test", extra_args=["--log-level", "debug"])
     assert snapshot == {}
     assert source == "shell-out:cja_auto_sdr dv_test"
-    assert "--include-all-inventory" in captured["cmd"]
-    # Flag must precede --output so cja_auto_sdr applies it to the JSON write.
-    assert captured["cmd"].index("--include-all-inventory") < captured["cmd"].index("--output")
+    assert captured["cmd"] == [
+        "/usr/bin/cja_auto_sdr",
+        "dv_test",
+        "--format",
+        "json",
+        "--output",
+        "-",
+        "--include-all-inventory",
+        "--quiet",
+        "--log-level",
+        "debug",
+    ]
+    assert captured["cmd"].count("--include-all-inventory") == 1
+    assert captured["cmd"].count("--quiet") == 1
 
 
 def test_shell_aa_builds_report_suite_command_with_extra_args(monkeypatch):

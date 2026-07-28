@@ -26,21 +26,23 @@ def shell_cja(
 ) -> tuple[dict[str, Any], str]:
     """Shell out to cja_auto_sdr against a CJA data view ID.
 
-    Always passes ``--include-all-inventory`` so the snapshot ships
+    Always passes ``--include-all-inventory --quiet`` so the snapshot ships
     calculated metrics and segments alongside dimensions/metrics —
     without it, those rule packs grade against empty inputs and stay
-    silent. See cja_auto_sdr's Component Inventory Overview for the
-    full set of ``--include-*`` switches.
+    silent — while captured stdout remains JSON-only. See cja_auto_sdr's
+    Component Inventory Overview for the full set of ``--include-*``
+    switches.
     """
     return _shell_out(
         "cja_auto_sdr",
         [
             dataview_id,
-            "--include-all-inventory",
             "--format",
             "json",
             "--output",
             "-",
+            "--include-all-inventory",
+            "--quiet",
             *(extra_args or []),
         ],
         flag="--dataview",
