@@ -18,6 +18,7 @@ from sdr_grader.core.models import (
     Implementation,
     Segment,
 )
+from sdr_grader.core.structure_limits import validate_snapshot_structure
 
 
 def adapt(snapshot: dict[str, Any], *, source: str = "<unknown>") -> Implementation:
@@ -26,6 +27,7 @@ def adapt(snapshot: dict[str, Any], *, source: str = "<unknown>") -> Implementat
         raise InvalidSnapshotError(
             f"expected top-level JSON object, got {type(snapshot).__name__}"
         )
+    validate_snapshot_structure(snapshot, label="AA snapshot")
 
     if "report_suite" in snapshot:
         rs = snapshot["report_suite"]

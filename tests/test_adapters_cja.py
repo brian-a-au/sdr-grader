@@ -19,6 +19,7 @@ import pytest
 from sdr_grader.adapters.cja import adapt
 from sdr_grader.core.exceptions import InvalidSnapshotError
 from sdr_grader.core.models import CalculatedMetric, Component, Implementation, Segment
+from sdr_grader.core.structure_limits import MAX_DEFINITION_NODES, MAX_STRUCTURE_DEPTH
 
 FIXTURES = Path(__file__).parent / "fixtures"
 MESSY_PATH = FIXTURES / "cja_snapshot_messy.json"
@@ -73,6 +74,43 @@ def test_cja_adapter_treats_non_string_snapshot_timestamp_as_missing() -> None:
     }
 
     assert adapt(snapshot).snapshot_taken_at is None
+
+
+def test_cja_adapter_rejects_snapshot_beyond_structure_depth_budget():
+    nested = 0
+    for _ in range(MAX_STRUCTURE_DEPTH):
+        nested = {"child": nested}
+    snapshot = {
+        "metadata": {"Data View ID": "dv_test"},
+        "metrics": [],
+        "dimensions": [],
+        "hostile": nested,
+    }
+
+    with pytest.raises(InvalidSnapshotError, match=r"CJA snapshot.*depth"):
+        adapt(snapshot)
+
+
+def test_cja_decoded_definition_node_budget_boundary():
+    def snapshot_with_args(count):
+        return {
+            "metadata": {"Data View ID": "dv_test"},
+            "metrics": [],
+            "dimensions": [],
+            "calculated_metrics": {
+                "metrics": [
+                    {
+                        "metric_id": "cm/budget",
+                        "definition_json": json.dumps({"func": "sum", "args": [0] * count}),
+                    }
+                ]
+            },
+        }
+
+    adapt(snapshot_with_args(MAX_DEFINITION_NODES - 3))
+
+    with pytest.raises(InvalidSnapshotError, match=r"calculated metric definition.*10,000 nodes"):
+        adapt(snapshot_with_args(MAX_DEFINITION_NODES - 2))
 
 
 def test_messy_total_components_is_487(messy_impl: Implementation) -> None:

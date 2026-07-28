@@ -38,6 +38,19 @@ def test_load_snapshot_rejects_missing_path(tmp_path):
         load_snapshot(str(missing))
 
 
+def test_file_json_recursion_error_is_domain_error(tmp_path, monkeypatch):
+    snapshot = tmp_path / "snapshot.json"
+    snapshot.write_text("{}", encoding="utf-8")
+
+    def recurse(_value):
+        raise RecursionError("decoder recursion")
+
+    monkeypatch.setattr("sdr_grader.input.loader.json.loads", recurse)
+
+    with pytest.raises(InvalidSnapshotError, match="JSON exceeds nesting limits"):
+        load_snapshot(str(snapshot))
+
+
 def test_load_snapshot_wraps_file_read_error(tmp_path, monkeypatch):
     snapshot_path = tmp_path / "snapshot.json"
     snapshot_path.write_text("{}", encoding="utf-8")

@@ -10,6 +10,7 @@ import pytest
 from sdr_grader.adapters.aa import adapt
 from sdr_grader.core.exceptions import InvalidSnapshotError
 from sdr_grader.core.grader import grade
+from sdr_grader.core.structure_limits import MAX_STRUCTURE_DEPTH
 from sdr_grader.input.detect import detect_platform
 from sdr_grader.rules.rubric import load_rubric
 
@@ -56,6 +57,21 @@ def test_aa_adapter_treats_non_string_snapshot_timestamp_as_missing():
     }
 
     assert adapt(snapshot).snapshot_taken_at is None
+
+
+def test_aa_adapter_rejects_snapshot_beyond_structure_depth_budget():
+    nested = 0
+    for _ in range(MAX_STRUCTURE_DEPTH):
+        nested = {"child": nested}
+    snapshot = {
+        "report_suite": {"rsid": "test"},
+        "dimensions": [],
+        "metrics": [],
+        "hostile": nested,
+    }
+
+    with pytest.raises(InvalidSnapshotError, match=r"AA snapshot.*depth"):
+        adapt(snapshot)
 
 
 def test_aa_adapter_combines_evars_and_props_into_dimensions(messy_aa):
