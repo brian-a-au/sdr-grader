@@ -333,11 +333,13 @@ def test_cli_html_write_failure_returns_runtime_error(tmp_path, capsys):
 
     assert rc == RUNTIME_ERROR
     err = capsys.readouterr().err
-    assert f"could not write output {tmp_path}" in err
+    assert "could not publish report outputs" in err
+    assert str(tmp_path) not in err
 
 
 def test_cli_json_write_failure_returns_runtime_error(tmp_path, capsys):
     output = tmp_path / "out.html"
+    output.write_text("existing report", encoding="utf-8")
 
     rc = main(
         [
@@ -351,8 +353,103 @@ def test_cli_json_write_failure_returns_runtime_error(tmp_path, capsys):
     )
 
     assert rc == RUNTIME_ERROR
-    assert output.is_file()
-    assert f"could not write JSON {tmp_path}" in capsys.readouterr().err
+    assert output.read_text(encoding="utf-8") == "existing report"
+    assert "could not publish report outputs" in capsys.readouterr().err
+
+
+def test_cli_rejects_output_colliding_with_snapshot(tmp_path, capsys):
+    snapshot = tmp_path / "snapshot.json"
+    original = (FIXTURES / "cja_snapshot_clean.json").read_text(encoding="utf-8")
+    snapshot.write_text(original, encoding="utf-8")
+
+    rc = main([str(snapshot), "--output", str(snapshot)])
+
+    assert rc == RUNTIME_ERROR
+    assert snapshot.read_text(encoding="utf-8") == original
+    err = capsys.readouterr().err
+    assert "collides with an input path" in err
+    assert "Wrote " not in err
+
+
+def test_cli_rejects_html_json_destination_alias(tmp_path, capsys):
+    destination = tmp_path / "report.html"
+
+    rc = main(
+        [
+            str(FIXTURES / "cja_snapshot_clean.json"),
+            "--output",
+            str(destination),
+            "--json",
+            str(tmp_path / "." / "report.html"),
+        ]
+    )
+
+    assert rc == RUNTIME_ERROR
+    assert not destination.exists()
+    err = capsys.readouterr().err
+    assert "resolve to the same file" in err
+    assert "Wrote " not in err
+
+
+def test_cli_render_failure_preserves_existing_output_set(tmp_path, monkeypatch, capsys):
+    html = tmp_path / "report.html"
+    json_path = tmp_path / "report.json"
+    html.write_text("old html", encoding="utf-8")
+    json_path.write_text("old json", encoding="utf-8")
+
+    def fail_render(_report):
+        raise RuntimeError("injected render failure")
+
+    monkeypatch.setattr("sdr_grader.cli.main.render", fail_render)
+
+    rc = main(
+        [
+            str(FIXTURES / "cja_snapshot_clean.json"),
+            "--output",
+            str(html),
+            "--json",
+            str(json_path),
+        ]
+    )
+
+    assert rc == RUNTIME_ERROR
+    assert html.read_text(encoding="utf-8") == "old html"
+    assert json_path.read_text(encoding="utf-8") == "old json"
+    err = capsys.readouterr().err
+    assert "could not prepare report outputs" in err
+    assert "Wrote " not in err
+
+
+def test_cli_json_serialization_failure_preserves_existing_output_set(
+    tmp_path,
+    monkeypatch,
+    capsys,
+):
+    html = tmp_path / "report.html"
+    json_path = tmp_path / "report.json"
+    html.write_text("old html", encoding="utf-8")
+    json_path.write_text("old json", encoding="utf-8")
+    monkeypatch.setattr(
+        "sdr_grader.render.json_output.report_to_dict",
+        lambda _report: {"unserializable": object()},
+    )
+
+    rc = main(
+        [
+            str(FIXTURES / "cja_snapshot_clean.json"),
+            "--output",
+            str(html),
+            "--json",
+            str(json_path),
+        ]
+    )
+
+    assert rc == RUNTIME_ERROR
+    assert html.read_text(encoding="utf-8") == "old html"
+    assert json_path.read_text(encoding="utf-8") == "old json"
+    err = capsys.readouterr().err
+    assert "could not prepare report outputs" in err
+    assert "Wrote " not in err
 
 
 def test_cli_run_is_deterministic(tmp_path):
@@ -437,7 +534,9 @@ def test_trend_output_write_failure_returns_runtime_error(tmp_path, capsys):
     rc = main([str(snapshots), "--trend", "--output", str(tmp_path)])
 
     assert rc == RUNTIME_ERROR
-    assert f"could not write trend output {tmp_path}" in capsys.readouterr().err
+    err = capsys.readouterr().err
+    assert "could not publish trend output" in err
+    assert str(tmp_path) not in err
 
 
 def test_trend_success_reports_written_summary(tmp_path, capsys):
