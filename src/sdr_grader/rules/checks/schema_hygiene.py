@@ -12,6 +12,8 @@ import re
 from collections import defaultdict
 from typing import TYPE_CHECKING
 
+from markupsafe import Markup
+
 from sdr_grader.render import Finding, FindingBlock
 from sdr_grader.rules.checks._helpers import (
     all_component_ids,
@@ -63,13 +65,12 @@ def check_missing_descriptions(
 
     total_missing = sum(m for _, m, _ in over)
     parts_str = join_with_and([f"{m} {_human_target(t)}" for t, m, _ in over])
-    paragraph = (
-        f"{parts_str} in this {platform_noun(impl.platform)} have empty "
-        '<span class="mono">description</span> fields. Descriptions are the '
-        "primary way new analysts and AI agents understand what a component "
-        "measures; missing descriptions force readers to infer intent from "
-        "names alone, which is frequently wrong."
-    )
+    paragraph = Markup(
+        '{} in this {} have empty <span class="mono">description</span> fields. '
+        "Descriptions are the primary way new analysts and AI agents understand "
+        "what a component measures; missing descriptions force readers to infer "
+        "intent from names alone, which is frequently wrong."
+    ).format(parts_str, platform_noun(impl.platform))
     distribution = " ".join(
         f"{_human_target(t).title()}: {m} of {n} missing ({pct(m, n)}%)."
         for t, m, n in over
@@ -118,8 +119,8 @@ def check_duplicate_component_names(
     paragraph = (
         f"{len(duplicates)} component name{'s are' if len(duplicates) != 1 else ' is'} "
         "shared across multiple distinct components. Duplicate names produce subtly "
-        "different numbers in different reports and surface as &ldquo;the dashboards "
-        "disagree&rdquo; complaints from executives."
+        "different numbers in different reports and surface as “the dashboards "
+        "disagree” complaints from executives."
     )
     return [
         _make_finding(
@@ -230,12 +231,14 @@ def check_type_name_mismatch(
 
     items = [f"{mid}: name={name!r}, data_type={dtype}" for mid, name, dtype in suspicious]
     plural = len(suspicious) != 1
-    paragraph = (
-        f"{len(suspicious)} metric{'s have names' if plural else ' has a name'} "
-        "implying a rate, percentage, or ratio (which should be a "
-        "decimal/float) but the underlying <span class=\"mono\">dataType</span> "
+    paragraph = Markup(
+        "{} metric{} implying a rate, percentage, or ratio (which should be a "
+        'decimal/float) but the underlying <span class="mono">dataType</span> '
         "is an integer. The metric will round to whole numbers and report 0% "
         "or 100% in most cells."
+    ).format(
+        len(suspicious),
+        "s have names" if plural else " has a name",
     )
     title = f"{len(suspicious)} metric type-name mismatch{'es' if plural else ''}"
     return [

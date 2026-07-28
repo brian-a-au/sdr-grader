@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
+from markupsafe import Markup
 
 from sdr_grader.render.dates import human_date, to_utc
 from sdr_grader.trend.models import TrendPoint, TrendReport
@@ -60,7 +61,7 @@ class _CategoryTrace:
 
 def render_trend(trend: TrendReport) -> str:
     template = _template()
-    css = _css()
+    css = Markup(_css())
     view = _build_view(trend)
     return template.render(trend=view, css=css)
 
@@ -200,10 +201,13 @@ def _findings_churn(trend: TrendReport) -> tuple[list[str], list[str]]:
 # ---------------------------------------------------------------------------
 
 
-def sparkline_svg(values: list[int], *, width: int, height: int) -> str:
+def sparkline_svg(values: list[int], *, width: int, height: int) -> Markup:
     """Static SVG line over a 0-100 y-domain, suitable for inline embedding."""
     if not values:
-        return f'<svg viewBox="0 0 {width} {height}" xmlns="http://www.w3.org/2000/svg"></svg>'
+        return Markup(
+            f'<svg viewBox="0 0 {width} {height}" '
+            'xmlns="http://www.w3.org/2000/svg"></svg>'
+        )
     pad_x = 8
     pad_y = 8
     inner_w = max(width - pad_x * 2, 1)
@@ -226,7 +230,7 @@ def sparkline_svg(values: list[int], *, width: int, height: int) -> str:
     elif values[-1] < 70:
         bar_color = "#b8651a"
 
-    return (
+    return Markup(
         f'<svg viewBox="0 0 {width} {height}" xmlns="http://www.w3.org/2000/svg" '
         'role="img" aria-label="Trend sparkline">'
         f'<rect x="0" y="0" width="{width}" height="{height}" fill="none"/>'

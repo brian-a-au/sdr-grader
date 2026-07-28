@@ -17,7 +17,8 @@ from __future__ import annotations
 
 import re
 from datetime import UTC, datetime
-from html import escape
+
+from markupsafe import Markup
 
 from sdr_grader.core.grade_calc import GradeResult, compute_grade
 from sdr_grader.core.models import Implementation
@@ -171,25 +172,43 @@ def _derive_remediations(
 # ---------------------------------------------------------------------------
 
 
-def _build_tldr(impl: Implementation, rubric: Rubric, result: GradeResult) -> str:
+def _build_tldr(
+    impl: Implementation, rubric: Rubric, result: GradeResult
+) -> Markup:
     weakest = min(result.categories, key=lambda c: c.pct, default=None)
-    pack_pin = f'<span class="mono">{escape(rubric.pack)}@{escape(rubric.version)}</span>'
+    pack_pin = Markup('<span class="mono">{}@{}</span>').format(
+        rubric.pack,
+        rubric.version,
+    )
     components = (
         len(impl.metrics) + len(impl.dimensions) + len(impl.derived_fields)
     )
     parts = [
-        f"This implementation graded <strong>{escape(result.overall_grade)}</strong> "
-        f"({result.overall_pct}%). The grader evaluated "
-        f"{components} components in this {_PLATFORM_NOUN.get(impl.platform, 'instance')} "
-        f"using the {pack_pin} rubric pack."
+        Markup(
+            "This implementation graded <strong>{}</strong> "
+            "({}%). The grader evaluated {} components in this {} "
+            "using the {} rubric pack."
+        ).format(
+            result.overall_grade,
+            result.overall_pct,
+            components,
+            _PLATFORM_NOUN.get(impl.platform, "instance"),
+            pack_pin,
+        )
     ]
     if weakest is not None and weakest.rules_failed > 0:
         parts.append(
-            f"The largest gap is in <strong>{escape(_human_category(weakest.slug))}</strong> "
-            f"({weakest.pct}%); {weakest.rules_failed} of {weakest.rules_total} "
-            f"rules in that category fired."
+            Markup(
+                "The largest gap is in <strong>{}</strong> "
+                "({}%); {} of {} rules in that category fired."
+            ).format(
+                _human_category(weakest.slug),
+                weakest.pct,
+                weakest.rules_failed,
+                weakest.rules_total,
+            )
         )
-    return " ".join(parts)
+    return Markup(" ").join(parts)
 
 
 def _build_methodology(
@@ -205,19 +224,28 @@ def _build_methodology(
     sev_w = rubric.severity_weights
 
     paragraphs = [
-        (
-            f'This grade was produced by <span class="mono">sdr-grader</span> '
-            f'using the <span class="mono">{escape(rubric.pack)}@{escape(rubric.version)}</span> '
-            f"rubric pack. The rubric encodes {rule_count} rule"
-            f"{'s' if rule_count != 1 else ''} across {category_count} active "
-            f"categor{'ies' if category_count != 1 else 'y'}; {fired_count} fired "
-            "against this snapshot. Each rule contributes to a category subtotal "
-            f"weighted by severity (critical: {sev_w['critical']}, high: {sev_w['high']}, "
-            f"medium: {sev_w['medium']}, low: {sev_w['low']}). Category subtotals "
-            "roll up to the overall score using the category weights defined in "
-            "the rubric pack."
+        Markup(
+            'This grade was produced by <span class="mono">sdr-grader</span> '
+            'using the <span class="mono">{}@{}</span> '
+            "rubric pack. The rubric encodes {} rule{} across {} active "
+            "categor{}; {} fired against this snapshot. Each rule contributes "
+            "to a category subtotal weighted by severity (critical: {}, high: {}, "
+            "medium: {}, low: {}). Category subtotals roll up to the overall score "
+            "using the category weights defined in the rubric pack."
+        ).format(
+            rubric.pack,
+            rubric.version,
+            rule_count,
+            "s" if rule_count != 1 else "",
+            category_count,
+            "ies" if category_count != 1 else "y",
+            fired_count,
+            sev_w["critical"],
+            sev_w["high"],
+            sev_w["medium"],
+            sev_w["low"],
         ),
-        (
+        Markup(
             "The grader is rule-based and deterministic — the same input always "
             "produces the same grade. Findings are auditable: every rule's source "
             "YAML is linked from its finding, and rules can be suppressed or "

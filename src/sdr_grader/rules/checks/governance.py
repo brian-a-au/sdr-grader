@@ -121,7 +121,7 @@ def check_sdr_doc_absent(
         "No Solution Design Reference (SDR) document was supplied alongside "
         "this snapshot. Without an SDR, definitions live only in the platform "
         "UI, which makes peer review and onboarding harder and obscures the "
-        "&ldquo;why&rdquo; behind component choices."
+        "“why” behind component choices."
     )
     return [
         _make_finding(

@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 import pytest
 
-from sdr_grader.core.grader import _derive_remediations
+from sdr_grader.core.grade_calc import CategoryScore, GradeResult
+from sdr_grader.core.grader import _build_tldr, _derive_remediations
 from sdr_grader.core.models import Implementation
 from sdr_grader.render import Finding, FindingBlock
 from sdr_grader.rules.engine import resolve_effective_rules, run_rules
@@ -137,3 +140,33 @@ def test_remediations_skip_rules_without_remediation_text():
         body=[FindingBlock(kind="paragraph", html="Observed behavior")],
     )
     assert _derive_remediations({rule.id: rule}, [finding]) == []
+
+
+def test_tldr_trusted_markup_escapes_dynamic_rubric_values():
+    rubric = replace(
+        _rubric([]),
+        pack='<img src="https://attacker.invalid" onerror="alert(1)">',
+        version="<script>alert(2)</script>",
+    )
+    result = GradeResult(
+        overall_pct=100,
+        overall_grade="A",
+        categories=[
+            CategoryScore(
+                slug="schema_hygiene",
+                weight=1.0,
+                pct=100,
+                grade="A",
+                rules_total=0,
+                rules_failed=0,
+            )
+        ],
+    )
+
+    markup = _build_tldr(_impl(), rubric, result)
+
+    assert "<img" not in markup
+    assert "<script" not in markup
+    assert "&lt;img" in markup
+    assert "&lt;script" in markup
+    assert "<strong>A</strong>" in markup

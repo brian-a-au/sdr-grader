@@ -11,10 +11,17 @@ The renderer's output is the visual contract (SPEC §3). These tests guard:
 
 from __future__ import annotations
 
+from html.parser import HTMLParser
 from pathlib import Path
 
 from fixtures.demo_report import build_demo_report
-from sdr_grader.render import render
+from sdr_grader.render import (
+    Distribution,
+    DistributionChart,
+    FindingAction,
+    FindingBlock,
+    render,
+)
 
 GOLDEN = Path(__file__).parent.parent / "examples" / "templated-report.html"
 
@@ -94,6 +101,74 @@ def test_render_escapes_untrusted_fields():
     assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html
     # CSS is trusted and must NOT be escaped (child combinator survives).
     assert ".cat .bar > span" in html
+
+
+class _AttackSurfaceParser(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__()
+        self.tags: list[str] = []
+        self.attributes: list[tuple[str, str | None]] = []
+
+    def handle_starttag(self, tag, attrs):
+        self.tags.append(tag)
+        self.attributes.extend(attrs)
+
+
+def test_render_keeps_hostile_values_inert_at_every_dynamic_sink():
+    payload = (
+        '\"><img src="https://attacker.invalid/x" onerror="alert(1)">'
+        '<svg onload="alert(2)"><script>alert(3)</script></svg>'
+        '<style>body{background:url(file:///private/secret)}</style>'
+        "javascript:alert(4)&"
+    )
+    report = build_demo_report()
+    report.instance_name = payload
+    report.categories[0].name = payload
+    report.categories[0].pct = payload  # type: ignore[assignment]
+    report.remediations[0].text = payload
+    report.remediations[0].refs = [payload]
+    report.findings[0].id = payload
+    report.findings[0].category = payload
+    report.findings[0].title = payload
+    report.findings[0].body = [
+        FindingBlock(kind="paragraph", html=payload),
+        FindingBlock(kind="section", label=payload, body_html=payload),
+        FindingBlock(kind="components", items=[payload]),
+        FindingBlock(kind="code", text=payload),
+    ]
+    report.findings[0].actions = [
+        FindingAction(label=payload, href="javascript:alert(5)"),
+        FindingAction(label="unsafe file", href="file:///private/secret"),
+        FindingAction(label="safe local", href="#methodology"),
+    ]
+    report.methodology.paragraphs = [payload]  # type: ignore[list-item]
+    report.methodology.skipped[0].ids = [payload]
+    report.methodology.skipped[0].reason = payload
+    report.distribution = Distribution(
+        charts=[DistributionChart(label=payload, svg=payload)]  # type: ignore[arg-type]
+    )
+    report.tool_url = "https://attacker.invalid/source"
+
+    html = render(report)
+    parsed = _AttackSurfaceParser()
+    parsed.feed(html)
+
+    assert "script" not in parsed.tags
+    assert "img" not in parsed.tags
+    assert "svg" not in parsed.tags
+    assert all(not name.lower().startswith("on") for name, _value in parsed.attributes)
+    urls = [
+        value
+        for name, value in parsed.attributes
+        if name.lower() in {"href", "src", "action", "formaction"} and value
+    ]
+    assert "#methodology" in urls
+    assert all(url.startswith("#") for url in urls)
+    assert "&lt;img" in html
+    assert parsed.tags.count("style") == 1
+    assert "Content-Security-Policy" in html
+    assert 'content="default-src \'none\';' in html
+    assert 'name="referrer" content="no-referrer"' in html
 
 
 def test_template_and_css_are_cached():

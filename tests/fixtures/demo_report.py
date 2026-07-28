@@ -11,6 +11,8 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
+from markupsafe import Markup
+
 from sdr_grader.render import (
     Adapter,
     Category,
@@ -30,7 +32,7 @@ from sdr_grader.render.svg import category_comparison_chart, histogram_chart
 
 def build_demo_report() -> Report:
     """Construct the canonical demo Report (B− CJA implementation)."""
-    return Report(
+    report = Report(
         id="SDR-2026-0425-PROD-WEB",
         instance_name="Production Web Analytics",
         grade="B−",
@@ -316,3 +318,17 @@ def build_demo_report() -> Report:
             ),
         ]),
     )
+    # This fixture owns its static presentation fragments. Production report
+    # values remain plain text unless their renderer construction site marks
+    # them explicitly after escaping dynamic insertions.
+    report.tldr_html = Markup(report.tldr_html)
+    report.methodology.paragraphs = [
+        Markup(paragraph) for paragraph in report.methodology.paragraphs
+    ]
+    for finding in report.findings:
+        for block in finding.body:
+            if block.html is not None:
+                block.html = Markup(block.html)
+            if block.body_html is not None:
+                block.body_html = Markup(block.body_html)
+    return report

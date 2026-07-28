@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
 <title>SDR-2026-0425-DV-MESSY-PROD-WEB — Production Web Analytics</title>
 <style>/* ---------- Reset & base ---------- */
 *, *::before, *::after { box-sizing: border-box; }
@@ -605,7 +607,7 @@ pre.code {
       <div class="finding-body">
         
           
-            <p>No Solution Design Reference (SDR) document was supplied alongside this snapshot. Without an SDR, definitions live only in the platform UI, which makes peer review and onboarding harder and obscures the &ldquo;why&rdquo; behind component choices.</p>
+            <p>No Solution Design Reference (SDR) document was supplied alongside this snapshot. Without an SDR, definitions live only in the platform UI, which makes peer review and onboarding harder and obscures the “why” behind component choices.</p>
           
         
           
@@ -627,7 +629,7 @@ pre.code {
       <div class="finding-body">
         
           
-            <p>60 references are broken — segments or calculated metrics point at component IDs that don't exist in this data view. Broken references are usually a symptom of components renamed or deleted without updating their consumers.</p>
+            <p>60 references are broken — segments or calculated metrics point at component IDs that don&#39;t exist in this data view. Broken references are usually a symptom of components renamed or deleted without updating their consumers.</p>
           
         
           
@@ -664,7 +666,7 @@ calc_metric calculatedMetrics/cm_revenue_visit_corrected -&gt; missing metrics/v
       <div class="finding-body">
         
           
-            <p>60 calculated metric references are broken — the formula points at components, segments, or other calculated metrics that don't exist in this snapshot.</p>
+            <p>60 calculated metric references are broken — the formula points at components, segments, or other calculated metrics that don&#39;t exist in this snapshot.</p>
           
         
           

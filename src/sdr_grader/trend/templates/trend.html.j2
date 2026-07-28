@@ -3,9 +3,11 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; connect-src 'none'; base-uri 'none'; form-action 'none'"/>
+<meta name="referrer" content="no-referrer"/>
 <title>SDR Grade Trend — {{ trend.instance_name }}</title>
 <style>
-{{ css | safe }}
+{{ css }}
 </style>
 </head>
 <body>
@@ -37,7 +39,7 @@
 
   <section id="overall-trajectory">
     <h2>Overall trajectory</h2>
-    {{ trend.overall_sparkline | safe }}
+    {{ trend.overall_sparkline }}
   </section>
 
   <section id="categories" class="trend-grid">
@@ -50,7 +52,7 @@
           {% if trace.delta > 0 %}+{% endif %}{{ trace.delta }}
         </span>
       </div>
-      {{ trace.sparkline | safe }}
+      {{ trace.sparkline }}
     </div>
     {% endfor %}
   </section>

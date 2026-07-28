@@ -6,6 +6,8 @@ import re
 from collections import Counter
 from typing import TYPE_CHECKING
 
+from markupsafe import Markup
+
 from sdr_grader.render import Finding, FindingBlock
 from sdr_grader.rules.checks._helpers import (
     all_components,
@@ -58,12 +60,16 @@ def check_prefix_consistency(
         f"{c.id} (expected: {dominant_prefix}{_strip_existing_prefix(c.id)})"
         for c in outliers[:25]
     ]
-    paragraph = (
-        f"{round(consistency * 100)}% of {_target_display(target, tag_filter)} "
-        f"follow the <span class=\"mono\">{dominant_prefix}</span> prefix "
-        f"convention. The rubric expects ≥ {round(threshold * 100)}%. "
-        f"{len(outliers)} component{'s diverge' if len(outliers) != 1 else ' diverges'} "
-        "from the established pattern."
+    paragraph = Markup(
+        '{}% of {} follow the <span class="mono">{}</span> prefix convention. '
+        "The rubric expects ≥ {}%. {} component{} from the established pattern."
+    ).format(
+        round(consistency * 100),
+        _target_display(target, tag_filter),
+        dominant_prefix,
+        round(threshold * 100),
+        len(outliers),
+        "s diverge" if len(outliers) != 1 else " diverges",
     )
     return [
         _make_finding(
@@ -111,11 +117,14 @@ def check_regex_match_id(
         return []
 
     items = [f"{ident}  ({target})" for ident, target in violators[:25]]
-    paragraph = (
-        f"{len(violators)} ID{'s do' if len(violators) != 1 else ' does'} not "
-        f"match the allowed pattern <span class=\"mono\">{pattern_str}</span>. "
+    paragraph = Markup(
+        '{} ID{} not match the allowed pattern <span class="mono">{}</span>. '
         "Whitespace or special characters in IDs break tooling that splits on "
         "whitespace, embeds IDs in URLs, or stores them as filename fragments."
+    ).format(
+        len(violators),
+        "s do" if len(violators) != 1 else " does",
+        pattern_str,
     )
     return [
         _make_finding(
