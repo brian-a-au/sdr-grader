@@ -435,8 +435,14 @@ def _validate_report(report: Any) -> None:
     if not isinstance(report, dict):
         raise _LoadError("report root must be a JSON object")
 
+    has_schema_version = "schema_version" in report
+    has_instance_id = "instance_id" in report
+    if has_schema_version != has_instance_id:
+        raise _LoadError(
+            "report must contain both schema_version and instance_id, or neither"
+        )
     schema_version = report.get("schema_version")
-    if schema_version is not None and (
+    if has_schema_version and (
         type(schema_version) is not int
         or schema_version != REPORT_SCHEMA_VERSION
     ):
@@ -623,7 +629,7 @@ def _require_int(
 
 
 def _is_legacy(report: dict[str, Any]) -> bool:
-    return "schema_version" not in report or "instance_id" not in report
+    return "schema_version" not in report and "instance_id" not in report
 
 
 def _normalized_category(value: str) -> str:

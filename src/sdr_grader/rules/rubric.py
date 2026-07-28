@@ -25,6 +25,7 @@ from sdr_grader.core.exceptions import RubricValidationError
 from sdr_grader.rules.registry import _import_all_checks, get_check, registered_names
 
 VALID_SEVERITIES = {"critical", "high", "medium", "low"}
+VALID_PLATFORMS = {"aa", "cja"}
 WEIGHT_TOLERANCE = 1e-6
 
 
@@ -280,10 +281,22 @@ def _validate_rule_entry(entry: Any, *, category: str, source: str) -> RuleDefin
         raise RubricValidationError(
             f"{source} {rule_id}: severity {severity!r} not one of {sorted(VALID_SEVERITIES)!r}"
         )
-    platforms_raw = entry.get("platforms", [])
-    if not isinstance(platforms_raw, list):
-        raise RubricValidationError(f"{source} {rule_id}: 'platforms' must be a list")
-    platforms = [str(p) for p in platforms_raw]
+    platforms_raw = entry.get("platforms")
+    if not isinstance(platforms_raw, list) or not platforms_raw:
+        raise RubricValidationError(
+            f"{source} {rule_id}: 'platforms' must be a non-empty list"
+        )
+    invalid_platforms = [
+        platform
+        for platform in platforms_raw
+        if not isinstance(platform, str) or platform not in VALID_PLATFORMS
+    ]
+    if invalid_platforms:
+        raise RubricValidationError(
+            f"{source} {rule_id}: unsupported platform values "
+            f"{invalid_platforms!r}; expected values from {sorted(VALID_PLATFORMS)!r}"
+        )
+    platforms = list(platforms_raw)
     check_name = entry.get("check")
     if not isinstance(check_name, str) or not check_name:
         raise RubricValidationError(f"{source} {rule_id}: missing 'check' string")

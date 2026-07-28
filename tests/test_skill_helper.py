@@ -228,6 +228,38 @@ def test_legacy_single_report_reads_warn_and_compare_refuses(
     assert "legacy" in compare.stderr.lower()
 
 
+@pytest.mark.parametrize(
+    "remove",
+    [(("schema_version",),), (("instance_id",),)],
+)
+def test_helper_rejects_partial_schema_identity(
+    tmp_path,
+    grade_json,
+    remove,
+):
+    partial_path = tmp_path / "partial.json"
+    _copy_report(grade_json, partial_path, remove=remove)
+
+    proc = _run(["summary", str(partial_path)])
+
+    assert proc.returncode != 0
+    assert "both schema_version and instance_id" in proc.stderr
+
+
+def test_helper_rejects_null_schema_version(tmp_path, grade_json):
+    invalid_path = tmp_path / "invalid-schema.json"
+    _copy_report(
+        grade_json,
+        invalid_path,
+        changes={("schema_version",): None},
+    )
+
+    proc = _run(["summary", str(invalid_path)])
+
+    assert proc.returncode != 0
+    assert "unsupported report schema_version" in proc.stderr
+
+
 def test_helper_rejects_missing_file():
     proc = _run(["summary", "/tmp/__sdr_grader_does_not_exist__.json"])
     assert proc.returncode == 1

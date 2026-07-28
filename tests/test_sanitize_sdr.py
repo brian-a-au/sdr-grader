@@ -8,6 +8,7 @@ import os
 import re
 import stat
 import sys
+import time
 from pathlib import Path
 from types import ModuleType
 
@@ -131,6 +132,50 @@ def test_short_numeric_owner_does_not_change_unrelated_numbers() -> None:
     assert cleaned["dimensions"][0]["owner_id"] < 0
     assert cleaned["dimensions"][0]["precision"] == 1
     assert sanitize_sdr.sanitize(cleaned, platform="aa", redact_patterns=[]) == cleaned
+
+
+@pytest.mark.parametrize("private_owner_id", [-918273, -12.5])
+def test_negative_numeric_owner_is_redacted_and_idempotent(
+    private_owner_id: int | float,
+) -> None:
+    snapshot = {
+        "report_suite": {"rsid": "suite"},
+        "dimensions": [
+            {"id": "evar1", "owner_id": private_owner_id, "precision": private_owner_id}
+        ],
+        "metrics": [],
+    }
+
+    cleaned = sanitize_sdr.sanitize(snapshot, platform="aa", redact_patterns=[])
+
+    redacted_owner_id = cleaned["dimensions"][0]["owner_id"]
+    assert type(redacted_owner_id) is type(private_owner_id)
+    assert redacted_owner_id != private_owner_id
+    assert cleaned["dimensions"][0]["precision"] == private_owner_id
+    assert sanitize_sdr.sanitize(cleaned, platform="aa", redact_patterns=[]) == cleaned
+
+
+def test_many_sensitive_values_are_sanitized_with_bounded_work() -> None:
+    snapshot = {
+        "report_suite": {"rsid": "private-suite"},
+        "dimensions": [
+            {
+                "id": f"evar{index}",
+                "owner_id": f"private-owner-{index:05d}",
+                "description": "Routine measurement notes.",
+            }
+            for index in range(5_000)
+        ],
+        "metrics": [],
+    }
+
+    started = time.perf_counter()
+    cleaned = sanitize_sdr.sanitize(snapshot, platform="aa", redact_patterns=[])
+    elapsed = time.perf_counter() - started
+
+    assert elapsed < 2.0
+    assert cleaned["dimensions"][0]["owner_id"].startswith("own_")
+    assert cleaned["dimensions"][-1]["owner_id"].startswith("own_")
 
 
 @pytest.mark.parametrize(

@@ -90,7 +90,7 @@ rules:
     platforms: [cja, aa]            # which platforms this rule applies to
     check: missing_descriptions     # name of registered check function
     params:
-      threshold: 0.35               # calibrated against the corpus —
+      threshold: 0.56               # calibrated against the corpus —
                                     # see docs/threshold_calibration.md
       targets: [metrics, dimensions]
     rationale: |
@@ -107,6 +107,7 @@ When the grader loads a pack, it validates:
 
 - Every rule has a registered `check` function (Python).
 - `severity` is one of the four known values.
+- `platforms` is a non-empty list containing only `aa` and/or `cja`.
 - `params` is a mapping (or omitted).
 - Rule IDs are unique within the pack.
 - Each category referenced by a rule appears in `_meta.yaml.category_weights`.

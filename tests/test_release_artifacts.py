@@ -149,6 +149,34 @@ def test_release_verifier_accepts_exact_candidate_and_writes_provenance(
     assert json.loads(manifest.read_text(encoding="utf-8")) == result
 
 
+def test_release_verifier_normalizes_artifact_read_failures(
+    tmp_path,
+    monkeypatch,
+):
+    module = _load_module()
+    dist_dir = tmp_path / "dist"
+    dist_dir.mkdir()
+    wheel, _sdist = _write_candidate(dist_dir)
+    original_open = Path.open
+
+    def failing_open(path, *args, **kwargs):
+        if path == wheel:
+            raise OSError("private host detail")
+        return original_open(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "open", failing_open)
+
+    with pytest.raises(
+        module.VerificationError,
+        match=f"could not read candidate artifact: {wheel.name}",
+    ):
+        module.verify_release_artifacts(
+            dist_dir,
+            source_root=REPO_ROOT,
+            expected_version=VERSION,
+        )
+
+
 def test_release_verifier_requires_exactly_one_wheel_and_sdist(tmp_path):
     module = _load_module()
     dist_dir = tmp_path / "dist"

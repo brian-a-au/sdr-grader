@@ -137,6 +137,14 @@ classify the PyPI result, and follow the release-state recovery table.
 Do not reuse the version. Yank an unsafe package and publish security
 guidance when the defect affects privacy or security.
 
+| Observed state | Permitted recovery |
+| --- | --- |
+| No candidate files on PyPI; GitHub release is still a draft | Rerun the failed release job. The normal publication path uploads the frozen candidate. |
+| Some candidate files exist on PyPI and every existing digest matches | Rerun the failed job. The digest gate permits only the missing candidate file to upload, then attestation and draft publication continue. |
+| All candidate files exist on PyPI and every digest matches | Rerun the failed job. Upload is skipped; attestation and publication continue against the same bytes. |
+| Any PyPI filename or digest differs from the frozen candidate | Stop. Do not upload, publish the draft, move the tag, or reuse the version. Classify the incident and choose a new version only after review. |
+| GitHub release is public but endpoint verification fails | Do not rebuild. Compare PyPI, GitHub, and evidence digests, then fix forward or yank following the security classification. |
+
 ## Publication approval
 
 Approval expires after 24 hours and is invalidated by any candidate or

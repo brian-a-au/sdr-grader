@@ -49,6 +49,8 @@ MAX_COLLECTION_ITEMS = 100_000
 MAX_STRING_LENGTH = 1024 * 1024
 
 _REDACTED = "[redacted]"
+_REDACTED_INT = -(2**63)
+_REDACTED_FLOAT = -sys.float_info.max
 _TOKEN_RE = re.compile(r"^(?:tid|tname|own)_[0-9a-f]{12}(?:@redacted\.invalid)?$")
 _TENANT_ID_KEYS = {
     "dataviewid",
@@ -84,7 +86,7 @@ class _SensitiveValue:
 @dataclass(frozen=True)
 class _ReplacementPlan:
     exact: dict[str, str]
-    patterns: tuple[tuple[re.Pattern[str], str], ...]
+    pattern: re.Pattern[str] | None
 
 
 def _normalized_key(key: str) -> str:
@@ -110,15 +112,9 @@ def _stable_sensitive_scalar(value: Any, *, prefix: str) -> Any:
     if isinstance(value, str):
         return _stable_token(value, prefix=prefix)
     if isinstance(value, int) and not isinstance(value, bool):
-        if value < 0:
-            return value
-        digest = hashlib.sha256(f"{prefix}:{value}".encode()).hexdigest()
-        return -(int(digest[:13], 16) + 1)
+        return _REDACTED_INT
     if isinstance(value, float):
-        if value < 0:
-            return value
-        digest = hashlib.sha256(f"{prefix}:{value}".encode()).hexdigest()
-        return -float(int(digest[:13], 16) + 1)
+        return _REDACTED_FLOAT
     return value
 
 
@@ -135,14 +131,6 @@ def _redact_words(text: str, patterns: list[re.Pattern[str]]) -> str:
     for pattern in patterns:
         output = pattern.sub(_REDACTED, output)
     return output
-
-
-def _sensitive_pattern(value: str) -> re.Pattern[str]:
-    """Match a private token without rewriting it inside schema key names."""
-    return re.compile(
-        rf"(?<![A-Za-z0-9_]){re.escape(value)}(?![A-Za-z0-9_])",
-        re.IGNORECASE,
-    )
 
 
 def _validate_structure(node: Any, *, depth: int = 0) -> None:
@@ -268,14 +256,19 @@ def _sensitive_values(doc: dict[str, Any]) -> list[_SensitiveValue]:
 
 def _replacement_plan(sensitive_values: list[_SensitiveValue]) -> _ReplacementPlan:
     global_values = tuple(item for item in sensitive_values if item.global_replace)
+    alternatives = "|".join(re.escape(item.original) for item in global_values)
     return _ReplacementPlan(
         exact={
             item.original.casefold(): str(item.replacement)
             for item in global_values
         },
-        patterns=tuple(
-            (_sensitive_pattern(item.original), str(item.replacement))
-            for item in global_values
+        pattern=(
+            re.compile(
+                rf"(?<![A-Za-z0-9_])(?:{alternatives})(?![A-Za-z0-9_])",
+                re.IGNORECASE,
+            )
+            if alternatives
+            else None
         ),
     )
 
@@ -288,12 +281,11 @@ def _replace_text(
     replacement = replacements.exact.get(text.casefold())
     if replacement is not None:
         text = replacement
-    else:
-        for pattern, token in replacements.patterns:
-            text = pattern.sub(
-                lambda _match, replacement=token: replacement,
-                text,
-            )
+    elif replacements.pattern is not None:
+        text = replacements.pattern.sub(
+            lambda match: replacements.exact[match.group(0).casefold()],
+            text,
+        )
     return _redact_words(text, redact_patterns)
 
 
@@ -420,7 +412,7 @@ def _assert_no_residue(
     redact_patterns: list[re.Pattern[str]],
 ) -> None:
     for text in _iter_strings(doc):
-        if any(pattern.search(text) for pattern, _replacement in replacements.patterns):
+        if replacements.pattern is not None and replacements.pattern.search(text):
             raise SanitizationError("residue-detected", "a recognized private value remains")
         if any(pattern.search(text) for pattern in redact_patterns):
             raise SanitizationError("residue-detected", "a requested redaction value remains")

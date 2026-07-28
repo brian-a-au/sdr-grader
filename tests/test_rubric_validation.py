@@ -355,8 +355,30 @@ def test_duplicate_rule_ids_are_rejected_with_file_context(tmp_path):
         ("not a mapping", "rule entry must be a mapping"),
         ({"name": "missing id"}, "missing 'id' string"),
         (_valid_rule(severity="urgent"), "NAME-T01: severity 'urgent'"),
-        (_valid_rule(platforms="cja"), "NAME-T01: 'platforms' must be a list"),
-        (_valid_rule(platforms=None), "NAME-T01: 'platforms' must be a list"),
+        (
+            _valid_rule(platforms="cja"),
+            "NAME-T01: 'platforms' must be a non-empty list",
+        ),
+        (
+            _valid_rule(platforms=None),
+            "NAME-T01: 'platforms' must be a non-empty list",
+        ),
+        (
+            _valid_rule(platforms=[]),
+            "NAME-T01: 'platforms' must be a non-empty list",
+        ),
+        (
+            _valid_rule(platforms=["CJA"]),
+            "NAME-T01: unsupported platform values",
+        ),
+        (
+            _valid_rule(platforms=["cja", "other"]),
+            "NAME-T01: unsupported platform values",
+        ),
+        (
+            _valid_rule(platforms=["cja", 1]),
+            "NAME-T01: unsupported platform values",
+        ),
         (_valid_rule(check=None), "NAME-T01: missing 'check' string"),
         (_valid_rule(check="not_registered"), "check function 'not_registered'.*Known checks"),
         (_valid_rule(params="not a mapping"), "NAME-T01: 'params' must be a mapping"),

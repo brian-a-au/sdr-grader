@@ -549,13 +549,27 @@ def _verify_plugin_versions(
 
 def _artifact_record(path: Path) -> dict[str, Any]:
     digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(chunk)
+    try:
+        before = path.stat()
+        with path.open("rb") as handle:
+            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                digest.update(chunk)
+        after = path.stat()
+    except OSError as exc:
+        raise VerificationError(
+            f"could not read candidate artifact: {path.name}"
+        ) from exc
+    if (before.st_size, before.st_mtime_ns) != (
+        after.st_size,
+        after.st_mtime_ns,
+    ):
+        raise VerificationError(
+            f"candidate artifact changed during verification: {path.name}"
+        )
     return {
         "filename": path.name,
         "sha256": digest.hexdigest(),
-        "size": path.stat().st_size,
+        "size": after.st_size,
     }
 
 

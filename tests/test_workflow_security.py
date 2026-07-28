@@ -91,6 +91,17 @@ def test_release_workflow_is_tag_only_build_once_and_authority_isolated():
     assert "attestations: write" in publisher
 
 
+def test_release_workflow_digest_gates_idempotent_pypi_recovery():
+    text = _workflow_text("release.yml")
+
+    assert "scripts/check_pypi_release_state.py" in text
+    assert "if: steps.pypi-state.outputs.state != 'matching'" in text
+    assert "skip-existing: true" in text
+    assert text.index("Verify recoverable PyPI state") < text.index(
+        "Publish exact candidate to PyPI"
+    )
+
+
 def test_codeql_dependency_updates_and_governance_files_are_configured():
     codeql = _workflow_text("codeql.yml")
     assert "security-events: write" in codeql
