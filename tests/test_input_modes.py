@@ -38,6 +38,30 @@ def test_load_snapshot_rejects_missing_path(tmp_path):
         load_snapshot(str(missing))
 
 
+def test_file_json_recursion_error_is_domain_error(tmp_path, monkeypatch):
+    snapshot = tmp_path / "snapshot.json"
+    snapshot.write_text("{}", encoding="utf-8")
+
+    def recurse(_value):
+        raise RecursionError("decoder recursion")
+
+    monkeypatch.setattr("sdr_grader.input.loader.json.loads", recurse)
+
+    with pytest.raises(InvalidSnapshotError, match="JSON exceeds nesting limits"):
+        load_snapshot(str(snapshot))
+
+
+def test_stdin_json_recursion_error_is_domain_error(monkeypatch):
+    def recurse(_value):
+        raise RecursionError("decoder recursion")
+
+    monkeypatch.setattr("sdr_grader.input.loader.json.loads", recurse)
+    monkeypatch.setattr(sys, "stdin", io.StringIO("{}"))
+
+    with pytest.raises(InvalidSnapshotError, match="stdin JSON exceeds nesting limits"):
+        load_snapshot("-")
+
+
 def test_load_snapshot_wraps_file_read_error(tmp_path, monkeypatch):
     snapshot_path = tmp_path / "snapshot.json"
     snapshot_path.write_text("{}", encoding="utf-8")
@@ -139,6 +163,37 @@ def test_directory_candidate_timestamps_are_utc_aware(tmp_path):
         2,
         tzinfo=UTC,
     )
+
+
+def test_mtime_cutoff_selection_is_timezone_independent(tmp_path):
+    import os
+    import time
+
+    before = tmp_path / "before.json"
+    after = tmp_path / "after.json"
+    before.write_text('{"chosen": "before"}', encoding="utf-8")
+    after.write_text('{"chosen": "after"}', encoding="utf-8")
+    os.utime(before, (1767265200, 1767265200))  # 2026-01-01T11:00:00Z
+    os.utime(after, (1767272400, 1767272400))  # 2026-01-01T13:00:00Z
+    original_tz = os.environ.get("TZ")
+    selected = []
+    try:
+        for zone in ("UTC", "America/Los_Angeles", "Pacific/Auckland"):
+            os.environ["TZ"] = zone
+            time.tzset()
+            snapshot, _source = load_snapshot(
+                str(tmp_path),
+                at="2026-01-01T07:00:00-05:00",
+            )
+            selected.append(snapshot["chosen"])
+    finally:
+        if original_tz is None:
+            os.environ.pop("TZ", None)
+        else:
+            os.environ["TZ"] = original_tz
+        time.tzset()
+
+    assert selected == ["before", "before", "before"]
 
 
 def test_directory_invalid_filename_timestamp_falls_back_to_mtime(tmp_path):
@@ -271,7 +326,7 @@ class _FakeShellProcess:
         self.returncode = -9
 
 
-def test_shell_cja_passes_include_all_inventory(monkeypatch):
+def test_shell_cja_builds_complete_inventory_command_with_extra_args(monkeypatch):
     """CJA shell-out must request the full inventory so calc-metric and
     segment rule packs grade against populated inputs."""
     from sdr_grader.input import shell_out
@@ -286,12 +341,45 @@ def test_shell_cja_passes_include_all_inventory(monkeypatch):
     monkeypatch.setattr("shutil.which", lambda tool: f"/usr/bin/{tool}")
     monkeypatch.setattr(shell_out.subprocess, "Popen", fake_popen)
 
-    snapshot, source = shell_out.shell_cja("dv_test")
+    snapshot, source = shell_out.shell_cja(
+        "dv_test",
+        extra_args=["--log-level", "debug"],
+    )
     assert snapshot == {}
     assert source == "shell-out:cja_auto_sdr"
-    assert "--include-all-inventory" in captured["cmd"]
-    # Flag must precede --output so cja_auto_sdr applies it to the JSON write.
-    assert captured["cmd"].index("--include-all-inventory") < captured["cmd"].index("--output")
+    assert captured["cmd"] == [
+        "/usr/bin/cja_auto_sdr",
+        "dv_test",
+        "--format",
+        "json",
+        "--output",
+        "-",
+        "--include-all-inventory",
+        "--quiet",
+        "--log-level",
+        "debug",
+    ]
+    assert captured["cmd"].count("--include-all-inventory") == 1
+    assert captured["cmd"].count("--quiet") == 1
+
+
+def test_shell_cja_json_recursion_error_is_domain_error(monkeypatch):
+    from sdr_grader.input import shell_out
+
+    monkeypatch.setattr("shutil.which", lambda tool: f"/usr/bin/{tool}")
+    monkeypatch.setattr(
+        shell_out.subprocess,
+        "Popen",
+        lambda cmd, **kwargs: _FakeShellProcess(cmd),
+    )
+    monkeypatch.setattr(
+        shell_out.json,
+        "loads",
+        lambda _value: (_ for _ in ()).throw(RecursionError("decoder recursion")),
+    )
+
+    with pytest.raises(InvalidSnapshotError, match="invalid-json-depth"):
+        shell_out.shell_cja("dv_test")
 
 
 def test_shell_aa_builds_report_suite_command_with_extra_args(monkeypatch):

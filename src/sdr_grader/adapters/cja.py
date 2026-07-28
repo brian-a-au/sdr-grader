@@ -21,6 +21,10 @@ from sdr_grader.core.models import (
     Implementation,
     Segment,
 )
+from sdr_grader.core.structure_limits import (
+    validate_definition_structure,
+    validate_snapshot_structure,
+)
 
 
 def adapt(snapshot: dict[str, Any], *, source: str = "<unknown>") -> Implementation:
@@ -29,6 +33,7 @@ def adapt(snapshot: dict[str, Any], *, source: str = "<unknown>") -> Implementat
         raise InvalidSnapshotError(
             f"expected top-level JSON object, got {type(snapshot).__name__}"
         )
+    validate_snapshot_structure(snapshot, label="CJA snapshot")
 
     metadata = _require_dict(snapshot, "metadata")
     metrics_raw = _require_list(snapshot, "metrics")
@@ -263,7 +268,10 @@ def _calc_metric_from_record(
 
     name = record.get("metric_name") or record.get("name") or metric_id
     description = _normalize_description(record.get("description"))
-    formula = _parse_definition_json(record.get("definition_json"))
+    formula = _parse_definition_json(
+        record.get("definition_json"),
+        label=f"calculated metric definition {metric_id!r}",
+    )
     formula_text = record.get("formula_summary") or record.get("definition_summary") or ""
     references = list(
         dict.fromkeys(
@@ -362,7 +370,10 @@ def _segment_from_record(record: dict[str, Any], *, index: int | None = None) ->
 
     name = record.get("segment_name") or record.get("name") or segment_id
     description = _normalize_description(record.get("description"))
-    definition = _parse_definition_json(record.get("definition_json"))
+    definition = _parse_definition_json(
+        record.get("definition_json"),
+        label=f"segment definition {segment_id!r}",
+    )
     nesting_depth = _safe_int(record.get("nesting_depth"))
     container_types = _extract_container_types(record.get("container_type"), definition)
     references = list(
@@ -520,19 +531,25 @@ def _record_context(collection: str, index: int | None) -> str:
     return f"CJA {collection}{suffix}"
 
 
-def _parse_definition_json(value: Any) -> dict[str, Any]:
+def _parse_definition_json(value: Any, *, label: str = "definition") -> dict[str, Any]:
     """cja_auto_sdr ships definitions as JSON-encoded strings; tolerate dicts too."""
     if value is None or value == "":
         return {}
     if isinstance(value, dict):
-        return value
-    if isinstance(value, str):
+        parsed = value
+    elif isinstance(value, str):
         try:
             parsed = json.loads(value)
         except json.JSONDecodeError:
             return {}
-        return parsed if isinstance(parsed, dict) else {}
-    return {}
+        except RecursionError as exc:
+            raise InvalidSnapshotError(f"{label} JSON exceeds nesting limits") from exc
+        if not isinstance(parsed, dict):
+            return {}
+    else:
+        return {}
+    validate_definition_structure(parsed, label=label)
+    return parsed
 
 
 def _optional_str(value: Any) -> str | None:
