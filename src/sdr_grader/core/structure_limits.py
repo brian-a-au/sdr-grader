@@ -1,0 +1,71 @@
+"""Iterative structure budgets for untrusted snapshot and definition JSON."""
+
+from __future__ import annotations
+
+from typing import Any
+
+from sdr_grader.core.exceptions import InvalidSnapshotError
+
+MAX_STRUCTURE_DEPTH = 100
+MAX_STRUCTURE_NODES = 250_000
+MAX_DEFINITION_NODES = 10_000
+
+
+def measure_structure(value: Any) -> tuple[int, int]:
+    """Return ``(node_count, maximum_depth)`` without recursive Python calls."""
+    nodes = 0
+    maximum_depth = 0
+    stack: list[tuple[Any, int]] = [(value, 0)]
+    while stack:
+        node, depth = stack.pop()
+        nodes += 1
+        maximum_depth = max(maximum_depth, depth)
+        if isinstance(node, dict):
+            stack.extend((child, depth + 1) for child in node.values())
+        elif isinstance(node, list):
+            stack.extend((child, depth + 1) for child in node)
+    return nodes, maximum_depth
+
+
+def validate_snapshot_structure(value: Any, *, label: str) -> None:
+    """Reject a snapshot that exceeds the public input structure budget."""
+    _validate_structure(
+        value,
+        label=label,
+        max_depth=MAX_STRUCTURE_DEPTH,
+        max_nodes=MAX_STRUCTURE_NODES,
+    )
+
+
+def validate_definition_structure(value: Any, *, label: str) -> None:
+    """Reject one decoded formula/segment definition outside its tighter budget."""
+    _validate_structure(
+        value,
+        label=label,
+        max_depth=MAX_STRUCTURE_DEPTH,
+        max_nodes=MAX_DEFINITION_NODES,
+    )
+
+
+def _validate_structure(
+    value: Any,
+    *,
+    label: str,
+    max_depth: int,
+    max_nodes: int,
+) -> None:
+    nodes = 0
+    stack: list[tuple[Any, int]] = [(value, 0)]
+    while stack:
+        node, depth = stack.pop()
+        if depth > max_depth:
+            raise InvalidSnapshotError(
+                f"{label} exceeds the maximum structure depth of {max_depth}"
+            )
+        nodes += 1
+        if nodes > max_nodes:
+            raise InvalidSnapshotError(f"{label} exceeds the maximum of {max_nodes:,} nodes")
+        if isinstance(node, dict):
+            stack.extend((child, depth + 1) for child in node.values())
+        elif isinstance(node, list):
+            stack.extend((child, depth + 1) for child in node)

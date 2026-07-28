@@ -18,6 +18,10 @@ from sdr_grader.core.models import (
     Implementation,
     Segment,
 )
+from sdr_grader.core.structure_limits import (
+    validate_definition_structure,
+    validate_snapshot_structure,
+)
 
 
 def adapt(snapshot: dict[str, Any], *, source: str = "<unknown>") -> Implementation:
@@ -26,6 +30,7 @@ def adapt(snapshot: dict[str, Any], *, source: str = "<unknown>") -> Implementat
         raise InvalidSnapshotError(
             f"expected top-level JSON object, got {type(snapshot).__name__}"
         )
+    validate_snapshot_structure(snapshot, label="AA snapshot")
 
     if "report_suite" in snapshot:
         rs = snapshot["report_suite"]
@@ -181,7 +186,11 @@ def _calc_from_record(record: Any) -> CalculatedMetric:
     description = _normalize_description(record.get("description"))
     definition = record.get("definition") or {}
     formula = definition.get("formula") if isinstance(definition, dict) else {}
-    formula_text = _stringify_formula(formula) if isinstance(formula, dict) else ""
+    if isinstance(formula, dict):
+        validate_definition_structure(formula, label=f"calculated metric formula {metric_id!r}")
+        formula_text = _stringify_formula(formula)
+    else:
+        formula_text = ""
     references = _extract_aa_calc_refs(formula)
 
     extra = record.get("extra") if isinstance(record.get("extra"), dict) else {}
@@ -259,6 +268,8 @@ def _segment_from_record(record: Any) -> Segment:
     name = record.get("name") or segment_id
     description = _normalize_description(record.get("description"))
     definition = record.get("definition") or {}
+    if isinstance(definition, dict):
+        validate_definition_structure(definition, label=f"segment definition {segment_id!r}")
     nesting_depth, container_types = _walk_segment_definition(definition)
     references: list[str] = []  # AA segments don't expose direct cross-refs in the basic shape
 
