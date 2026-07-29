@@ -91,6 +91,41 @@ def test_release_workflow_is_tag_only_build_once_and_authority_isolated():
     assert "attestations: write" in publisher
 
 
+def test_release_workflow_builds_before_isolated_frozen_wheel_plugin_smoke():
+    text = _workflow_text("release.yml")
+
+    candidate = text.split("\n  candidate:", 1)[1].split(
+        "\n  build:",
+        1,
+    )[0]
+    build = text.split("\n  build:", 1)[1].split(
+        "\n  install-smoke:",
+        1,
+    )[0]
+    plugin_smoke = text.split("\n  plugin-smoke:", 1)[1].split(
+        "\n  draft-github:",
+        1,
+    )[0]
+    draft = text.split("\n  draft-github:", 1)[1].split(
+        "\n  publish-pypi:",
+        1,
+    )[0]
+
+    assert "uv build --no-sources --clear --no-create-gitignore" not in candidate
+    assert "npm install" not in candidate
+    assert "needs: candidate" in build
+    assert "uv build --no-sources --clear --no-create-gitignore" in build
+    assert "npm install" not in build
+    assert "claude plugin" not in build
+    assert "needs: build" in plugin_smoke
+    assert "Download immutable distributions" in plugin_smoke
+    assert "uv pip install" in plugin_smoke
+    assert "dist/*.whl" in plugin_smoke
+    assert "npm install --global @anthropic-ai/claude-code@" in plugin_smoke
+    assert "claude plugin install sdr-grader@sdr-grader" in plugin_smoke
+    assert "needs: [install-smoke, plugin-smoke]" in draft
+
+
 def test_release_workflow_digest_gates_idempotent_pypi_recovery():
     text = _workflow_text("release.yml")
 

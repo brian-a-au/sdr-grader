@@ -48,37 +48,29 @@ jobs:
       - name: Test
         run: uv run pytest --cov=src/sdr_grader --cov-report=term
 
-      - name: Validate and install Claude plugin
+  build:
+    name: Build immutable distributions
+    needs: candidate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.ref }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9 # v7
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Verify immutable candidate identity
         run: |
-          npm install --global @anthropic-ai/claude-code@2.1.220
-          claude plugin validate . --strict
-          mkdir -p "${RUNNER_TEMP}/marketplace/.claude-plugin"
-          mkdir -p "${RUNNER_TEMP}/marketplace/skills"
-          cp .claude-plugin/plugin.json "${RUNNER_TEMP}/marketplace/.claude-plugin/plugin.json"
-          cp .claude-plugin/marketplace.json "${RUNNER_TEMP}/marketplace/.claude-plugin/marketplace.json"
-          cp -R skills/sdr-grader "${RUNNER_TEMP}/marketplace/skills/"
-          mkdir -p "${RUNNER_TEMP}/strict-plugin/.claude-plugin"
-          mkdir -p "${RUNNER_TEMP}/strict-plugin/skills"
-          cp .claude-plugin/plugin.json "${RUNNER_TEMP}/strict-plugin/.claude-plugin/plugin.json"
-          cp -R skills/sdr-grader "${RUNNER_TEMP}/strict-plugin/skills/"
-          claude plugin validate "${RUNNER_TEMP}/strict-plugin" --strict
-          export CLAUDE_CONFIG_DIR="${RUNNER_TEMP}/claude-profile"
-          claude plugin marketplace add "${RUNNER_TEMP}/marketplace" --scope user
-          claude plugin install sdr-grader@sdr-grader --scope user
-          uv run sdr-grader tests/fixtures/cja_snapshot_messy.json \
-            --output "${RUNNER_TEMP}/plugin-grade.html" \
-            --json "${RUNNER_TEMP}/plugin-grade.json" --quiet
-          INSTALL_PATH="$(
-            claude plugin list --json |
-              python3 -c 'import json,sys; print(json.load(sys.stdin)[0]["installPath"])'
-          )"
-          HELPER="${INSTALL_PATH}/skills/sdr-grader/scripts/query_grade.py"
-          python3 "${HELPER}" summary "${RUNNER_TEMP}/plugin-grade.json"
-          python3 "${HELPER}" findings "${RUNNER_TEMP}/plugin-grade.json" --category "schema hygiene"
-          python3 "${HELPER}" show "${RUNNER_TEMP}/plugin-grade.json" CALC-014
-          python3 "${HELPER}" compare \
-            "${RUNNER_TEMP}/plugin-grade.json" \
-            "${RUNNER_TEMP}/plugin-grade.json"
+          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+          python3 scripts/check_version_sync.py --tag "${GITHUB_REF_NAME}"
 
       - name: Build wheel from sdist
         run: uv build --no-sources --clear --no-create-gitignore
@@ -110,7 +102,7 @@ jobs:
 
   install-smoke:
     name: Artifact smoke / Python ${{ matrix.python-version }}
-    needs: candidate
+    needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -171,9 +163,81 @@ jobs:
               "${SMOKE_ROOT}/sdist-output/${OUTPUT}"
           done
 
+  plugin-smoke:
+    name: Frozen wheel Claude plugin smoke
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.ref }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9 # v7
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Download immutable distributions
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: candidate-dist-${{ github.sha }}
+          path: dist/
+
+      - name: Install frozen wheel and materialize its plugin
+        shell: bash
+        run: |
+          set -euo pipefail
+          WHEELS=(dist/*.whl)
+          test "${#WHEELS[@]}" -eq 1
+          PLUGIN_ENV="${RUNNER_TEMP}/plugin-venv"
+          PLUGIN_ROOT="${RUNNER_TEMP}/frozen-plugin"
+          uv venv --python 3.12 "${PLUGIN_ENV}"
+          uv pip install --python "${PLUGIN_ENV}/bin/python" "${WHEELS[0]}"
+          "${PLUGIN_ENV}/bin/python" - "${PLUGIN_ROOT}" <<'PY'
+          import shutil
+          import sys
+          from importlib.resources import files
+          from pathlib import Path
+
+          source = Path(str(files("sdr_grader").joinpath("plugin")))
+          target = Path(sys.argv[1])
+          shutil.copytree(source, target)
+          PY
+
+      - name: Validate and install Claude plugin from frozen wheel
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --global @anthropic-ai/claude-code@2.1.220
+          PLUGIN_ENV="${RUNNER_TEMP}/plugin-venv"
+          PLUGIN_ROOT="${RUNNER_TEMP}/frozen-plugin"
+          claude plugin validate "${PLUGIN_ROOT}" --strict
+          export CLAUDE_CONFIG_DIR="${RUNNER_TEMP}/claude-profile"
+          claude plugin marketplace add "${PLUGIN_ROOT}" --scope user
+          claude plugin install sdr-grader@sdr-grader --scope user
+          "${PLUGIN_ENV}/bin/sdr-grader" tests/fixtures/cja_snapshot_messy.json \
+            --output "${RUNNER_TEMP}/plugin-grade.html" \
+            --json "${RUNNER_TEMP}/plugin-grade.json" --quiet
+          INSTALL_PATH="$(
+            claude plugin list --json |
+              python3 -c 'import json,sys; print(json.load(sys.stdin)[0]["installPath"])'
+          )"
+          HELPER="${INSTALL_PATH}/skills/sdr-grader/scripts/query_grade.py"
+          python3 "${HELPER}" summary "${RUNNER_TEMP}/plugin-grade.json"
+          python3 "${HELPER}" findings "${RUNNER_TEMP}/plugin-grade.json" --category "schema hygiene"
+          python3 "${HELPER}" show "${RUNNER_TEMP}/plugin-grade.json" CALC-014
+          python3 "${HELPER}" compare \
+            "${RUNNER_TEMP}/plugin-grade.json" \
+            "${RUNNER_TEMP}/plugin-grade.json"
+
   draft-github:
     name: Create immutable GitHub draft
-    needs: install-smoke
+    needs: [install-smoke, plugin-smoke]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:

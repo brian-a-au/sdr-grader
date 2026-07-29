@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -457,7 +458,11 @@ def test_package_plugin_marketplace_and_changelog_versions_match():
     assert __version__ == "1.2.0"
     assert manifest["version"] == __version__
     assert marketplace["plugins"][0]["version"] == __version__
-    assert f"## {__version__} — Unreleased" in changelog
+    assert re.search(
+        rf"^## {re.escape(__version__)} — \d{{4}}-\d{{2}}-\d{{2}}$",
+        changelog,
+        re.MULTILINE,
+    )
 
     check = subprocess.run(
         [sys.executable, str(REPO_ROOT / "scripts" / "check_version_sync.py")],

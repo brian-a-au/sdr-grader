@@ -90,8 +90,8 @@ rules:
     platforms: [cja, aa]            # which platforms this rule applies to
     check: missing_descriptions     # name of registered check function
     params:
-      threshold: 0.56               # calibrated against the corpus —
-                                    # see docs/threshold_calibration.md
+      threshold: 0.56               # maintainer-selected; see the private
+                                    # evidence boundary in CALIBRATION_CORPUS.md
       targets: [metrics, dimensions]
     rationale: |
       Descriptions are the primary way new analysts and AI agents understand

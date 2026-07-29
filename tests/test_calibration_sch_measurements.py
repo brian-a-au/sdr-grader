@@ -5,6 +5,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import yaml
+
 from _rule_test_helpers import component, impl
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -79,3 +81,53 @@ def test_sch_003_empty_configured_populations_have_empty_denominator():
     )
 
     assert ct._sch_missing_desc_ratio(implementation) == (0.0, 0)
+
+
+def test_manifest_loads_only_explicitly_admitted_human_reviewed_entries(
+    tmp_path,
+):
+    manifest = tmp_path / "manifest.yaml"
+    manifest.write_text(
+        yaml.safe_dump(
+            {
+                "version": 1,
+                "entries": [
+                    {
+                        "anon_id": "admitted",
+                        "anonymization": {"reviewed_descriptions": True},
+                        "calibration": {
+                            "admitted": True,
+                            "reviewed_by": "maintainer",
+                            "reviewed_at": "2026-07-29",
+                        },
+                    },
+                    {
+                        "anon_id": "compatibility-only",
+                        "anonymization": {"reviewed_descriptions": False},
+                        "calibration": {"admitted": False},
+                    },
+                    {
+                        "anon_id": "missing-reviewer",
+                        "anonymization": {"reviewed_descriptions": True},
+                        "calibration": {
+                            "admitted": True,
+                            "reviewed_at": "2026-07-29",
+                        },
+                    },
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert [entry["anon_id"] for entry in ct._load_manifest(manifest)] == [
+        "admitted"
+    ]
+
+
+def test_distribution_report_does_not_claim_calibration():
+    report = ct._render_report({})
+
+    assert report.startswith("# Threshold distribution evidence\n")
+    assert "does not establish calibration" in report
+    assert "calibration corpus" not in report

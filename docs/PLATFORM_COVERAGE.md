@@ -2,21 +2,21 @@
 
 The default packs grade both CJA and AA, but the two platforms
 expose different configuration surfaces — so coverage is broader on
-CJA than on AA, and thresholds are calibrated on the platform where
-the data lives.
+CJA than on AA. Thresholds apply only where the platform exposes the
+underlying field.
 
 Bundled pack `2.0` contains 27 rule definitions. All 27 apply to CJA;
 23 apply to AA. The four CJA-only definitions below are excluded from
 AA execution and from its scoring denominator.
 
-**Calibration corpus.** Thresholds were measured against 108 real-world
-snapshots: 100 CJA Data Views and 8 AA report suites. The current
-[`threshold_calibration.md`](threshold_calibration.md) report was regenerated
-for pack 2.0 on 2026-07-28 and records percentile and confidence evidence per
-rule. Final approval still binds the run to the candidate SHA and corpus
-revision. CJA-derived thresholds apply to AA only where the underlying field
-shape is equivalent (descriptions, tags, complexity, nesting); see the audit
-for the per-rule rationale.
+**Private evidence boundary.** The 108-entry private cohort contains 100 CJA
+Data Views and 8 AA report suites and is used for compatibility regression.
+Zero entries are currently admitted to calibration, so bundled thresholds are
+maintainer judgment rather than a grading-calibration claim. CJA-informed
+thresholds apply to AA only where the underlying field shape is equivalent
+(descriptions, tags, complexity, nesting); see the audit for the per-rule
+rationale and [`CALIBRATION_CORPUS.md`](CALIBRATION_CORPUS.md) for admission
+requirements.
 
 **CJA-only rules** grade Data View configuration that AA's 2.0
 Reporting API doesn't expose. They no-op on AA snapshots rather than

@@ -1,17 +1,24 @@
-# Calibration corpus
+# Private compatibility corpus and calibration admission
 
-The default `strict` and `pragmatic` thresholds are measured against a
-corpus of 108 real CJA + AA production snapshots. The corpus is private and
-unavailable in a clean checkout. The current
-[`threshold_calibration.md`](threshold_calibration.md) report was regenerated
-for pack 2.0 on 2026-07-28; final release approval still requires binding the
-run to the candidate SHA and corpus revision in `RELEASE_CHECKLIST.md`.
+The current private store contains 108 compatibility snapshots: 100 CJA Data
+Views and 8 AA report suites. It is private and unavailable in a clean
+checkout. Zero entries are currently admitted to the calibration cohort, so
+the release makes no grading-calibration claim and the bundled thresholds
+remain maintainer judgment.
 
-This doc covers how the corpus is assembled and how to extend it.
-`scripts/calibrate_thresholds.py` consumes the corpus and (re)generates
-`threshold_calibration.md`; if you've added new snapshots or new rules
-that need calibrating, re-run that script and commit the regenerated
-file alongside any threshold changes.
+Compatibility collection and calibration admission are separate:
+
+- A compatibility entry proves that the current adapters, grader, renderer,
+  and plugin paths handle that snapshot without failure.
+- A calibration entry additionally requires explicit permission, sanitizer
+  success, and a recorded human review confirming that descriptions contain no
+  identifying material.
+
+`scripts/calibrate_thresholds.py` consumes only explicitly admitted entries
+and regenerates [`threshold_calibration.md`](threshold_calibration.md).
+Regenerate that tracked report whenever the admitted cohort changes and bind
+release evidence to the candidate SHA and corpus revision in
+`RELEASE_CHECKLIST.md`.
 
 The corpus itself is **never committed**. Real SDRs carry tenant-
 identifying material even after sanitization (component naming
@@ -42,7 +49,9 @@ An example manifest in the expected shape lives at
 ## Intake workflow
 
 1. Obtain the raw SDR snapshot (output of `aa_auto_sdr` /
-   `cja_auto_sdr`). Confirm permission to use it for calibration.
+   `cja_auto_sdr`). Confirm permission for private compatibility testing.
+   Calibration requires separate permission when compatibility-only use is not
+   sufficient.
 2. Run the sanitizer:
    ```bash
    uv run python scripts/sanitize_sdr.py /path/to/raw.json \
@@ -57,9 +66,10 @@ An example manifest in the expected shape lives at
    quality, so blanket-stripping them would invalidate the calibration.
    Read through them; if any contain customer names, project codes, or
    PII, re-run with `--redact` or edit by hand.
-4. Add an entry to `tests/fixtures/private/manifest.yaml` using the
-   schema below.
-5. Run the calibration script once it exists (Phase 2):
+4. Add an entry to `tests/fixtures/private/manifest.yaml` using the schema
+   below. Leave `calibration.admitted` false unless the explicit human-review
+   requirements are complete.
+5. If at least one entry is admitted, run the threshold-distribution script:
    ```bash
    uv run python scripts/calibrate_thresholds.py \
        --corpus tests/fixtures/private/ \
@@ -101,6 +111,10 @@ entries:
     anonymization:
       reviewed_descriptions: true      # human confirmed PII-free
       redact_words: ["AcmeCorp"]
+    calibration:
+      admitted: true
+      reviewed_by: "maintainer-name"
+      reviewed_at: "2026-07-29"
     notes: |
       Optional free-text. Anything you want future-you to know about
       this snapshot's quirks (large segment library, unusual attribution
@@ -122,8 +136,8 @@ not to fine-grain the population.
 
 ## Calibration confidence
 
-When `scripts/calibrate_thresholds.py` writes
-`docs/threshold_calibration.md`, each rule gets a confidence rating:
+For explicitly admitted entries, `scripts/calibrate_thresholds.py` writes
+`docs/threshold_calibration.md`. Each rule gets a confidence rating:
 
 - **high** — distribution observed across ≥ 8 snapshots in both
   platforms, with a clear inflection between healthy and unhealthy
@@ -135,8 +149,10 @@ When `scripts/calibrate_thresholds.py` writes
   usually < 10 (e.g. tenants with very few calc metrics make
   "% missing description" statistically meaningless).
 
-Low-confidence thresholds are expert judgment, not calibration. The
-document should say so plainly.
+Percentiles remain descriptive rather than outcome validation. Low-confidence
+thresholds are expert judgment, and even high-confidence distributions do not
+become a calibration claim without an independently documented healthy versus
+unhealthy outcome model.
 
 ## What does **not** belong in the corpus
 
