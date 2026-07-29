@@ -32,7 +32,7 @@ import sys
 from collections import defaultdict
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
@@ -358,10 +358,7 @@ def _load_manifest(path: Path) -> list[dict[str, Any]]:
         ):
             continue
         try:
-            parsed_review_date = datetime.strptime(
-                reviewed_at,
-                "%Y-%m-%d",
-            ).date()
+            parsed_review_date = date.fromisoformat(reviewed_at)
         except ValueError:
             continue
         if parsed_review_date.isoformat() != reviewed_at:
