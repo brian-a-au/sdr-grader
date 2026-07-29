@@ -34,7 +34,8 @@ spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
   with contextual exit code 3 and no output.
 - **Generator compatibility warnings are live.** Newer parseable
   `cja_auto_sdr` and `aa_auto_sdr` versions warn once through the normal
-  CLI path; current, older, and unparseable versions stay quiet.
+  CLI path; the validated CJA 3.11.7 and AA 1.21.10 releases, older versions,
+  and unparseable versions stay quiet.
 - **Finding evidence is complete in JSON.** Rule checks no longer discard
   component evidence before serialization. HTML remains bounded to 50
   displayed items per component block and reports the hidden-item count.
