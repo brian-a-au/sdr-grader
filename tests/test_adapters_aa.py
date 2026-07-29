@@ -364,8 +364,8 @@ def test_equal_older_or_unparseable_versions_do_not_warn():
 def test_tuple_length_mismatch_versions_compare_correctly():
     from sdr_grader.adapters.aa import generator_version_warning
 
-    assert generator_version_warning("1.19") is not None
-    assert generator_version_warning("1.18") is None
+    assert generator_version_warning("1.22") is not None
+    assert generator_version_warning("1.21") is None
 
 
 # ---------------------------------------------------------------------------
