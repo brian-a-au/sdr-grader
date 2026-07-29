@@ -1,9 +1,8 @@
 """Mode 3: shell out to cja_auto_sdr / aa_auto_sdr (SPEC §7).
 
 The grader does not call Adobe APIs directly. To run against a live data
-view or report suite, it shells out to the upstream snapshot tool with
-`--format json --output -` and parses the captured stdout as if it were
-a Mode 1 file.
+view or report suite, it asks the upstream snapshot tool for JSON and
+parses the emitted snapshot as if it were a Mode 1 file.
 """
 
 from __future__ import annotations
@@ -15,8 +14,10 @@ import shutil
 import signal
 import subprocess
 import sys
+import tempfile
 import threading
 import time
+from pathlib import Path
 from typing import Any, BinaryIO
 
 from sdr_grader.core.exceptions import InvalidSnapshotError
@@ -38,24 +39,30 @@ def shell_cja(
     Always passes ``--include-all-inventory --quiet`` so the snapshot ships
     calculated metrics and segments alongside dimensions/metrics —
     without it, those rule packs grade against empty inputs and stay
-    silent — while captured stdout remains JSON-only. See cja_auto_sdr's
-    Component Inventory Overview for the full set of ``--include-*``
-    switches.
+    silent. See cja_auto_sdr's Component Inventory Overview for the full
+    set of ``--include-*`` switches.
     """
-    return _shell_out(
-        "cja_auto_sdr",
-        [
-            dataview_id,
-            "--format",
-            "json",
-            "--output",
-            "-",
-            "--include-all-inventory",
-            "--quiet",
-            *(extra_args or []),
-        ],
-        flag="--dataview",
-    )
+    try:
+        with tempfile.TemporaryDirectory(prefix="sdr-grader-cja-") as output_dir:
+            return _shell_out(
+                "cja_auto_sdr",
+                [
+                    dataview_id,
+                    "--format",
+                    "json",
+                    "--output-dir",
+                    output_dir,
+                    "--include-all-inventory",
+                    "--quiet",
+                    *(extra_args or []),
+                ],
+                flag="--dataview",
+                json_output_dir=Path(output_dir),
+            )
+    except OSError:
+        raise InvalidSnapshotError(
+            "shell error [temporary-output]: cja_auto_sdr temporary output handling failed"
+        ) from None
 
 
 def shell_aa(rsid: str, *, extra_args: list[str] | None = None) -> tuple[dict[str, Any], str]:
@@ -67,7 +74,13 @@ def shell_aa(rsid: str, *, extra_args: list[str] | None = None) -> tuple[dict[st
     )
 
 
-def _shell_out(tool: str, argv: list[str], *, flag: str) -> tuple[dict[str, Any], str]:
+def _shell_out(
+    tool: str,
+    argv: list[str],
+    *,
+    flag: str,
+    json_output_dir: Path | None = None,
+) -> tuple[dict[str, Any], str]:
     binary = shutil.which(tool)
     if not binary:
         raise InvalidSnapshotError(
@@ -96,32 +109,62 @@ def _shell_out(tool: str, argv: list[str], *, flag: str) -> tuple[dict[str, Any]
 
     if stderr:
         print(
-            f"warning [shell-child-diagnostics]: "
-            f"{tool} emitted diagnostics; content suppressed",
+            f"warning [shell-child-diagnostics]: {tool} emitted diagnostics; content suppressed",
             file=sys.stderr,
         )
 
+    encoded_snapshot = (
+        stdout
+        if json_output_dir is None
+        else _read_generated_json(tool=tool, output_dir=json_output_dir)
+    )
     try:
-        decoded = stdout.decode("utf-8")
+        decoded = encoded_snapshot.decode("utf-8")
     except UnicodeDecodeError:
         raise InvalidSnapshotError(
-            f"shell error [invalid-encoding]: {tool} stdout was not UTF-8"
+            f"shell error [invalid-encoding]: {tool} output was not UTF-8"
         ) from None
     try:
         snapshot = json.loads(decoded)
     except json.JSONDecodeError:
         raise InvalidSnapshotError(
-            f"shell error [invalid-json]: {tool} stdout was not valid JSON"
+            f"shell error [invalid-json]: {tool} output was not valid JSON"
         ) from None
     except RecursionError:
         raise InvalidSnapshotError(
-            f"shell error [invalid-json-depth]: {tool} stdout exceeded nesting limits"
+            f"shell error [invalid-json-depth]: {tool} output exceeded nesting limits"
         ) from None
     if not isinstance(snapshot, dict):
         raise InvalidSnapshotError(
-            f"shell error [invalid-shape]: {tool} stdout must be a JSON object"
+            f"shell error [invalid-shape]: {tool} output must be a JSON object"
         )
     return snapshot, f"shell-out:{tool}"
+
+
+def _read_generated_json(*, tool: str, output_dir: Path) -> bytes:
+    try:
+        json_outputs = [path for path in output_dir.glob("*.json") if path.is_file()]
+    except OSError:
+        raise InvalidSnapshotError(
+            f"shell error [output-discovery]: {tool} JSON output could not be inspected"
+        ) from None
+    if len(json_outputs) != 1:
+        raise InvalidSnapshotError(
+            f"shell error [output-count]: {tool} produced {len(json_outputs)} JSON outputs; "
+            "expected exactly one"
+        )
+    try:
+        with json_outputs[0].open("rb") as stream:
+            encoded = stream.read(MAX_STDOUT_BYTES + 1)
+    except (OSError, ValueError):
+        raise InvalidSnapshotError(
+            f"shell error [io-failed]: {tool} JSON output could not be read"
+        ) from None
+    if len(encoded) > MAX_STDOUT_BYTES:
+        raise InvalidSnapshotError(
+            f"shell error [output-limit]: {tool} JSON output exceeded the byte limit"
+        )
+    return encoded
 
 
 def _communicate_bounded(
@@ -132,9 +175,7 @@ def _communicate_bounded(
     """Capture fixed-size child streams and stop the process at either limit."""
     if process.stdout is None or process.stderr is None:
         _terminate_process_tree(process)
-        raise InvalidSnapshotError(
-            f"shell error [io-failed]: {tool} output pipes were unavailable"
-        )
+        raise InvalidSnapshotError(f"shell error [io-failed]: {tool} output pipes were unavailable")
 
     buffers: dict[str, bytes] = {}
     over_limit: set[str] = set()
@@ -211,22 +252,16 @@ def _communicate_bounded(
         for reader in readers:
             reader.join(timeout=0.1)
     if any(reader.is_alive() for reader in readers):
-        raise InvalidSnapshotError(
-            f"shell error [io-failed]: {tool} output pipes did not close"
-        )
+        raise InvalidSnapshotError(f"shell error [io-failed]: {tool} output pipes did not close")
     if timed_out:
-        raise InvalidSnapshotError(
-            f"shell error [timeout]: {tool} exceeded the execution deadline"
-        )
+        raise InvalidSnapshotError(f"shell error [timeout]: {tool} exceeded the execution deadline")
     if over_limit:
         stream_name = "stdout" if "stdout" in over_limit else "stderr"
         raise InvalidSnapshotError(
             f"shell error [output-limit]: {tool} {stream_name} exceeded the byte limit"
         )
     if read_failures:
-        raise InvalidSnapshotError(
-            f"shell error [io-failed]: {tool} output could not be captured"
-        )
+        raise InvalidSnapshotError(f"shell error [io-failed]: {tool} output could not be captured")
     return buffers["stdout"], buffers["stderr"]
 
 
