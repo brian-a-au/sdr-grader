@@ -216,13 +216,33 @@ jobs:
           npm install --global @anthropic-ai/claude-code@2.1.220
           PLUGIN_ENV="${RUNNER_TEMP}/plugin-venv"
           PLUGIN_ROOT="${RUNNER_TEMP}/frozen-plugin"
+          STRICT_PLUGIN_ROOT="${RUNNER_TEMP}/strict-plugin"
           claude plugin validate "${PLUGIN_ROOT}" --strict
+          mkdir -p "${STRICT_PLUGIN_ROOT}/.claude-plugin"
+          mkdir -p "${STRICT_PLUGIN_ROOT}/skills"
+          cp \
+            "${PLUGIN_ROOT}/.claude-plugin/plugin.json" \
+            "${STRICT_PLUGIN_ROOT}/.claude-plugin/plugin.json"
+          cp -R \
+            "${PLUGIN_ROOT}/skills/sdr-grader" \
+            "${STRICT_PLUGIN_ROOT}/skills/"
+          claude plugin validate "${STRICT_PLUGIN_ROOT}" --strict
           export CLAUDE_CONFIG_DIR="${RUNNER_TEMP}/claude-profile"
           claude plugin marketplace add "${PLUGIN_ROOT}" --scope user
           claude plugin install sdr-grader@sdr-grader --scope user
           "${PLUGIN_ENV}/bin/sdr-grader" tests/fixtures/cja_snapshot_messy.json \
             --output "${RUNNER_TEMP}/plugin-grade.html" \
             --json "${RUNNER_TEMP}/plugin-grade.json" --quiet
+          SUPPRESS_CONFIG="${RUNNER_TEMP}/compare-suppression.yaml"
+          printf '%s\n' \
+            'suppress:' \
+            '  - rule: CALC-014' \
+            '    reason: plugin compare smoke' \
+            > "${SUPPRESS_CONFIG}"
+          "${PLUGIN_ENV}/bin/sdr-grader" tests/fixtures/cja_snapshot_messy.json \
+            --suppress-config "${SUPPRESS_CONFIG}" \
+            --output "${RUNNER_TEMP}/plugin-grade-suppressed.html" \
+            --json "${RUNNER_TEMP}/plugin-grade-suppressed.json" --quiet
           INSTALL_PATH="$(
             claude plugin list --json |
               python3 -c 'import json,sys; print(json.load(sys.stdin)[0]["installPath"])'
@@ -233,7 +253,7 @@ jobs:
           python3 "${HELPER}" show "${RUNNER_TEMP}/plugin-grade.json" CALC-014
           python3 "${HELPER}" compare \
             "${RUNNER_TEMP}/plugin-grade.json" \
-            "${RUNNER_TEMP}/plugin-grade.json"
+            "${RUNNER_TEMP}/plugin-grade-suppressed.json"
 
   draft-github:
     name: Create immutable GitHub draft

@@ -114,6 +114,38 @@ def test_manifest_loads_only_explicitly_admitted_human_reviewed_entries(
                             "reviewed_at": "2026-07-29",
                         },
                     },
+                    {
+                        "anon_id": "blank-reviewer",
+                        "anonymization": {"reviewed_descriptions": True},
+                        "calibration": {
+                            "admitted": True,
+                            "reviewed_by": " ",
+                            "reviewed_at": "2026-07-29",
+                        },
+                    },
+                    {
+                        "anon_id": "invalid-date",
+                        "anonymization": {"reviewed_descriptions": True},
+                        "calibration": {
+                            "admitted": True,
+                            "reviewed_by": "maintainer",
+                            "reviewed_at": "2026-02-30",
+                        },
+                    },
+                    {
+                        "anon_id": "non-string-date",
+                        "anonymization": {"reviewed_descriptions": True},
+                        "calibration": {
+                            "admitted": True,
+                            "reviewed_by": "maintainer",
+                            "reviewed_at": 20260729,
+                        },
+                    },
+                    {
+                        "anon_id": "invalid-calibration-block",
+                        "anonymization": {"reviewed_descriptions": True},
+                        "calibration": "admitted",
+                    },
                 ],
             }
         ),
@@ -123,6 +155,55 @@ def test_manifest_loads_only_explicitly_admitted_human_reviewed_entries(
     assert [entry["anon_id"] for entry in ct._load_manifest(manifest)] == [
         "admitted"
     ]
+
+
+def test_calibration_report_fails_closed_when_admitted_snapshot_is_missing(
+    tmp_path,
+    capsys,
+):
+    corpus = tmp_path / "corpus"
+    corpus.mkdir()
+    manifest = corpus / "manifest.yaml"
+    manifest.write_text(
+        yaml.safe_dump(
+            {
+                "version": 1,
+                "entries": [
+                    {
+                        "anon_id": "missing-snapshot",
+                        "file": "missing.json",
+                        "platform": "cja",
+                        "anonymization": {"reviewed_descriptions": True},
+                        "calibration": {
+                            "admitted": True,
+                            "reviewed_by": "maintainer",
+                            "reviewed_at": "2026-07-29",
+                        },
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    output = tmp_path / "thresholds.md"
+
+    result = ct.main(
+        [
+            "--corpus",
+            str(corpus),
+            "--manifest",
+            str(manifest),
+            "--output",
+            str(output),
+        ]
+    )
+
+    assert result == 1
+    assert not output.exists()
+    captured = capsys.readouterr()
+    assert "WARN: manifest entry missing-snapshot points to missing file" in captured.err
+    assert "ERROR: could not measure 1 calibration-admitted entry" in captured.err
+    assert "No report was written." in captured.err
 
 
 def test_distribution_report_does_not_claim_calibration():

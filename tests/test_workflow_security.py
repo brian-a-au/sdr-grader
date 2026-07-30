@@ -122,7 +122,12 @@ def test_release_workflow_builds_before_isolated_frozen_wheel_plugin_smoke():
     assert "uv pip install" in plugin_smoke
     assert "dist/*.whl" in plugin_smoke
     assert "npm install --global @anthropic-ai/claude-code@" in plugin_smoke
+    assert 'STRICT_PLUGIN_ROOT="${RUNNER_TEMP}/strict-plugin"' in plugin_smoke
+    assert 'claude plugin validate "${STRICT_PLUGIN_ROOT}" --strict' in plugin_smoke
     assert "claude plugin install sdr-grader@sdr-grader" in plugin_smoke
+    assert "plugin compare smoke" in plugin_smoke
+    assert "--suppress-config" in plugin_smoke
+    assert '"${RUNNER_TEMP}/plugin-grade-suppressed.json"' in plugin_smoke
     assert "needs: [install-smoke, plugin-smoke]" in draft
 
 

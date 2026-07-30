@@ -553,13 +553,25 @@ def main(argv: list[str] | None = None) -> int:
     distributions: dict[str, list[tuple[float, int | None]]] = {
         m.rule_id: [] for m in MEASUREMENTS
     }
+    failed_entries: list[str] = []
 
     for entry in entries:
         impl = _adapt_snapshot(args.corpus, entry)
         if impl is None:
+            failed_entries.append(str(entry.get("anon_id") or "<unknown>"))
             continue
         for m in MEASUREMENTS:
             distributions[m.rule_id].append(m.fn(impl))
+
+    if failed_entries:
+        print(
+            "ERROR: could not measure "
+            f"{len(failed_entries)} calibration-admitted "
+            f"entr{'y' if len(failed_entries) == 1 else 'ies'}: "
+            f"{', '.join(failed_entries)}. No report was written.",
+            file=sys.stderr,
+        )
+        return 1
 
     report = _render_report(distributions)
     args.output.parent.mkdir(parents=True, exist_ok=True)
