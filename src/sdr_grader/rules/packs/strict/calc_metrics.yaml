@@ -6,19 +6,21 @@ description: |
 rules:
   - id: CALC-001
     name: Calculated metrics lacking descriptions
-    severity: low               # demoted from medium post-calibration
+    severity: low               # demoted after historical cohort review
     platforms: [cja, aa]
     check: calc_metrics_missing_descriptions
     params:
-      threshold: 0.95           # calibrated against 31 calc-metric-bearing
-                                # snapshots: nearly every real tenant has
-                                # 100% calc metrics missing descriptions
+      # Historically set from descriptive observations on 31 calc-metric-
+      # bearing compatibility snapshots; this was not an admitted
+      # calibration cohort.
+      threshold: 0.95
     rationale: |
       Calculated metrics carry definitional choices (attribution, allocation,
       formula assumptions) that are invisible from the formula alone. Real-
-      world adoption of calc-metric descriptions is essentially zero — the
-      calibrated threshold flags only the most undocumented tenants and the
-      severity is low so this never dominates a grade.
+      world adoption of calc-metric descriptions is essentially zero in the
+      historical compatibility cohort. The maintainer-selected threshold
+      flags only the most undocumented tenants, and the low severity keeps
+      this rule from dominating a grade.
     remediation: |
       Add concise descriptions explaining what the metric measures, when to
       use it, and which attribution / allocation choices were made.
@@ -42,7 +44,8 @@ rules:
     platforms: [cja, aa]
     check: calc_complexity_threshold
     params:
-      max_complexity: 22        # calibrated p90 across calc-metric-bearing snapshots
+      # Maintainer-selected near the historical compatibility-cohort p90.
+      max_complexity: 22
     rationale: |
       High-complexity formulas are hard to review and easy to miscalibrate.
       Beyond a certain threshold, the formula stops being self-documenting.
@@ -54,7 +57,8 @@ rules:
   # packs. Same reasoning as SEG-003: calc metrics are referenced by
   # Workspace projects and dashboards, not other calc metrics or segments,
   # so the in-snapshot orphan signal is universally degenerate (every
-  # calc-bearing tenant in the 108-snapshot corpus was at 100% orphan).
+  # calc-bearing tenant in the historical 108-snapshot compatibility cohort
+  # was at 100% orphan).
 
   - id: CALC-014
     name: Near-duplicate calculated metrics
@@ -83,4 +87,3 @@ rules:
     remediation: |
       Pick one canonical metric, redirect consumers, and archive the
       duplicates.
-

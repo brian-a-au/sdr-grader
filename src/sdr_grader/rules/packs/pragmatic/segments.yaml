@@ -29,8 +29,9 @@ rules:
     check: segments_missing_descriptions
     params:
       threshold: 1.00           # pragmatic: fire only when every segment
-                                # lacks a description (no signal in p95
-                                # of real corpus to support anything tighter)
+                                # lacks a description (the historical
+                                # compatibility-cohort p95 had no signal for
+                                # anything tighter)
     rationale: Same as strict.
     remediation: Same as strict.
 
@@ -49,6 +50,7 @@ rules:
     platforms: [cja, aa]
     check: segment_nesting_depth
     params:
-      max_depth: 7              # calibrated p90 across segment-bearing snapshots
+      # Maintainer-selected near the historical compatibility-cohort p90.
+      max_depth: 7
     rationale: Same as strict.
     remediation: Same as strict.

@@ -1,14 +1,14 @@
 # Rubric audit — May 2026
 
 A category-by-category audit of the 27 rules in the `2.0` default
-`strict` and `pragmatic` packs against Adobe's published documentation for CJA and AA,
-plus the calibration evidence that already exists in
-[`docs/threshold_calibration.md`](threshold_calibration.md).
+`strict` and `pragmatic` packs against Adobe's published documentation for CJA
+and AA, plus historical private-cohort observations.
 
 > **Status:** this remains a historical May 2026 premise audit, not pack 2.0
-> release-candidate approval. The threshold report was regenerated on
-> 2026-07-28 with SCH-003's corrected statistic; final approval still requires
-> binding all release evidence to the candidate SHA.
+> release-candidate approval. Its historical uses of “calibration” describe
+> compatibility-cohort distribution analysis, not a current release claim.
+> The current 108-entry compatibility cohort has zero calibration-admitted
+> entries; bundled thresholds remain maintainer judgment.
 
 The goal is to separate three buckets:
 
@@ -22,15 +22,16 @@ The goal is to separate three buckets:
   doesn't grade at all. The opportunity cost of these gaps is often
   larger than the cost of any individual weak rule.
 
-This is not a calibration report — `docs/threshold_calibration.md` retains
-the historical measurement record. This is a *premise*
-audit: does the rule grade something the platform actually models, and
-does the signal mean what the rule says it means?
+This is a *premise* audit: does the rule grade something the platform actually
+models, and does the signal mean what the rule says it means? Percentiles and
+counts below are historical descriptive observations. Labels such as
+“calibrated” are preserved as historical dispositions but do not mean the
+current release has an admitted calibration cohort.
 
-**Historically verified against (May 2026):** the 108-fixture private corpus
+**Historically exercised against (May 2026):** the 108-fixture private cohort
 (`tests/fixtures/private/{aa,cja}/`) loaded through the live adapters,
-plus `docs/threshold_calibration.md` and current Adobe Experience League
-documentation. Empirical counts cited below come from that vetting pass.
+plus current Adobe Experience League documentation. Empirical counts cited
+below come from that compatibility vetting pass.
 
 ## Methodology
 

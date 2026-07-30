@@ -771,11 +771,11 @@ def test_cli_warns_once_for_newer_generator_without_snapshot_data(
 @pytest.mark.parametrize(
     ("platform", "version"),
     [
+        ("cja", "3.11.7"),
         ("cja", "3.5.17"),
-        ("cja", "3.5.0"),
         ("cja", "unparseable"),
+        ("aa", "1.21.10"),
         ("aa", "1.18.0"),
-        ("aa", "1.17.0"),
         ("aa", "unparseable"),
     ],
 )

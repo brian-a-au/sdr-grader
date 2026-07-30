@@ -6,6 +6,7 @@ import argparse
 import json
 import re
 import sys
+from datetime import date
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -30,13 +31,17 @@ def main(root: Path = ROOT, *, tag: str | None = None) -> int:
         print("error: no __version__ in src/sdr_grader/__init__.py")
         return 1
 
-    changelog_match = re.search(r"^## (\S+)", changelog_text, re.MULTILINE)
+    changelog_match = re.search(
+        r"^## (?P<version>\S+)(?:\s+—\s+(?P<label>.+))?$",
+        changelog_text,
+        re.MULTILINE,
+    )
     if not changelog_match:
         print("error: no '## <version>' heading in CHANGELOG.md")
         return 1
 
     package = init_match.group(1)
-    changelog = changelog_match.group(1)
+    changelog = changelog_match.group("version")
     if not VERSION_PATTERN.fullmatch(package):
         print(f"error: package version is not X.Y.Z: {package!r}")
         return 1
@@ -94,6 +99,21 @@ def main(root: Path = ROOT, *, tag: str | None = None) -> int:
             f"error: release tag must be exactly v{package}, got {tag!r}"
         )
         return 1
+    if tag is not None:
+        release_label = changelog_match.group("label")
+        try:
+            if (
+                release_label is None
+                or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", release_label)
+            ):
+                raise ValueError
+            date.fromisoformat(release_label)
+        except ValueError:
+            print(
+                "error: tagged release CHANGELOG heading must include a "
+                "valid ISO release date"
+            )
+            return 1
 
     pack_versions: dict[str, str] = {}
     for pack_name in ("strict", "pragmatic"):

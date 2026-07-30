@@ -23,10 +23,10 @@ rules:
   # The check counts segments that no other segment / calc metric in the
   # snapshot references. In production, segments are referenced by
   # Workspace projects, dashboards, and alerts — none of which the SDR
-  # carries. Calibration across 108 real CJA snapshots showed every
-  # segment-bearing tenant at 100% orphan, so the rule has no signal in
-  # default packs. Operators with Workspace usage data can include the
-  # check in a custom rubric pack via the --extra-input pattern.
+  # carries. A historical descriptive compatibility run across 108 real CJA
+  # snapshots found every segment-bearing tenant at 100% orphan, so the rule
+  # has no signal in default packs. Operators with Workspace usage data can
+  # include the check in a custom rubric pack via the --extra-input pattern.
 
   - id: SEG-004
     name: Circular segment references
@@ -47,16 +47,16 @@ rules:
     platforms: [cja, aa]
     check: segments_missing_descriptions
     params:
-      threshold: 0.95           # calibrated against 41 segment-bearing
-                                # snapshots: ~90% of real tenants have
-                                # 100% segments missing descriptions, so
-                                # only the most egregious cases fire.
+      # Historically set from descriptive observations on 41 segment-bearing
+      # compatibility snapshots; this was not an admitted calibration cohort.
+      threshold: 0.95
     rationale: |
       Segment intent is exactly the kind of audience-defining decision
       that must be documented; future analysts inherit the segment without
       the conversation that produced it. Real-world adoption of segment
-      descriptions is low — the calibrated threshold accepts that and
-      flags only tenants where literally every segment is undocumented.
+      descriptions was low in the historical compatibility cohort. The
+      maintainer-selected threshold flags only tenants where literally every
+      segment is undocumented.
     remediation: |
       Add concise descriptions explaining who the segment captures and
       why.
@@ -80,7 +80,8 @@ rules:
     platforms: [cja, aa]
     check: segment_nesting_depth
     params:
-      max_depth: 5              # calibrated p75 across segment-bearing snapshots
+      # Maintainer-selected near the historical compatibility-cohort p75.
+      max_depth: 5
     rationale: |
       Deep nesting makes intent illegible — small definitional changes
       have unpredictable population effects.

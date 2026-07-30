@@ -5,8 +5,9 @@ complexity computed correctly, references extracted. The messy fixture
 encodes specific known counts (487 components, 240 missing descriptions,
 4 deep segments, 7 near-duplicate revenue calc metrics) — those numbers
 are part of the test contract and downstream rule tests rely on them.
-Counts were retuned post-calibration so the messy fixture exercises the
-calibrated SCH-003 strict threshold (0.56); see docs/threshold_calibration.md.
+Counts were retuned after a historical compatibility-cohort distribution run
+so the messy fixture exercises the maintainer-selected SCH-003 strict
+threshold (0.56); see docs/RUBRIC_AUDIT.md.
 """
 
 from __future__ import annotations
@@ -526,12 +527,12 @@ def test_equal_older_or_unparseable_versions_do_not_warn():
 
 
 def test_tuple_length_mismatch_versions_compare_correctly():
-    # (3, 6) > (3, 5, 17), while the shorter (3, 5) sorts below the
+    # (3, 12) > (3, 11, 7), while the shorter (3, 11) sorts below the
     # longer tested tuple. This pins Python tuple ordering as the contract.
     from sdr_grader.adapters.cja import generator_version_warning
 
-    assert generator_version_warning("3.6") is not None
-    assert generator_version_warning("3.5") is None
+    assert generator_version_warning("3.12") is not None
+    assert generator_version_warning("3.11") is None
 
 
 # ---------------------------------------------------------------------------

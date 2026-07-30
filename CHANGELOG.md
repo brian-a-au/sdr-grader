@@ -3,7 +3,7 @@
 All notable changes follow the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
-## 1.2.0 — Unreleased
+## 1.2.0 — 2026-07-29
 
 ### Changed
 
@@ -34,15 +34,25 @@ spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
   with contextual exit code 3 and no output.
 - **Generator compatibility warnings are live.** Newer parseable
   `cja_auto_sdr` and `aa_auto_sdr` versions warn once through the normal
-  CLI path; current, older, and unparseable versions stay quiet.
+  CLI path; the validated CJA 3.11.7 and AA 1.21.10 releases, older versions,
+  and unparseable versions stay quiet.
 - **Finding evidence is complete in JSON.** Rule checks no longer discard
   component evidence before serialization. HTML remains bounded to 50
   displayed items per component block and reports the hidden-item count.
-- **SCH-003 now calibrates the statistic it grades.** The bundled rule and
-  calibration script both evaluate configured targets independently and use
-  the maximum missing-description ratio. A 2026-07-28 run over the
-  108-snapshot private corpus set strict to p75 (`0.56`) and pragmatic to p95
-  (`0.81`).
+- **SCH-003 now measures the statistic it grades.** The bundled rule and
+  threshold-analysis script both evaluate configured targets independently and
+  use the maximum missing-description ratio. Strict uses `0.56` and pragmatic
+  uses `0.81`; these remain maintainer-selected thresholds rather than a
+  calibration claim.
+- **Private evidence is now described accurately.** The 108-snapshot private
+  cohort (100 CJA Data Views and 8 AA report suites) is compatibility evidence.
+  Zero entries are currently admitted to the calibration cohort, so v1.2.0
+  makes no grading-calibration claim. Release approval binds aggregate-only
+  results to the exact candidate without publishing snapshots, identifiers,
+  fingerprints, raw scores, or local paths.
+- **Paired compatibility is released.** The current generator and snapshot
+  paths were validated alongside
+  [`sdr-visualizer` v1.0.4](https://github.com/brian-a-au/sdr-visualizer/releases/tag/v1.0.4).
 - **AA segment references are normalized.** Component and segment IDs embedded
   in AA segment definitions now reach cross-reference, broken-reference, and
   circular-segment checks.

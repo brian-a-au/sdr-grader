@@ -13,9 +13,10 @@ rather than a public issue. I aim to respond within a week.
 
 ## Reporting false positives on private data
 
-The default rubric is calibrated against a corpus of real CJA + AA
-implementations. If a rule fires incorrectly on your snapshot, you
-have two options:
+The default rubric has been compatibility-tested against real CJA + AA
+implementations, but its thresholds remain maintainer judgment until an
+explicitly admitted calibration cohort exists. If a rule fires incorrectly on
+your snapshot, you have two options:
 
 1. **Prefer a synthetic reduction** that reproduces the false positive
    without using production-derived values.
@@ -47,10 +48,11 @@ report (for example, naming conventions that reveal customer or project
 codes), keep the report local until a human has reviewed the complete
 artifact.
 
-## Calibration corpus
+## Private compatibility and calibration corpus
 
 The corpus at `tests/fixtures/private/` is local-only and gitignored.
-It never appears in commits, CI runs, or published releases. See
+It never appears in commits, CI runs, or published releases. Compatibility
+collection does not make an entry calibration evidence. See
 [`docs/CALIBRATION_CORPUS.md`](docs/CALIBRATION_CORPUS.md) for the
 intake workflow and privacy-review checklist.
 

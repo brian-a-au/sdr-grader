@@ -453,7 +453,7 @@ def _walk_for_contexts(node: Any, out: list[str]) -> None:
 # (bundled fixtures + the private real corpus; re-derive at each release:
 # grep -rho '"Tool Version": "[^"]*"|"tool_version": "[^"]*"' over corpus
 # and fixtures, take the max). Q5 (SPEC §14): warn only — never refuse.
-TESTED_THROUGH_GENERATOR_VERSION = "3.5.17"
+TESTED_THROUGH_GENERATOR_VERSION = "3.11.7"
 
 
 def generator_version_warning(adapter_version: str) -> str | None:

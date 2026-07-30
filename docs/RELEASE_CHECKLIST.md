@@ -30,13 +30,15 @@ Record the successful run URLs for these stable checks:
 - [ ] `Dependency review`: `________`
 - [ ] `CodeQL / Python`: `________`
 - [ ] Strict plugin and clean local marketplace smoke: `________`
-- [ ] Private-corpus calibration attestation: `________`
+- [ ] Private compatibility-cohort attestation and entry count: `________`
+- [ ] Calibration-cohort attestation and admitted entry count: `________`
 
 An unavailable, inconclusive, skipped, or stale check is a failure. The
-private corpus stays outside Git and public CI; its aggregate evidence
-must identify the candidate, tool version, and private corpus revision
-without customer identifiers, stable fingerprints, raw scores, or
-local paths.
+private corpus stays outside Git and public CI; its aggregate evidence must
+identify the candidate, tool version, corpus revision, compatibility count,
+and calibration-admitted count without customer identifiers, stable
+fingerprints, raw scores, or local paths. A compatibility pass is not
+calibration evidence.
 
 ## Artifact evidence
 

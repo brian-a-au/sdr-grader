@@ -6,7 +6,7 @@
 [![Version Sync](https://github.com/brian-a-au/sdr-grader/actions/workflows/version-sync.yml/badge.svg)](https://github.com/brian-a-au/sdr-grader/actions/workflows/version-sync.yml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 [![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen.svg)](tests/)
-[![Tests](https://img.shields.io/badge/tests-603-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-852-brightgreen.svg)](tests/)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -219,14 +219,14 @@ Customizing the rubric:
 - [docs/RUBRIC_FORMAT.md](docs/RUBRIC_FORMAT.md) — YAML rubric schema
 - [docs/SUPPLEMENTARY_INPUTS.md](docs/SUPPLEMENTARY_INPUTS.md) — `--extra-input` mechanism
 
-Calibration and audit:
+Private evidence and audit:
 
 - [docs/PLATFORM_COVERAGE.md](docs/PLATFORM_COVERAGE.md) — CJA vs AA
-  coverage, calibration corpus, and known AA gaps
-- [docs/CALIBRATION_CORPUS.md](docs/CALIBRATION_CORPUS.md) — how the
-  private corpus behind the default thresholds is assembled
+  coverage, compatibility evidence, and known AA gaps
+- [docs/CALIBRATION_CORPUS.md](docs/CALIBRATION_CORPUS.md) — private
+  compatibility collection and the stricter calibration-admission rules
 - [docs/threshold_calibration.md](docs/threshold_calibration.md) —
-  current per-rule distributions; candidate binding is a release gate
+  current admitted-cohort status and any per-rule distributions
 - [docs/RUBRIC_AUDIT.md](docs/RUBRIC_AUDIT.md) — premise audit of each
   rule against Adobe documentation; gaps Adobe carries but the rubric
   doesn't grade

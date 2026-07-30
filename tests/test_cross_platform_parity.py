@@ -236,10 +236,10 @@ def test_cross_platform_rule_fires_on_at_least_one_messy(rule, impls):
     fired = cja_fired or aa_fired
 
     if rule.id in INTENTIONALLY_QUIET:
-        # No assertion either way — calibration says these should fire
+        # No assertion either way — historical cohort observations say these should fire
         # rarely. If you flip the test to assert it fires, you'll need
         # a fixture pathologically extreme enough to clear the
-        # near-saturation threshold, which contradicts the calibration
+        # near-saturation threshold, which contradicts the historical observation
         # rationale.
         return
 
@@ -247,7 +247,7 @@ def test_cross_platform_rule_fires_on_at_least_one_messy(rule, impls):
         f"{rule.id} ({rule.check}) didn't fire on either messy fixture — "
         "rule may be dead, or messy fixtures need to exercise it. "
         "Add a purpose-built raw trigger proof or document it in "
-        "INTENTIONALLY_QUIET with a calibration rationale."
+        "INTENTIONALLY_QUIET with a documented compatibility rationale."
     )
 
 

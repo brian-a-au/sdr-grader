@@ -1,4 +1,5 @@
-# Example manifest format for the calibration corpus.
+# Example manifest format for the private compatibility corpus and the
+# additional calibration-admission record.
 # See docs/CALIBRATION_CORPUS.md for the schema. The real manifest at
 # tests/fixtures/private/manifest.yaml is gitignored along with the rest
 # of the private corpus; this example is committed so contributors see
@@ -15,6 +16,10 @@ entries:
     anonymization:
       reviewed_descriptions: true
       redact_words: ["AcmeCorp"]
+    calibration:
+      admitted: true
+      reviewed_by: "maintainer-name"
+      reviewed_at: "2026-07-29"
     notes: |
       Mid-size CJA dataview, ~250 segments, attribution-heavy.
 
@@ -28,6 +33,10 @@ entries:
     anonymization:
       reviewed_descriptions: true
       redact_words: []
+    calibration:
+      admitted: false
+      reviewed_by: null
+      reviewed_at: null
     notes: |
       Large AA report suite with high orphan-segment rate; useful for
       SEG-003 calibration.

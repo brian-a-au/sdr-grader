@@ -34,7 +34,7 @@ def _release_tree(tmp_path: Path) -> Path:
             encoding="utf-8",
         )
     (tmp_path / "CHANGELOG.md").write_text(
-        "## 1.2.0 — Unreleased\n\nPack `2.0`; JSON schema `1`.\n",
+        "## 1.2.0 — 2026-07-29\n\nPack `2.0`; JSON schema `1`.\n",
         encoding="utf-8",
     )
     metadata = tmp_path / ".claude-plugin"
@@ -74,6 +74,23 @@ def test_version_sync_accepts_complete_release_identity(tmp_path, capsys):
     output = capsys.readouterr().out
     assert "package/plugin/marketplace 1.2.0" in output
     assert "packs 2.0" in output
+
+
+@pytest.mark.parametrize("release_label", ["Unreleased", "2026-13-01"])
+def test_version_sync_rejects_non_date_release_heading_when_tagged(
+    tmp_path,
+    capsys,
+    release_label,
+):
+    module = _load_module()
+    root = _release_tree(tmp_path)
+    (root / "CHANGELOG.md").write_text(
+        f"## 1.2.0 — {release_label}\n\nPack `2.0`; JSON schema `1`.\n",
+        encoding="utf-8",
+    )
+
+    assert module.main(root, tag="v1.2.0") == 1
+    assert "release date" in capsys.readouterr().out.lower()
 
 
 @pytest.mark.parametrize("tag", ["1.2.0", "v1.2.1", "release-1.2.0"])
