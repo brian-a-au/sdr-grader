@@ -727,8 +727,52 @@ def test_definition_parser_wraps_json_recursion_error(monkeypatch):
         lambda _value: (_ for _ in ()).throw(RecursionError("decoder recursion")),
     )
 
-    with pytest.raises(InvalidSnapshotError, match="definition JSON exceeds nesting limits"):
+    with pytest.raises(InvalidSnapshotError, match="definition JSON exceeds decoder limits"):
         cja._parse_definition_json('{"nested": true}')
+
+
+@pytest.mark.parametrize("error", [ValueError("integer limit"), RecursionError("decoder recursion")])
+def test_embedded_json_resource_errors_are_invalid_snapshot(monkeypatch, error):
+    from sdr_grader.adapters import cja
+
+    monkeypatch.setattr(cja.json, "loads", lambda _value: (_ for _ in ()).throw(error))
+
+    for parser in (cja._parse_definition_json, cja._parse_tag_list, cja._parse_ref_list):
+        with pytest.raises(InvalidSnapshotError, match="JSON exceeds decoder limits"):
+            parser('["value"]')
+
+
+def test_embedded_json_rejects_surrogates_materialized_after_decode():
+    from sdr_grader.adapters.cja import (
+        _parse_definition_json,
+        _parse_ref_list,
+        _parse_tag_list,
+    )
+
+    with pytest.raises(InvalidSnapshotError, match="surrogate"):
+        _parse_definition_json('{"\\ud800":"value"}')
+    with pytest.raises(InvalidSnapshotError, match="surrogate"):
+        _parse_tag_list('["\\ud800"]')
+    with pytest.raises(InvalidSnapshotError, match="surrogate"):
+        _parse_ref_list('["\\udfff"]')
+
+
+@pytest.mark.parametrize(
+    "record",
+    [
+        {"id": "metrics/orders", "description": "\ud800"},
+        {"id": "metrics/orders", "\udfff": "value"},
+    ],
+)
+def test_cja_adapter_rejects_surrogate_values_and_mapping_keys(record):
+    snapshot = {
+        "metadata": {"Data View ID": "dv-test"},
+        "metrics": [record],
+        "dimensions": [],
+    }
+
+    with pytest.raises(InvalidSnapshotError, match=r"CJA snapshot.*surrogate"):
+        adapt(snapshot)
 
 
 def test_tag_and_reference_parsers_degrade_json_scalars_and_malformed_json():

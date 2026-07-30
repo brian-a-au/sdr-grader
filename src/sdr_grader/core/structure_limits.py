@@ -47,6 +47,31 @@ def validate_definition_structure(value: Any, *, label: str) -> None:
     )
 
 
+def validate_unicode_scalars(value: Any, *, label: str) -> None:
+    """Reject surrogate code points in JSON-like string values and mapping keys.
+
+    This walk intentionally adds no size or depth budget. It is used for
+    embedded JSON that has already passed the outer snapshot budget.
+    """
+    stack = [value]
+    while stack:
+        node = stack.pop()
+        _validate_string(node, label=label)
+        if isinstance(node, dict):
+            for key in node:
+                _validate_string(key, label=label)
+            stack.extend(node.values())
+        elif isinstance(node, list):
+            stack.extend(node)
+
+
+def _validate_string(value: Any, *, label: str) -> None:
+    if isinstance(value, str) and any(
+        0xD800 <= ord(character) <= 0xDFFF for character in value
+    ):
+        raise InvalidSnapshotError(f"{label} contains a Unicode surrogate code point")
+
+
 def _validate_structure(
     value: Any,
     *,
@@ -58,6 +83,10 @@ def _validate_structure(
     stack: list[tuple[Any, int]] = [(value, 0)]
     while stack:
         node, depth = stack.pop()
+        _validate_string(node, label=label)
+        if isinstance(node, dict):
+            for key in node:
+                _validate_string(key, label=label)
         if depth > max_depth:
             raise InvalidSnapshotError(
                 f"{label} exceeds the maximum structure depth of {max_depth}"

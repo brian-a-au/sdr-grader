@@ -119,8 +119,12 @@ adding new supplementary-input rules.
 SPEC §11/§15. The adapters are not byte-identical, but changes to these
 shared helpers must be mirrored to the sibling repository in the same cycle:
 
-- `_parse_tag_list` / `_parse_ref_list` parse JSON-encoded list strings,
-  tolerate native lists, and drop unparseable values to `[]`.
+- `_parse_tag_list` / `_parse_ref_list` parse JSON-encoded list strings and
+  tolerate native lists. Ordinary JSON syntax failures drop to `[]`; decoder
+  resource failures raise `InvalidSnapshotError`.
+- Snapshot structure validation rejects surrogate code points in string values
+  and mapping keys before normalization. Embedded JSON helpers repeat that
+  Unicode-scalar check after decoding, when escaped surrogates first materialize.
 - `_optional_list` (AA) treats an absent optional section as `[]` while a
   present non-list raises `InvalidSnapshotError`; CJA gets the equivalent
   guarantee through `_section_records`.
