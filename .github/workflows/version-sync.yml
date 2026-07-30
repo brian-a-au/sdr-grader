@@ -1,4 +1,4 @@
-name: Version identity
+name: Version Sync
 
 on:
   push:
