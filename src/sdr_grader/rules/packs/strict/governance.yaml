@@ -41,10 +41,10 @@ rules:
   # GOV-004 (missing_owners) is registered but not in the default packs.
   # Adobe's APIs do not surface `owner` on inline dimensions / metrics,
   # so cja_auto_sdr can't populate the field even though it pulls
-  # everything available upstream. Calibration across 108 real snapshots
-  # confirmed: every tenant scored 100% missing-owner even after
-  # normalizing "Unknown User" sentinels to None. Operators with their
-  # own ownership data can wire the check via a custom pack +
+  # everything available upstream. A historical descriptive compatibility
+  # run across 108 real snapshots found every tenant at 100% missing-owner
+  # even after normalizing "Unknown User" sentinels to None. Operators with
+  # their own ownership data can wire the check via a custom pack +
   # --extra-input.
 
   - id: GOV-005
@@ -53,7 +53,8 @@ rules:
     platforms: [cja, aa]
     check: missing_tags
     params:
-      threshold: 0.15           # calibrated ~p75 across 108-snapshot corpus
+      # Maintainer-selected near the historical compatibility-cohort p75.
+      threshold: 0.15
     rationale: |
       Tags are the cheapest way to keep schema browsing tractable as the
       data view grows; without them, finding components by purpose

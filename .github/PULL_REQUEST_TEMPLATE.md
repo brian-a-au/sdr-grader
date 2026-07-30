@@ -6,7 +6,7 @@
 
 - [ ] Bug fix (incorrect grading, adapter crash, renderer regression)
 - [ ] New rule (also opened an issue first per CONTRIBUTING.md)
-- [ ] Threshold / severity tweak (requires maintainer recalibration — explained in the issue)
+- [ ] Threshold / severity tweak (requires reviewed calibration evidence and maintainer sign-off)
 - [ ] Docs / examples / CI
 - [ ] Other (describe)
 

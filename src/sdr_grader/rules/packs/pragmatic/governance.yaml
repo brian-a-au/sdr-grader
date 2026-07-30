@@ -29,6 +29,7 @@ rules:
     platforms: [cja, aa]
     check: missing_tags
     params:
-      threshold: 0.30           # calibrated p90 across 108-snapshot corpus
+      # Maintainer-selected near the historical compatibility-cohort p90.
+      threshold: 0.30
     rationale: Same as strict.
     remediation: Same as strict.

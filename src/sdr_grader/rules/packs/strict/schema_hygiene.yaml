@@ -40,8 +40,9 @@ rules:
     platforms: [cja, aa]
     check: missing_descriptions
     params:
-      # Calibrated p75 on 2026-07-28 across 108 snapshots using the pack 2.0
-      # maximum per-target statistic (metrics, dimensions).
+      # Historically set near p75 in a descriptive 108-snapshot compatibility
+      # run using the pack 2.0 maximum per-target statistic. This was not an
+      # admitted calibration cohort.
       threshold: 0.56
       targets: [metrics, dimensions]
     rationale: |

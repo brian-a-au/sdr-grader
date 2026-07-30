@@ -28,7 +28,8 @@ rules:
     platforms: [cja, aa]
     check: calc_complexity_threshold
     params:
-      max_complexity: 30        # calibrated p95 across calc-metric-bearing snapshots
+      # Maintainer-selected near the historical compatibility-cohort p95.
+      max_complexity: 30
     rationale: Same as strict.
     remediation: Same as strict.
 
@@ -52,4 +53,3 @@ rules:
     params: {}
     rationale: Same as strict.
     remediation: Same as strict.
-

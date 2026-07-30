@@ -36,12 +36,13 @@ shapes.
 
 ## Calibration: what's PR-able vs. maintainer-gated
 
-The default thresholds in `packs/strict/` and `packs/pragmatic/` are
-measured using a 108-snapshot corpus of real CJA + AA tenants.
-The corpus is private (gitignored under `tests/fixtures/private/`) and only
-the maintainer can re-run calibration end-to-end. A report not bound to the
-candidate does not substitute for the release gate. This shapes what kinds
-of PRs are easy to merge:
+The private, gitignored corpus currently contains 108 real CJA + AA snapshots
+used for compatibility testing. None currently meets the explicit human-review
+contract for calibration admission, so the default thresholds in
+`packs/strict/` and `packs/pragmatic/` remain expert judgment rather than
+corpus-calibrated values. Compatibility runs do not substitute for calibration
+evidence, and a report not bound to the candidate does not substitute for the
+release gate. This shapes what kinds of PRs are easy to merge:
 
 - **PR-able by anyone:**
   - New rules whose firing condition can be demonstrated on a synthetic
@@ -50,20 +51,20 @@ of PRs are easy to merge:
     great), renderer regressions.
   - Documentation, examples, CI improvements.
 - **Maintainer-gated:**
-  - Threshold tweaks to existing rules. These require re-running
-    `scripts/calibrate_thresholds.py` against the private corpus, which
-    only the maintainer can do. Open an issue with the rationale; the
-    maintainer will run the calibration and either land the change or
-    explain the distribution that argues against it.
+  - Threshold tweaks to existing rules. These require an explicitly admitted,
+    human-reviewed calibration cohort and a candidate-bound run of
+    `scripts/calibrate_thresholds.py`; the compatibility corpus alone is not
+    enough. Open an issue with the rationale so the maintainer can assess the
+    evidence and either land the change or explain why it is not supportable.
   - Severity changes on existing rules — same reason.
 
 If you're adding a rule that needs calibration data, ship the rule with
 a defensible round-number threshold and a YAML comment marking it as
 provisional. The maintainer will calibrate it before the next release.
 
-See `docs/CALIBRATION_CORPUS.md` for the corpus intake workflow and
-`docs/threshold_calibration.md` for the per-rule distributions and
-confidence ratings behind the current thresholds.
+See `docs/CALIBRATION_CORPUS.md` for the separate compatibility and calibration
+intake requirements, and `docs/threshold_calibration.md` for the current
+admitted-cohort distribution evidence.
 
 ## Filing issues vs. opening PRs
 
