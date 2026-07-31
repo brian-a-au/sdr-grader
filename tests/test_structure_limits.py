@@ -52,3 +52,26 @@ def test_definition_node_boundary_accepts_10000_and_rejects_next():
 
     with pytest.raises(InvalidSnapshotError, match=r"test definition.*10,000 nodes"):
         validate_definition_structure([0] * MAX_DEFINITION_NODES, label="test definition")
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        {"value": "\ud800"},
+        {"\udfff": "value"},
+        ["safe", {"nested": "\udabc"}],
+    ],
+)
+def test_snapshot_structure_rejects_surrogate_code_points_without_echoing_them(value):
+    with pytest.raises(InvalidSnapshotError, match=r"test snapshot.*surrogate") as exc_info:
+        validate_snapshot_structure(value, label="test snapshot")
+
+    assert not any(0xD800 <= ord(character) <= 0xDFFF for character in str(exc_info.value))
+
+
+def test_snapshot_structure_accepts_valid_non_bmp_unicode_without_changing_counts():
+    value = {"emoji-😀": ["café", "東京", "😀"]}
+
+    validate_snapshot_structure(value, label="test snapshot")
+
+    assert measure_structure(value) == (5, 2)

@@ -24,6 +24,7 @@ from sdr_grader.core.models import (
 from sdr_grader.core.structure_limits import (
     validate_definition_structure,
     validate_snapshot_structure,
+    validate_unicode_scalars,
 )
 
 
@@ -542,8 +543,9 @@ def _parse_definition_json(value: Any, *, label: str = "definition") -> dict[str
             parsed = json.loads(value)
         except json.JSONDecodeError:
             return {}
-        except RecursionError as exc:
-            raise InvalidSnapshotError(f"{label} JSON exceeds nesting limits") from exc
+        except (ValueError, RecursionError) as exc:
+            raise InvalidSnapshotError(f"{label} JSON exceeds decoder limits") from exc
+        validate_unicode_scalars(parsed, label=label)
         if not isinstance(parsed, dict):
             return {}
     else:
@@ -586,8 +588,8 @@ def _parse_tag_list(value: Any) -> list[str]:
     Previously the adapter called `list(record.get("tags") or [])` which
     iterates the string as characters when it arrives in stringified form
     — producing fake tags like `'['`, `'"'`, `'c'`. This helper handles
-    both the stringified and native-list shapes and falls back to `[]`
-    for anything unparseable.
+    both the stringified and native-list shapes. Ordinary JSON syntax
+    failures fall back to `[]`; decoder resource failures are invalid input.
     """
     if value is None or value == "":
         return []
@@ -598,6 +600,9 @@ def _parse_tag_list(value: Any) -> list[str]:
             parsed = json.loads(value)
         except json.JSONDecodeError:
             return []
+        except (ValueError, RecursionError) as exc:
+            raise InvalidSnapshotError("tag list JSON exceeds decoder limits") from exc
+        validate_unicode_scalars(parsed, label="tag list")
         if isinstance(parsed, list):
             return [str(t) for t in parsed]
         return []
@@ -616,6 +621,9 @@ def _parse_ref_list(value: Any) -> list[str]:
             parsed = json.loads(value)
         except json.JSONDecodeError:
             return []
+        except (ValueError, RecursionError) as exc:
+            raise InvalidSnapshotError("reference list JSON exceeds decoder limits") from exc
+        validate_unicode_scalars(parsed, label="reference list")
         if isinstance(parsed, list):
             return [str(t) for t in parsed]
     return []

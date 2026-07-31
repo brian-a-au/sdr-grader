@@ -567,6 +567,35 @@ def test_governance_component_fields_and_malformed_tags_preserve_contract():
 
 
 @pytest.mark.parametrize(
+    "record",
+    [
+        {"id": "variables/evar1", "description": "\ud800"},
+        {"id": "variables/evar1", "\udfff": "value"},
+    ],
+)
+def test_aa_adapter_rejects_surrogate_values_and_mapping_keys(record):
+    with pytest.raises(InvalidSnapshotError, match=r"AA snapshot.*surrogate"):
+        adapt(_minimal_snapshot(dimensions=[record]))
+
+
+def test_aa_embedded_tags_reject_resource_errors_and_decoded_surrogates(monkeypatch):
+    from sdr_grader.adapters import aa
+
+    with pytest.raises(InvalidSnapshotError, match="surrogate"):
+        aa._parse_tag_list('["\\ud800"]')
+    with pytest.raises(InvalidSnapshotError, match="surrogate"):
+        aa._parse_tag_list('{"bad":"\\udfff"}')
+
+    monkeypatch.setattr(
+        aa.json,
+        "loads",
+        lambda _value: (_ for _ in ()).throw(ValueError("integer limit")),
+    )
+    with pytest.raises(InvalidSnapshotError, match="JSON exceeds decoder limits"):
+        aa._parse_tag_list('["value"]')
+
+
+@pytest.mark.parametrize(
     ("value", "expected"),
     [(True, 0.0), (3, 3.0), (float("inf"), 0.0), (" 2.5 ", 2.5)],
 )

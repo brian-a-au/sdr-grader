@@ -95,6 +95,25 @@ def test_cli_rejects_invalid_json(tmp_path, capsys):
     assert "not valid JSON" in capsys.readouterr().err
 
 
+def test_cli_surrogate_snapshot_is_controlled_and_writes_no_artifact(tmp_path, capsys):
+    snapshot = json.loads(
+        (FIXTURES / "cja_snapshot_clean.json").read_text(encoding="utf-8")
+    )
+    snapshot["metrics"][0]["description"] = "\ud800"
+    source = tmp_path / "surrogate.json"
+    source.write_text(json.dumps(snapshot), encoding="utf-8")
+    output = tmp_path / "out.html"
+
+    rc = main([str(source), "--output", str(output), "--quiet"])
+
+    assert rc == RUNTIME_ERROR
+    assert not output.exists()
+    diagnostics = capsys.readouterr().err
+    assert "surrogate" in diagnostics
+    assert "Traceback" not in diagnostics
+    assert not any(0xD800 <= ord(character) <= 0xDFFF for character in diagnostics)
+
+
 def test_cli_adapter_error_does_not_echo_snapshot_values_or_private_path(
     tmp_path, capsys
 ):
