@@ -545,6 +545,7 @@ def _parse_definition_json(value: Any, *, label: str = "definition") -> dict[str
             return {}
         except (ValueError, RecursionError) as exc:
             raise InvalidSnapshotError(f"{label} JSON exceeds decoder limits") from exc
+        validate_unicode_scalars(parsed, label=label)
         if not isinstance(parsed, dict):
             return {}
     else:
@@ -601,8 +602,8 @@ def _parse_tag_list(value: Any) -> list[str]:
             return []
         except (ValueError, RecursionError) as exc:
             raise InvalidSnapshotError("tag list JSON exceeds decoder limits") from exc
+        validate_unicode_scalars(parsed, label="tag list")
         if isinstance(parsed, list):
-            validate_unicode_scalars(parsed, label="tag list")
             return [str(t) for t in parsed]
         return []
     return []
@@ -622,8 +623,8 @@ def _parse_ref_list(value: Any) -> list[str]:
             return []
         except (ValueError, RecursionError) as exc:
             raise InvalidSnapshotError("reference list JSON exceeds decoder limits") from exc
+        validate_unicode_scalars(parsed, label="reference list")
         if isinstance(parsed, list):
-            validate_unicode_scalars(parsed, label="reference list")
             return [str(t) for t in parsed]
     return []
 

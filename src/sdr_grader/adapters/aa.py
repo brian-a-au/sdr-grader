@@ -468,8 +468,8 @@ def _parse_tag_list(value: Any) -> list[str]:
             return []
         except (ValueError, RecursionError) as exc:
             raise InvalidSnapshotError("tag list JSON exceeds decoder limits") from exc
+        validate_unicode_scalars(parsed, label="tag list")
         if isinstance(parsed, list):
-            validate_unicode_scalars(parsed, label="tag list")
             return [str(t) for t in parsed]
     return []
 

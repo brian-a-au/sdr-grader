@@ -755,6 +755,12 @@ def test_embedded_json_rejects_surrogates_materialized_after_decode():
         _parse_tag_list('["\\ud800"]')
     with pytest.raises(InvalidSnapshotError, match="surrogate"):
         _parse_ref_list('["\\udfff"]')
+    with pytest.raises(InvalidSnapshotError, match="surrogate"):
+        _parse_definition_json('"\\ud800"')
+    with pytest.raises(InvalidSnapshotError, match="surrogate"):
+        _parse_tag_list('{"bad":"\\ud800"}')
+    with pytest.raises(InvalidSnapshotError, match="surrogate"):
+        _parse_ref_list('{"bad":"\\udfff"}')
 
 
 @pytest.mark.parametrize(

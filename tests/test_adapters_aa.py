@@ -583,6 +583,8 @@ def test_aa_embedded_tags_reject_resource_errors_and_decoded_surrogates(monkeypa
 
     with pytest.raises(InvalidSnapshotError, match="surrogate"):
         aa._parse_tag_list('["\\ud800"]')
+    with pytest.raises(InvalidSnapshotError, match="surrogate"):
+        aa._parse_tag_list('{"bad":"\\udfff"}')
 
     monkeypatch.setattr(
         aa.json,
