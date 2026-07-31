@@ -593,7 +593,6 @@ def _parse_tag_list(value: Any) -> list[str]:
     if value is None or value == "":
         return []
     if isinstance(value, list):
-        validate_unicode_scalars(value, label="tag list")
         return [str(t) for t in value]
     if isinstance(value, str):
         try:
@@ -615,7 +614,6 @@ def _parse_ref_list(value: Any) -> list[str]:
     if value is None or value == "":
         return []
     if isinstance(value, list):
-        validate_unicode_scalars(value, label="reference list")
         return [str(t) for t in value]
     if isinstance(value, str):
         try:

@@ -83,10 +83,6 @@ def _validate_structure(
     stack: list[tuple[Any, int]] = [(value, 0)]
     while stack:
         node, depth = stack.pop()
-        _validate_string(node, label=label)
-        if isinstance(node, dict):
-            for key in node:
-                _validate_string(key, label=label)
         if depth > max_depth:
             raise InvalidSnapshotError(
                 f"{label} exceeds the maximum structure depth of {max_depth}"
@@ -94,6 +90,10 @@ def _validate_structure(
         nodes += 1
         if nodes > max_nodes:
             raise InvalidSnapshotError(f"{label} exceeds the maximum of {max_nodes:,} nodes")
+        _validate_string(node, label=label)
+        if isinstance(node, dict):
+            for key in node:
+                _validate_string(key, label=label)
         if isinstance(node, dict):
             stack.extend((child, depth + 1) for child in node.values())
         elif isinstance(node, list):
