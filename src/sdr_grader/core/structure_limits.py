@@ -37,14 +37,19 @@ def validate_snapshot_structure(value: Any, *, label: str) -> None:
     )
 
 
-def validate_definition_structure(value: Any, *, label: str) -> None:
-    """Reject one decoded formula/segment definition outside its tighter budget."""
+def validate_decoded_structure(value: Any, *, label: str) -> None:
+    """Reject decoded embedded JSON outside the tighter structure budget."""
     _validate_structure(
         value,
         label=label,
         max_depth=MAX_STRUCTURE_DEPTH,
         max_nodes=MAX_DEFINITION_NODES,
     )
+
+
+def validate_definition_structure(value: Any, *, label: str) -> None:
+    """Compatibility wrapper for decoded formula and segment definitions."""
+    validate_decoded_structure(value, label=label)
 
 
 def validate_unicode_scalars(value: Any, *, label: str) -> None:

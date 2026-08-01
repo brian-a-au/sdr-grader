@@ -10,6 +10,7 @@ from sdr_grader.core.structure_limits import (
     MAX_STRUCTURE_DEPTH,
     MAX_STRUCTURE_NODES,
     measure_structure,
+    validate_decoded_structure,
     validate_definition_structure,
     validate_snapshot_structure,
 )
@@ -52,6 +53,23 @@ def test_definition_node_boundary_accepts_10000_and_rejects_next():
 
     with pytest.raises(InvalidSnapshotError, match=r"test definition.*10,000 nodes"):
         validate_definition_structure([0] * MAX_DEFINITION_NODES, label="test definition")
+
+
+def test_decoded_structure_node_boundary_accepts_10000_and_rejects_next():
+    validate_decoded_structure([0] * (MAX_DEFINITION_NODES - 1), label="test decoded JSON")
+
+    with pytest.raises(InvalidSnapshotError, match=r"test decoded JSON.*10,000 nodes"):
+        validate_decoded_structure([0] * MAX_DEFINITION_NODES, label="test decoded JSON")
+
+
+def test_decoded_structure_depth_boundary_accepts_100_and_rejects_101():
+    validate_decoded_structure(_nested(MAX_STRUCTURE_DEPTH), label="test decoded JSON")
+
+    with pytest.raises(InvalidSnapshotError, match=r"test decoded JSON.*depth.*100"):
+        validate_decoded_structure(
+            _nested(MAX_STRUCTURE_DEPTH + 1),
+            label="test decoded JSON",
+        )
 
 
 @pytest.mark.parametrize(

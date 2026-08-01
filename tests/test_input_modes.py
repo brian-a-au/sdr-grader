@@ -130,6 +130,30 @@ def test_load_snapshot_empty_directory_raises(tmp_path):
         load_snapshot(str(tmp_path))
 
 
+def test_list_snapshot_candidates_returns_complete_sorted_json_set(tmp_path):
+    from sdr_grader.input.loader import list_snapshot_candidates
+
+    assert list_snapshot_candidates(tmp_path) == []
+
+    expected = [tmp_path / "a.json", tmp_path / "b.json"]
+    for path in [expected[1], tmp_path / "ignored.txt", expected[0]]:
+        path.write_text("{}", encoding="utf-8")
+
+    assert list_snapshot_candidates(tmp_path) == expected
+
+
+def test_list_snapshot_candidates_wraps_discovery_errors(tmp_path, monkeypatch):
+    from sdr_grader.input.loader import list_snapshot_candidates
+
+    def fail_glob(_path, _pattern):
+        raise OSError("simulated discovery failure")
+
+    monkeypatch.setattr(Path, "glob", fail_glob)
+
+    with pytest.raises(InvalidSnapshotError, match="could not inspect snapshot directory"):
+        list_snapshot_candidates(tmp_path)
+
+
 def test_directory_pick_prefers_fresh_untimestamped_file(tmp_path):
     import os
 

@@ -64,7 +64,7 @@ def _load_stdin() -> tuple[dict[str, Any], str]:
 def _load_from_file(path: Path) -> tuple[dict[str, Any], str]:
     try:
         text = path.read_text(encoding="utf-8-sig")
-    except OSError as exc:
+    except (OSError, RuntimeError) as exc:
         raise InvalidSnapshotError(f"could not read {path}: {exc}") from exc
     try:
         snapshot = json.loads(text)
@@ -78,11 +78,21 @@ def _load_from_file(path: Path) -> tuple[dict[str, Any], str]:
 def _load_from_directory(
     directory: Path, *, at: str | None
 ) -> tuple[dict[str, Any], str]:
-    candidates = sorted(directory.glob("*.json"))
+    candidates = list_snapshot_candidates(directory)
     if not candidates:
         raise InvalidSnapshotError(f"no .json snapshots found in {directory}")
     chosen = _pick_snapshot(candidates, at=at)
     return _load_from_file(chosen)
+
+
+def list_snapshot_candidates(directory: Path) -> list[Path]:
+    """Return every ``*.json`` directory candidate in stable path order."""
+    try:
+        return sorted(Path(directory).glob("*.json"))
+    except OSError as exc:
+        raise InvalidSnapshotError(
+            f"could not inspect snapshot directory {directory}: {exc}"
+        ) from exc
 
 
 def _pick_snapshot(

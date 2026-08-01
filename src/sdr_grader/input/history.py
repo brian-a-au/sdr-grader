@@ -10,7 +10,7 @@ from sdr_grader.core.exceptions import (
 )
 from sdr_grader.core.models import Implementation
 from sdr_grader.input.adapt import adapt_snapshot
-from sdr_grader.input.loader import _load_from_file
+from sdr_grader.input.loader import _load_from_file, list_snapshot_candidates
 
 
 def same_history_identity(
@@ -37,7 +37,7 @@ def matching_snapshot_sibling_exists(
     make a valid selected snapshot fail merely because history is optional.
     """
     selected_path = selected_source.resolve()
-    for candidate in sorted(Path(directory).glob("*.json")):
+    for candidate in list_snapshot_candidates(directory):
         try:
             if candidate.resolve() == selected_path:
                 continue
