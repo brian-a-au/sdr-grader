@@ -742,6 +742,43 @@ def test_embedded_json_resource_errors_are_invalid_snapshot(monkeypatch, error):
             parser('["value"]')
 
 
+@pytest.mark.parametrize("parser_name", ["_parse_tag_list", "_parse_ref_list"])
+def test_cja_decoded_list_node_budget_accepts_10000_and_rejects_10001(parser_name):
+    from sdr_grader.adapters import cja
+
+    parser = getattr(cja, parser_name)
+    parser(json.dumps([0] * (MAX_DEFINITION_NODES - 1)))
+
+    with pytest.raises(InvalidSnapshotError, match=r"(tag|reference) list.*10,000 nodes"):
+        parser(json.dumps([0] * MAX_DEFINITION_NODES))
+
+
+@pytest.mark.parametrize("parser_name", ["_parse_tag_list", "_parse_ref_list"])
+def test_cja_decoded_list_depth_budget_accepts_100_and_rejects_101(parser_name):
+    from sdr_grader.adapters import cja
+
+    parser = getattr(cja, parser_name)
+    nested = "leaf"
+    for _ in range(MAX_STRUCTURE_DEPTH):
+        nested = [nested]
+    parser(json.dumps(nested))
+
+    nested = [nested]
+    with pytest.raises(InvalidSnapshotError, match=r"(tag|reference) list.*depth.*100"):
+        parser(json.dumps(nested))
+
+
+@pytest.mark.parametrize("parser_name", ["_parse_tag_list", "_parse_ref_list"])
+def test_cja_oversized_wrong_shaped_decoded_lists_are_rejected(parser_name):
+    from sdr_grader.adapters import cja
+
+    parser = getattr(cja, parser_name)
+    oversized_object = json.dumps({"values": [0] * (MAX_DEFINITION_NODES - 1)})
+
+    with pytest.raises(InvalidSnapshotError, match=r"(tag|reference) list.*10,000 nodes"):
+        parser(oversized_object)
+
+
 def test_embedded_json_rejects_surrogates_materialized_after_decode():
     from sdr_grader.adapters.cja import (
         _parse_definition_json,

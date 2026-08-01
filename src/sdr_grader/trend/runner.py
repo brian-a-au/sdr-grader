@@ -15,7 +15,11 @@ from sdr_grader.core.grader import grade
 from sdr_grader.core.models import Implementation
 from sdr_grader.input.adapt import adapt_snapshot
 from sdr_grader.input.history import same_history_identity
-from sdr_grader.input.loader import _extract_timestamp, _load_from_file
+from sdr_grader.input.loader import (
+    _extract_timestamp,
+    _load_from_file,
+    list_snapshot_candidates,
+)
 from sdr_grader.rules.rubric import Rubric
 from sdr_grader.rules.suppression import Suppression
 from sdr_grader.trend.models import TrendPoint, TrendReport
@@ -38,7 +42,7 @@ def build_trend_report(
     if not directory.is_dir():
         raise InvalidSnapshotError(f"trend input must be a directory: {directory}")
 
-    candidates = sorted(directory.glob("*.json"))
+    candidates = list_snapshot_candidates(directory)
     if not candidates:
         raise InvalidSnapshotError(f"no .json snapshots found in {directory}")
 

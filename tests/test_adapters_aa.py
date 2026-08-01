@@ -10,7 +10,7 @@ import pytest
 from sdr_grader.adapters.aa import adapt
 from sdr_grader.core.exceptions import InvalidSnapshotError
 from sdr_grader.core.grader import grade
-from sdr_grader.core.structure_limits import MAX_STRUCTURE_DEPTH
+from sdr_grader.core.structure_limits import MAX_DEFINITION_NODES, MAX_STRUCTURE_DEPTH
 from sdr_grader.input.detect import detect_platform
 from sdr_grader.rules.rubric import load_rubric
 
@@ -593,6 +593,37 @@ def test_aa_embedded_tags_reject_resource_errors_and_decoded_surrogates(monkeypa
     )
     with pytest.raises(InvalidSnapshotError, match="JSON exceeds decoder limits"):
         aa._parse_tag_list('["value"]')
+
+
+def test_aa_decoded_tag_node_budget_accepts_10000_and_rejects_10001():
+    from sdr_grader.adapters.aa import _parse_tag_list
+
+    _parse_tag_list(json.dumps([0] * (MAX_DEFINITION_NODES - 1)))
+
+    with pytest.raises(InvalidSnapshotError, match=r"tag list.*10,000 nodes"):
+        _parse_tag_list(json.dumps([0] * MAX_DEFINITION_NODES))
+
+
+def test_aa_decoded_tag_depth_budget_accepts_100_and_rejects_101():
+    from sdr_grader.adapters.aa import _parse_tag_list
+
+    nested = "leaf"
+    for _ in range(MAX_STRUCTURE_DEPTH):
+        nested = [nested]
+    _parse_tag_list(json.dumps(nested))
+
+    nested = [nested]
+    with pytest.raises(InvalidSnapshotError, match=r"tag list.*depth.*100"):
+        _parse_tag_list(json.dumps(nested))
+
+
+def test_aa_oversized_wrong_shaped_decoded_tags_are_rejected():
+    from sdr_grader.adapters.aa import _parse_tag_list
+
+    oversized_object = json.dumps({"values": [0] * (MAX_DEFINITION_NODES - 1)})
+
+    with pytest.raises(InvalidSnapshotError, match=r"tag list.*10,000 nodes"):
+        _parse_tag_list(oversized_object)
 
 
 @pytest.mark.parametrize(

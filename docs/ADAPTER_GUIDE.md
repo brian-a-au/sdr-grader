@@ -121,7 +121,9 @@ shared helpers must be mirrored to the sibling repository in the same cycle:
 
 - `_parse_tag_list` / `_parse_ref_list` parse JSON-encoded list strings and
   tolerate native lists. Ordinary JSON syntax failures drop to `[]`; decoder
-  resource failures raise `InvalidSnapshotError`.
+  resource failures raise `InvalidSnapshotError`. Every successful decode is
+  limited to depth 100 and 10,000 nodes before shape fallback or coercion;
+  this decoded-structure guard is part of the required sibling parity behavior.
 - Snapshot structure validation rejects surrogate code points in string values
   and mapping keys before normalization. Embedded JSON helpers repeat that
   Unicode-scalar check after decoding, when escaped surrogates first materialize.
@@ -137,6 +139,11 @@ shared helpers must be mirrored to the sibling repository in the same cycle:
   `str(x) if x else None` coercion used by the visualizer. Grader-side `owner`
   safety comes through `_normalize_owner`: a different mechanism with the same
   defensive outcome, so no owner-specific `_optional_str` mirror is needed.
+
+Directory input, history evidence, and trend discovery share the loader-owned
+`list_snapshot_candidates` helper so they consume the same complete, sorted
+`*.json` candidate set. Output-destination collision policy is visualizer-only
+and is intentionally not part of the grader parity contract.
 
 ## Testing
 
