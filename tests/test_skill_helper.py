@@ -422,6 +422,8 @@ def test_helper_source_has_no_process_network_or_write_surface():
 
 
 def test_plugin_manifest_marketplace_and_permission_are_release_aligned():
+    from sdr_grader import __version__
+
     manifest = json.loads(PLUGIN_MANIFEST.read_text(encoding="utf-8"))
     marketplace = json.loads(MARKETPLACE.read_text(encoding="utf-8"))
     skill = (REPO_ROOT / "skills" / "sdr-grader" / "SKILL.md").read_text(
@@ -429,7 +431,7 @@ def test_plugin_manifest_marketplace_and_permission_are_release_aligned():
     )
 
     assert manifest["name"] == "sdr-grader"
-    assert manifest["version"] == "1.2.0"
+    assert manifest["version"] == __version__
     assert "skills" not in manifest
     assert marketplace["name"] == "sdr-grader"
     assert marketplace["plugins"] == [
@@ -437,7 +439,7 @@ def test_plugin_manifest_marketplace_and_permission_are_release_aligned():
             "name": "sdr-grader",
             "source": "./",
             "description": manifest["description"],
-            "version": "1.2.0",
+            "version": __version__,
         }
     ]
     assert (
@@ -455,7 +457,7 @@ def test_package_plugin_marketplace_and_changelog_versions_match():
     marketplace = json.loads(MARKETPLACE.read_text(encoding="utf-8"))
     changelog = (REPO_ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
 
-    assert __version__ == "1.2.0"
+    assert __version__ == "1.2.1"
     assert manifest["version"] == __version__
     assert marketplace["plugins"][0]["version"] == __version__
     assert re.search(

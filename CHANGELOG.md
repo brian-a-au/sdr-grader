@@ -3,6 +3,33 @@
 All notable changes follow the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
+## 1.2.1 — 2026-08-01
+
+Patch release aligning the public grader package with the input-safety boundary
+qualified for [`sdr-visualizer` v1.0.6](https://github.com/brian-a-au/sdr-visualizer/releases/tag/v1.0.6).
+Grading rules, rubric pack `2.0`, report schema `1`, and scoring output are
+unchanged.
+
+### Fixed
+
+- CJA tag/reference lists and AA tag lists decoded from embedded JSON now use
+  the shared depth-100 and 10,000-node resource limits. Decoder resource
+  failures are reported as invalid input rather than being silently coerced.
+- Snapshot and embedded-JSON strings reject Unicode surrogate code points,
+  preventing malformed values from reaching diagnostics or rendered reports.
+- Directory selection, history evidence, and trend discovery now consume one
+  complete, stable `*.json` candidate list and report directory inspection
+  failures through the normal invalid-input path.
+
+### Changed
+
+- Shared adapter and input defenses are parity-aligned with `sdr-visualizer`
+  v1.0.6. The tested-through generators remain CJA `3.11.7` and AA `1.21.10`.
+- The README relies on the live test-workflow badge instead of a fixed numeric
+  test-count badge that could drift as coverage grows.
+- GitHub Actions and development-only dependencies were refreshed. Runtime
+  dependencies and supported Python versions are unchanged.
+
 ## 1.2.0 — 2026-07-29
 
 ### Changed

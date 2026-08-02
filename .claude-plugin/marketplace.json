@@ -9,7 +9,7 @@
       "name": "sdr-grader",
       "source": "./",
       "description": "Follow-up question support for sdr-grader's --json grade output. Filter findings, look up remediations, and compare two grades from inside Claude Code.",
-      "version": "1.2.0"
+      "version": "1.2.1"
     }
   ]
 }
