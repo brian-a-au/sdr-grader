@@ -1,7 +1,7 @@
 {
   "$schema": "https://claude.ai/schemas/plugin.json",
   "name": "sdr-grader",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Follow-up question support for sdr-grader's --json grade output. Filter findings, look up remediations, and compare two grades from inside Claude Code.",
   "author": {
     "name": "Brian Au",

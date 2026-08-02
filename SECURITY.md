@@ -60,8 +60,8 @@ intake workflow and privacy-review checklist.
 
 | Version | Security support |
 |---|---|
-| `1.2.x` | Supported after `1.2.0` is published |
-| `1.1.x` | Supported until `1.2.0` is published |
+| `1.2.x` | Supported |
+| `1.1.x` | Not supported |
 | `<1.1` | Not supported |
 
 Only the latest supported minor line receives new security fixes. If
