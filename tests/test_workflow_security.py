@@ -142,6 +142,44 @@ def test_release_workflow_digest_gates_idempotent_pypi_recovery():
     )
 
 
+def test_release_soak_is_frozen_least_privilege_and_self_terminating():
+    text = _workflow_text("release-soak.yml")
+
+    assert 'cron: "23 * * * *"' in text
+    assert "if: github.ref == 'refs/heads/main'" in text
+    assert "ref: 9301672144d5fe97cc869a9f5206da38d26fd353" in text
+    assert "pypi-attestations==0.0.30" in text
+    assert "--source-ref \"refs/tags/${GRADER_TAG}\"" in text
+    assert "--source-digest \"${GRADER_COMMIT}\"" in text
+    assert "VISUALIZER_COMMIT" in text
+    assert "certificate.txt" in text
+    assert "URI:https://github.com/${repository}/.github/workflows/release.yml@refs/tags/${tag}" in text
+    assert "security-events: read" in text
+    assert "vulnerability-alerts: read" in text
+    assert "secret-scanning/alerts" not in text
+    assert "sdr-grader-v1.2.1-private-advisory-clear" in text
+    assert '.user.login == "brian-a-au"' in text
+    assert "CLEARANCE_CUTOFF" in text
+    assert ".github/scripts/verify_release_soak_timeline.py" in text
+    assert "retention-days: 90" in text
+    assert "actions/workflows/release-soak.yml/disable" in text
+
+    verify = text.split("\n  verify:", 1)[1].split("\n  hosted-state:", 1)[0]
+    hosted = text.split("\n  hosted-state:", 1)[1].split(
+        "\n  checkpoint:",
+        1,
+    )[0]
+    finalize = text.split("\n  finalize:", 1)[1]
+    assert "security-events:" not in verify
+    assert "issues: write" not in verify
+    assert "actions: write" not in verify
+    assert "npm install" not in hosted
+    assert "uvx" not in hosted
+    assert "issues: read" in hosted
+    assert "actions: write" in finalize
+    assert "issues: write" in finalize
+
+
 def test_codeql_dependency_updates_and_governance_files_are_configured():
     codeql = _workflow_text("codeql.yml")
     assert "security-events: write" in codeql
