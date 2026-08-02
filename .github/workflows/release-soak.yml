@@ -1,0 +1,520 @@
+name: sdr-grader v1.2.1 release soak
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Hourly provides margin against the release contract's four-hour maximum.
+    - cron: "23 * * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sdr-grader-v1.2.1-release-soak
+  cancel-in-progress: false
+
+env:
+  SOAK_START_ISO: "2026-08-02T04:54:34Z"
+  SOAK_START_EPOCH: "1785646474"
+  SOAK_END_ISO: "2026-08-04T04:54:34Z"
+  SOAK_END_EPOCH: "1785819274"
+  GRADER_VERSION: "1.2.1"
+  GRADER_TAG: "v1.2.1"
+  GRADER_COMMIT: "9301672144d5fe97cc869a9f5206da38d26fd353"
+  GRADER_TAG_OBJECT: "dea3a429c19a32d5fe179096fe357a6bbcb7d97d"
+  GRADER_WHEEL: "sdr_grader-1.2.1-py3-none-any.whl"
+  GRADER_SDIST: "sdr_grader-1.2.1.tar.gz"
+  GRADER_WHEEL_SHA: "b9bb8b004c504669b4449a8d25a2292f5a60ae93bfb68f9f08d8defafe84ec1e"
+  GRADER_SDIST_SHA: "9b1d1b08a0967e05b6617e8df17ffd8bc0a73637cf59087215600c8fd812ccfb"
+  GRADER_EVIDENCE_SHA: "7abab6bb9b2e8bee94c25d126e0456aa500b0c72eabf798944be298a0010996a"
+  VISUALIZER_VERSION: "1.0.6"
+  VISUALIZER_TAG: "v1.0.6"
+  VISUALIZER_COMMIT: "df4811627463cdd13c33c9c06ea60b953e32a830"
+  VISUALIZER_TAG_OBJECT: "5ec93bbb8998798c5878c79780e68f98619b836a"
+  VISUALIZER_WHEEL: "sdr_visualizer-1.0.6-py3-none-any.whl"
+  VISUALIZER_SDIST: "sdr_visualizer-1.0.6.tar.gz"
+  VISUALIZER_WHEEL_SHA: "b863e4cf52660bca04414b31014763e38d0f14cdb743497eb2e6f9ba52255674"
+  VISUALIZER_SDIST_SHA: "44014a6b4b48835cbc105036f1e1dca2d2d67a5d2bce4dabce84382e2c3a13e8"
+  VISUALIZER_SUMS_SHA: "8f6b49eae2bf27eeccd0e7dc0b146c9c85c325f3e54d5c8d7e2e344076a9db6d"
+
+jobs:
+  verify:
+    name: Public release checkpoint
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      attestations: read
+      contents: read
+    outputs:
+      final_due: ${{ steps.timing.outputs.final_due }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          ref: 9301672144d5fe97cc869a9f5206da38d26fd353
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          enable-cache: false
+
+      - name: Verify public bytes, immutable tags, and provenance
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT="${RUNNER_TEMP}/public-release"
+          mkdir -p "${ROOT}/grader-github" "${ROOT}/grader-pypi"
+          mkdir -p "${ROOT}/visualizer-github" "${ROOT}/visualizer-pypi"
+
+          gh api "repos/brian-a-au/sdr-grader/releases/tags/${GRADER_TAG}" \
+            > "${ROOT}/grader-release.json"
+          jq -e \
+            --arg wheel "${GRADER_WHEEL}" \
+            --arg sdist "${GRADER_SDIST}" \
+            --arg wheel_digest "sha256:${GRADER_WHEEL_SHA}" \
+            --arg sdist_digest "sha256:${GRADER_SDIST_SHA}" \
+            --arg evidence_digest "sha256:${GRADER_EVIDENCE_SHA}" \
+            '.draft == false and .prerelease == false and (.assets | length) == 3 and
+             ([.assets[] | select(.name == $wheel and .digest == $wheel_digest)] | length) == 1 and
+             ([.assets[] | select(.name == $sdist and .digest == $sdist_digest)] | length) == 1 and
+             ([.assets[] | select(.name == "release-artifacts.json" and .digest == $evidence_digest)] | length) == 1' \
+            "${ROOT}/grader-release.json" >/dev/null
+          test "$(gh api "repos/brian-a-au/sdr-grader/git/ref/tags/${GRADER_TAG}" --jq .object.sha)" = \
+            "${GRADER_TAG_OBJECT}"
+          test "$(gh api "repos/brian-a-au/sdr-grader/git/tags/${GRADER_TAG_OBJECT}" --jq .object.sha)" = \
+            "${GRADER_COMMIT}"
+          gh release download "${GRADER_TAG}" --repo brian-a-au/sdr-grader \
+            --dir "${ROOT}/grader-github" \
+            --pattern "${GRADER_WHEEL}" --pattern "${GRADER_SDIST}" \
+            --pattern "release-artifacts.json"
+
+          curl -fsSL "https://pypi.org/pypi/sdr-grader/${GRADER_VERSION}/json" \
+            -o "${ROOT}/grader-pypi.json"
+          jq -e \
+            --arg wheel "${GRADER_WHEEL}" \
+            --arg sdist "${GRADER_SDIST}" \
+            --arg wheel_sha "${GRADER_WHEEL_SHA}" \
+            --arg sdist_sha "${GRADER_SDIST_SHA}" \
+            '.info.version == "1.2.1" and .info.requires_python == ">=3.11" and
+             (.urls | length) == 2 and
+             ([.urls[] | select(.yanked)] | length) == 0 and
+             ([.urls[] | select(.filename == $wheel and .digests.sha256 == $wheel_sha)] | length) == 1 and
+             ([.urls[] | select(.filename == $sdist and .digests.sha256 == $sdist_sha)] | length) == 1' \
+            "${ROOT}/grader-pypi.json" >/dev/null
+          while read -r name url; do
+            curl -fsSL "${url}" -o "${ROOT}/grader-pypi/${name}"
+          done < <(jq -r '.urls[] | [.filename, .url] | @tsv' "${ROOT}/grader-pypi.json")
+
+          curl -fsSL \
+            "https://api.github.com/repos/brian-a-au/sdr-visualizer/releases/tags/${VISUALIZER_TAG}" \
+            > "${ROOT}/visualizer-release.json"
+          jq -e \
+            --arg wheel "${VISUALIZER_WHEEL}" \
+            --arg sdist "${VISUALIZER_SDIST}" \
+            --arg wheel_digest "sha256:${VISUALIZER_WHEEL_SHA}" \
+            --arg sdist_digest "sha256:${VISUALIZER_SDIST_SHA}" \
+            --arg sums_digest "sha256:${VISUALIZER_SUMS_SHA}" \
+            '.draft == false and .prerelease == false and (.assets | length) == 3 and
+             ([.assets[] | select(.name == $wheel and .digest == $wheel_digest)] | length) == 1 and
+             ([.assets[] | select(.name == $sdist and .digest == $sdist_digest)] | length) == 1 and
+             ([.assets[] | select(.name == "SHA256SUMS" and .digest == $sums_digest)] | length) == 1' \
+            "${ROOT}/visualizer-release.json" >/dev/null
+          test "$(curl -fsSL \
+            "https://api.github.com/repos/brian-a-au/sdr-visualizer/git/ref/tags/${VISUALIZER_TAG}" | \
+            jq -r .object.sha)" = \
+            "${VISUALIZER_TAG_OBJECT}"
+          test "$(curl -fsSL \
+            "https://api.github.com/repos/brian-a-au/sdr-visualizer/git/tags/${VISUALIZER_TAG_OBJECT}" | \
+            jq -r .object.sha)" = \
+            "${VISUALIZER_COMMIT}"
+          for filename in "${VISUALIZER_WHEEL}" "${VISUALIZER_SDIST}" SHA256SUMS; do
+            url="$(jq -r --arg name "${filename}" \
+              '.assets[] | select(.name == $name) | .browser_download_url' \
+              "${ROOT}/visualizer-release.json")"
+            test -n "${url}"
+            curl -fsSL "${url}" -o "${ROOT}/visualizer-github/${filename}"
+          done
+
+          curl -fsSL \
+            "https://pypi.org/pypi/sdr-visualizer/${VISUALIZER_VERSION}/json" \
+            -o "${ROOT}/visualizer-pypi.json"
+          jq -e \
+            --arg wheel "${VISUALIZER_WHEEL}" \
+            --arg sdist "${VISUALIZER_SDIST}" \
+            --arg wheel_sha "${VISUALIZER_WHEEL_SHA}" \
+            --arg sdist_sha "${VISUALIZER_SDIST_SHA}" \
+            '.info.version == "1.0.6" and (.urls | length) == 2 and
+             ([.urls[] | select(.yanked)] | length) == 0 and
+             ([.urls[] | select(.filename == $wheel and .digests.sha256 == $wheel_sha)] | length) == 1 and
+             ([.urls[] | select(.filename == $sdist and .digests.sha256 == $sdist_sha)] | length) == 1' \
+            "${ROOT}/visualizer-pypi.json" >/dev/null
+          while read -r name url; do
+            curl -fsSL "${url}" -o "${ROOT}/visualizer-pypi/${name}"
+          done < <(jq -r '.urls[] | [.filename, .url] | @tsv' "${ROOT}/visualizer-pypi.json")
+
+          for pair in \
+            "grader:${GRADER_WHEEL}:${GRADER_WHEEL_SHA}" \
+            "grader:${GRADER_SDIST}:${GRADER_SDIST_SHA}" \
+            "visualizer:${VISUALIZER_WHEEL}:${VISUALIZER_WHEEL_SHA}" \
+            "visualizer:${VISUALIZER_SDIST}:${VISUALIZER_SDIST_SHA}"; do
+            IFS=: read -r project filename expected <<< "${pair}"
+            test "$(sha256sum "${ROOT}/${project}-github/${filename}" | cut -d' ' -f1)" = "${expected}"
+            test "$(sha256sum "${ROOT}/${project}-pypi/${filename}" | cut -d' ' -f1)" = "${expected}"
+            cmp "${ROOT}/${project}-github/${filename}" "${ROOT}/${project}-pypi/${filename}"
+          done
+          test "$(sha256sum "${ROOT}/grader-github/release-artifacts.json" | cut -d' ' -f1)" = \
+            "${GRADER_EVIDENCE_SHA}"
+          test "$(sha256sum "${ROOT}/visualizer-github/SHA256SUMS" | cut -d' ' -f1)" = \
+            "${VISUALIZER_SUMS_SHA}"
+
+          gh attestation verify "${ROOT}/grader-github/${GRADER_WHEEL}" \
+            --repo brian-a-au/sdr-grader \
+            --signer-workflow brian-a-au/sdr-grader/.github/workflows/release.yml \
+            --source-ref "refs/tags/${GRADER_TAG}" \
+            --source-digest "${GRADER_COMMIT}" \
+            --deny-self-hosted-runners
+          gh attestation verify "${ROOT}/grader-github/${GRADER_SDIST}" \
+            --repo brian-a-au/sdr-grader \
+            --signer-workflow brian-a-au/sdr-grader/.github/workflows/release.yml \
+            --source-ref "refs/tags/${GRADER_TAG}" \
+            --source-digest "${GRADER_COMMIT}" \
+            --deny-self-hosted-runners
+
+      - name: Verify PyPI trusted-publisher provenance without a job token
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT="${RUNNER_TEMP}/public-release"
+          for pair in \
+            "grader:sdr-grader:${GRADER_VERSION}:${GRADER_TAG}:${GRADER_COMMIT}:${GRADER_WHEEL}:brian-a-au/sdr-grader:${GRADER_WHEEL_SHA}" \
+            "grader:sdr-grader:${GRADER_VERSION}:${GRADER_TAG}:${GRADER_COMMIT}:${GRADER_SDIST}:brian-a-au/sdr-grader:${GRADER_SDIST_SHA}" \
+            "visualizer:sdr-visualizer:${VISUALIZER_VERSION}:${VISUALIZER_TAG}:${VISUALIZER_COMMIT}:${VISUALIZER_WHEEL}:brian-a-au/sdr-visualizer:${VISUALIZER_WHEEL_SHA}" \
+            "visualizer:sdr-visualizer:${VISUALIZER_VERSION}:${VISUALIZER_TAG}:${VISUALIZER_COMMIT}:${VISUALIZER_SDIST}:brian-a-au/sdr-visualizer:${VISUALIZER_SDIST_SHA}"; do
+            IFS=: read -r project package version tag commit filename repository expected_sha <<< "${pair}"
+            curl -fsSL \
+              "https://pypi.org/integrity/${package}/${version}/${filename}/provenance" \
+              -o "${ROOT}/${project}-${filename}.provenance.json"
+            uvx --python 3.12 'pypi-attestations==0.0.30' verify pypi \
+              --repository "https://github.com/${repository}" \
+              --provenance-file "${ROOT}/${project}-${filename}.provenance.json" \
+              "${ROOT}/${project}-github/${filename}"
+            jq -e \
+              --arg repository "${repository}" \
+              '.attestation_bundles | length == 1 and
+               .[0].publisher == {
+                 "environment": "pypi",
+                 "kind": "GitHub",
+                 "repository": $repository,
+                 "workflow": "release.yml"
+               } and (.[0].attestations | length) >= 1' \
+              "${ROOT}/${project}-${filename}.provenance.json" >/dev/null
+            jq -r '.attestation_bundles[0].attestations[0].envelope.statement' \
+              "${ROOT}/${project}-${filename}.provenance.json" | base64 --decode \
+              > "${ROOT}/${project}-${filename}.statement.json"
+            jq -e \
+              --arg filename "${filename}" \
+              --arg expected_sha "${expected_sha}" \
+              '.predicateType == "https://docs.pypi.org/attestations/publish/v1" and
+               (.subject | length) == 1 and
+               .subject[0].name == $filename and
+              .subject[0].digest.sha256 == $expected_sha' \
+              "${ROOT}/${project}-${filename}.statement.json" >/dev/null
+            jq -r '.attestation_bundles[0].attestations[0].verification_material.certificate' \
+              "${ROOT}/${project}-${filename}.provenance.json" | base64 --decode | \
+              openssl x509 -inform DER -text -noout \
+              > "${ROOT}/${project}-${filename}.certificate.txt"
+            grep -F \
+              "URI:https://github.com/${repository}/.github/workflows/release.yml@refs/tags/${tag}" \
+              "${ROOT}/${project}-${filename}.certificate.txt" >/dev/null
+            grep -F "${commit}" \
+              "${ROOT}/${project}-${filename}.certificate.txt" >/dev/null
+          done
+
+      - name: Verify clean Python installs and deterministic grader output
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT="${RUNNER_TEMP}/public-install"
+          for python_version in 3.11 3.12; do
+            ENV_DIR="${ROOT}/${python_version}"
+            OUTPUT_DIR="${ROOT}/output-${python_version}"
+            uv venv --python "${python_version}" "${ENV_DIR}"
+            uv pip install --python "${ENV_DIR}/bin/python" --no-cache \
+              --default-index https://pypi.org/simple \
+              "sdr-grader==${GRADER_VERSION}" \
+              "sdr-visualizer==${VISUALIZER_VERSION}"
+            test "$("${ENV_DIR}/bin/sdr-grader" --version)" = \
+              "sdr-grader ${GRADER_VERSION}"
+            test "$("${ENV_DIR}/bin/sdr-visualizer" --version)" = \
+              "sdr-visualizer ${VISUALIZER_VERSION}"
+            "${ENV_DIR}/bin/python" -c \
+              'from importlib.resources import files; root=files("sdr_grader"); required=("plugin/.claude-plugin/plugin.json","plugin/.claude-plugin/marketplace.json","plugin/skills/sdr-grader/SKILL.md","rules/packs/strict/_meta.yaml","render/templates/report.html.j2","render/static/report.css","data/distribution.json"); missing=[p for p in required if not root.joinpath(p).is_file()]; assert not missing, missing'
+            mkdir -p "${OUTPUT_DIR}"
+            for platform in cja aa; do
+              "${ENV_DIR}/bin/sdr-grader" \
+                "tests/fixtures/${platform}_snapshot_messy.json" \
+                --output "${OUTPUT_DIR}/grader-${platform}.html" \
+                --json "${OUTPUT_DIR}/grader-${platform}.json" --quiet
+              "${ENV_DIR}/bin/sdr-visualizer" \
+                "tests/fixtures/${platform}_snapshot_messy.json" \
+                --output "${OUTPUT_DIR}/visualizer-${platform}.html" \
+                --json "${OUTPUT_DIR}/visualizer-${platform}.json" --quiet
+            done
+          done
+
+          for filename in \
+            grader-cja.html grader-cja.json grader-aa.html grader-aa.json; do
+            cmp "${ROOT}/output-3.11/${filename}" "${ROOT}/output-3.12/${filename}"
+          done
+          for platform in cja aa; do
+            for python_version in 3.11 3.12; do
+              jq -S 'del(.meta.generated_at)' \
+                "${ROOT}/output-${python_version}/visualizer-${platform}.json" \
+                > "${ROOT}/visualizer-${platform}-${python_version}.json"
+              test -s "${ROOT}/output-${python_version}/visualizer-${platform}.html"
+            done
+            cmp "${ROOT}/visualizer-${platform}-3.11.json" \
+              "${ROOT}/visualizer-${platform}-3.12.json"
+          done
+
+      - name: Verify fresh remote Claude marketplace installation
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --global @anthropic-ai/claude-code@2.1.220
+          ROOT="${RUNNER_TEMP}/remote-plugin"
+          ENV_DIR="${RUNNER_TEMP}/public-install/3.12"
+          export CLAUDE_CONFIG_DIR="${ROOT}/claude-profile"
+          claude plugin marketplace add brian-a-au/sdr-grader --scope user
+          claude plugin install sdr-grader@sdr-grader --scope user
+          MARKETPLACE="${CLAUDE_CONFIG_DIR}/plugins/marketplaces/sdr-grader"
+          git -C "${MARKETPLACE}" fetch --force --depth=1 origin \
+            "refs/tags/${GRADER_TAG}:refs/tags/${GRADER_TAG}"
+          test "$(git -C "${MARKETPLACE}" rev-parse "${GRADER_TAG}^{commit}")" = \
+            "${GRADER_COMMIT}"
+          git -C "${MARKETPLACE}" diff --exit-code "${GRADER_TAG}" -- \
+            .claude-plugin skills
+          claude plugin list --json > "${ROOT}/plugin-list.json"
+          INSTALL_PATH="$(
+            "${ENV_DIR}/bin/python" -c \
+              'import json,sys; items=json.load(open(sys.argv[1])); matches=[item for item in items if item.get("id") == "sdr-grader@sdr-grader"]; assert len(matches) == 1, matches; item=matches[0]; assert item.get("version") == "1.2.1", item; print(item["installPath"])' \
+              "${ROOT}/plugin-list.json"
+          )"
+          jq -e '.version == "1.2.1"' \
+            "${INSTALL_PATH}/.claude-plugin/plugin.json" >/dev/null
+          HELPER="${INSTALL_PATH}/skills/sdr-grader/scripts/query_grade.py"
+          "${ENV_DIR}/bin/sdr-grader" tests/fixtures/cja_snapshot_messy.json \
+            --output "${ROOT}/grade.html" --json "${ROOT}/grade.json" --quiet
+          printf '%s\n' \
+            'suppress:' \
+            '  - rule: CALC-014' \
+            '    reason: v1.2.1 release soak' \
+            > "${ROOT}/suppression.yaml"
+          "${ENV_DIR}/bin/sdr-grader" tests/fixtures/cja_snapshot_messy.json \
+            --suppress-config "${ROOT}/suppression.yaml" \
+            --output "${ROOT}/grade-suppressed.html" \
+            --json "${ROOT}/grade-suppressed.json" --quiet
+          "${ENV_DIR}/bin/python" "${HELPER}" summary "${ROOT}/grade.json" >/dev/null
+          "${ENV_DIR}/bin/python" "${HELPER}" findings "${ROOT}/grade.json" \
+            --category "schema hygiene" >/dev/null
+          "${ENV_DIR}/bin/python" "${HELPER}" show \
+            "${ROOT}/grade.json" CALC-014 >/dev/null
+          "${ENV_DIR}/bin/python" "${HELPER}" compare \
+            "${ROOT}/grade.json" "${ROOT}/grade-suppressed.json" >/dev/null
+
+      - name: Check finalization time
+        id: timing
+        shell: bash
+        run: |
+          if (( $(date -u +%s) >= SOAK_END_EPOCH )); then
+            echo "final_due=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "final_due=false" >> "${GITHUB_OUTPUT}"
+          fi
+
+  hosted-state:
+    name: Grader security and inbound reports
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: read
+      security-events: read
+      vulnerability-alerts: read
+    steps:
+      - name: Check paginated hosted state
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT="${RUNNER_TEMP}/hosted-state"
+          mkdir -p "${ROOT}"
+          for endpoint in code-scanning/alerts dependabot/alerts; do
+            filename="$(tr '/' '-' <<< "${endpoint}")"
+            gh api --paginate --slurp \
+              "repos/brian-a-au/sdr-grader/${endpoint}?state=open&per_page=100" \
+              | jq 'add' > "${ROOT}/${filename}.json"
+          done
+          jq -e 'length == 0' "${ROOT}/code-scanning-alerts.json" >/dev/null
+          jq -e \
+            '[.[] | select(.security_advisory.severity == "high" or .security_advisory.severity == "critical")] | length == 0' \
+            "${ROOT}/dependabot-alerts.json" >/dev/null
+          gh api --paginate --slurp \
+            "repos/brian-a-au/sdr-grader/issues?state=all&since=${SOAK_START_ISO}&per_page=100" \
+            | jq 'add' > "${ROOT}/sdr-grader-issues.json"
+          jq -e --arg start "${SOAK_START_ISO}" \
+            '[.[] |
+              select(has("pull_request") | not) |
+              select(.updated_at >= $start) |
+              select(
+                ([.labels[].name] | index("soak-triaged-nonblocking")) == null and
+                ([.labels[].name] | index("soak-triaged-resolved")) == null
+              )
+            ] | length == 0' \
+            "${ROOT}/sdr-grader-issues.json" >/dev/null
+
+  checkpoint:
+    name: Retain aggregate checkpoint
+    needs: [verify, hosted-state]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Record aggregate checkpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p checkpoint
+          NOW="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+          cat > checkpoint/checkpoint.json <<EOF
+          {
+            "release": "sdr-grader v1.2.1",
+            "commit": "${GRADER_COMMIT}",
+            "companion": "sdr-visualizer v1.0.6",
+            "monitor_sha": "${GITHUB_SHA}",
+            "soak_start": "${SOAK_START_ISO}",
+            "observed_at": "${NOW}",
+            "run_id": "${GITHUB_RUN_ID}",
+            "run_attempt": "${GITHUB_RUN_ATTEMPT}",
+            "status": "PASS",
+            "checks": [
+              "public artifact bytes and immutable tags",
+              "exact release provenance",
+              "clean Python 3.11 and 3.12 installs",
+              "AA and CJA immutable fixture renders",
+              "remote Claude marketplace plugin",
+              "grader CodeQL/Dependabot alerts and triage-aware inbound reports"
+            ]
+          }
+          EOF
+
+      - name: Retain checkpoint evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: sdr-grader-v1.2.1-soak-${{ github.run_id }}
+          path: checkpoint/checkpoint.json
+          if-no-files-found: error
+          retention-days: 90
+
+  finalize:
+    name: Record announcement GO
+    needs: [verify, hosted-state, checkpoint]
+    if: needs.verify.outputs.final_due == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: write
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+
+      - name: Collect the timeline and owner-only private-report gate
+        id: private-gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CURRENT_RUN_ID: ${{ github.run_id }}
+          REPOSITORY: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api --paginate --slurp \
+            "repos/${REPOSITORY}/actions/workflows/release-soak.yml/runs?per_page=100" \
+            > "${RUNNER_TEMP}/runs.json"
+          gh api "repos/${REPOSITORY}/actions/runs/${CURRENT_RUN_ID}" \
+            > "${RUNNER_TEMP}/current-run.json"
+          gh api --paginate --slurp \
+            "repos/${REPOSITORY}/issues/39/comments?per_page=100" \
+            > "${RUNNER_TEMP}/comments.json"
+          CLEARANCE_CUTOFF="$(date -u -d "@$(( $(date -u +%s) - 7200 ))" '+%Y-%m-%dT%H:%M:%SZ')"
+          if jq -e --arg end "${SOAK_END_ISO}" --arg cutoff "${CLEARANCE_CUTOFF}" \
+            '[.[][] |
+              select(.user.login == "brian-a-au") |
+              select(.author_association == "OWNER") |
+              select(.created_at >= $end) |
+              select(.created_at >= $cutoff) |
+              select(.body | contains("sdr-grader-v1.2.1-private-advisory-clear"))
+            ] | length >= 1' \
+            "${RUNNER_TEMP}/comments.json" >/dev/null; then
+            echo "ready=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "ready=false" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Verify and write the complete frozen-revision timeline
+        if: steps.private-gate.outputs.ready == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/verify_release_soak_timeline.py \
+            --runs "${RUNNER_TEMP}/runs.json" \
+            --current-run "${RUNNER_TEMP}/current-run.json" \
+            --comments "${RUNNER_TEMP}/comments.json" \
+            --timeline-output "${RUNNER_TEMP}/timeline.json" \
+            --comment-output "${RUNNER_TEMP}/announcement-go.md" \
+            --start-epoch "${SOAK_START_EPOCH}" \
+            --end-epoch "${SOAK_END_EPOCH}" \
+            --start-url "https://github.com/brian-a-au/sdr-grader/pull/39#issuecomment-5155478227" \
+            --release "sdr-grader v1.2.1" \
+            --release-commit "${GRADER_COMMIT}" \
+            --companion "sdr-visualizer v1.0.6"
+
+      - name: Retain the complete final timeline
+        if: steps.private-gate.outputs.ready == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: sdr-grader-v1.2.1-final-timeline-${{ github.run_id }}
+          path: ${{ runner.temp }}/timeline.json
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Publish the one-time GO decision and stop the monitor
+        if: steps.private-gate.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! jq -e \
+            '[.[][] |
+              select(.user.login == "github-actions[bot]" or
+                     .author_association == "OWNER" or
+                     .author_association == "MEMBER" or
+                     .author_association == "COLLABORATOR") |
+              select(.body | contains("sdr-grader-v1.2.1-announcement-go"))
+            ] | length >= 1' \
+            "${RUNNER_TEMP}/comments.json" >/dev/null; then
+            gh pr comment 39 --repo "${GITHUB_REPOSITORY}" \
+              --body-file "${RUNNER_TEMP}/announcement-go.md"
+          fi
+          gh api --method PUT \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/release-soak.yml/disable"
