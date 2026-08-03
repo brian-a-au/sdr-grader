@@ -230,6 +230,73 @@ def test_project_metadata_exposes_complete_release_urls_and_markdown_readme():
     }
 
 
+def test_pull_request_package_gate_is_read_only_isolated_and_complete():
+    path = REPO_ROOT / ".github" / "workflows" / "test.yml"
+    text = path.read_text(encoding="utf-8")
+    workflow = yaml.safe_load(text)
+    package = workflow["jobs"]["public-package"]
+
+    assert workflow["permissions"] == {"contents": "read"}
+    assert package["permissions"] == {"contents": "read"}
+    assert "environment" not in package
+    package_text = text.split("\n  public-package:", 1)[1]
+    for forbidden in (
+        "id-token: write",
+        "contents: write",
+        "secrets.",
+        "github.token",
+        "PYPI_API_TOKEN",
+    ):
+        assert forbidden not in package_text
+
+    by_name = {step.get("name", "checkout"): step for step in package["steps"]}
+    checkout = next(
+        step
+        for step in package["steps"]
+        if str(step.get("uses", "")).startswith("actions/checkout@")
+    )
+    assert checkout["with"]["persist-credentials"] is False
+    assert by_name["Install uv"]["with"]["version"] == "0.11.16"
+    assert "--require-hashes" in by_name["Install release validators"]["run"]
+    assert "check --strict dist/*" in by_name["Validate public distributions"]["run"]
+    assert "scripts/verify_release_artifacts.py" in by_name["Validate public distributions"]["run"]
+    assert (
+        "scripts/verify_release_compatibility.py" in by_name["Verify v1.2.1 compatibility"]["run"]
+    )
+
+    smoke = by_name["Smoke installed wheel outside checkout"]["run"]
+    assert "${RUNNER_TEMP}" in smoke
+    assert "PYTHONPATH" in smoke and "PYTHONHOME" in smoke
+    assert "PYTHONNOUSERSITE=1" in smoke
+    assert "sys.path" in smoke and "GITHUB_WORKSPACE" in smoke
+    assert "readme-command.json" in smoke
+    assert "--distribution-data bundled" in smoke
+    assert "scripts/" not in smoke
+    assert "--dataview" not in smoke and "--rsid" not in smoke
+
+
+def test_release_validation_inputs_are_exact_and_every_locked_requirement_is_hashed():
+    requirements = REPO_ROOT / "requirements"
+    inputs = (requirements / "release-validation.in").read_text(encoding="utf-8")
+    locked = (requirements / "release-validation.txt").read_text(encoding="utf-8")
+
+    assert inputs.splitlines() == [
+        "twine==6.2.0",
+        "readme-renderer[md]==45.0",
+    ]
+    assert (
+        "uv pip compile requirements/release-validation.in --universal --generate-hashes" in locked
+    )
+    assert re.search(r"^twine==6\.2\.0 \\\n\s+--hash=sha256:", locked, re.MULTILINE)
+    assert re.search(r"^readme-renderer==45\.0 \\\n\s+--hash=sha256:", locked, re.MULTILINE)
+    requirements_without_hashes = [
+        line
+        for line in locked.splitlines()
+        if line and not line.startswith((" ", "#")) and "==" in line and not line.endswith(" \\")
+    ]
+    assert requirements_without_hashes == []
+
+
 def test_troubleshooting_covers_public_failure_modes_and_privacy_authority():
     document = (REPO_ROOT / "docs" / "TROUBLESHOOTING.md").read_text(encoding="utf-8")
     lowered = document.lower()

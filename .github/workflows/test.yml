@@ -83,3 +83,185 @@ jobs:
             echo "Run the relevant generator scripts locally and commit the result."
             exit 1
           fi
+
+  public-package:
+    name: Public README and installed wheel
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.11.16"
+          enable-cache: true
+          prune-cache: false
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install release validators
+        shell: bash
+        run: |
+          set -euo pipefail
+          VALIDATION_ENV="${RUNNER_TEMP}/release-validation"
+          uv venv --python 3.12 "${VALIDATION_ENV}"
+          uv pip install \
+            --python "${VALIDATION_ENV}/bin/python" \
+            --require-hashes \
+            --no-deps \
+            -r requirements/release-validation.txt
+
+      - name: Verify release validator lock regeneration
+        shell: bash
+        run: |
+          set -euo pipefail
+          uv pip compile requirements/release-validation.in \
+            --universal \
+            --generate-hashes \
+            --python-version 3.12 \
+            --output-file requirements/release-validation.txt
+          git diff --exit-code -- requirements/release-validation.txt
+
+      - name: Build fresh public distributions
+        run: uv build --no-sources --clear --no-create-gitignore
+
+      - name: Validate public distributions
+        shell: bash
+        run: |
+          set -euo pipefail
+          VALIDATION_ENV="${RUNNER_TEMP}/release-validation"
+          "${VALIDATION_ENV}/bin/twine" check --strict dist/*
+          "${VALIDATION_ENV}/bin/python" scripts/verify_release_artifacts.py \
+            --dist-dir dist \
+            --source-sha "${GITHUB_SHA}"
+
+      - name: Smoke installed wheel outside checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          WHEELS=( "${GITHUB_WORKSPACE}"/dist/*.whl )
+          test "${#WHEELS[@]}" -eq 1
+          SMOKE_ROOT="${RUNNER_TEMP}/installed-wheel-smoke"
+          SMOKE_ENV="${SMOKE_ROOT}/venv"
+          OUTPUT_DIR="${SMOKE_ROOT}/output"
+          mkdir -p "${OUTPUT_DIR}"
+          uv venv --python 3.12 "${SMOKE_ENV}"
+          uv pip install --python "${SMOKE_ENV}/bin/python" "${WHEELS[0]}"
+          cp \
+            "${GITHUB_WORKSPACE}/tests/fixtures/cja_snapshot_clean.json" \
+            "${OUTPUT_DIR}/cja_snapshot_clean.json"
+          cmp \
+            "${GITHUB_WORKSPACE}/tests/fixtures/cja_snapshot_clean.json" \
+            "${OUTPUT_DIR}/cja_snapshot_clean.json"
+
+          env -u PYTHONPATH -u PYTHONHOME PYTHONNOUSERSITE=1 \
+            "${SMOKE_ENV}/bin/python" - \
+            "${GITHUB_WORKSPACE}/README.md" \
+            "${SMOKE_ROOT}/readme-command.json" <<'PY'
+          import json
+          import re
+          import shlex
+          import sys
+          from pathlib import Path
+
+          expected = (
+              "sdr-grader cja_snapshot_clean.json --output grade.html "
+              "--json grade.json --quiet"
+          )
+          readme = Path(sys.argv[1]).read_text(encoding="utf-8")
+          matches = re.findall(
+              r"^sdr-grader cja_snapshot_clean\.json .*?$",
+              readme,
+              re.MULTILINE,
+          )
+          assert matches == [expected], matches
+          Path(sys.argv[2]).write_text(json.dumps(shlex.split(matches[0])))
+          PY
+
+          (
+            cd "${OUTPUT_DIR}"
+            env -u PYTHONPATH -u PYTHONHOME PYTHONNOUSERSITE=1 \
+              "${SMOKE_ENV}/bin/python" - \
+              "${GITHUB_WORKSPACE}" \
+              "${SMOKE_ENV}/bin/sdr-grader" \
+              "${SMOKE_ROOT}/readme-command.json" <<'PY'
+          import json
+          import pathlib
+          import subprocess
+          import sys
+
+          import sdr_grader
+
+          checkout = pathlib.Path(sys.argv[1]).resolve()
+          origin = pathlib.Path(sdr_grader.__file__).resolve()
+          assert not origin.is_relative_to(checkout), origin
+          assert all(
+              not pathlib.Path(entry or ".").resolve().is_relative_to(checkout)
+              for entry in sys.path
+          ), sys.path
+          arguments = json.loads(pathlib.Path(sys.argv[3]).read_text())
+          completed = subprocess.run([sys.argv[2], *arguments[1:]], check=False)
+          assert completed.returncode == 0, completed.returncode
+          PY
+
+            env -u PYTHONPATH -u PYTHONHOME PYTHONNOUSERSITE=1 \
+              "${SMOKE_ENV}/bin/sdr-grader" --version
+            env -u PYTHONPATH -u PYTHONHOME PYTHONNOUSERSITE=1 \
+              "${SMOKE_ENV}/bin/sdr-grader" \
+              cja_snapshot_clean.json \
+              --output bundled.html \
+              --json bundled.json \
+              --quiet \
+              --distribution-data bundled
+            env -u PYTHONPATH -u PYTHONHOME PYTHONNOUSERSITE=1 \
+              "${SMOKE_ENV}/bin/python" - \
+              "${GITHUB_WORKSPACE}" <<'PY'
+          import importlib.metadata
+          import json
+          import pathlib
+          import sys
+          from importlib.resources import files
+
+          import sdr_grader
+
+          checkout = pathlib.Path(sys.argv[1]).resolve()
+          assert pathlib.Path(sdr_grader.__file__).resolve().is_relative_to(
+              pathlib.Path(sys.executable).resolve().parents[1]
+          )
+          assert all(
+              not pathlib.Path(entry or ".").resolve().is_relative_to(checkout)
+              for entry in sys.path
+          ), sys.path
+          assert sdr_grader.__version__ == importlib.metadata.version("sdr-grader")
+          report = json.loads(pathlib.Path("grade.json").read_text())
+          bundled = json.loads(pathlib.Path("bundled.json").read_text())
+          assert report["schema_version"] == 1
+          assert report["categories"] and isinstance(report["findings"], list)
+          assert bundled["distribution"]["charts"]
+          assert "<!doctype html>" in pathlib.Path("grade.html").read_text().lower()
+          package = files("sdr_grader")
+          required = (
+              "plugin/.claude-plugin/plugin.json",
+              "plugin/.claude-plugin/marketplace.json",
+              "plugin/skills/sdr-grader/SKILL.md",
+              "rules/packs/strict/_meta.yaml",
+              "rules/packs/pragmatic/_meta.yaml",
+              "render/templates/report.html.j2",
+              "render/static/report.css",
+              "trend/templates/trend.html.j2",
+              "data/distribution.json",
+          )
+          missing = [name for name in required if not package.joinpath(name).is_file()]
+          assert not missing, missing
+          PY
+          )
+
+      - name: Verify v1.2.1 compatibility
+        run: python3 scripts/verify_release_compatibility.py --uv uv
