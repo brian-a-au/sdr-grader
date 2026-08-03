@@ -25,25 +25,14 @@ Invoke this skill when the user:
 
 ## How to use
 
-The grade JSON has these top-level fields:
+Use the canonical [schema-1 JSON output reference](https://github.com/brian-a-au/sdr-grader/blob/v1.2.2/docs/JSON_OUTPUT.md)
+for the complete field shape, stable identity and grade fields, nullability,
+finding-body variants, HTML-string trust, and the `impact_pts` compatibility
+window. Do not maintain a separate partial schema in this skill.
 
-| Field             | Type                                                     |
-|-------------------|----------------------------------------------------------|
-| `schema_version`  | integer — current report schema is `1`                   |
-| `id`              | string — synthetic report ID                             |
-| `instance_id`     | string — stable data view / report suite identity        |
-| `instance_name`   | string — data view / report suite name                   |
-| `grade`           | string — letter grade                                    |
-| `overall_pct`     | int — 0-100                                              |
-| `categories`      | list of `{name, pct, grade}`                             |
-| `findings`        | list of `{id, severity, category, title, body, actions}` |
-| `remediations`    | list of `{text, refs, priority_weight, impact_pts}`      |
-| `methodology`     | `{paragraphs, skipped}`                                  |
-| `generated_at`    | ISO-8601 timestamp in UTC                                |
-
-`priority_weight` is the severity-derived remediation ordering value; it is
-not a predicted score gain. `impact_pts` is an equal-valued deprecated alias
-kept only for `1.2.x` compatibility.
+Selected helper output enters Claude conversation context. Before the first
+report read, minimize the requested operation and follow the disclosure rules
+in the canonical [report-sharing privacy matrix](https://github.com/brian-a-au/sdr-grader/blob/v1.2.2/SECURITY.md#report-sharing-privacy-matrix).
 
 For routine queries use the bundled helper. It runs as a one-shot script
 (no install steps); the Bash tool already has permission to call it.
