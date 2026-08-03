@@ -15,6 +15,7 @@ from html.parser import HTMLParser
 from pathlib import Path
 
 from fixtures.demo_report import build_demo_report
+from sdr_grader import __version__
 from sdr_grader.render import (
     Distribution,
     DistributionChart,
@@ -22,8 +23,12 @@ from sdr_grader.render import (
     FindingBlock,
     render,
 )
+from sdr_grader.rules.rubric import load_rubric
 
 GOLDEN = Path(__file__).parent.parent / "examples" / "templated-report.html"
+STRICT_PACK = (
+    Path(__file__).parent.parent / "src" / "sdr_grader" / "rules" / "packs" / "strict"
+)
 
 EXPECTED_SECTIONS = [
     'id="tldr"',
@@ -52,6 +57,75 @@ def test_render_contains_six_categories():
     html = render(report)
     for category in report.categories:
         assert category.name in html
+
+
+def test_demo_report_uses_current_default_cja_rule_inventory():
+    report = build_demo_report()
+    rubric = load_rubric(STRICT_PACK)
+    default_cja_ids = {
+        rule.id for rule in rubric.rules if not rule.platforms or "cja" in rule.platforms
+    }
+    finding_ids = {finding.id for finding in report.findings}
+    remediation_ids = {rule_id for item in report.remediations for rule_id in item.refs}
+    suppressed_ids = {
+        rule_id for item in report.methodology.skipped for rule_id in item.ids
+    }
+
+    assert report.rubric.pack == rubric.pack == "strict"
+    assert report.rubric.version == rubric.version == "2.0"
+    assert report.tool_version == __version__
+    assert len(default_cja_ids) == 27
+    assert finding_ids == {
+        "ATTR-004",
+        "CALC-014",
+        "GOV-001",
+        "NAME-001",
+        "SCH-003",
+        "SEG-007",
+    }
+    assert finding_ids <= default_cja_ids
+    assert remediation_ids <= finding_ids
+    assert suppressed_ids <= default_cja_ids
+    assert suppressed_ids == {"CALC-001", "SEG-005"}
+    assert not finding_ids & suppressed_ids
+    assert "ATTR-002" not in finding_ids  # registered opt-in check, not a default rule
+
+
+def test_demo_report_copy_uses_real_audit_path_and_safe_actions():
+    report = build_demo_report()
+    methodology = " ".join(str(paragraph) for paragraph in report.methodology.paragraphs)
+    rendered_blocks = " ".join(
+        str(value)
+        for finding in report.findings
+        for block in finding.body
+        for value in (block.html, block.body_html, block.text)
+        if value is not None
+    )
+
+    assert "stable rule IDs" in methodology
+    assert "rubric documentation" in methodology
+    assert "repository" in methodology
+    assert "source YAML is linked" not in methodology
+    assert "source YAML is linked" not in methodology.replace("&rsquo;", "'")
+    assert "strict@2.0" in methodology
+    assert "73 rules" not in methodology
+    assert "self-graded" not in str(report.tldr_html)
+    assert "publicly graded" not in str(report.tldr_html)
+    assert "--org-report" not in rendered_blocks
+    assert "--snapshot" not in rendered_blocks
+    assert "--git-init" not in rendered_blocks
+    assert "--git-commit" not in rendered_blocks
+    assert "--quality-report" not in rendered_blocks
+    assert "--include-all-inventory --format json --output" in rendered_blocks
+    for finding in report.findings:
+        assert finding.actions
+        assert all(action.href in {"#methodology", "#remediations"} for action in finding.actions)
+
+
+def test_demo_distribution_uses_neutral_reference_label():
+    report = build_demo_report()
+    assert report.distribution is not None
+    assert report.distribution.charts[0].label == "Overall score vs reference distribution"
 
 
 def test_render_labels_remediation_as_priority_not_predicted_score():

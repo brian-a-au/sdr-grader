@@ -20,10 +20,17 @@ from fixtures.demo_report import build_demo_report  # noqa: E402
 from sdr_grader.render import render  # noqa: E402
 
 
-def main() -> int:
+def generate(output_path: Path) -> str:
+    """Render the illustrative demo to ``output_path`` and return its HTML."""
     out = render(build_demo_report())
-    output_path = REPO_ROOT / "examples" / "templated-report.html"
+    output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(out, encoding="utf-8")
+    return out
+
+
+def main() -> int:
+    output_path = REPO_ROOT / "examples" / "templated-report.html"
+    out = generate(output_path)
     print(f"Wrote {output_path.relative_to(REPO_ROOT)} ({len(out):,} chars)")
     return 0
 

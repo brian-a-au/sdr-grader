@@ -9,6 +9,16 @@ Bundled pack `2.0` contains 27 rule definitions. All 27 apply to CJA;
 23 apply to AA. The four CJA-only definitions below are excluded from
 AA execution and from its scoring denominator.
 
+## Bundled coverage inventory
+
+The `strict` and `pragmatic` 2.0 packs have the same ID and platform
+inventory; only severities and parameters differ.
+
+| Platform | Applicable rules | Excluded IDs |
+|---|---:|---|
+| CJA | 27 | — |
+| AA | 23 | SCH-007, SCH-008, SCH-009, ATTR-004 |
+
 **Private evidence boundary.** The 108-entry private cohort contains 100 CJA
 Data Views and 8 AA report suites and is used for compatibility regression.
 Zero entries are currently admitted to calibration, so bundled thresholds are

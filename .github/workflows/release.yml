@@ -28,6 +28,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
+          version: 0.11.16
           enable-cache: true
           prune-cache: false
 
@@ -35,7 +36,7 @@ jobs:
         run: uv python install 3.12
 
       - name: Sync dependencies
-        run: uv sync --all-extras --dev
+        run: uv sync --locked --all-extras --dev
 
       - name: Verify immutable candidate identity
         run: |
@@ -51,6 +52,9 @@ jobs:
   build:
     name: Build immutable distributions
     needs: candidate
+    # A failed immutable build requires a fixed source and new version. Rerunning
+    # failed verifier jobs may reuse retained artifacts, but no run may rebuild.
+    if: github.run_attempt == 1
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -63,6 +67,8 @@ jobs:
 
       - name: Install uv
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: 0.11.16
 
       - name: Set up Python
         run: uv python install 3.12
@@ -75,10 +81,20 @@ jobs:
       - name: Build wheel from sdist
         run: uv build --no-sources --clear --no-create-gitignore
 
+      - name: Install hash-locked release validation tools
+        run: |
+          uv venv --python 3.12 .release-validation
+          uv pip install \
+            --python .release-validation/bin/python \
+            --require-hashes -r requirements/release-validation.txt
+
+      - name: Validate distribution descriptions strictly
+        run: .release-validation/bin/twine check --strict dist/*
+
       - name: Verify artifact inventory and provenance
         run: |
           mkdir -p release-evidence
-          python3 scripts/verify_release_artifacts.py \
+          .release-validation/bin/python scripts/verify_release_artifacts.py \
             --dist-dir dist \
             --expected-version "${GITHUB_REF_NAME#v}" \
             --source-sha "${GITHUB_SHA}" \
@@ -119,12 +135,27 @@ jobs:
 
       - name: Install uv
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: 0.11.16
 
       - name: Download immutable distributions
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: candidate-dist-${{ github.sha }}
           path: dist/
+
+      - name: Download candidate evidence
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: candidate-evidence-${{ github.sha }}
+          path: release-evidence/
+
+      - name: Verify retained candidate digests
+        run: |
+          python3 scripts/verify_published_readme.py candidate \
+            --dist-dir dist \
+            --evidence release-evidence/release-artifacts.json \
+            --version "${GITHUB_REF_NAME#v}"
 
       - name: Install wheel and sdist outside checkout and compare behavior
         shell: bash
@@ -178,6 +209,8 @@ jobs:
 
       - name: Install uv
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: 0.11.16
 
       - name: Set up Python
         run: uv python install 3.12
@@ -187,6 +220,19 @@ jobs:
         with:
           name: candidate-dist-${{ github.sha }}
           path: dist/
+
+      - name: Download candidate evidence
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: candidate-evidence-${{ github.sha }}
+          path: release-evidence/
+
+      - name: Verify retained candidate digests
+        run: |
+          python3 scripts/verify_published_readme.py candidate \
+            --dist-dir dist \
+            --evidence release-evidence/release-artifacts.json \
+            --version "${GITHUB_REF_NAME#v}"
 
       - name: Install frozen wheel and materialize its plugin
         shell: bash
@@ -255,9 +301,49 @@ jobs:
             "${RUNNER_TEMP}/plugin-grade.json" \
             "${RUNNER_TEMP}/plugin-grade-suppressed.json"
 
+  verify-prepublication:
+    name: Verify tagged README before publication
+    needs: [install-smoke, plugin-smoke]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.ref }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: 0.11.16
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Download immutable distributions
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: candidate-dist-${{ github.sha }}
+          path: dist/
+
+      - name: Download candidate evidence
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: candidate-evidence-${{ github.sha }}
+          path: release-evidence/
+
+      - name: Verify candidate description and bounded live tag links
+        run: |
+          python3 scripts/verify_published_readme.py prepublication \
+            --dist-dir dist \
+            --evidence release-evidence/release-artifacts.json \
+            --version "${GITHUB_REF_NAME#v}"
+
   draft-github:
     name: Create immutable GitHub draft
-    needs: [install-smoke, plugin-smoke]
+    needs: verify-prepublication
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -310,6 +396,19 @@ jobs:
           name: candidate-dist-${{ github.sha }}
           path: dist/
 
+      - name: Download candidate evidence
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: candidate-evidence-${{ github.sha }}
+          path: release-evidence/
+
+      - name: Verify retained candidate digests
+        run: |
+          python3 scripts/verify_published_readme.py candidate \
+            --dist-dir dist \
+            --evidence release-evidence/release-artifacts.json \
+            --version "${GITHUB_REF_NAME#v}"
+
       - name: Verify recoverable PyPI state
         id: pypi-state
         run: |
@@ -334,9 +433,49 @@ jobs:
         with:
           subject-path: "dist/*"
 
+  verify-pypi-publication:
+    name: Verify PyPI publication before announcement
+    needs: publish-pypi
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.ref }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: 0.11.16
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Download candidate distributions
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: candidate-dist-${{ github.sha }}
+          path: candidate-dist/
+
+      - name: Download candidate evidence
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: candidate-evidence-${{ github.sha }}
+          path: release-evidence/
+
+      - name: Verify PyPI description, bytes, and bounded links
+        run: |
+          python3 scripts/verify_published_readme.py postpublication \
+            --dist-dir candidate-dist \
+            --evidence release-evidence/release-artifacts.json \
+            --version "${GITHUB_REF_NAME#v}"
+
   publish-github:
     name: Publish GitHub release
-    needs: publish-pypi
+    needs: verify-pypi-publication
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:
@@ -376,6 +515,8 @@ jobs:
 
       - name: Install uv
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: 0.11.16
 
       - name: Download candidate distributions
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
@@ -389,24 +530,18 @@ jobs:
           name: candidate-evidence-${{ github.sha }}
           path: release-evidence/
 
-      - name: Verify GitHub and PyPI bytes
+      - name: Verify GitHub release bytes
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_VERSION: ${{ github.ref_name }}
         run: |
-          mkdir -p github-dist pypi-dist
+          mkdir -p github-dist
           gh release download "${GITHUB_REF_NAME}" \
             --pattern "*.whl" --pattern "*.tar.gz" --dir github-dist
           python3 - <<'PY'
           import hashlib
           import json
-          import os
-          import time
-          import urllib.error
-          import urllib.request
           from pathlib import Path
 
-          version = os.environ["RELEASE_VERSION"].removeprefix("v")
           evidence = json.loads(
               Path("release-evidence/release-artifacts.json").read_text()
           )
@@ -422,29 +557,6 @@ jobs:
                   path = root / filename
                   assert path.stat().st_size == record["size"]
                   assert digest(path) == record["sha256"]
-
-          payload = None
-          for attempt in range(12):
-              try:
-                  with urllib.request.urlopen(
-                      f"https://pypi.org/pypi/sdr-grader/{version}/json",
-                      timeout=20,
-                  ) as response:
-                      payload = json.load(response)
-                  break
-              except (OSError, urllib.error.URLError, json.JSONDecodeError):
-                  if attempt == 11:
-                      raise
-                  time.sleep(10)
-          urls = {item["filename"]: item["url"] for item in payload["urls"]}
-          for filename, record in expected.items():
-              with urllib.request.urlopen(urls[filename], timeout=30) as response:
-                  data = response.read(128 * 1024 * 1024 + 1)
-              assert len(data) <= 128 * 1024 * 1024
-              path = Path("pypi-dist") / filename
-              path.write_bytes(data)
-              assert len(data) == record["size"]
-              assert hashlib.sha256(data).hexdigest() == record["sha256"]
           PY
 
       - name: Verify build provenance attestation

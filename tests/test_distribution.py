@@ -167,11 +167,24 @@ def test_build_distribution_includes_overall_and_category_charts():
     data = load_distribution_data(BUNDLED_PATH)
     distribution = build_distribution(_stub_report(), data)
     assert len(distribution.charts) == 2
-    assert "Overall" in distribution.charts[0].label
+    assert distribution.charts[0].label == "Overall score vs reference distribution"
     assert "Category" in distribution.charts[1].label
     # Histogram embeds the snapshot's score and the median from the data.
     assert "you · 54" in distribution.charts[0].svg
     assert "median 67" in distribution.charts[0].svg
+
+
+def test_build_distribution_uses_neutral_label_for_user_data():
+    distribution = build_distribution(
+        _stub_report(),
+        {
+            "n_instances": 3,
+            "overall": {"median": 50, "p25": 25, "p75": 75},
+            "categories": {},
+        },
+    )
+
+    assert distribution.charts[0].label == "Overall score vs reference distribution"
 
 
 def test_cli_attaches_distribution_when_flag_set(tmp_path):

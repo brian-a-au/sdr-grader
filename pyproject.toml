@@ -2,7 +2,7 @@
 name = "sdr-grader"
 dynamic = ["version"]
 description = "Deterministic, rule-based linter for Adobe Customer Journey Analytics and Adobe Analytics implementations."
-readme = "README.md"
+readme = { file = "README.md", content-type = "text/markdown" }
 license = { text = "MIT" }
 authors = [{ name = "Brian Au" }]
 requires-python = ">=3.11"
@@ -37,7 +37,10 @@ sdr-grader = "sdr_grader.cli.main:main"
 
 [project.urls]
 Homepage = "https://github.com/brian-a-au/sdr-grader"
+Documentation = "https://github.com/brian-a-au/sdr-grader/blob/v1.2.2/README.md"
+Source = "https://github.com/brian-a-au/sdr-grader/tree/v1.2.2"
 Issues = "https://github.com/brian-a-au/sdr-grader/issues"
+Changelog = "https://github.com/brian-a-au/sdr-grader/blob/main/CHANGELOG.md"
 
 [dependency-groups]
 dev = [

@@ -26,64 +26,72 @@ on:
   schedule:
     - cron: '0 6 * * 1'   # Mondays 06:00 UTC
 
+permissions:
+  contents: read
+
 jobs:
   grade:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.11.16"
 
       - name: Install sdr-grader
-        run: uv tool install sdr-grader
+        run: uv tool install sdr-grader==1.2.2
 
       - name: Run grader
         run: |
-          uv tool run sdr-grader snapshots/ \
+          mkdir -p reports
+          sdr-grader path/to/snapshot.json \
             --pack strict \
-            --output grade.html \
-            --json grade.json \
-            --fail-below B-
+            --output reports/sdr-grade.html \
+            --json reports/sdr-grade.json \
+            --fail-below B- \
+            --quiet
 
       - name: Upload report
-        if: always()
-        uses: actions/upload-artifact@v4
+        if: ${{ always() && vars.SDR_GRADER_UPLOAD_REPORTS == 'true' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: sdr-grade
           path: |
-            grade.html
-            grade.json
+            reports/sdr-grade.html
+            reports/sdr-grade.json
+          if-no-files-found: error
+          retention-days: 7
 ```
 
-The `--fail-below` flag turns the grader into a CI gate: PRs that drop
-the implementation below the threshold letter fail. Pair it with
-`--quiet` to suppress informational stderr output, or omit it to keep
-the run summary visible in the action log.
+Replace `path/to/snapshot.json` and the trigger path with repository-appropriate
+generic paths. The `--fail-below` flag turns the grader into a CI gate: a grade
+below the threshold exits with code 2 after the named reports are written.
+`--quiet` suppresses the normal informational summary so implementation details
+do not enter the log merely because grading succeeded; errors still appear.
+
+Report upload is disabled unless the repository explicitly defines the Actions
+variable `SDR_GRADER_UPLOAD_REPORTS` with the exact value `true`. When opted in,
+`always()` preserves the report from a below-threshold run, while
+`if-no-files-found: error` prevents a green upload step from hiding a missing
+report. Review both files before enabling the variable. In a public repository,
+Actions artifacts are not confidential. Seven-day retention is temporal cleanup
+only: it is not access control, sanitization, confidentiality, or durable public
+release evidence. See the canonical [report-sharing privacy matrix](../SECURITY.md#report-sharing-privacy-matrix)
+for log, artifact, HTML, JSON, and Claude-context boundaries.
 
 ## Reading the JSON output
 
-The JSON file mirrors the HTML report's data model. Top-level fields
-include:
-
-| Field                | Type                                  |
-|----------------------|---------------------------------------|
-| `id`                 | `string` — synthetic report ID         |
-| `instance_name`      | `string` — data view / report suite name |
-| `grade`              | `string` — letter grade                |
-| `overall_pct`        | `int` — 0-100                          |
-| `categories`         | `[{name, pct, grade}]`                 |
-| `findings`           | `[{id, severity, category, title, body, actions}]` |
-| `remediations`       | `[{text, refs, priority_weight, impact_pts}]` |
-| `methodology`        | `{paragraphs, skipped}`                |
-| `generated_at`       | ISO-8601 timestamp in UTC              |
-
-Use `jq '.findings[].id'` to extract a list of fired rule IDs in shell,
-or load the file in Python via `json.load`.
-
-`priority_weight` is a severity-derived ordering weight, not a predicted
-overall-score increase. The equal-valued `impact_pts` field is retained as a
-deprecated compatibility alias throughout the `1.2.x` release line.
+The JSON file mirrors the complete report model. Use the canonical
+[schema-1 JSON output reference](JSON_OUTPUT.md) for field paths, nested types,
+nullability, finding-body variants, HTML-string trust, and the `impact_pts`
+compatibility window. For a small CI query, `jq '.findings[].id'` extracts the
+fired rule IDs; load the full artifact with `json.load` when a dashboard needs
+the complete structure.
 
 CJA generator timestamps using `PDT` or `PST` are interpreted with fixed UTC
 offsets, as are explicit ISO offsets, `Z`, `UTC`, and `GMT`. Unknown timezone

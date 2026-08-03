@@ -5,6 +5,8 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib
+import io
 import json
 import os
 import re
@@ -13,14 +15,21 @@ import sys
 import tarfile
 import tempfile
 import zipfile
+from email import policy
+from email.parser import BytesParser
+from html.parser import HTMLParser
 from pathlib import Path, PurePosixPath
 from typing import Any
+from urllib.parse import unquote, urlparse
 
 ROOT = Path(__file__).resolve().parent.parent
 MAX_MEMBER_BYTES = 32 * 1024 * 1024
 MAX_ARCHIVE_BYTES = 128 * 1024 * 1024
 VERSION_RE = re.compile(r'^__version__ = "([^"]+)"', re.MULTILINE)
 METADATA_VERSION_RE = re.compile(r"^Version:\s*(\S+)\s*$", re.MULTILINE)
+REPOSITORY_OWNER = "brian-a-au"
+REPOSITORY_NAME = "sdr-grader"
+RELEASE_PINNED_ROOTS = {"docs", "examples", "skills", "src", "tests"}
 ALLOWED_SDIST_TOP_LEVEL = {
     ".claude-plugin",
     ".gitignore",
@@ -35,6 +44,7 @@ ALLOWED_SDIST_TOP_LEVEL = {
     "docs",
     "examples",
     "pyproject.toml",
+    "requirements",
     "scripts",
     "skills",
     "src",
@@ -89,13 +99,19 @@ def verify_release_artifacts(
     _reject_forbidden_members(wheel_members, sdist_root=None)
     sdist_root = f"sdr_grader-{version}"
     _reject_forbidden_members(sdist_members, sdist_root=sdist_root)
-    _verify_wheel(
+    wheel_description = _verify_wheel(
         wheel_members,
         source_root=source_root,
         version=version,
     )
-    _verify_sdist(
+    sdist_description = _verify_sdist(
         sdist_members,
+        source_root=source_root,
+        version=version,
+    )
+    _verify_description_contract(
+        wheel_description,
+        sdist_description,
         source_root=source_root,
         version=version,
     )
@@ -351,15 +367,16 @@ def _verify_wheel(
     *,
     source_root: Path,
     version: str,
-) -> None:
+) -> str:
     expected = _source_package_files(source_root)
     expected.update(_source_plugin_files(source_root, wheel_layout=True))
     _require_exact_source_bytes(members, expected, archive_name="wheel")
     dist_info = f"sdr_grader-{version}.dist-info"
     metadata_name = f"{dist_info}/METADATA"
     entry_points_name = f"{dist_info}/entry_points.txt"
+    metadata = _required_member(members, metadata_name, "wheel")
     _verify_metadata_version(
-        _required_member(members, metadata_name, "wheel"),
+        metadata,
         version=version,
         archive_name="wheel",
     )
@@ -393,6 +410,7 @@ def _verify_wheel(
         version=version,
         archive_name="wheel",
     )
+    return _metadata_description(metadata, archive_name="wheel")
 
 
 def _verify_sdist(
@@ -400,7 +418,7 @@ def _verify_sdist(
     *,
     source_root: Path,
     version: str,
-) -> None:
+) -> str:
     root = f"sdr_grader-{version}"
     expected = {
         f"{root}/src/{name}": payload
@@ -420,6 +438,8 @@ def _verify_sdist(
         "README.md",
         "CHANGELOG.md",
         "LICENSE",
+        "requirements/release-validation.in",
+        "requirements/release-validation.txt",
     ):
         try:
             expected[f"{root}/{relative}"] = (
@@ -430,8 +450,9 @@ def _verify_sdist(
                 f"could not read required source member {relative}: {exc}"
             ) from exc
     _require_exact_source_bytes(members, expected, archive_name="sdist")
+    metadata = _required_member(members, f"{root}/PKG-INFO", "sdist")
     _verify_metadata_version(
-        _required_member(members, f"{root}/PKG-INFO", "sdist"),
+        metadata,
         version=version,
         archive_name="sdist",
     )
@@ -442,6 +463,194 @@ def _verify_sdist(
         version=version,
         archive_name="sdist",
     )
+    return _metadata_description(metadata, archive_name="sdist")
+
+
+def _metadata_description(payload: bytes, *, archive_name: str) -> str:
+    separator = b"\r\n\r\n" if b"\r\n\r\n" in payload else b"\n\n"
+    header_bytes, found, description_bytes = payload.partition(separator)
+    if not found:
+        raise VerificationError(f"{archive_name} metadata description is missing")
+    try:
+        message = BytesParser(policy=policy.default).parsebytes(header_bytes + separator)
+    except Exception as exc:
+        raise VerificationError(f"{archive_name} metadata could not be parsed") from exc
+    content_type = message.get("Description-Content-Type")
+    if content_type != "text/markdown":
+        raise VerificationError(
+            f"{archive_name} description content type must be text/markdown"
+        )
+    try:
+        description = description_bytes.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise VerificationError(
+            f"{archive_name} metadata description is not UTF-8"
+        ) from exc
+    if not description:
+        raise VerificationError(f"{archive_name} metadata description is missing")
+    return description
+
+
+def _verify_description_contract(
+    wheel_description: str,
+    sdist_description: str,
+    *,
+    source_root: Path,
+    version: str,
+) -> None:
+    try:
+        source_description = (source_root / "README.md").read_text(encoding="utf-8")
+    except OSError as exc:
+        raise VerificationError(f"could not read source README: {exc}") from exc
+    if wheel_description != source_description:
+        raise VerificationError("wheel description differs from source README")
+    if sdist_description != source_description:
+        raise VerificationError("sdist description differs from source README")
+    if wheel_description != sdist_description:
+        raise VerificationError("wheel and sdist descriptions differ")
+
+    rendered = render_description(source_description)
+    validate_rendered_description(rendered, source_root=source_root, version=version)
+
+
+def render_description(description: str) -> str:
+    """Render Markdown with the exact backend used by strict Twine validation."""
+    try:
+        markdown = importlib.import_module("readme_renderer.markdown")
+    except (ImportError, ModuleNotFoundError) as exc:
+        raise VerificationError(
+            "readme-renderer[md] is required to validate package descriptions"
+        ) from exc
+    warnings = io.StringIO()
+    try:
+        rendered = markdown.render(description, stream=warnings)
+    except Exception as exc:
+        raise VerificationError("package description rendering failed") from exc
+    if rendered is None:
+        detail = warnings.getvalue().strip()
+        suffix = f": {detail}" if detail else ""
+        raise VerificationError(f"package description did not render{suffix}")
+    return rendered
+
+
+class _DescriptionTargetParser(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.targets: list[tuple[str, str]] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        for name, value in attrs:
+            if name in {"href", "src"} and value is not None:
+                self.targets.append((name, value))
+
+
+def validate_rendered_description(
+    rendered_html: str,
+    *,
+    source_root: Path,
+    version: str,
+) -> None:
+    """Reject unsafe rendered targets and validate same-repository mappings."""
+    parser = _DescriptionTargetParser()
+    try:
+        parser.feed(rendered_html)
+        parser.close()
+    except Exception as exc:
+        raise VerificationError("rendered package description is invalid HTML") from exc
+    for attribute, target in parser.targets:
+        parsed = urlparse(target)
+        if target.startswith("#"):
+            continue
+        if not parsed.scheme:
+            raise VerificationError(
+                f"rendered description has repository-relative {attribute}: {target!r}"
+            )
+        if parsed.scheme not in {"http", "https", "mailto"}:
+            raise VerificationError(
+                f"rendered description has unsupported {attribute} scheme: {target!r}"
+            )
+        mapping = _same_repository_mapping(parsed)
+        if mapping is not None:
+            kind, ref, repo_path = mapping
+            _validate_repository_mapping(
+                kind,
+                ref,
+                repo_path,
+                source_root=Path(source_root),
+                version=version,
+            )
+
+
+def _same_repository_mapping(parsed) -> tuple[str, str, str] | None:
+    host = parsed.hostname
+    if host not in {
+        "github.com",
+        "raw.githubusercontent.com",
+        "raw.githack.com",
+    }:
+        return None
+    decoded_path = _strictly_decode_path(parsed.path)
+    parts = [part for part in decoded_path.split("/") if part]
+    if host == "github.com" and parts[:2] == [REPOSITORY_OWNER, REPOSITORY_NAME]:
+        if len(parts) >= 5 and parts[2] in {"blob", "tree"}:
+            return parts[2], parts[3], "/".join(parts[4:])
+        return None
+    if (
+        host in {"raw.githubusercontent.com", "raw.githack.com"}
+        and parts[:2] == [REPOSITORY_OWNER, REPOSITORY_NAME]
+        and len(parts) >= 4
+    ):
+        return "blob", parts[2], "/".join(parts[3:])
+    return None
+
+
+def _strictly_decode_path(path: str) -> str:
+    decoded = path
+    for _ in range(4):
+        next_value = unquote(decoded)
+        if next_value == decoded:
+            break
+        decoded = next_value
+    if re.search(r"%[0-9a-fA-F]{2}", decoded):
+        raise VerificationError("same-repository target has unsafe nested encoding")
+    if "\\" in decoded or "\x00" in decoded:
+        raise VerificationError("same-repository target has unsafe path encoding")
+    parts = decoded.split("/")
+    if any(part in {".", ".."} for part in parts):
+        raise VerificationError("same-repository target has unsafe path traversal")
+    return decoded
+
+
+def _validate_repository_mapping(
+    kind: str,
+    ref: str,
+    repo_path: str,
+    *,
+    source_root: Path,
+    version: str,
+) -> None:
+    relative = PurePosixPath(repo_path)
+    if relative.is_absolute() or any(part in {"", ".", ".."} for part in relative.parts):
+        raise VerificationError("same-repository target has unsafe mapped path")
+    resolved_root = source_root.resolve()
+    resolved = (source_root / Path(*relative.parts)).resolve()
+    if not resolved.is_relative_to(resolved_root):
+        raise VerificationError("same-repository target escapes the source checkout")
+    if not resolved.exists():
+        raise VerificationError(f"same-repository target does not exist: {repo_path}")
+    expected_kind = "tree" if resolved.is_dir() else "blob"
+    if kind != expected_kind:
+        raise VerificationError(
+            f"same-repository target must use {expected_kind}, not {kind}: {repo_path}"
+        )
+    expected_ref = (
+        f"v{version}" if relative.parts[0] in RELEASE_PINNED_ROOTS else "main"
+    )
+    if ref != expected_ref:
+        qualifier = "immutable release ref" if expected_ref != "main" else "main ref"
+        raise VerificationError(
+            f"same-repository target must use {qualifier} {expected_ref}: {repo_path}"
+        )
 
 
 def _require_exact_source_bytes(

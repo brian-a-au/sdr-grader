@@ -55,7 +55,9 @@ the pack and pin the version.
 
 Fork when you need to change a threshold inside a rule's `params:`,
 add a rule the default packs don't ship, or remove a rule entirely
-rather than suppress it.
+rather than suppress it. Pack copying is a **source-checkout workflow**: the
+installed wheel does not expose an export command. From the repository root
+of a checkout at the release you want to fork:
 
 ```bash
 cp -R src/sdr_grader/rules/packs/strict my_pack/
@@ -70,6 +72,9 @@ aren't comparable once the underlying rubric drifts between runs.
 
 See [RUBRIC_FORMAT.md](RUBRIC_FORMAT.md) for the pack layout and
 loader validation.
+
+If you have only the installed CLI, create a pack directory from the schema in
+that guide instead of relying on an unshipped `src/` path.
 
 ## Adding a new rule
 

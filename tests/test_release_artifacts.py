@@ -12,12 +12,12 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRIPT = REPO_ROOT / "scripts" / "verify_release_artifacts.py"
-VERSION = "1.2.1"
+VERSION = "1.2.2"
 SDIST_ROOT = f"sdr_grader-{VERSION}"
 DIST_INFO = f"sdr_grader-{VERSION}.dist-info"
 
 
-def _load_module():
+def _load_module(*, stub_renderer: bool = True):
     spec = importlib.util.spec_from_file_location(
         "verify_release_artifacts",
         SCRIPT,
@@ -25,6 +25,8 @@ def _load_module():
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
+    if stub_renderer:
+        module.render_description = lambda description: "<p>rendered description</p>"
     return module
 
 
@@ -56,15 +58,30 @@ def _write_candidate(
     *,
     forbidden_member: str | None = None,
     metadata_version: str = VERSION,
+    description: str | None = None,
+    sdist_description: str | None = None,
 ) -> tuple[Path, Path]:
     source_files = _source_files(REPO_ROOT)
+    description = description if description is not None else (REPO_ROOT / "README.md").read_text()
+    sdist_description = description if sdist_description is None else sdist_description
+
+    def metadata(version: str, body: str) -> str:
+        return (
+            "Metadata-Version: 2.4\n"
+            "Name: sdr-grader\n"
+            f"Version: {version}\n"
+            "Description-Content-Type: text/markdown\n"
+            "\n"
+            f"{body}"
+        )
+
     wheel = dist_dir / f"sdr_grader-{VERSION}-py3-none-any.whl"
     with zipfile.ZipFile(wheel, "w") as archive:
         for name, payload in source_files.items():
             archive.writestr(name, payload)
         archive.writestr(
             f"{DIST_INFO}/METADATA",
-            f"Metadata-Version: 2.4\nName: sdr-grader\nVersion: {metadata_version}\n",
+            metadata(metadata_version, description),
         )
         archive.writestr(
             f"{DIST_INFO}/entry_points.txt",
@@ -96,11 +113,14 @@ def _write_candidate(
             REPO_ROOT / "README.md",
             REPO_ROOT / "CHANGELOG.md",
             REPO_ROOT / "LICENSE",
+            REPO_ROOT / "requirements" / "release-validation.in",
+            REPO_ROOT / "requirements" / "release-validation.txt",
         ):
             relative = path.relative_to(REPO_ROOT).as_posix()
             sdist_files[f"{SDIST_ROOT}/{relative}"] = path.read_bytes()
-        sdist_files[f"{SDIST_ROOT}/PKG-INFO"] = (
-            f"Metadata-Version: 2.4\nName: sdr-grader\nVersion: {metadata_version}\n"
+        sdist_files[f"{SDIST_ROOT}/PKG-INFO"] = metadata(
+            metadata_version,
+            sdist_description,
         ).encode()
         if forbidden_member:
             sdist_files[f"{SDIST_ROOT}/{forbidden_member}"] = b"PRIVATE"
@@ -259,3 +279,91 @@ def test_release_verifier_rejects_source_byte_drift(tmp_path):
             source_root=REPO_ROOT,
             expected_version=VERSION,
         )
+
+
+def test_release_verifier_requires_source_wheel_and_sdist_descriptions_to_match(tmp_path):
+    module = _load_module()
+    dist_dir = tmp_path / "dist"
+    dist_dir.mkdir()
+    _write_candidate(dist_dir, sdist_description="# drifted sdist description\n")
+
+    with pytest.raises(module.VerificationError, match="description.*source README|descriptions differ"):
+        module.verify_release_artifacts(
+            dist_dir,
+            source_root=REPO_ROOT,
+            expected_version=VERSION,
+        )
+
+
+@pytest.mark.parametrize(
+    ("rendered", "message"),
+    [
+        ('<a href="docs/JSON_OUTPUT.md">JSON</a>', "repository-relative"),
+        ('<img src="../private.png">', "repository-relative"),
+        (
+            '<a href="https://github.com/brian-a-au/sdr-grader/blob/'
+            f'v{VERSION}/docs/%2e%2e/README.md">escape</a>',
+            "unsafe",
+        ),
+        (
+            '<a href="https://github.com/brian-a-au/sdr-grader/blob/'
+            f'v{VERSION}/docs/%252e%252e/README.md">double escape</a>',
+            "unsafe",
+        ),
+        (
+            '<a href="https://github.com/brian-a-au/sdr-grader/blob/main/'
+            'docs/JSON_OUTPUT.md">mutable docs</a>',
+            "immutable",
+        ),
+        (
+            '<a href="https://github.com/brian-a-au/sdr-grader/tree/'
+            f'v{VERSION}/README.md">wrong kind</a>',
+            "blob",
+        ),
+    ],
+)
+def test_rendered_description_rejects_unsafe_or_incorrect_repository_targets(
+    rendered,
+    message,
+):
+    module = _load_module()
+
+    with pytest.raises(module.VerificationError, match=message):
+        module.validate_rendered_description(
+            rendered,
+            source_root=REPO_ROOT,
+            version=VERSION,
+        )
+
+
+def test_rendered_description_accepts_contained_release_and_main_targets():
+    module = _load_module()
+    rendered = (
+        '<a href="https://github.com/brian-a-au/sdr-grader/blob/'
+        f'v{VERSION}/docs/JSON_OUTPUT.md">JSON</a>'
+        '<a href="https://github.com/brian-a-au/sdr-grader/tree/'
+        f'v{VERSION}/skills/sdr-grader">skill</a>'
+        '<a href="https://github.com/brian-a-au/sdr-grader/blob/main/SECURITY.md">security</a>'
+        '<img src="https://raw.githubusercontent.com/brian-a-au/sdr-grader/'
+        f'v{VERSION}/docs/assets/report-card.png">'
+    )
+
+    module.validate_rendered_description(
+        rendered,
+        source_root=REPO_ROOT,
+        version=VERSION,
+    )
+
+
+def test_description_renderer_backend_is_mandatory(monkeypatch):
+    module = _load_module(stub_renderer=False)
+
+    def missing_backend(name):
+        if name == "readme_renderer.markdown":
+            raise ModuleNotFoundError(name)
+        return __import__(name)
+
+    monkeypatch.setattr(module.importlib, "import_module", missing_backend)
+
+    with pytest.raises(module.VerificationError, match="readme-renderer.*required"):
+        module.render_description("# package")

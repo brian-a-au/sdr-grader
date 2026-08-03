@@ -128,7 +128,7 @@ def test_release_workflow_builds_before_isolated_frozen_wheel_plugin_smoke():
     assert "plugin compare smoke" in plugin_smoke
     assert "--suppress-config" in plugin_smoke
     assert '"${RUNNER_TEMP}/plugin-grade-suppressed.json"' in plugin_smoke
-    assert "needs: [install-smoke, plugin-smoke]" in draft
+    assert "needs: verify-prepublication" in draft
 
 
 def test_release_workflow_digest_gates_idempotent_pypi_recovery():
@@ -140,6 +140,67 @@ def test_release_workflow_digest_gates_idempotent_pypi_recovery():
     assert text.index("Verify recoverable PyPI state") < text.index(
         "Publish exact candidate to PyPI"
     )
+
+
+def test_release_workflow_pins_validation_and_builds_candidate_only_once():
+    text = _workflow_text("release.yml")
+
+    assert text.count("uv build --no-sources --clear --no-create-gitignore") == 1
+    assert "if: github.run_attempt == 1" in text
+    assert "uv sync --locked --all-extras --dev" in text
+    assert "--require-hashes -r requirements/release-validation.txt" in text
+    assert "twine check --strict dist/*" in text
+
+    setup_blocks = re.findall(
+        r"- name: Install uv\n(?P<body>(?:\s+.*\n){1,8})",
+        text,
+    )
+    assert setup_blocks
+    assert all("version: 0.11.16" in block for block in setup_blocks)
+
+    for job_name in (
+        "install-smoke",
+        "plugin-smoke",
+        "verify-prepublication",
+        "draft-github",
+        "publish-pypi",
+        "verify-pypi-publication",
+        "verify-public",
+    ):
+        job = text.split(f"\n  {job_name}:", 1)[1]
+        next_job = re.search(r"\n  [a-z][a-z0-9-]+:", job)
+        if next_job:
+            job = job[: next_job.start()]
+        assert "uv build " not in job
+        assert "candidate-dist-${{ github.sha }}" in job
+
+
+def test_release_workflow_runs_bounded_readme_checks_before_and_after_publication():
+    text = _workflow_text("release.yml")
+    pre = text.split("\n  verify-prepublication:", 1)[1].split("\n  draft-github:", 1)[0]
+    draft = text.split("\n  draft-github:", 1)[1].split("\n  publish-pypi:", 1)[0]
+    publish = text.split("\n  publish-pypi:", 1)[1].split("\n  verify-pypi-publication:", 1)[0]
+    post = text.split("\n  verify-pypi-publication:", 1)[1].split("\n  publish-github:", 1)[0]
+    github_release = text.split("\n  publish-github:", 1)[1].split("\n  verify-public:", 1)[0]
+
+    assert "needs: [install-smoke, plugin-smoke]" in pre
+    assert "scripts/verify_published_readme.py prepublication" in pre
+    assert "--evidence release-evidence/release-artifacts.json" in pre
+    assert "needs: verify-prepublication" in draft
+    assert "needs: publish-pypi" in post
+    assert "scripts/verify_published_readme.py postpublication" in post
+    assert "--evidence release-evidence/release-artifacts.json" in post
+    assert "needs: verify-pypi-publication" in github_release
+    assert (
+        text.index("\n  publish-pypi:")
+        < text.index("\n  verify-pypi-publication:")
+        < text.index("\n  publish-github:")
+    )
+    assert "postpublication" not in publish
+    assert "GH_TOKEN" not in pre
+    assert "GH_TOKEN" not in post
+    assert "continue-on-error" not in pre
+    assert "continue-on-error" not in post
 
 
 def test_release_soak_is_frozen_least_privilege_and_self_terminating():

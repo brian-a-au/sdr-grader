@@ -134,10 +134,25 @@ remains comparable across runs and packs.
 
 ## Forking guidance
 
-To fork:
+Copying a bundled pack is a **source-checkout workflow**; `src/` is not a
+portable installed-command path and the CLI has no pack-export command. From
+the repository root of a checkout at the release you want to fork:
 
 1. Copy `src/sdr_grader/rules/packs/strict/` to your own directory.
 2. Edit thresholds in each rule's `params:` block.
 3. Run `sdr-grader path/to/snapshot.json --rubric path/to/your_pack`.
+
+The copied `my_pack/` directory is portable after step 1. If you have only an
+installed wheel, create the directory and YAML files from the contract above.
+
+## Effective-rule safety
+
+Pack validation proves that YAML is structurally valid; it does not prove that
+any rule applies to a particular platform. Platform filtering and full-rule
+suppression can leave an empty effective rule inventory. The current scoring
+contract gives categories with no effective rules 100%, so that configuration
+can yield a technically valid but meaningless A / 100 report. Before using a
+custom pack as a gate, verify that it contains at least one unsuppressed rule
+for every platform you grade.
 
 To extend with a new check function, see [CHECK_FUNCTION_GUIDE.md](CHECK_FUNCTION_GUIDE.md).

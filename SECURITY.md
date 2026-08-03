@@ -48,6 +48,26 @@ report (for example, naming conventions that reveal customer or project
 codes), keep the report local until a human has reviewed the complete
 artifact.
 
+## Report-sharing privacy matrix
+
+This matrix is the privacy authority for every report-sharing surface. A report
+does not contain the raw input snapshot, but it can retain production-derived
+names, IDs, rule findings, remediation text, counts, configuration fragments,
+and other implementation details. Review the exact bytes, not just the source
+snapshot or a screenshot, before changing their audience.
+
+| Surface | Retained data | Minimization / review | Access audience | Leaves the local machine? | Retention effect |
+|---|---|---|---|---|---|
+| HTML report | Self-contained grade, category scores, component names and IDs quoted by findings, remediation, methodology, and optional charts; large item lists may be capped | Open the complete file locally, inspect names and finding bodies, and share only the minimum report needed | Only local users until shared; after sharing, every recipient and system storing the file | No during local generation or viewing; yes when emailed, uploaded, synced, or opened through a remote service | The file remains until its holder deletes it; no automatic grader retention applies |
+| Uncapped JSON | Complete report model including every finding body and uncapped component-item list, identities, versions, timestamps, and action targets | Treat as the highest-detail report; inspect with local tools, remove unnecessary copies, and prefer a smaller reviewed summary when full fidelity is unnecessary | Only local users until shared; after sharing, every recipient and system storing the file | No during local generation or local parsing; yes when uploaded, synced, or supplied to another service | The file remains until its holder deletes it; no automatic grader retention applies |
+| CI logs | Command output, error diagnostics, workflow metadata, paths, and any text a workflow or failing command prints; `--quiet` suppresses the normal grader summary but not errors | Use `--quiet`, avoid printing report bodies or shell tracing, use generic paths, and review failed-step diagnostics | Repository collaborators and organization or CI administrators according to provider and repository settings | Yes for hosted CI because logs are sent to the CI provider; self-hosted routing depends on runner configuration | Controlled by the CI provider's log-retention settings, separately from artifact retention |
+| GitHub Actions artifacts | The exact opted-in HTML and JSON files, including all data retained by each format | Upload only after an explicit repository opt in, review the full files, and prefer no upload for sensitive reports | Anyone allowed to access the workflow artifacts; public-repository artifacts are not confidential | Yes when the upload-artifact step runs; no upload occurs when the opt in is absent | Seven days reduces exposure duration but is not access control, sanitization, confidentiality, or durable public release evidence |
+| Claude conversation context | Selected helper output such as a summary, filtered findings, one finding body and remediation, or a comparison; quoted report text can be included | Choose the narrowest helper operation, review the report path and requested fields, and acknowledge the boundary before the first read | The user and the Claude service, account, workspace, and administrators covered by the applicable provider policy | Yes when selected helper output is returned in the Claude conversation context | Controlled by the Claude account and provider policy; deleting a local report does not retract conversation content |
+
+Retention changes how long a remote copy is kept. It does not change who can
+read it while retained, remove sensitive content, make a public artifact
+confidential, or turn a workflow artifact into durable release evidence.
+
 ## Private compatibility and calibration corpus
 
 The corpus at `tests/fixtures/private/` is local-only and gitignored.
