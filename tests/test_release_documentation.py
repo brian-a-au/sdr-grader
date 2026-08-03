@@ -4,9 +4,12 @@ from __future__ import annotations
 
 import re
 import shlex
+import subprocess
+import tomllib
 from collections import defaultdict
 from dataclasses import fields, replace
 from pathlib import Path
+from urllib.parse import unquote, urlparse
 
 import yaml
 
@@ -19,6 +22,31 @@ from sdr_grader.rules.checks._helpers import PLATFORM_NOUN
 from sdr_grader.rules.rubric import VALID_PLATFORMS, load_rubric
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+REPOSITORY_URL = "https://github.com/brian-a-au/sdr-grader"
+RELEASE_TAG = "v1.2.2"
+
+
+def _markdown_targets(document: str) -> list[str]:
+    return [
+        match.group(1).split(maxsplit=1)[0].strip("<>")
+        for match in re.finditer(r"!?\[[^\]]*\]\(([^)]+)\)", document)
+    ]
+
+
+def _same_repository_target(url: str) -> tuple[str, str, str] | None:
+    parsed = urlparse(url)
+    parts = [unquote(part) for part in parsed.path.split("/") if part]
+    if parsed.netloc == "github.com" and parts[:2] == ["brian-a-au", "sdr-grader"]:
+        if len(parts) >= 5 and parts[2] in {"blob", "tree"}:
+            return parts[2], parts[3], "/".join(parts[4:])
+        return None
+    if (
+        parsed.netloc in {"raw.githubusercontent.com", "raw.githack.com"}
+        and parts[:2] == ["brian-a-au", "sdr-grader"]
+        and len(parts) >= 4
+    ):
+        return "blob", parts[2], "/".join(parts[3:])
+    return None
 
 
 def _markdown_table(document: str, heading: str) -> list[dict[str, str]]:
@@ -106,6 +134,119 @@ def test_readme_keeps_live_test_badge_without_fixed_numeric_count():
 
     assert "actions/workflows/test.yml/badge.svg" in readme
     assert not re.search(r"shields\.io/badge/tests-[0-9]", readme)
+
+
+def test_readme_repository_targets_are_pypi_safe_and_release_pinned():
+    readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+    targets = _markdown_targets(readme)
+    relative_targets = [
+        target for target in targets if not target.startswith("#") and not urlparse(target).scheme
+    ]
+    assert relative_targets == []
+    assert "#supplementary-inputs" in targets
+
+    tracked = set(
+        subprocess.check_output(["git", "ls-files"], cwd=REPO_ROOT, text=True).splitlines()
+    )
+    release_pinned_roots = {"docs", "examples", "skills", "src", "tests"}
+    mapped_targets = [mapped for target in targets if (mapped := _same_repository_target(target))]
+    assert mapped_targets
+    for target_type, ref, repo_path in mapped_targets:
+        resolved = (REPO_ROOT / repo_path).resolve()
+        assert resolved.is_relative_to(REPO_ROOT.resolve()), repo_path
+        assert repo_path in tracked or any(path.startswith(f"{repo_path}/") for path in tracked)
+        assert target_type == ("blob" if repo_path in tracked else "tree")
+        expected_ref = RELEASE_TAG if repo_path.split("/", 1)[0] in release_pinned_roots else "main"
+        assert ref == expected_ref, repo_path
+
+
+def test_readme_first_run_is_auth_free_and_platform_complete():
+    readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+    first_run = readme.split("## First local grade", 1)[1].split("## ", 1)[0]
+    fixture_url = (
+        "https://raw.githubusercontent.com/brian-a-au/sdr-grader/"
+        "v1.2.2/tests/fixtures/cja_snapshot_clean.json"
+    )
+
+    assert "cja_auto_sdr" in first_run and "aa_auto_sdr" in first_run
+    assert first_run.count("Installation") >= 2
+    assert first_run.count("Adobe credentials") >= 2
+    assert "macOS and Linux" in first_run
+    assert "Windows PowerShell" in first_run
+    assert first_run.count(fixture_url) == 2
+    assert (
+        "sdr-grader cja_snapshot_clean.json --output grade.html --json grade.json --quiet"
+        in first_run
+    )
+    assert first_run.index(fixture_url) < first_run.index("Live snapshots have two separate")
+    assert "--include-all-inventory" in readme
+    assert re.search(r"without.*inventory.*empty|inventory.*incomplete", readme, re.I | re.S)
+
+
+def test_readme_network_claim_and_information_architecture_are_truthful():
+    readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+    lowered = readme.lower()
+
+    assert re.search(r"file.*directory.*no (?:network|api)", lowered, re.S)
+    assert re.search(r"--dataview.*--rsid.*child.*adobe api", lowered, re.S)
+    headings = re.findall(r"^## (.+)$", readme, re.MULTILINE)
+    for heading in (
+        "Using sdr-grader",
+        "Integrating sdr-grader",
+        "Extending sdr-grader",
+        "Maintaining sdr-grader",
+    ):
+        assert heading in headings
+    assert headings.index("First local grade") < headings.index("Output")
+    assert headings.index("Output") < headings.index("Maintaining sdr-grader")
+    assert headings.index("Troubleshooting") < headings.index("Maintaining sdr-grader")
+
+
+def test_readme_maintenance_regeneration_sequence_matches_examples_drift_ci():
+    workflow = yaml.safe_load(
+        (REPO_ROOT / ".github" / "workflows" / "test.yml").read_text(encoding="utf-8")
+    )
+    expected = [
+        script
+        for step in workflow["jobs"]["examples-drift"]["steps"]
+        for script in _generator_scripts(str(step.get("run", "")))
+    ]
+    readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+    maintenance = readme.split("## Maintaining sdr-grader", 1)[1].split("## ", 1)[0]
+
+    assert _generator_scripts(maintenance) == expected
+
+
+def test_project_metadata_exposes_complete_release_urls_and_markdown_readme():
+    project = tomllib.loads((REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]
+
+    assert project["readme"] == {"file": "README.md", "content-type": "text/markdown"}
+    assert project["urls"] == {
+        "Homepage": REPOSITORY_URL,
+        "Documentation": f"{REPOSITORY_URL}/blob/{RELEASE_TAG}/README.md",
+        "Source": f"{REPOSITORY_URL}/tree/{RELEASE_TAG}",
+        "Issues": f"{REPOSITORY_URL}/issues",
+        "Changelog": f"{REPOSITORY_URL}/blob/main/CHANGELOG.md",
+    }
+
+
+def test_troubleshooting_covers_public_failure_modes_and_privacy_authority():
+    document = (REPO_ROOT / "docs" / "TROUBLESHOOTING.md").read_text(encoding="utf-8")
+    lowered = document.lower()
+
+    for phrase in (
+        "missing generator",
+        "adobe authentication",
+        "incomplete cja inventory",
+        "platform detection",
+        "mixed-platform",
+        "mixed-instance",
+        "generator compatibility warning",
+        "output-path error",
+    ):
+        assert phrase in lowered
+    assert "macos" in lowered and "linux" in lowered and "windows" in lowered
+    assert "blob/main/SECURITY.md#report-sharing-privacy-matrix" in document
 
 
 def test_canonical_json_reference_matches_representative_runtime_serialization():

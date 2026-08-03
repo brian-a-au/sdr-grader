@@ -5,246 +5,230 @@
 [![Lint](https://github.com/brian-a-au/sdr-grader/actions/workflows/lint.yml/badge.svg)](https://github.com/brian-a-au/sdr-grader/actions/workflows/lint.yml)
 [![Version Sync](https://github.com/brian-a-au/sdr-grader/actions/workflows/version-sync.yml/badge.svg)](https://github.com/brian-a-au/sdr-grader/actions/workflows/version-sync.yml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
-[![Coverage](https://img.shields.io/badge/coverage-99%25-brightgreen.svg)](tests/)
+[![Coverage](https://img.shields.io/badge/coverage-99%25-brightgreen.svg)](https://github.com/brian-a-au/sdr-grader/tree/v1.2.2/tests)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/brian-a-au/sdr-grader/blob/main/LICENSE)
 
 A deterministic, rule-based linter for Adobe Customer Journey Analytics
-(CJA) and Adobe Analytics (AA) implementations. It consumes JSON
-snapshots from [`cja_auto_sdr`](https://github.com/brian-a-au/cja_auto_sdr)
-and [`aa_auto_sdr`](https://github.com/brian-a-au/aa_auto_sdr), evaluates
-them against a versioned, pluggable YAML rubric, and produces a single
-self-contained HTML report card plus a machine-readable JSON output. No
-LLMs, no API calls — same input + same rubric always yields the same grade.
+(CJA) and Adobe Analytics (AA) implementations. It consumes JSON snapshots
+from [`cja_auto_sdr`](https://github.com/brian-a-au/cja_auto_sdr) and
+[`aa_auto_sdr`](https://github.com/brian-a-au/aa_auto_sdr), evaluates them
+against a versioned YAML rubric, and produces a self-contained HTML report
+card plus machine-readable JSON.
 
-![sdr-grader report card: a CJA implementation graded F at 47%, with per-category scores](https://raw.githubusercontent.com/brian-a-au/sdr-grader/main/docs/assets/report-card.png)
+File and directory grading make no network requests or Adobe API calls: the
+same input and rubric always produce the same grade. The convenience modes
+`--dataview` and `--rsid` are different: they launch a child generator, and
+that child calls Adobe APIs before the local grader runs.
+
+![sdr-grader report card: a CJA implementation graded F at 47%, with per-category scores](https://raw.githubusercontent.com/brian-a-au/sdr-grader/v1.2.2/docs/assets/report-card.png)
 
 ## What it grades
 
-`sdr-grader` ships two rubric packs:
+`sdr-grader` ships `strict` and `pragmatic` rubric packs. Both cover schema
+hygiene, naming consistency, segment complexity, calculated metric
+maintainability, attribution coverage, and governance posture. `strict` uses
+tight, master-cert-grade thresholds; `pragmatic` uses the same rule IDs with
+looser thresholds and severities.
 
-- **`strict`** — master-cert-grade opinion; tight thresholds. For teams
-  who want every finding the rubric can produce.
-- **`pragmatic`** — looser thresholds, same rule IDs. For teams who want
-  a sanity check rather than an audit.
-
-Both packs cover the same six categories — schema hygiene, naming
-consistency, segment complexity, calculated metric maintainability,
-attribution coverage, and governance posture — and share the same
-27 rule IDs in bundled pack `2.0`; `pragmatic` just loosens thresholds
-and demotes severities. Pack `2.0` scores are not comparable with pack
-`1.0`; re-baseline CI thresholds, trends, and leaderboards after upgrading.
-Every rule in the default packs grades against data the snapshot
-itself carries, so out-of-the-box runs need no extra files. A few
-additional check functions ship registered but unwired — they read
-JSON the operator attaches at run time and are intended for forked
-rubrics. See [Supplementary inputs](#supplementary-inputs) for the
-attachment mechanism and [docs/RUBRIC_FORMAT.md](docs/RUBRIC_FORMAT.md)
-for the pack format.
+Bundled pack `2.0` has 27 rule IDs. Its scores are not comparable with pack
+`1.0`, so re-baseline CI thresholds, trends, and leaderboards after upgrading.
+Every default rule grades data carried by the snapshot. Optional registered
+checks can use operator-supplied JSON; see [Supplementary inputs](#supplementary-inputs).
 
 ## How it grades
 
-A grade run is a one-way pipeline over typed data:
+1. **Adapt** the platform snapshot into a normalized implementation.
+2. **Run rules** from the selected rubric pack.
+3. **Score** each weighted category from fired and available severity.
+4. **Assign a letter** using the pack's descending grade-scale bands.
 
-1. **Adapt** — the platform adapter (`adapters/cja.py` or
-   `adapters/aa.py`) normalizes the JSON snapshot into an
-   `Implementation` (metrics, dimensions, segments, calculated metrics,
-   governance signals).
-2. **Run rules** — the engine loops over every rule in the active
-   rubric pack and calls its registered Python check function; each
-   check returns zero or more `Finding`s.
-3. **Score** — for each non-zero-weight category the subtotal is
-   `round((1 − fired_severity / total_severity) × 100)`, where the
-   severity weights come from the pack's `_meta.yaml`. The overall
-   score is the category-weighted average, rounded.
-4. **Letter** — the score maps to a letter via the rubric's
-   descending `grade_scale` bands.
+The scoring implementation is pinned with this release at
+[`src/sdr_grader/core/grade_calc.py`](https://github.com/brian-a-au/sdr-grader/blob/v1.2.2/src/sdr_grader/core/grade_calc.py).
 
-Because the rubric (category weights, severity weights, grade bands,
-rule list) is data, swapping packs swaps the opinion without changing
-a line of grader code. The scoring algorithm itself is in
-[`src/sdr_grader/core/grade_calc.py`](src/sdr_grader/core/grade_calc.py).
+## First local grade
 
-## Quickstart
+This auth-free quickstart works from any writable directory after installing
+Python 3.11 or newer. It grades a tagged synthetic fixture, so you can confirm
+the installation before using production data or configuring Adobe credentials.
+
+Install the released grader with `uv` (or use `pipx` or another isolated Python
+tool installer):
 
 ```bash
-# 1. Install (uv tool, pipx, or any other Python installer).
 uv tool install sdr-grader
 sdr-grader --version
-
-# 2. Generate a snapshot of your data view (CJA) or report suite (AA).
-cja_auto_sdr dv_prod_web --include-all-inventory --format json --output snapshot.json   # CJA
-aa_auto_sdr  prod_us                              --format json --output snapshot.json   # AA
-
-# 3. Grade it (platform auto-detected from the snapshot).
-sdr-grader snapshot.json --output grade.html
-
-# 4. Open the report.
-open grade.html  # macOS; xdg-open on Linux
 ```
 
-`--include-all-inventory` makes `cja_auto_sdr` ship calculated metrics
-and segments alongside the dimensions/metrics SDR. Without it, the
-calc-metric and segment rule packs grade against empty inputs and stay
-silent. `aa_auto_sdr` includes both inventories by default, so no
-equivalent flag is needed on the AA side. See the upstream
-[Component Inventory Overview](https://github.com/brian-a-au/cja_auto_sdr/blob/main/docs/INVENTORY_OVERVIEW.md)
-for the full set of `--include-*` switches.
+Download the v1.2.2 synthetic CJA snapshot.
 
-Or pipe directly without writing a file to disk:
+macOS and Linux:
 
 ```bash
-# CJA
-cja_auto_sdr dv_prod_web --include-all-inventory --format json --output - | \
-  sdr-grader - --output grade.html
-
-# AA
-aa_auto_sdr prod_us --format json --output - | \
-  sdr-grader - --output grade.html
+curl -fL -o cja_snapshot_clean.json https://raw.githubusercontent.com/brian-a-au/sdr-grader/v1.2.2/tests/fixtures/cja_snapshot_clean.json
 ```
 
-## Input modes
+Windows PowerShell:
 
-| Mode | Invocation | When to use |
-|------|------------|-------------|
-| File       | `sdr-grader path/to/snapshot.json`               | One-off grade of a single snapshot you already have on disk. |
-| Directory  | `sdr-grader path/to/snapshots/`                  | Point at a folder of dated snapshots; picks the most recent by filename timestamp (falls back to mtime). |
-|            | `sdr-grader path/to/snapshots/ --at 2026-04-01`  | Same folder, but grade the snapshot closest to (and not after) the given ISO-8601 date — useful for retro grading or reproducing a prior report. |
-| Trend      | `sdr-grader path/to/snapshots/ --trend`          | Grade every dated snapshot in the folder and emit a single trend HTML with sparklines and findings churn. |
-| Shell-out  | `sdr-grader --dataview dv_prod_web`              | Pull a fresh CJA snapshot live via `cja_auto_sdr` and grade it in one shot — no intermediate file. Requires `cja_auto_sdr` on `PATH`; `--include-all-inventory` is passed automatically so calc-metric and segment rule packs grade against populated inputs. |
-|            | `sdr-grader --rsid prod_us`                      | Same idea against AA via `aa_auto_sdr`. Requires `aa_auto_sdr` on `PATH`. |
-| Stdin      | `… \| sdr-grader -`                              | Stream JSON in from another tool without touching disk — pairs with `cja_auto_sdr --include-all-inventory … --output -` for ephemeral CI runs. |
+```powershell
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/brian-a-au/sdr-grader/v1.2.2/tests/fixtures/cja_snapshot_clean.json" -OutFile "cja_snapshot_clean.json"
+```
 
-One run grades one platform. CJA and AA snapshots are not mixed: the
-platform is auto-detected per snapshot from its JSON shape, and the
-normalized model holds exactly one platform. In single-file or
-directory mode, only one snapshot is graded per invocation. Directory
-siblings are inspected only for same-platform, same-instance history
-evidence. In `--trend` mode, the runner explicitly
-errors out (`snapshots in {dir} mix platforms …`) on a mismatch — keep
-CJA and AA snapshots in separate folders.
+Grade it with the installed command on macOS, Linux, or Windows:
+
+```bash
+sdr-grader cja_snapshot_clean.json --output grade.html --json grade.json --quiet
+```
+
+Open the local HTML report:
+
+```bash
+open grade.html                 # macOS
+xdg-open grade.html             # Linux
+```
+
+```powershell
+Start-Process .\grade.html      # Windows PowerShell
+```
+
+Live snapshots have two separate optional prerequisites:
+
+- **CJA:** install `cja_auto_sdr` using its
+  [Installation](https://github.com/brian-a-au/cja_auto_sdr#install-from-pypi-recommended)
+  instructions, then configure its
+  [Adobe credentials](https://github.com/brian-a-au/cja_auto_sdr#3-configure-credentials).
+  Generate with `--include-all-inventory`; without the complete CJA inventory,
+  calculated-metric and segment inputs are empty and those rules stay silent.
+- **AA:** install `aa_auto_sdr` using its
+  [Installation](https://github.com/brian-a-au/aa_auto_sdr#install-from-pypi-recommended)
+  instructions, then configure its
+  [Adobe credentials](https://github.com/brian-a-au/aa_auto_sdr#3-configure-credentials-adobe-analytics-api-20-oauth-server-to-server).
+  AA includes both inventories by default.
+
+The upstream CJA
+[Component Inventory Overview](https://github.com/brian-a-au/cja_auto_sdr/blob/main/docs/INVENTORY_OVERVIEW.md)
+documents the complete set of `--include-*` switches.
+
+## Using sdr-grader
+
+The following are installed-user workflows. Generate live snapshots only after
+installing and authenticating the appropriate prerequisite above:
+
+```bash
+# CJA: include the complete component inventory.
+cja_auto_sdr dv_prod_web --include-all-inventory --format json --output snapshot.json
+
+# AA: inventory is included by default.
+aa_auto_sdr prod_us --format json --output snapshot.json
+
+# Either platform is auto-detected from the resulting JSON.
+sdr-grader snapshot.json --output grade.html --json grade.json
+```
+
+For an installed streaming workflow on macOS, Linux, or Windows shells with
+pipe support:
+
+```bash
+cja_auto_sdr dv_prod_web --include-all-inventory --format json --output - | sdr-grader - --output grade.html
+aa_auto_sdr prod_us --format json --output - | sdr-grader - --output grade.html
+```
+
+### Input modes
+
+| Mode | Invocation | Network behavior |
+|---|---|---|
+| File | `sdr-grader path/to/snapshot.json` | Local only. |
+| Directory | `sdr-grader path/to/snapshots/` | Local only; selects the newest snapshot. |
+| Historical | `sdr-grader path/to/snapshots/ --at 2026-04-01` | Local only; selects the closest snapshot not after the date. |
+| Trend | `sdr-grader path/to/snapshots/ --trend` | Local only; grades dated snapshots chronologically. |
+| CJA child generator | `sdr-grader --dataview dv_prod_web` | `cja_auto_sdr` calls Adobe APIs; complete inventory is requested automatically. |
+| AA child generator | `sdr-grader --rsid prod_us` | `aa_auto_sdr` calls Adobe APIs. |
+| Stdin | `… \| sdr-grader -` | The grader is local; the producer determines whether the pipeline uses a network. |
+
+One run grades one platform. Keep CJA and AA snapshots in separate directories.
+Directory history uses only same-platform, same-instance siblings; trend mode
+rejects mixed-platform or mixed-instance input rather than combining it.
+
+### Supplementary inputs
+
+Forked rubrics can read optional JSON from `Implementation.supplementary_data`.
+Attach it with repeatable `--extra-input KEY=PATH` flags; a rule whose key is
+absent stays silent. The tagged
+[supplementary-input contract](https://github.com/brian-a-au/sdr-grader/blob/v1.2.2/docs/SUPPLEMENTARY_INPUTS.md)
+defines keys, paths, and failure behavior.
 
 ## Output
 
 - **HTML report card** at `--output PATH` (default
-  `grade-{report-id}.html`) — single self-contained file, no external
-  CSS/JS, prints in black-and-white, screenshots cleanly into decks.
-- **JSON output** at `--json PATH` — schema `1` with stable
-  `instance_id`, platform/adapter identity, rubric pack/version, grader
-  version, and the same complete Report data. Suitable for CI
-  dashboards and leaderboards.
+  `grade-{report-id}.html`) is a single self-contained file with no external
+  CSS or JavaScript.
+- **JSON output** at `--json PATH` uses schema `1` and contains stable instance,
+  adapter, rubric, and grader identity plus the complete report model. See the
+  tagged [JSON output contract](https://github.com/brian-a-au/sdr-grader/blob/v1.2.2/docs/JSON_OUTPUT.md).
 
-Sample report cards (rendered from the bundled fixtures):
+Rendered examples for this release:
 
-|         | Clean (A) | Messy (F) |
-|---------|-----------|-----------|
-| **CJA** | [examples/grade-cja-clean.html](https://raw.githack.com/brian-a-au/sdr-grader/main/examples/grade-cja-clean.html) | [examples/grade-cja-messy.html](https://raw.githack.com/brian-a-au/sdr-grader/main/examples/grade-cja-messy.html) |
-| **AA**  | [examples/grade-aa-clean.html](https://raw.githack.com/brian-a-au/sdr-grader/main/examples/grade-aa-clean.html)   | [examples/grade-aa-messy.html](https://raw.githack.com/brian-a-au/sdr-grader/main/examples/grade-aa-messy.html)   |
+| | Clean (A) | Messy (F) |
+|---|---|---|
+| **CJA** | [CJA clean](https://raw.githack.com/brian-a-au/sdr-grader/v1.2.2/examples/grade-cja-clean.html) | [CJA messy](https://raw.githack.com/brian-a-au/sdr-grader/v1.2.2/examples/grade-cja-messy.html) |
+| **AA** | [AA clean](https://raw.githack.com/brian-a-au/sdr-grader/v1.2.2/examples/grade-aa-clean.html) | [AA messy](https://raw.githack.com/brian-a-au/sdr-grader/v1.2.2/examples/grade-aa-messy.html) |
 
-## Trend reports
+## Troubleshooting
 
-Pointed at a directory of timestamped snapshots, `--trend` grades each
-one chronologically and renders a single self-contained HTML with the
-overall trajectory, per-category sparklines, and a findings-churn
-summary. See [docs/TREND_REPORTS.md](docs/TREND_REPORTS.md) for the
-filename conventions and flag interactions, or
-`examples/trend-example.html` for a rendered sample.
+Missing generators, Adobe authentication, incomplete inventories, platform
+detection, directory mixing, compatibility warnings, output paths, and privacy
+are covered in the tagged
+[troubleshooting guide](https://github.com/brian-a-au/sdr-grader/blob/v1.2.2/docs/TROUBLESHOOTING.md).
 
-## Supplementary inputs
+Before sharing an HTML or JSON report, follow the current
+[report-sharing privacy matrix](https://github.com/brian-a-au/sdr-grader/blob/main/SECURITY.md#report-sharing-privacy-matrix).
 
-Rules can optionally grade against data the snapshot doesn't carry
-by reading from `Implementation.supplementary_data`. Operators feed
-that map via `--extra-input KEY=PATH` (repeatable); rules whose key
-is absent stay silent, so attaching extra inputs only matters for
-rules that ask for them. See
-[docs/SUPPLEMENTARY_INPUTS.md](docs/SUPPLEMENTARY_INPUTS.md).
+## Integrating sdr-grader
 
-## Internal leaderboards
+- [CI integration](https://github.com/brian-a-au/sdr-grader/blob/v1.2.2/docs/CI_INTEGRATION.md) — use `--fail-below` safely in automation.
+- [Trend reports](https://github.com/brian-a-au/sdr-grader/blob/v1.2.2/docs/TREND_REPORTS.md) — filename conventions and flag interactions.
+- [Internal leaderboards](https://github.com/brian-a-au/sdr-grader/blob/v1.2.2/docs/LEADERBOARDS.md) — build a distribution reference from collected JSON outputs.
+- [Supplementary inputs](https://github.com/brian-a-au/sdr-grader/blob/v1.2.2/docs/SUPPLEMENTARY_INPUTS.md) — attach repeatable `--extra-input KEY=PATH` data.
+- [Claude Code skill](https://github.com/brian-a-au/sdr-grader/tree/v1.2.2/skills/sdr-grader) — query a grade without rerunning the grader.
 
-Teams grading many implementations can build their own percentile
-reference from collected `--json` outputs and pass it back as
-`--distribution-data` to render comparative context in the report. See
-[docs/LEADERBOARDS.md](docs/LEADERBOARDS.md).
+## Extending sdr-grader
 
-## Customizing the rubric
+Start with the tagged
+[customization guide](https://github.com/brian-a-au/sdr-grader/blob/v1.2.2/docs/CUSTOMIZATION.md),
+then choose the narrowest extension surface:
 
-Every layer is tunable: silence a single rule, fork a pack to shift
-thresholds, write a new check function, or add a whole new platform.
-The lightest mechanism that works is usually a `.sdr-grader.yaml`
-suppression — but heavier moves (forking a pack, adding rules) are
-supported and documented. See [docs/CUSTOMIZATION.md](docs/CUSTOMIZATION.md)
-for the full customization spectrum and which mechanism fits which need.
+- [Project configuration](https://github.com/brian-a-au/sdr-grader/blob/v1.2.2/docs/PROJECT_CONFIG.md) — suppressions in `.sdr-grader.yaml`.
+- [Rubric format](https://github.com/brian-a-au/sdr-grader/blob/v1.2.2/docs/RUBRIC_FORMAT.md) — fork or create a YAML pack.
+- [Check-function guide](https://github.com/brian-a-au/sdr-grader/blob/v1.2.2/docs/CHECK_FUNCTION_GUIDE.md) — add rule logic.
+- [Adapter guide](https://github.com/brian-a-au/sdr-grader/blob/v1.2.2/docs/ADAPTER_GUIDE.md) — add a platform in a source checkout.
 
-## Claude Code skill
+## Maintaining sdr-grader
 
-The repo ships a Claude Code skill bundle at
-[`skills/sdr-grader/`](skills/sdr-grader/) for asking follow-up
-questions about a `sdr-grader --json` output without re-running the
-grader — filter findings by severity / category / rule, pull up the
-body and remediation for one rule, or diff two compatible grades from
-different snapshot dates. Install with `/plugin marketplace add
-brian-a-au/sdr-grader`, `/plugin install sdr-grader@sdr-grader`, and
-`/reload-plugins`. Invoke the plugin as `/sdr-grader:sdr-grader`; a
-personal skill remains `/sdr-grader`. The bundled helper
-script also runs as plain Python with no extra dependencies. See
-[`skills/sdr-grader/README.md`](skills/sdr-grader/README.md) for
-install and usage details, or
-[`skills/sdr-grader/SKILL.md`](skills/sdr-grader/SKILL.md) for the
-trigger phrases and helper command reference.
-
-## Develop
-
-Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/).
+These are source-checkout workflows. Run them from the repository root after
+cloning the [v1.2.2 source tree](https://github.com/brian-a-au/sdr-grader/tree/v1.2.2):
 
 ```bash
-uv sync                # set up environment
-uv run pytest          # run the test suite
-uv run ruff check      # lint
-uv run python scripts/generate_examples.py   # regenerate examples/
+uv sync
+uv run pytest
+uv run ruff check
+uv run python scripts/build_cja_fixtures.py
+uv run python scripts/generate_examples.py
+uv run python scripts/generate_grade_examples.py
+uv run python scripts/generate_trend_example.py
 ```
 
-## Documentation
+Maintainer references:
 
-Start here:
+- [Platform coverage](https://github.com/brian-a-au/sdr-grader/blob/v1.2.2/docs/PLATFORM_COVERAGE.md) — CJA/AA compatibility evidence and known gaps.
+- [Calibration corpus](https://github.com/brian-a-au/sdr-grader/blob/v1.2.2/docs/CALIBRATION_CORPUS.md) — private compatibility and calibration admission.
+- [Threshold calibration](https://github.com/brian-a-au/sdr-grader/blob/v1.2.2/docs/threshold_calibration.md) — admitted-cohort status.
+- [Rubric audit](https://github.com/brian-a-au/sdr-grader/blob/v1.2.2/docs/RUBRIC_AUDIT.md) — rule premises against Adobe documentation.
+- [Release checklist](https://github.com/brian-a-au/sdr-grader/blob/v1.2.2/docs/RELEASE_CHECKLIST.md) — publication, recovery, and announcement gates.
 
-- [docs/CUSTOMIZATION.md](docs/CUSTOMIZATION.md) — picking the right customization mechanism
+## Community
 
-Customizing the rubric:
-
-- [docs/ADAPTER_GUIDE.md](docs/ADAPTER_GUIDE.md) — adding a new platform
-- [docs/CHECK_FUNCTION_GUIDE.md](docs/CHECK_FUNCTION_GUIDE.md) — adding a new check
-- [docs/PROJECT_CONFIG.md](docs/PROJECT_CONFIG.md) — `.sdr-grader.yaml` schema
-- [docs/RUBRIC_FORMAT.md](docs/RUBRIC_FORMAT.md) — YAML rubric schema
-- [docs/SUPPLEMENTARY_INPUTS.md](docs/SUPPLEMENTARY_INPUTS.md) — `--extra-input` mechanism
-
-Private evidence and audit:
-
-- [docs/PLATFORM_COVERAGE.md](docs/PLATFORM_COVERAGE.md) — CJA vs AA
-  coverage, compatibility evidence, and known AA gaps
-- [docs/CALIBRATION_CORPUS.md](docs/CALIBRATION_CORPUS.md) — private
-  compatibility collection and the stricter calibration-admission rules
-- [docs/threshold_calibration.md](docs/threshold_calibration.md) —
-  current admitted-cohort status and any per-rule distributions
-- [docs/RUBRIC_AUDIT.md](docs/RUBRIC_AUDIT.md) — premise audit of each
-  rule against Adobe documentation; gaps Adobe carries but the rubric
-  doesn't grade
-
-Running and reporting:
-
-- [docs/CI_INTEGRATION.md](docs/CI_INTEGRATION.md) — using `--fail-below` in CI
-- [docs/LEADERBOARDS.md](docs/LEADERBOARDS.md) — building a distribution reference
-- [docs/TREND_REPORTS.md](docs/TREND_REPORTS.md) — `--trend` usage and conventions
-
-Tooling:
-
-- [skills/sdr-grader/README.md](skills/sdr-grader/README.md) — Claude Code skill bundle for grade follow-up Q&A
-- [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md) — immutable
-  artifact, hosted-control, recovery, publication, and announcement
-  gates
-
-Community:
-
-- [CONTRIBUTING.md](CONTRIBUTING.md) — contribution workflow and project invariants
-- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) — participation and enforcement policy
-- [SECURITY.md](SECURITY.md) — supported versions and private vulnerability reporting
+- [Contributing](https://github.com/brian-a-au/sdr-grader/blob/main/CONTRIBUTING.md)
+- [Code of Conduct](https://github.com/brian-a-au/sdr-grader/blob/main/CODE_OF_CONDUCT.md)
+- [Security and privacy](https://github.com/brian-a-au/sdr-grader/blob/main/SECURITY.md)
+- [Issues](https://github.com/brian-a-au/sdr-grader/issues)
