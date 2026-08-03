@@ -117,7 +117,7 @@ def test_release_workflow_builds_before_isolated_frozen_wheel_plugin_smoke():
     assert "uv build --no-sources --clear --no-create-gitignore" in build
     assert "npm install" not in build
     assert "claude plugin" not in build
-    assert "needs: build" in plugin_smoke
+    assert "needs: [candidate, build]" in plugin_smoke
     assert "Download immutable distributions" in plugin_smoke
     assert "uv pip install" in plugin_smoke
     assert "dist/*.whl" in plugin_smoke
@@ -174,6 +174,44 @@ def test_release_workflow_pins_validation_and_builds_candidate_only_once():
         assert "uv build " not in job
         assert "candidate-dist-${{ github.sha }}" in job
 
+    recovery_condition = (
+        "needs.build.result == 'success' || "
+        "(github.run_attempt > 1 && needs.build.result == 'skipped')"
+    )
+    for job_name in ("install-smoke", "plugin-smoke"):
+        job = text.split(f"\n  {job_name}:", 1)[1]
+        next_job = re.search(r"\n  [a-z][a-z0-9-]+:", job)
+        if next_job:
+            job = job[: next_job.start()]
+        assert "always()" in job
+        assert "needs: [candidate, build]" in job
+        assert "needs.candidate.result == 'success'" in job
+        assert recovery_condition in " ".join(job.split())
+
+
+def test_release_workflow_reuses_an_existing_draft_during_recovery():
+    text = _workflow_text("release.yml")
+    draft = text.split("\n  draft-github:", 1)[1].split(
+        "\n  publish-pypi:",
+        1,
+    )[0]
+
+    assert "Inspect existing GitHub release" in draft
+    assert "gh release view" in draft
+    assert "Verify existing GitHub release assets" in draft
+    assert "steps.release-state.outputs.exists == 'true'" in draft
+    assert "scripts/verify_github_release_assets.py" in draft
+    assert "release-evidence/release-artifacts.json" in draft
+    assert "release-metadata.json" in draft
+    assert "release not found" in draft
+    assert "gh release download" not in draft
+    assert "steps.release-state.outputs.exists != 'true'" in draft
+    assert draft.index("Inspect existing GitHub release") < draft.index(
+        "Verify existing GitHub release assets"
+    ) < draft.index(
+        "Create draft from tested bytes"
+    )
+
 
 def test_release_workflow_runs_bounded_readme_checks_before_and_after_publication():
     text = _workflow_text("release.yml")
@@ -208,7 +246,7 @@ def test_release_soak_is_frozen_least_privilege_and_self_terminating():
 
     assert 'cron: "23 * * * *"' in text
     assert "if: github.ref == 'refs/heads/main'" in text
-    assert "ref: 9301672144d5fe97cc869a9f5206da38d26fd353" in text
+    assert "ref: 1978eb6d6e8d865e66f2dd464624db9a377417de" in text
     assert "pypi-attestations==0.0.30" in text
     assert "--source-ref \"refs/tags/${GRADER_TAG}\"" in text
     assert "--source-digest \"${GRADER_COMMIT}\"" in text
@@ -218,7 +256,35 @@ def test_release_soak_is_frozen_least_privilege_and_self_terminating():
     assert "security-events: read" in text
     assert "vulnerability-alerts: read" in text
     assert "secret-scanning/alerts" not in text
-    assert "sdr-grader-v1.2.1-private-advisory-clear" in text
+    assert 'SOAK_MARKER_PREFIX: "sdr-grader-v1.2.2"' in text
+    assert '--arg marker_prefix "${SOAK_MARKER_PREFIX}"' in text
+    assert '$marker_prefix + "-private-advisory-clear"' in text
+    assert '$marker_prefix + "-announcement-go"' in text
+    assert '--marker-prefix "${SOAK_MARKER_PREFIX}"' in text
+    assert 'GRADER_VERSION: "1.2.2"' in text
+    assert 'GRADER_TAG: "v1.2.2"' in text
+    assert (
+        'GRADER_TAG_OBJECT: "21914dd1e1a48fe9c9050225c86c9f6f2665b26d"'
+        in text
+    )
+    assert (
+        'GRADER_WHEEL_SHA: '
+        '"6e8c3dfa3808dd338e57894856a5cc212bde0cc21e616f45a57b4f404de440dc"'
+        in text
+    )
+    assert (
+        'GRADER_SDIST_SHA: '
+        '"d6566134cad3fd65cab8d44d983264f2dcd3a83af678d30846455aa28df20789"'
+        in text
+    )
+    assert (
+        'GRADER_EVIDENCE_SHA: '
+        '"b255bc78a5e534229e3454f1b3173e46fc333d938c4fde332fb920c6e02d4496"'
+        in text
+    )
+    assert 'SOAK_START_ISO: "2026-08-03T20:09:09Z"' in text
+    assert 'SOAK_END_ISO: "2026-08-05T20:09:09Z"' in text
+    assert "pull/41#issuecomment-5171182302" in text
     assert '.user.login == "brian-a-au"' in text
     assert "CLEARANCE_CUTOFF" in text
     assert ".github/scripts/verify_release_soak_timeline.py" in text

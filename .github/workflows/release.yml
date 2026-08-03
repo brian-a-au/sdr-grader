@@ -118,7 +118,14 @@ jobs:
 
   install-smoke:
     name: Artifact smoke / Python ${{ matrix.python-version }}
-    needs: build
+    needs: [candidate, build]
+    if: >-
+      ${{
+        always() &&
+        needs.candidate.result == 'success' &&
+        (needs.build.result == 'success' ||
+         (github.run_attempt > 1 && needs.build.result == 'skipped'))
+      }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -196,7 +203,14 @@ jobs:
 
   plugin-smoke:
     name: Frozen wheel Claude plugin smoke
-    needs: build
+    needs: [candidate, build]
+    if: >-
+      ${{
+        always() &&
+        needs.candidate.result == 'success' &&
+        (needs.build.result == 'success' ||
+         (github.run_attempt > 1 && needs.build.result == 'skipped'))
+      }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -361,7 +375,44 @@ jobs:
           name: candidate-evidence-${{ github.sha }}
           path: release-evidence/
 
+      - name: Inspect existing GitHub release
+        id: release-state
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +e
+          RELEASE_METADATA="$(
+            gh release view "${GITHUB_REF_NAME}" \
+              --repo "${GITHUB_REPOSITORY}" \
+              --json assets,isDraft,tagName 2>&1
+          )"
+          RELEASE_STATUS=$?
+          set -e
+          if [ "${RELEASE_STATUS}" -eq 0 ]; then
+            printf '%s\n' "${RELEASE_METADATA}" > release-metadata.json
+            echo "exists=true" >> "${GITHUB_OUTPUT}"
+          elif [ "${RELEASE_METADATA}" = "release not found" ]; then
+            echo "exists=false" >> "${GITHUB_OUTPUT}"
+          else
+            printf '%s\n' "${RELEASE_METADATA}" >&2
+            exit "${RELEASE_STATUS}"
+          fi
+
+      - name: Verify existing GitHub release assets
+        if: steps.release-state.outputs.exists == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/verify_github_release_assets.py \
+            --release-metadata release-metadata.json \
+            --evidence release-evidence/release-artifacts.json \
+            --dist-dir dist \
+            --expected-tag "${GITHUB_REF_NAME}"
+
       - name: Create draft from tested bytes
+        if: steps.release-state.outputs.exists != 'true'
         uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3
         with:
           draft: true

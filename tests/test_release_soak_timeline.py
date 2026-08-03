@@ -47,9 +47,9 @@ def _run(hour: int, *, conclusion: str | None = "success", sha: str = MONITOR_SH
     }
 
 
-def _private_clearance():
+def _private_clearance(marker_prefix: str = "sdr-grader-v1.2.2"):
     return {
-        "body": "<!-- sdr-grader-v1.2.1-private-advisory-clear -->",
+        "body": f"<!-- {marker_prefix}-private-advisory-clear -->",
         "author_association": "OWNER",
         "user": {"login": "brian-a-au"},
         "created_at": _iso(END + 60),
@@ -57,17 +57,22 @@ def _private_clearance():
     }
 
 
-def _verify(runs, current=None, comments=None):
+def _verify(runs, current=None, comments=None, *, marker_prefix="sdr-grader-v1.2.2"):
     return MODULE.verify_timeline(
         runs_payload={"workflow_runs": runs},
         current_run=current or _run(48, conclusion=None),
-        comments_payload=comments if comments is not None else [_private_clearance()],
+        comments_payload=(
+            comments
+            if comments is not None
+            else [_private_clearance(marker_prefix)]
+        ),
         start_epoch=START,
         end_epoch=END,
         start_url="https://example.test/start",
-        release="sdr-grader v1.2.1",
+        release="sdr-grader v1.2.2",
         release_commit="b" * 40,
         companion="sdr-visualizer v1.0.6",
+        marker_prefix=marker_prefix,
         finalized_epoch=END + 120,
     )
 
@@ -78,6 +83,7 @@ def test_timeline_accepts_frozen_hourly_successes_and_emits_full_evidence():
     manifest, comment = _verify(runs)
 
     assert manifest["status"] == "PASS"
+    assert manifest["marker_prefix"] == "sdr-grader-v1.2.2"
     assert manifest["monitor_sha"] == MONITOR_SHA
     assert manifest["observation_count"] == 49
     assert manifest["maximum_gap_seconds"] == 3600
@@ -88,7 +94,32 @@ def test_timeline_accepts_frozen_hourly_successes_and_emits_full_evidence():
         "private-clearance"
     )
     assert "announcement GO" in comment
-    assert "sdr-grader-v1.2.1-announcement-go" in comment
+    assert "sdr-grader-v1.2.2-announcement-go" in comment
+
+
+def test_timeline_derives_all_markers_from_an_arbitrary_prefix():
+    prefix = "custom-soak-marker"
+    runs = [_run(hour) for hour in range(1, 48)]
+    failed = _run(12, conclusion="failure")
+    runs[11] = failed
+    disposition = {
+        "body": f"<!-- {prefix}-soak-run-10012-triaged-infrastructure -->",
+        "author_association": "OWNER",
+        "user": {"login": "brian-a-au"},
+        "created_at": _iso(START + 12 * 3600 + 600),
+        "html_url": "https://example.test/infrastructure-triage",
+    }
+
+    manifest, comment = _verify(
+        runs,
+        comments=[_private_clearance(prefix), disposition],
+        marker_prefix=prefix,
+    )
+
+    assert manifest["marker_prefix"] == prefix
+    assert manifest["observations"][1]["checkpoint_artifact"].startswith(prefix)
+    assert manifest["triaged_infrastructure_incidents"][0]["run_id"] == 10012
+    assert f"{prefix}-announcement-go" in comment
 
 
 def test_timeline_rejects_gap_over_four_hours():
@@ -139,7 +170,7 @@ def test_timeline_accepts_owner_triaged_infrastructure_failure():
     disposition = {
         "body": (
             "Transient GitHub runner outage; release checks passed on retry.\n"
-            "<!-- sdr-grader-v1.2.1-soak-run-10012-triaged-infrastructure -->"
+            "<!-- sdr-grader-v1.2.2-soak-run-10012-triaged-infrastructure -->"
         ),
         "author_association": "OWNER",
         "user": {"login": "brian-a-au"},
@@ -188,9 +219,10 @@ def test_timeline_rejects_stale_or_non_owner_private_clearance():
             start_epoch=START,
             end_epoch=END,
             start_url="https://example.test/start",
-            release="sdr-grader v1.2.1",
+            release="sdr-grader v1.2.2",
             release_commit="b" * 40,
             companion="sdr-visualizer v1.0.6",
+            marker_prefix="sdr-grader-v1.2.2",
             finalized_epoch=END + 11_000,
         )
 
@@ -208,8 +240,9 @@ def test_timeline_never_backdates_go_before_private_clearance():
             start_epoch=START,
             end_epoch=END,
             start_url="https://example.test/start",
-            release="sdr-grader v1.2.1",
+            release="sdr-grader v1.2.2",
             release_commit="b" * 40,
             companion="sdr-visualizer v1.0.6",
+            marker_prefix="sdr-grader-v1.2.2",
             finalized_epoch=END + 120,
         )

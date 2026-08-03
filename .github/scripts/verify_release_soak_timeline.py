@@ -11,8 +11,6 @@ from pathlib import Path
 from typing import Any
 
 OWNER_LOGIN = "brian-a-au"
-PRIVATE_CLEAR_MARKER = "sdr-grader-v1.2.1-private-advisory-clear"
-GO_MARKER = "sdr-grader-v1.2.1-announcement-go"
 MAX_GAP_SECONDS = 14_400
 CHECKPOINT_TOLERANCE_SECONDS = 7_200
 
@@ -86,6 +84,7 @@ def verify_timeline(
     release: str,
     release_commit: str,
     companion: str,
+    marker_prefix: str,
     finalized_epoch: int | None = None,
 ) -> tuple[dict[str, Any], str]:
     """Return the final evidence manifest and one-time GO comment."""
@@ -105,7 +104,7 @@ def verify_timeline(
     comments = _comments(comments_payload)
     private_clearance = _maintainer_comment(
         comments,
-        PRIVATE_CLEAR_MARKER,
+        f"{marker_prefix}-private-advisory-clear",
         not_before=max(end_epoch, finalized_epoch - 7200),
     )
     if private_clearance is None:
@@ -150,7 +149,7 @@ def verify_timeline(
             successful_runs.append(run)
             continue
         run_id = int(run["id"])
-        marker = f"sdr-grader-v1.2.1-soak-run-{run_id}-triaged-infrastructure"
+        marker = f"{marker_prefix}-soak-run-{run_id}-triaged-infrastructure"
         disposition = _maintainer_comment(
             comments,
             marker,
@@ -188,9 +187,7 @@ def verify_timeline(
                 "run_id": int(run["id"]),
                 "run_attempt": int(run["run_attempt"]),
                 "monitor_sha": str(run["head_sha"]),
-                "checkpoint_artifact": (
-                    f"sdr-grader-v1.2.1-soak-{int(run['id'])}"
-                ),
+                "checkpoint_artifact": f"{marker_prefix}-soak-{int(run['id'])}",
             }
             for run in successful_runs
         ],
@@ -202,7 +199,7 @@ def verify_timeline(
             "run_id": current_id,
             "run_attempt": int(current_run["run_attempt"]),
             "monitor_sha": current_sha,
-            "checkpoint_artifact": f"sdr-grader-v1.2.1-soak-{current_id}",
+            "checkpoint_artifact": f"{marker_prefix}-soak-{current_id}",
         },
     ]
     observations.sort(key=lambda item: (int(item["epoch"]), str(item["url"])))
@@ -253,6 +250,7 @@ def verify_timeline(
         "release": release,
         "release_commit": release_commit,
         "companion": companion,
+        "marker_prefix": marker_prefix,
         "monitor_sha": current_sha,
         "start_at": _iso(start_epoch),
         "end_boundary": _iso(end_epoch),
@@ -304,7 +302,7 @@ def verify_timeline(
             "Brian Au is the release monitor, escalation contact, and announcement "
             "approver under the release authorization recorded in this PR.",
             "",
-            f"<!-- {GO_MARKER} -->",
+            f"<!-- {marker_prefix}-announcement-go -->",
         ]
     )
     return manifest, "\n".join(lines) + "\n"
@@ -323,6 +321,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--release", required=True)
     parser.add_argument("--release-commit", required=True)
     parser.add_argument("--companion", required=True)
+    parser.add_argument("--marker-prefix", required=True)
     return parser.parse_args()
 
 
@@ -339,6 +338,7 @@ def main() -> int:
             release=args.release,
             release_commit=args.release_commit,
             companion=args.companion,
+            marker_prefix=args.marker_prefix,
         )
     except (KeyError, TypeError, ValueError, VerificationError) as exc:
         print(f"release soak timeline verification failed: {exc}")

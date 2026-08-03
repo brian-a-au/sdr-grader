@@ -178,20 +178,20 @@ plugin are simultaneously live and healthy.
 - [ ] Final readiness audit path: `________`
 - [ ] Announcement approver and timestamp: `________`
 
-For the bounded v1.2.1 soak, `.github/workflows/release-soak.yml` records
+For the bounded v1.2.2 soak, `.github/workflows/release-soak.yml` records
 hourly public-release checkpoints from a frozen monitor revision. New or
 updated grader issues block until a maintainer applies either
 `soak-triaged-nonblocking` or `soak-triaged-resolved`. A failed workflow run
 does not count as an observation and blocks finalization unless a maintainer
-records an infrastructure-only disposition in release PR #39 using the marker
-`sdr-grader-v1.2.1-soak-run-<run-id>-triaged-infrastructure`; release-health
+records an infrastructure-only disposition in release PR #41 using the marker
+`sdr-grader-v1.2.2-soak-run-<run-id>-triaged-infrastructure`; release-health
 failures restart the 48-hour soak instead. Rerunning a failed workflow is not
 allowed because the runs API exposes only the latest attempt; use a new manual
 dispatch so the failed run remains in the timeline. GitHub's repository-scoped
 workflow token cannot read private vulnerability reports or secret-scanning
 alerts, so the final GO additionally requires an owner-authenticated,
 post-48h clearance comment carrying
-`sdr-grader-v1.2.1-private-advisory-clear`. That clearance must be no more than
+`sdr-grader-v1.2.2-private-advisory-clear`. That clearance must be no more than
 two hours old, records aggregate counts only, and never includes advisory or
 alert content. The owner-side gate refreshes it until the announcement-GO
 record is observable.
