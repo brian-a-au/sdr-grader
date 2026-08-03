@@ -164,6 +164,7 @@ def test_release_workflow_pins_validation_and_builds_candidate_only_once():
         "verify-prepublication",
         "draft-github",
         "publish-pypi",
+        "verify-pypi-publication",
         "verify-public",
     ):
         job = text.split(f"\n  {job_name}:", 1)[1]
@@ -176,21 +177,28 @@ def test_release_workflow_pins_validation_and_builds_candidate_only_once():
 
 def test_release_workflow_runs_bounded_readme_checks_before_and_after_publication():
     text = _workflow_text("release.yml")
-    pre = text.split("\n  verify-prepublication:", 1)[1].split(
-        "\n  draft-github:", 1
-    )[0]
-    draft = text.split("\n  draft-github:", 1)[1].split(
-        "\n  publish-pypi:", 1
-    )[0]
-    post = text.split("\n  verify-public:", 1)[1]
+    pre = text.split("\n  verify-prepublication:", 1)[1].split("\n  draft-github:", 1)[0]
+    draft = text.split("\n  draft-github:", 1)[1].split("\n  publish-pypi:", 1)[0]
+    publish = text.split("\n  publish-pypi:", 1)[1].split("\n  verify-pypi-publication:", 1)[0]
+    post = text.split("\n  verify-pypi-publication:", 1)[1].split("\n  publish-github:", 1)[0]
+    github_release = text.split("\n  publish-github:", 1)[1].split("\n  verify-public:", 1)[0]
 
     assert "needs: [install-smoke, plugin-smoke]" in pre
     assert "scripts/verify_published_readme.py prepublication" in pre
     assert "--evidence release-evidence/release-artifacts.json" in pre
     assert "needs: verify-prepublication" in draft
+    assert "needs: publish-pypi" in post
     assert "scripts/verify_published_readme.py postpublication" in post
     assert "--evidence release-evidence/release-artifacts.json" in post
+    assert "needs: verify-pypi-publication" in github_release
+    assert (
+        text.index("\n  publish-pypi:")
+        < text.index("\n  verify-pypi-publication:")
+        < text.index("\n  publish-github:")
+    )
+    assert "postpublication" not in publish
     assert "GH_TOKEN" not in pre
+    assert "GH_TOKEN" not in post
     assert "continue-on-error" not in pre
     assert "continue-on-error" not in post
 
