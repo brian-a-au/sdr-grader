@@ -4,6 +4,11 @@ Adapters know vocabularies; rules don't. Adding a new platform is a
 matter of producing the normalized `Implementation` model from whatever
 JSON shape the platform's snapshot tool emits.
 
+This is a **source-checkout contributor workflow**. Run referenced tests and
+helper scripts from the repository root. The installed wheel supports the
+platforms already registered in the release; it does not install `tests/`,
+fixture builders, or a platform-scaffolding command.
+
 ## Where to start
 
 The two reference adapters live at:
@@ -24,6 +29,26 @@ The function takes a parsed dict (the loader handles file IO and JSON
 parsing) and returns an `Implementation` (see `src/sdr_grader/core/models.py`). No async, no
 I/O, no globals.
 
+## Normalized `Component` vocabulary
+
+Rules and adapters must use the field names the model actually exposes. The
+`metrics`, `dimensions`, and `derived_fields` collections all contain this
+same `Component` type.
+
+| Field | Meaning |
+|---|---|
+| `id` | Stable platform component identifier |
+| `name` | Display name |
+| `description` | Normalized description or `None` |
+| `component_type` | `metric`, `dimension`, or `derived_field` |
+| `data_type` | Normalized data type or `None` |
+| `polarity` | `positive`, `negative`, `neutral`, or `None` |
+| `created_at` | Source timestamp string or `None` |
+| `modified_at` | Source timestamp string or `None` |
+| `owner` | Normalized owner string or `None` |
+| `tags` | Normalized tag strings |
+| `platform_specific` | Explicit, adapter-owned extensions needed by registered rules |
+
 ## Responsibilities
 
 The adapter must:
@@ -42,10 +67,11 @@ The adapter must:
    container contexts, calc metric reference lists, complexity scores.
    Some of these come from the upstream snapshot directly; others
    require parsing JSON-encoded `definition_json` strings.
-4. **Preserve raw JSON.** Set `Implementation.raw = snapshot` so rules
-   that need platform-specific access can drill in. Most rules
-   shouldn't need this — surface what you can in `platform_specific`
-   on each component.
+4. **Preserve raw JSON for provenance and compatibility.** Set
+   `Implementation.raw = snapshot`, but do not make arbitrary snapshot paths a
+   new rule contract. Promote a stable signal into an explicit normalized
+   field (including a documented `platform_specific` key when the signal is
+   component-local), or define a supplementary-input contract.
 5. **Normalize sentinels.** cja_auto_sdr writes `"-"` for missing
    descriptions; AA may use `null`. The adapter must coerce both to
    `None` so rules don't have to learn each platform's convention.
@@ -55,6 +81,36 @@ The adapter must:
    path emits one warning when a parseable generator version is newer
    than the release's tested-through version; current, older, and
    unparseable versions remain quiet.
+
+## Rule input boundary
+
+| Source | Rule contract | Guidance |
+|---|---|---|
+| Normalized model fields | Yes | Preferred cross-platform contract; add or populate an explicit field in `core/models.py` and the adapters. |
+| Documented `platform_specific` key | Yes | Use for a component-local platform setting, with its key and shape covered by adapter and rule tests. |
+| Documented supplementary input | Yes | Use `--extra-input KEY=PATH` when the snapshot does not carry the signal. |
+| `Implementation.raw` | No | Retained for provenance and compatibility, not an invitation for new rules to depend on arbitrary upstream paths. |
+
+## Platform integration checklist
+
+Adding an adapter module alone does not make a platform executable. Update
+every authority below in one change.
+
+| Surface | Authority | Required change |
+|---|---|---|
+| Detection | `src/sdr_grader/input/detect.py` | Add an unambiguous snapshot discriminator and ambiguity tests. |
+| Dispatch | `src/sdr_grader/input/adapt.py` | Dispatch the detected or overridden platform to its adapter. |
+| Normalization | `src/sdr_grader/core/models.py` and the adapter | Produce the complete `Implementation` contract and the actual `Component`, `Segment`, and `CalculatedMetric` vocabulary. |
+| Validation | `src/sdr_grader/adapters/<platform>.py` | Reject missing or malformed required sections with `InvalidSnapshotError`; normalize optional shapes and sentinels. |
+| CLI choices | `src/sdr_grader/cli/main.py` | Extend the `--platform` choices; add a shell-out selector only if a real supported exporter exists. Current choices are `cja` and `aa`. |
+| Labels | `src/sdr_grader/core/grader.py` and `src/sdr_grader/rules/checks/_helpers.py` | Add the report adapter tool label and the human platform noun used in findings. |
+| Rule applicability | `src/sdr_grader/rules/rubric.py` and pack YAML `platforms:` lists | Extend `VALID_PLATFORMS`, then opt rules in only where normalized evidence exists. |
+
+**Empty-rule warning.** A newly accepted platform with an empty effective rule
+inventory can still produce A / 100 because categories with no applicable
+rules score 100 under the current grading contract. Treat nonzero bundled rule
+coverage as part of adapter completion; a successful parse alone is not a
+meaningful grade.
 
 ## Auto-detection
 
@@ -76,6 +132,10 @@ if platform == "your_platform":
     from sdr_grader.adapters.your_platform import adapt
     return adapt(snapshot, source=source)
 ```
+
+Also complete the CLI-choice, label, and rule-applicability rows above. Without
+them, `--platform your_platform` is rejected, report vocabulary falls back to
+generic labels, or every bundled rule is filtered out.
 
 ## Supplementary inputs
 
@@ -147,7 +207,9 @@ and is intentionally not part of the grader parity contract.
 
 ## Testing
 
-Mirror `tests/test_adapters_cja.py` / `tests/test_adapters_aa.py`. Cover
+These tests and any direct helper invocation are **source-checkout workflows**
+run from the repository root; none of these test modules is installed. Mirror
+`tests/test_adapters_cja.py` / `tests/test_adapters_aa.py`. Cover
 at least:
 
 - Round-trip of every record kind.

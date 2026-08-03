@@ -23,10 +23,11 @@ Non-negotiable. PRs that break these will be rejected.
 
 A rule lands in three places:
 
-1. **YAML entry** in both `packs/strict/<category>.yaml` and
-   `packs/pragmatic/<category>.yaml` (looser threshold + possibly
+1. **YAML entry** in both
+   `src/sdr_grader/rules/packs/strict/<category>.yaml` and
+   `src/sdr_grader/rules/packs/pragmatic/<category>.yaml` (looser threshold + possibly
    demoted severity).
-2. **Check function** in `rules/checks/<category>.py`, registered via
+2. **Check function** in `src/sdr_grader/rules/checks/<category>.py`, registered via
    `@register_check("your_check_name")`.
 3. **Unit test** in `tests/test_rules_<category>.py` exercising the
    check with synthetic data.
@@ -75,6 +76,10 @@ admitted-cohort distribution evidence.
 
 ## Running locally
 
+All commands in this section are source-checkout workflows run from the
+repository root; the referenced tests, scripts, fixtures, and examples are not
+installed with the wheel.
+
 ```bash
 uv sync                # set up environment
 uv run pytest          # full test suite
@@ -82,12 +87,15 @@ uv run ruff check      # lint
 uv run ruff format     # auto-format
 ```
 
-After any change to `tests/fixtures/` or rules / renderer, regenerate
-the committed examples:
+## Regenerating fixtures and examples
+
+After a change that affects the canonical CJA fixtures, rules, or renderer,
+run the same source-checkout sequence as the `examples-drift` CI job, from the
+repository root. The fixture builder must run before all three example
+generators because each later command consumes its committed outputs:
 
 ```bash
 uv run python scripts/build_cja_fixtures.py
-uv run python scripts/build_aa_fixtures.py
 uv run python scripts/generate_examples.py
 uv run python scripts/generate_grade_examples.py
 uv run python scripts/generate_trend_example.py

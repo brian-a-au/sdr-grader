@@ -3,14 +3,20 @@
 from __future__ import annotations
 
 import re
+import shlex
 from collections import defaultdict
-from dataclasses import replace
+from dataclasses import fields, replace
 from pathlib import Path
 
 import yaml
 
 from fixtures.demo_report import build_demo_report
+from sdr_grader.cli.main import _build_parser
+from sdr_grader.core.grader import _PLATFORM_NOUN, _PLATFORM_TOOL
+from sdr_grader.core.models import Component
 from sdr_grader.render.json_output import REPORT_SCHEMA_VERSION, report_to_dict
+from sdr_grader.rules.checks._helpers import PLATFORM_NOUN
+from sdr_grader.rules.rubric import VALID_PLATFORMS, load_rubric
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -76,6 +82,23 @@ def _fenced_yaml(document: str, marker: str) -> dict[str, object]:
     parsed = yaml.safe_load(match.group(1))
     assert isinstance(parsed, dict)
     return parsed
+
+
+def _fenced_commands(document: str, marker: str) -> list[list[str]]:
+    section = document.split(marker, 1)[1]
+    match = re.search(r"```(?:bash|console)\n(.*?)\n```", section, re.DOTALL)
+    assert match, f"missing shell block after {marker}"
+    commands: list[list[str]] = []
+    for line in match.group(1).splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        commands.append(shlex.split(line))
+    return commands
+
+
+def _generator_scripts(command_text: str) -> list[str]:
+    return re.findall(r"scripts/(?:build|generate)_[a-z_]+\.py", command_text)
 
 
 def test_readme_keeps_live_test_badge_without_fixed_numeric_count():
@@ -251,3 +274,137 @@ def test_public_ci_example_uses_reviewed_pins_and_opt_in_artifacts():
     assert upload["with"]["path"] == "reports/sdr-grade.html\nreports/sdr-grade.json\n"
     assert "if: always()" not in document
     assert "retention is temporal cleanup" in document.lower()
+
+
+def test_leaderboard_workflow_uses_portable_outputs_and_qualifies_repo_helper():
+    document = (REPO_ROOT / "docs" / "LEADERBOARDS.md").read_text(encoding="utf-8")
+
+    assert "/dev/null" not in document
+    commands = _fenced_commands(document, "## Installed grading workflow")
+    grader_commands = [command for command in commands if command[0] == "sdr-grader"]
+    assert grader_commands
+    for command in grader_commands:
+        output = command[command.index("--output") + 1]
+        json_output = command[command.index("--json") + 1]
+        assert Path(output).suffix == ".html"
+        assert Path(json_output).suffix == ".json"
+        assert not Path(output).is_absolute()
+        assert not Path(json_output).is_absolute()
+
+    source_commands = _fenced_commands(document, "## Source-checkout aggregation")
+    assert any("scripts/aggregate_distributions.py" in command for command in source_commands)
+    source_section = document.split("## Source-checkout aggregation", 1)[1]
+    assert "repository root" in source_section.split("##", 1)[0].lower()
+
+
+def test_contributor_only_paths_are_labeled_as_source_checkout_workflows():
+    documents = {
+        "CUSTOMIZATION.md": "src/sdr_grader/rules/packs/strict",
+        "RUBRIC_FORMAT.md": "src/sdr_grader/rules/packs/strict",
+        "ADAPTER_GUIDE.md": "tests/test_adapters_cja.py",
+        "CHECK_FUNCTION_GUIDE.md": "tests/test_rules_<category>.py",
+    }
+    for filename, repo_only_path in documents.items():
+        document = (REPO_ROOT / "docs" / filename).read_text(encoding="utf-8")
+        assert repo_only_path in document
+        assert "source-checkout" in document.lower()
+        assert "repository root" in document.lower()
+
+
+def test_adapter_guide_matches_model_and_platform_extension_surfaces():
+    document = (REPO_ROOT / "docs" / "ADAPTER_GUIDE.md").read_text(encoding="utf-8")
+
+    component_rows = _markdown_table(document, "## Normalized `Component` vocabulary")
+    assert {row["Field"].strip("`") for row in component_rows} == {
+        field.name for field in fields(Component)
+    }
+
+    checklist = _markdown_table(document, "## Platform integration checklist")
+    by_surface = {row["Surface"]: row for row in checklist}
+    assert set(by_surface) == {
+        "Detection",
+        "Dispatch",
+        "Normalization",
+        "Validation",
+        "CLI choices",
+        "Labels",
+        "Rule applicability",
+    }
+    assert "detect.py" in by_surface["Detection"]["Authority"]
+    assert "adapt.py" in by_surface["Dispatch"]["Authority"]
+    assert "models.py" in by_surface["Normalization"]["Authority"]
+    assert "cli/main.py" in by_surface["CLI choices"]["Authority"]
+    assert "rubric.py" in by_surface["Rule applicability"]["Authority"]
+    platform_action = next(
+        action for action in _build_parser()._actions if action.dest == "platform"
+    )
+    cli_choices = set(platform_action.choices or ())
+    assert cli_choices == VALID_PLATFORMS
+    assert set(_PLATFORM_NOUN) == set(_PLATFORM_TOOL) == set(PLATFORM_NOUN) == VALID_PLATFORMS
+    for platform in cli_choices:
+        assert f"`{platform}`" in by_surface["CLI choices"]["Required change"]
+
+    boundary = _markdown_table(document, "## Rule input boundary")
+    by_source = {row["Source"]: row for row in boundary}
+    assert by_source["`Implementation.raw`"]["Rule contract"] == "No"
+    assert by_source["Normalized model fields"]["Rule contract"] == "Yes"
+    assert by_source["Documented supplementary input"]["Rule contract"] == "Yes"
+    assert re.search(
+        r"empty\s+effective\s+rule\s+inventory.*A\s*/\s*100",
+        document,
+        re.I | re.S,
+    )
+
+
+def test_check_guide_documents_the_renderer_trust_boundary():
+    document = (REPO_ROOT / "docs" / "CHECK_FUNCTION_GUIDE.md").read_text(encoding="utf-8")
+    rows = _markdown_table(document, "## Renderer trust boundary")
+    by_value = {row["Value"]: row for row in rows}
+
+    ordinary = by_value["Ordinary `str`"]
+    assert "escaped" in ordinary["Renderer behavior"].lower()
+    trusted = by_value["`Markup`"]
+    assert "maintainer" in trusted["Allowed producer"].lower()
+    assert "static" in trusted["Allowed producer"].lower()
+    assert "reviewed" in trusted["Allowed producer"].lower()
+
+
+def test_platform_coverage_matches_bundled_pack_applicability():
+    document = (REPO_ROOT / "docs" / "PLATFORM_COVERAGE.md").read_text(encoding="utf-8")
+    rows = _markdown_table(document, "## Bundled coverage inventory")
+    documented = {
+        row["Platform"].lower(): {
+            "count": int(row["Applicable rules"]),
+            "excluded": set(re.findall(r"[A-Z]+-\d+", row["Excluded IDs"])),
+        }
+        for row in rows
+    }
+
+    for pack_name in ("strict", "pragmatic"):
+        rubric = load_rubric(REPO_ROOT / "src" / "sdr_grader" / "rules" / "packs" / pack_name)
+        for platform in VALID_PLATFORMS:
+            applicable = {rule.id for rule in rubric.rules if platform in rule.platforms}
+            excluded = {rule.id for rule in rubric.rules} - applicable
+            assert applicable
+            assert documented[platform] == {"count": len(applicable), "excluded": excluded}
+
+
+def test_contributor_regeneration_sequence_matches_examples_drift_ci():
+    workflow = yaml.safe_load(
+        (REPO_ROOT / ".github" / "workflows" / "test.yml").read_text(encoding="utf-8")
+    )
+    steps = workflow["jobs"]["examples-drift"]["steps"]
+    ci_scripts = [
+        script for step in steps for script in _generator_scripts(str(step.get("run", "")))
+    ]
+
+    contributing = (REPO_ROOT / "CONTRIBUTING.md").read_text(encoding="utf-8")
+    contributor_commands = _fenced_commands(contributing, "## Regenerating fixtures and examples")
+    contributor_scripts = [
+        script
+        for command in contributor_commands
+        for script in _generator_scripts(" ".join(command))
+    ]
+    assert contributor_scripts == ci_scripts
+    assert len([script for script in ci_scripts if "/build_" in script]) == 1
+    assert len([script for script in ci_scripts if "/generate_" in script]) == 3

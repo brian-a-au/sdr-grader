@@ -16,33 +16,50 @@ the report renders alongside the grade.
 
 ## What ships in the box
 
-The bundled `src/sdr_grader/data/distribution.json` is seed percentile
-data — illustrative numbers used by the rendered report's distribution
-section when you pass `--distribution-data bundled`. It is *not* an
-authoritative reference and should not be used to evaluate your
+The bundled `sdr_grader/data/distribution.json` package resource (stored at
+`src/sdr_grader/data/distribution.json` in a source checkout) is seed
+percentile data — illustrative numbers used by the rendered report's
+distribution section when you pass `--distribution-data bundled`. It is *not*
+an authoritative reference and should not be used to evaluate your
 implementation's standing.
 
 For a meaningful leaderboard, build your own distribution from the
 implementations you actually grade.
 
-## Workflow
+## Installed grading workflow
+
+These grading commands use only the installed `sdr-grader` command. Create
+the `grades/` directory with your platform's normal file-management tools,
+then keep both outputs: the JSON is the aggregation input and the HTML is the
+reviewable report.
 
 ```bash
-# 1. Grade every implementation, writing the JSON output of each.
-sdr-grader prod_us.json --json grades/prod_us.json --output /dev/null
-sdr-grader prod_eu.json --json grades/prod_eu.json --output /dev/null
-sdr-grader prod_apac.json --json grades/prod_apac.json --output /dev/null
+sdr-grader prod_us.json --json grades/prod_us.json --output grades/prod_us.html
+sdr-grader prod_eu.json --json grades/prod_eu.json --output grades/prod_eu.html
+sdr-grader prod_apac.json --json grades/prod_apac.json --output grades/prod_apac.html
+```
 
-# 2. Aggregate the JSONs into a single distribution.json.
+## Source-checkout aggregation
+
+The aggregation helper is a maintainer utility, not part of the installed
+wheel or the `sdr-grader` CLI. Run this step only from the repository root of
+a source checkout (ideally the tag matching the grader version that produced
+the JSON files):
+
+```bash
 python scripts/aggregate_distributions.py grades/ -o distribution.json
+```
 
-# 3. Use it as the reference for future grades.
+After aggregation, `distribution.json` is portable. Return to any environment
+with the installed CLI and use it for later grades:
+
+```bash
 sdr-grader new_snapshot.json --distribution-data distribution.json
 ```
 
 `aggregate_distributions.py` reads every `*.json` file in the input
 directory, extracts the overall and per-category scores, and writes a
-file matching the schema of `src/sdr_grader/data/distribution.json`
+file matching the bundled `sdr_grader/data/distribution.json` resource
 (overall median / p25 / p75, plus per-category medians).
 
 ## The `--distribution-data` flag

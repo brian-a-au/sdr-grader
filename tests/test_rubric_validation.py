@@ -12,6 +12,7 @@ from sdr_grader.core.exceptions import RubricValidationError
 from sdr_grader.rules.rubric import GradeBand, load_rubric, score_to_letter
 
 _DEFAULT = object()
+REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
 def _valid_meta() -> dict[str, object]:
@@ -396,3 +397,37 @@ def test_rule_entries_reject_invalid_fields_with_rule_context(tmp_path, entry, m
 
     with pytest.raises(RubricValidationError, match=message):
         load_rubric(pack)
+
+
+def test_rubric_audit_inventory_matches_both_shipped_pack_2_0_definitions():
+    audit = (REPO_ROOT / "docs" / "RUBRIC_AUDIT.md").read_text(encoding="utf-8")
+    headings = {
+        "schema_hygiene": "Schema hygiene",
+        "naming_consistency": "Naming consistency",
+        "segment_complexity": "Segment complexity",
+        "calc_metric_maint": "Calculated metrics",
+        "attribution_coverage": "Attribution",
+        "governance_posture": "Governance",
+    }
+
+    inventories: list[dict[str, set[str]]] = []
+    for pack_name in ("strict", "pragmatic"):
+        rubric = load_rubric(REPO_ROOT / "src" / "sdr_grader" / "rules" / "packs" / pack_name)
+        assert rubric.version == "2.0"
+        by_category: dict[str, set[str]] = {}
+        for rule in rubric.rules:
+            by_category.setdefault(rule.category, set()).add(rule.id)
+        inventories.append(by_category)
+
+    assert inventories[0] == inventories[1]
+    for category, heading in headings.items():
+        expected_ids = inventories[0][category]
+        match = re.search(
+            rf"^## {re.escape(heading)} \((\d+) bundled rules\)\n(.*?)(?=^## |\Z)",
+            audit,
+            re.MULTILINE | re.DOTALL,
+        )
+        assert match, f"missing audit section for {category}"
+        assert int(match.group(1)) == len(expected_ids)
+        table_ids = set(re.findall(r"^\|\s*([A-Z]+-\d+)\s*\|", match.group(2), re.MULTILINE))
+        assert table_ids == expected_ids

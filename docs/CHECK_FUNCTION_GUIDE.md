@@ -4,6 +4,10 @@ Rules are YAML; checks are pure Python functions. Adding a new rule is a
 YAML entry. Adding a new *kind* of check is a Python function plus a YAML
 reference. This separation is non-negotiable.
 
+This is a **source-checkout contributor workflow**. Run referenced tests and
+direct check/helper invocations from the repository root; `src/`, `tests/`,
+and contributor helpers are not installed workflows.
+
 ## The contract
 
 A check function lives in `src/sdr_grader/rules/checks/<category>.py`.
@@ -61,7 +65,8 @@ A check function must be:
 The renderer understands four block kinds. Use them to compose finding
 bodies:
 
-- `paragraph` with `html` — free prose; raw inline HTML allowed.
+- `paragraph` with `html` — ordinary prose; the historical field name does
+  not make a plain string trusted HTML.
 - `section` with `label` + optional `body_html` — labeled subsection
   (e.g. "Distribution", "Why this matters", "How to remediate").
 - `components` with `items: list[str]` — each line renders as a row
@@ -78,12 +83,29 @@ Conventional finding shape:
 
 ```python
 [
-    FindingBlock(kind="paragraph", html="<topline summary>"),
-    FindingBlock(kind="section", label="Distribution", body_html="<numbers>"),
+    FindingBlock(kind="paragraph", html="Top-line summary."),
+    FindingBlock(kind="section", label="Distribution", body_html="Measured numbers."),
     FindingBlock(kind="components", items=["id1  some metadata", ...]),
-    FindingBlock(kind="section", label="How to remediate", body_html="<advice>"),
+    FindingBlock(kind="section", label="How to remediate", body_html="Suggested fix."),
 ]
 ```
+
+## Renderer trust boundary
+
+The report renderer uses Jinja autoescaping. A field named `html` or
+`body_html` is not an instruction to bypass it.
+
+| Value | Renderer behavior | Allowed producer |
+|---|---|---|
+| Ordinary `str` | HTML-escaped at the template sink | Every adapter, rule, YAML value, snapshot value, and supplementary input |
+| `Markup` | Passed through as trusted markup | Maintainer-owned static presentation fragments only, constructed at reviewed renderer/rule sinks with dynamic insertions escaped by `Markup.format()` |
+
+Never wrap snapshot text, YAML rationale/remediation, supplementary data, or a
+fully assembled dynamic string in `Markup`. If a maintainer-owned sentence
+needs a small static tag such as `<strong>`, start from a literal `Markup`
+template and interpolate values through its `.format()` method. `components`
+items, `code` text, labels, titles, and ordinary finding strings remain plain
+strings and are escaped.
 
 ## Registering and wiring up
 
@@ -108,6 +130,11 @@ Conventional finding shape:
 
 4. Add at least one test in `tests/test_rules_<category>.py` that
    exercises the firing path and at least one quiet path.
+
+Tests that call a registered check or `_helpers.py` function directly are
+unit-level source-checkout tests, not examples that an installed-package user
+must execute. Pair them with the pack-loading or grader path when wiring or
+applicability is part of the contract.
 
 ## Determinism is testable
 
