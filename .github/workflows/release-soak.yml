@@ -1,4 +1,4 @@
-name: sdr-grader v1.2.1 release soak
+name: sdr-grader v1.2.2 release soak
 
 on:
   workflow_dispatch:
@@ -10,23 +10,24 @@ permissions:
   contents: read
 
 concurrency:
-  group: sdr-grader-v1.2.1-release-soak
+  group: sdr-grader-v1.2.2-release-soak
   cancel-in-progress: false
 
 env:
-  SOAK_START_ISO: "2026-08-02T04:54:34Z"
-  SOAK_START_EPOCH: "1785646474"
-  SOAK_END_ISO: "2026-08-04T04:54:34Z"
-  SOAK_END_EPOCH: "1785819274"
-  GRADER_VERSION: "1.2.1"
-  GRADER_TAG: "v1.2.1"
-  GRADER_COMMIT: "9301672144d5fe97cc869a9f5206da38d26fd353"
-  GRADER_TAG_OBJECT: "dea3a429c19a32d5fe179096fe357a6bbcb7d97d"
-  GRADER_WHEEL: "sdr_grader-1.2.1-py3-none-any.whl"
-  GRADER_SDIST: "sdr_grader-1.2.1.tar.gz"
-  GRADER_WHEEL_SHA: "b9bb8b004c504669b4449a8d25a2292f5a60ae93bfb68f9f08d8defafe84ec1e"
-  GRADER_SDIST_SHA: "9b1d1b08a0967e05b6617e8df17ffd8bc0a73637cf59087215600c8fd812ccfb"
-  GRADER_EVIDENCE_SHA: "7abab6bb9b2e8bee94c25d126e0456aa500b0c72eabf798944be298a0010996a"
+  SOAK_MARKER_PREFIX: "sdr-grader-v1.2.2"
+  SOAK_START_ISO: "2026-08-03T20:09:09Z"
+  SOAK_START_EPOCH: "1785787749"
+  SOAK_END_ISO: "2026-08-05T20:09:09Z"
+  SOAK_END_EPOCH: "1785960549"
+  GRADER_VERSION: "1.2.2"
+  GRADER_TAG: "v1.2.2"
+  GRADER_COMMIT: "1978eb6d6e8d865e66f2dd464624db9a377417de"
+  GRADER_TAG_OBJECT: "21914dd1e1a48fe9c9050225c86c9f6f2665b26d"
+  GRADER_WHEEL: "sdr_grader-1.2.2-py3-none-any.whl"
+  GRADER_SDIST: "sdr_grader-1.2.2.tar.gz"
+  GRADER_WHEEL_SHA: "6e8c3dfa3808dd338e57894856a5cc212bde0cc21e616f45a57b4f404de440dc"
+  GRADER_SDIST_SHA: "d6566134cad3fd65cab8d44d983264f2dcd3a83af678d30846455aa28df20789"
+  GRADER_EVIDENCE_SHA: "b255bc78a5e534229e3454f1b3173e46fc333d938c4fde332fb920c6e02d4496"
   VISUALIZER_VERSION: "1.0.6"
   VISUALIZER_TAG: "v1.0.6"
   VISUALIZER_COMMIT: "df4811627463cdd13c33c9c06ea60b953e32a830"
@@ -52,7 +53,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-          ref: 9301672144d5fe97cc869a9f5206da38d26fd353
+          ref: 1978eb6d6e8d865e66f2dd464624db9a377417de
 
       - name: Install uv
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
@@ -98,7 +99,7 @@ jobs:
             --arg sdist "${GRADER_SDIST}" \
             --arg wheel_sha "${GRADER_WHEEL_SHA}" \
             --arg sdist_sha "${GRADER_SDIST_SHA}" \
-            '.info.version == "1.2.1" and .info.requires_python == ">=3.11" and
+            '.info.version == "1.2.2" and .info.requires_python == ">=3.11" and
              (.urls | length) == 2 and
              ([.urls[] | select(.yanked)] | length) == 0 and
              ([.urls[] | select(.filename == $wheel and .digests.sha256 == $wheel_sha)] | length) == 1 and
@@ -300,10 +301,10 @@ jobs:
           claude plugin list --json > "${ROOT}/plugin-list.json"
           INSTALL_PATH="$(
             "${ENV_DIR}/bin/python" -c \
-              'import json,sys; items=json.load(open(sys.argv[1])); matches=[item for item in items if item.get("id") == "sdr-grader@sdr-grader"]; assert len(matches) == 1, matches; item=matches[0]; assert item.get("version") == "1.2.1", item; print(item["installPath"])' \
+              'import json,sys; items=json.load(open(sys.argv[1])); matches=[item for item in items if item.get("id") == "sdr-grader@sdr-grader"]; assert len(matches) == 1, matches; item=matches[0]; assert item.get("version") == "1.2.2", item; print(item["installPath"])' \
               "${ROOT}/plugin-list.json"
           )"
-          jq -e '.version == "1.2.1"' \
+          jq -e '.version == "1.2.2"' \
             "${INSTALL_PATH}/.claude-plugin/plugin.json" >/dev/null
           HELPER="${INSTALL_PATH}/skills/sdr-grader/scripts/query_grade.py"
           "${ENV_DIR}/bin/sdr-grader" tests/fixtures/cja_snapshot_messy.json \
@@ -311,7 +312,7 @@ jobs:
           printf '%s\n' \
             'suppress:' \
             '  - rule: CALC-014' \
-            '    reason: v1.2.1 release soak' \
+            '    reason: v1.2.2 release soak' \
             > "${ROOT}/suppression.yaml"
           "${ENV_DIR}/bin/sdr-grader" tests/fixtures/cja_snapshot_messy.json \
             --suppress-config "${ROOT}/suppression.yaml" \
@@ -394,7 +395,7 @@ jobs:
           NOW="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
           cat > checkpoint/checkpoint.json <<EOF
           {
-            "release": "sdr-grader v1.2.1",
+            "release": "sdr-grader v1.2.2",
             "commit": "${GRADER_COMMIT}",
             "companion": "sdr-visualizer v1.0.6",
             "monitor_sha": "${GITHUB_SHA}",
@@ -417,7 +418,7 @@ jobs:
       - name: Retain checkpoint evidence
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: sdr-grader-v1.2.1-soak-${{ github.run_id }}
+          name: sdr-grader-v1.2.2-soak-${{ github.run_id }}
           path: checkpoint/checkpoint.json
           if-no-files-found: error
           retention-days: 90
@@ -453,16 +454,19 @@ jobs:
           gh api "repos/${REPOSITORY}/actions/runs/${CURRENT_RUN_ID}" \
             > "${RUNNER_TEMP}/current-run.json"
           gh api --paginate --slurp \
-            "repos/${REPOSITORY}/issues/39/comments?per_page=100" \
+            "repos/${REPOSITORY}/issues/41/comments?per_page=100" \
             > "${RUNNER_TEMP}/comments.json"
           CLEARANCE_CUTOFF="$(date -u -d "@$(( $(date -u +%s) - 7200 ))" '+%Y-%m-%dT%H:%M:%SZ')"
-          if jq -e --arg end "${SOAK_END_ISO}" --arg cutoff "${CLEARANCE_CUTOFF}" \
+          if jq -e \
+            --arg end "${SOAK_END_ISO}" \
+            --arg cutoff "${CLEARANCE_CUTOFF}" \
+            --arg marker_prefix "${SOAK_MARKER_PREFIX}" \
             '[.[][] |
               select(.user.login == "brian-a-au") |
               select(.author_association == "OWNER") |
               select(.created_at >= $end) |
               select(.created_at >= $cutoff) |
-              select(.body | contains("sdr-grader-v1.2.1-private-advisory-clear"))
+              select(.body | contains($marker_prefix + "-private-advisory-clear"))
             ] | length >= 1' \
             "${RUNNER_TEMP}/comments.json" >/dev/null; then
             echo "ready=true" >> "${GITHUB_OUTPUT}"
@@ -483,16 +487,17 @@ jobs:
             --comment-output "${RUNNER_TEMP}/announcement-go.md" \
             --start-epoch "${SOAK_START_EPOCH}" \
             --end-epoch "${SOAK_END_EPOCH}" \
-            --start-url "https://github.com/brian-a-au/sdr-grader/pull/39#issuecomment-5155478227" \
-            --release "sdr-grader v1.2.1" \
+            --start-url "https://github.com/brian-a-au/sdr-grader/pull/41#issuecomment-5171182302" \
+            --release "sdr-grader v1.2.2" \
             --release-commit "${GRADER_COMMIT}" \
-            --companion "sdr-visualizer v1.0.6"
+            --companion "sdr-visualizer v1.0.6" \
+            --marker-prefix "${SOAK_MARKER_PREFIX}"
 
       - name: Retain the complete final timeline
         if: steps.private-gate.outputs.ready == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: sdr-grader-v1.2.1-final-timeline-${{ github.run_id }}
+          name: sdr-grader-v1.2.2-final-timeline-${{ github.run_id }}
           path: ${{ runner.temp }}/timeline.json
           if-no-files-found: error
           retention-days: 90
@@ -504,16 +509,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if ! jq -e \
+          if ! jq -e --arg marker_prefix "${SOAK_MARKER_PREFIX}" \
             '[.[][] |
               select(.user.login == "github-actions[bot]" or
                      .author_association == "OWNER" or
                      .author_association == "MEMBER" or
                      .author_association == "COLLABORATOR") |
-              select(.body | contains("sdr-grader-v1.2.1-announcement-go"))
+              select(.body | contains($marker_prefix + "-announcement-go"))
             ] | length >= 1' \
             "${RUNNER_TEMP}/comments.json" >/dev/null; then
-            gh pr comment 39 --repo "${GITHUB_REPOSITORY}" \
+            gh pr comment 41 --repo "${GITHUB_REPOSITORY}" \
               --body-file "${RUNNER_TEMP}/announcement-go.md"
           fi
           gh api --method PUT \
