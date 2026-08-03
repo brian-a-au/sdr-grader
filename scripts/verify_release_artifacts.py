@@ -513,14 +513,6 @@ def _verify_description_contract(
     validate_rendered_description(rendered, source_root=source_root, version=version)
 
 
-def markdown_targets(document: str) -> list[str]:
-    """Return inline Markdown link/image destinations used by the README."""
-    return [
-        match.group(1).split(maxsplit=1)[0].strip("<>")
-        for match in re.finditer(r"!?\[[^\]]*\]\(([^)]+)\)", document)
-    ]
-
-
 def render_description(description: str) -> str:
     """Render Markdown with the exact backend used by strict Twine validation."""
     try:

@@ -170,15 +170,12 @@ def verify_prepublication(
     """Verify exact candidate metadata and live tagged/allowlisted README links."""
     description, artifacts = _candidate_context(dist_dir, evidence_path, version=version)
     fetcher = fetch or BoundedClient().fetch
-    links = _live_links(description, version=version)
-    tag_url = _tag_url(version)
-    for url in [tag_url, *links]:
-        fetcher(url, max_bytes=MAX_LINK_BYTES)
+    links_checked = _verify_live_links(description, version=version, fetcher=fetcher)
     return {
         "mode": "prepublication",
         "version": version,
         "artifact_digests": {name: record["sha256"] for name, record in artifacts.items()},
-        "links_checked": len(links) + 1,
+        "links_checked": links_checked,
     }
 
 
@@ -243,14 +240,12 @@ def verify_postpublication(
         ):
             raise ContentError(f"PyPI bytes differ for {filename}")
 
-    links = _live_links(description, version=version)
-    for url in [_tag_url(version), *links]:
-        fetcher(url, max_bytes=MAX_LINK_BYTES)
+    links_checked = _verify_live_links(description, version=version, fetcher=fetcher)
     return {
         "mode": "postpublication",
         "version": version,
         "artifact_digests": {name: record["sha256"] for name, record in artifacts.items()},
-        "links_checked": len(links) + 1,
+        "links_checked": links_checked,
     }
 
 
@@ -369,6 +364,19 @@ def _live_links(description: str, *, version: str) -> list[str]:
             _validated_url(target)
             selected.append(target)
     return list(dict.fromkeys(selected))
+
+
+def _verify_live_links(
+    description: str,
+    *,
+    version: str,
+    fetcher: Callable[..., bytes],
+) -> int:
+    links = _live_links(description, version=version)
+    urls = [_tag_url(version), *links]
+    for url in urls:
+        fetcher(url, max_bytes=MAX_LINK_BYTES)
+    return len(urls)
 
 
 def _tag_url(version: str) -> str:

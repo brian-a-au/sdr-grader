@@ -8,6 +8,7 @@ shape of an sdr-grader trend report without claiming production provenance.
 
 from __future__ import annotations
 
+import copy
 import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -25,7 +26,7 @@ def generate(output_path: Path):
     with TemporaryDirectory() as td_str:
         td = Path(td_str)
         for i, date in enumerate(dates):
-            snap = json.loads(json.dumps(base))
+            snap = copy.deepcopy(base)
             fixes = i * 40
             for j, dimension in enumerate(snap["dimensions"][:120]):
                 if j < fixes:

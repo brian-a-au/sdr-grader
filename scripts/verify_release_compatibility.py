@@ -145,11 +145,12 @@ def _extract_baseline(repo_root: Path, destination: Path, environment: dict[str,
     if result.returncode != 0:
         raise CompatibilityError("could not archive the verified baseline commit")
     destination.mkdir()
+    resolved_destination = destination.resolve()
     try:
         with tarfile.open(archive_path) as archive:
             for member in archive.getmembers():
                 resolved = (destination / member.name).resolve()
-                if not resolved.is_relative_to(destination.resolve()):
+                if not resolved.is_relative_to(resolved_destination):
                     raise CompatibilityError("baseline archive member escapes its root")
             archive.extractall(destination, filter="data")
     except (OSError, tarfile.TarError) as exc:
