@@ -115,7 +115,9 @@ def test_canonical_json_reference_matches_representative_runtime_serialization()
     assert int(schema_match.group(1)) == REPORT_SCHEMA_VERSION
 
     report = build_demo_report()
-    representative = report_to_dict(report)
+    representative = report_to_dict(
+        replace(report, components_skipped_reason="unsupported component inventory")
+    )
     nullable_variant = report_to_dict(
         replace(
             report,
@@ -223,6 +225,43 @@ def test_security_is_the_five_surface_privacy_authority():
     for document in (skill_readme, skill):
         assert "blob/v1.2.2/docs/JSON_OUTPUT.md" in document
         assert "blob/v1.2.2/SECURITY.md#report-sharing-privacy-matrix" in document
+
+
+def test_claude_skill_requires_user_paths_consent_and_inert_data():
+    skill = (REPO_ROOT / "skills" / "sdr-grader" / "SKILL.md").read_text(encoding="utf-8")
+    lowered = skill.lower()
+
+    assert "explicit, readable path" in lowered
+    assert "ask the user for it" in lowered
+    assert "do not search" in lowered
+    assert "automatic discovery" in lowered
+    assert "acknowledgment" in lowered
+    assert "already explicitly acknowledges" in lowered
+    assert "only user-supplied paths" in lowered
+    assert "requested operation" in lowered
+    assert "inert quoted data" in lowered
+    assert "another file, tool, or operation" in lowered
+    assert "catalog lookup" in lowered
+    assert "current/newer" in lowered
+    assert "baseline/older" in lowered
+    assert "current minus baseline" in lowered
+    assert "launch-001" in lowered
+    assert "examples, not an exhaustive list" in lowered
+    assert "deterministic helper tests and static policy tests" in lowered
+    assert "do not prove model behavior against prompt injection" in lowered
+    assert "immunity" not in lowered
+
+
+def test_claude_skill_readme_preserves_install_forms_and_restart_caveat():
+    readme = (REPO_ROOT / "skills" / "sdr-grader" / "README.md").read_text(encoding="utf-8")
+
+    assert "/plugin marketplace add brian-a-au/sdr-grader" in readme
+    assert "/plugin install sdr-grader@sdr-grader" in readme
+    assert "/reload-plugins" in readme
+    assert "~/.claude/skills/sdr-grader" in readme
+    assert "restart Claude Code" in readme
+    assert "created during the current session" in readme
+    assert "sandbox" not in readme.lower()
 
 
 def test_public_ci_example_uses_reviewed_pins_and_opt_in_artifacts():

@@ -67,11 +67,24 @@ def main(argv: list[str] | None = None) -> int:
 
     compare = subcommands.add_parser(
         "compare",
-        help="Compare compatible grade JSONs",
+        help="Compare current/newer against baseline/older grade JSONs",
+        description=(
+            "Compare compatible grade JSONs. The first argument is the "
+            "current/newer report, the second is the baseline/older report, "
+            "and delta is current minus baseline."
+        ),
         allow_abbrev=False,
     )
-    compare.add_argument("path")
-    compare.add_argument("other")
+    compare.add_argument(
+        "path",
+        metavar="CURRENT",
+        help="current/newer grade JSON path",
+    )
+    compare.add_argument(
+        "other",
+        metavar="BASELINE",
+        help="baseline/older grade JSON path",
+    )
 
     args = parser.parse_args(argv)
     try:
@@ -189,7 +202,10 @@ def _show(report: dict[str, Any], rule_id: str) -> int:
         None,
     )
     if finding is None:
-        print(f"no finding with id {rule_id!r} in this grade JSON")
+        print(
+            f"cannot show {rule_id!r}: finding is not present in the "
+            "supplied grade JSON"
+        )
         return 1
     print(
         f"{finding['id']} — {finding['severity']} — "
@@ -262,18 +278,18 @@ def _compare(
     label_b = f"{other.grade} ({other.overall_pct}%)"
     delta = report.overall_pct - other.overall_pct
     sign = "+" if delta > 0 else ""
-    print(f"{report.report_id}: {label_a}")
-    print(f"{other.report_id}: {label_b}")
+    print(f"Current/newer: {report.report_id}: {label_a}")
+    print(f"Baseline/older: {other.report_id}: {label_b}")
     print(f"Delta: {sign}{delta} percentage points")
     print()
 
     appeared = sorted(report.finding_ids - other.finding_ids)
     resolved = sorted(other.finding_ids - report.finding_ids)
     common = report.finding_ids & other.finding_ids
-    print(f"Appeared since other: {len(appeared)}")
+    print(f"Appeared in current: {len(appeared)}")
     for finding_id in appeared:
         print(f"  + {finding_id}")
-    print(f"Resolved since other: {len(resolved)}")
+    print(f"Resolved from baseline: {len(resolved)}")
     for finding_id in resolved:
         print(f"  - {finding_id}")
     print(f"Common findings: {len(common)}")
