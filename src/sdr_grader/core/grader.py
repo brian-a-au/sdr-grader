@@ -248,8 +248,9 @@ def _build_methodology(
         ),
         Markup(
             "The grader is rule-based and deterministic — the same input always "
-            "produces the same grade. Findings are auditable: every rule's source "
-            "YAML is linked from its finding, and rules can be suppressed or "
+            "produces the same grade. Findings carry stable rule IDs that can be "
+            "checked against the rubric documentation and rule definitions in the "
+            "sdr-grader repository. Rules can be suppressed or "
             'reweighted via a project-level <span class="mono">.sdr-grader.yaml</span>.'
         ),
     ]

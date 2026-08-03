@@ -39,14 +39,15 @@ def build_demo_report() -> Report:
         grade="B−",
         overall_pct=71,
         components_evaluated=487,
-        components_skipped=23,
-        components_skipped_reason="missing required schema fields",
+        components_skipped=0,
+        components_skipped_reason=None,
         adapter=Adapter(platform="CJA", tool="cja_auto_sdr", version="3.5.17"),
         rubric=Rubric(pack="strict", version="2.0"),
         generated_at=datetime(2026, 4, 25, 9, 14, tzinfo=UTC),
         tldr_html=(
-            "This implementation graded <strong>B−</strong>, sitting near the median for self-graded "
-            "production CJA instances. <strong>Schema hygiene</strong> and <strong>naming consistency</strong> "
+            "This illustrative implementation graded <strong>B−</strong>. In the configured reference "
+            "distribution, that score is near the median. <strong>Schema hygiene</strong> and "
+            "<strong>naming consistency</strong> "
             "are strong; the largest gaps are in <strong>calculated metric maintainability</strong> (61%) and "
             "<strong>governance posture</strong> (54%), driven by a long tail of duplicate-near-equivalent "
             "metrics and the absence of any tracked snapshot history. The five highest-priority remediations "
@@ -63,7 +64,7 @@ def build_demo_report() -> Report:
         remediations=[
             Remediation(
                 text="Consolidate the seven near-duplicate revenue calculated metrics into a single canonical metric.",
-                refs=["CALC-014", "CALC-015", "CALC-022"],
+                refs=["CALC-014"],
                 priority_weight=6,
             ),
             Remediation(
@@ -73,21 +74,21 @@ def build_demo_report() -> Report:
                 priority_weight=4,
             ),
             Remediation(
-                text=("Add descriptions to the 38 metrics and 51 dimensions currently lacking them. "
-                      "Required fields exist in the data view; populate them via the API."),
+                text=("Add descriptions to the 120 dimensions currently lacking them. Required fields "
+                      "exist in the data view; populate them via the API."),
                 refs=["SCH-003"],
                 priority_weight=3,
             ),
             Remediation(
-                text=("Refactor the four segments with nesting depth ≥ 5 into composed sub-segments "
+                text=("Refactor the three segments with nesting depth above 5 into composed sub-segments "
                       "to make their intent reviewable."),
                 refs=["SEG-007"],
                 priority_weight=2,
             ),
             Remediation(
-                text=("Document attribution model selection in calculated metrics — 12 metrics use "
-                      "last-touch implicitly without justification."),
-                refs=["ATTR-002"],
+                text=("Document the attribution override used by 12 data view metrics, or remove "
+                      "overrides that are not intentional."),
+                refs=["ATTR-004"],
                 priority_weight=2,
             ),
         ],
@@ -122,13 +123,13 @@ def build_demo_report() -> Report:
                     FindingBlock(kind="section", label="How to remediate", body_html=(
                         "Designate one canonical metric, document its attribution and allocation choices, "
                         "and update downstream Workspace projects to reference it. Deprecate the others "
-                        "by tagging them with a sunset date and auditing references via "
-                        "<span class=\"mono\">cja_auto_sdr --org-report</span>."
+                        "by tagging them with a sunset date and reviewing downstream references before "
+                        "retirement."
                     )),
                 ],
                 actions=[
-                    FindingAction("View rule definition", "#"),
-                    FindingAction("Suppress this rule", "#"),
+                    FindingAction("Review remediation plan", "#remediations"),
+                    FindingAction("Review methodology", "#methodology"),
                 ],
             ),
             Finding(
@@ -144,62 +145,60 @@ def build_demo_report() -> Report:
                     )),
                     FindingBlock(kind="section", label="How to remediate"),
                     FindingBlock(kind="code", text=(
-                        "cja_auto_sdr dv_prod_web --snapshot ./snapshots/baseline.json\n"
-                        "cja_auto_sdr --git-init --git-dir ./snapshots\n"
-                        "cja_auto_sdr dv_prod_web --git-commit --git-message \"Initial baseline\""
+                        "cja_auto_sdr dv_prod_web --include-all-inventory --format json "
+                        "--output snapshots/snapshot_2026-04-25.json\n"
+                        "sdr-grader snapshots/ --trend --output snapshots/trend.html"
                     )),
                     FindingBlock(kind="paragraph", html=(
-                        "From this baseline, schedule weekly snapshots via the GitHub Action template in "
-                        "the <span class=\"mono\">cja_auto_sdr</span> examples directory."
+                        "Store dated snapshots in version control and schedule the same supported export "
+                        "command at an interval appropriate for the project."
                     )),
                 ],
                 actions=[
-                    FindingAction("View rule definition", "#"),
-                    FindingAction("Suppress this rule", "#"),
+                    FindingAction("Review remediation plan", "#remediations"),
+                    FindingAction("Review methodology", "#methodology"),
                 ],
             ),
             Finding(
                 id="SCH-003",
                 severity="medium",
                 category="schema hygiene",
-                title="89 components lack descriptions",
+                title="120 dimensions lack descriptions",
                 body=[
                     FindingBlock(kind="paragraph", html=(
-                        "38 metrics and 51 dimensions in this data view have empty "
+                        "120 dimensions in this data view have empty "
                         "<span class=\"mono\">description</span> fields. Descriptions are the primary way "
                         "new analysts and AI agents understand what a component measures; missing "
                         "descriptions force readers to infer intent from names alone, which is frequently wrong."
                     )),
                     FindingBlock(kind="section", label="Distribution", body_html=(
-                        "Metrics: 38 of 142 missing (27%). Dimensions: 51 of 203 missing (25%). "
-                        "Both rates exceed the rubric threshold of 10%."
+                        "Dimensions: 120 of 203 missing (59%). The strict@2.0 rubric threshold is 56%."
                     )),
                     FindingBlock(kind="section", label="How to remediate", body_html=(
-                        "Generate the list of components missing descriptions with "
-                        "<span class=\"mono\">cja_auto_sdr --quality-report json</span> and populate via the "
-                        "data view API. Establish a CI check that fails new components added without descriptions."
+                        "Use the component IDs reported above to populate descriptions via the data view "
+                        "API. Establish a CI check that fails new components added without descriptions."
                     )),
                 ],
                 actions=[
-                    FindingAction("View rule definition", "#"),
-                    FindingAction("Suppress this rule", "#"),
+                    FindingAction("Review remediation plan", "#remediations"),
+                    FindingAction("Review methodology", "#methodology"),
                 ],
             ),
             Finding(
                 id="SEG-007",
                 severity="medium",
                 category="segment complexity",
-                title="Four segments exceed nesting depth threshold",
+                title="Three segments exceed nesting depth threshold",
                 body=[
                     FindingBlock(kind="paragraph", html=(
-                        "The rubric flags segments with container nesting depth ≥ 5 as difficult to review. "
-                        "Four segments in this data view exceed that threshold; the deepest reaches depth 8."
+                        "The rubric flags segments with container nesting depth above 5 as difficult to "
+                        "review. Three segments in this data view exceed that threshold; the deepest "
+                        "reaches depth 8."
                     )),
                     FindingBlock(kind="components", items=[
                         "seg_qualified_lead_v3             depth: 8     containers: event/session/person mixed",
                         "seg_high_intent_returning         depth: 6     containers: session/event nested",
                         "seg_b2b_account_engaged           depth: 6     containers: event/session mixed",
-                        "seg_promo_responsive              depth: 5     containers: event nested",
                     ]),
                     FindingBlock(kind="section", label="Why this matters", body_html=(
                         "Deep nesting makes intent illegible. Reviewers cannot easily tell whether the "
@@ -213,35 +212,32 @@ def build_demo_report() -> Report:
                     )),
                 ],
                 actions=[
-                    FindingAction("View rule definition", "#"),
-                    FindingAction("Suppress this rule", "#"),
+                    FindingAction("Review remediation plan", "#remediations"),
+                    FindingAction("Review methodology", "#methodology"),
                 ],
             ),
             Finding(
-                id="ATTR-002",
+                id="ATTR-004",
                 severity="medium",
                 category="attribution coverage",
-                title="12 calculated metrics use last-touch attribution without documented rationale",
+                title="12 data view metrics use attribution overrides without documentation",
                 body=[
                     FindingBlock(kind="paragraph", html=(
-                        "Last-touch is the default attribution model and is appropriate for some use cases, "
-                        "but the rubric flags it when applied to revenue and conversion metrics without "
-                        "justification. Twelve such metrics were identified."
+                        "Twelve data view metrics configure an attribution override, but their descriptions "
+                        "do not identify the model or explain why the override is appropriate."
                     )),
                     FindingBlock(kind="section", label="How to remediate", body_html=(
-                        "For each flagged metric, either change the attribution model to one appropriate "
-                        "for the metric&rsquo;s intended use (algorithmic, linear, or U-shaped for "
-                        "journey-aware metrics), or document in the metric description why last-touch "
-                        "is the correct choice."
+                        "Update each metric description to name the configured attribution model and its "
+                        "purpose, or remove an override that is not intentional."
                     )),
                 ],
                 actions=[
-                    FindingAction("View rule definition", "#"),
-                    FindingAction("Suppress this rule", "#"),
+                    FindingAction("Review remediation plan", "#remediations"),
+                    FindingAction("Review methodology", "#methodology"),
                 ],
             ),
             Finding(
-                id="NAME-002",
+                id="NAME-001",
                 severity="low",
                 category="naming consistency",
                 title="Inconsistent prefix convention in custom dimensions",
@@ -262,48 +258,38 @@ def build_demo_report() -> Report:
                     )),
                 ],
                 actions=[
-                    FindingAction("View rule definition", "#"),
-                    FindingAction("Suppress this rule", "#"),
+                    FindingAction("Review remediation plan", "#remediations"),
+                    FindingAction("Review methodology", "#methodology"),
                 ],
             ),
         ],
         methodology=Methodology(
             paragraphs=[
-                ("This grade was produced by <span class=\"mono\">sdr-grader v1.0.0</span> using the "
-                 "<span class=\"mono\">strict@1.2</span> rubric pack. The rubric encodes 73 rules across "
-                 "six categories; 68 ran successfully against the input data view and 5 were skipped "
-                 "(see below). Each rule contributes to a category subtotal weighted by severity "
-                 "(CRITICAL: 4, HIGH: 3, MEDIUM: 2, LOW: 1). Category subtotals roll up to the overall "
-                 "score using the category weights shown in the rubric definition."),
-                ("The grader is rule-based and deterministic. The same input always produces the same grade. "
-                 "Findings are auditable: every rule&rsquo;s source YAML is linked from its finding, and "
-                 "rules can be suppressed or reweighted via a project-level "
+                ("This illustrative grade was produced by <span class=\"mono\">sdr-grader</span> using "
+                 "the <span class=\"mono\">strict@2.0</span> rubric pack. The default CJA inventory "
+                 "contains 27 rules across six active categories; six are represented by findings in "
+                 "this report. Each rule contributes to a category subtotal weighted by severity "
+                 "(critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall "
+                 "score using the category weights defined in the rubric pack."),
+                ("The grader is rule-based and deterministic — the same input always produces the same "
+                 "grade. Findings carry stable rule IDs that can be checked against the rubric "
+                 "documentation and rule definitions in the sdr-grader repository. Rules can be "
+                 "suppressed or reweighted via a project-level "
                  "<span class=\"mono\">.sdr-grader.yaml</span>."),
             ],
             skipped=[
                 SkippedRules(
-                    ids=["PERF-001", "PERF-002"],
+                    ids=["CALC-001", "SEG-005"],
                     reason=(
-                        "performance posture rules require Query Service access; "
-                        "not configured for this run."
+                        "Suppressed by the demo project's example configuration to reflect an "
+                        "accepted legacy documentation backlog."
                     ),
-                ),
-                SkippedRules(
-                    ids=["WS-001", "WS-002"],
-                    reason=(
-                        "workspace project quality rules require Workspace API scope; "
-                        "not granted to the service account."
-                    ),
-                ),
-                SkippedRules(
-                    ids=["LBL-003"],
-                    reason="data-labeling rule requires AEP governance API access.",
                 ),
             ],
         ),
         distribution=Distribution(charts=[
             DistributionChart(
-                label="Overall score vs publicly graded instances",
+                label="Overall score vs reference distribution",
                 svg=histogram_chart(your_score=71, median=67, p25=54, p75=79),
             ),
             DistributionChart(

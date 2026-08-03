@@ -1,13 +1,12 @@
 """Build the canonical CJA snapshot fixtures.
 
-Produces two stable goldens used by tests/test_adapters_cja.py and (later)
-the rule engine end-to-end tests:
+Produces two stable synthetic goldens used by adapter and end-to-end grading
+tests:
 
 - tests/fixtures/cja_snapshot_messy.json
     487 components total (142 metrics, 203 dimensions, 142 derived fields),
-    89 missing descriptions, 4 segments with nesting depth >= 5, 7
-    near-duplicate revenue calculated metrics. Mirrors the numbers in the
-    sample report fixture (SPEC §3, demo_report.py).
+    190 missing descriptions across metrics and dimensions, 3 segments with
+    nesting depth above 5, and 7 near-duplicate revenue calculated metrics.
 
 - tests/fixtures/cja_snapshot_clean.json
     A small, well-governed implementation that should grade A: every
@@ -418,7 +417,8 @@ def build_clean_snapshot() -> dict[str, Any]:
     # - calc metrics use neutral names (no revenue/conversion/order tokens)
     # - calc metrics declare explicit attribution + allocation
     # - calc metrics reference 5 of 8 segments and segments reference 3 of 5
-    #   calc metrics, so SEG-003 / CALC-005 (50% orphan thresholds) stay quiet
+    #   calc metrics. Those references also keep the registered opt-in
+    #   SEG-003 / CALC-005 checks quiet in custom-pack coverage.
     clean_metric_ids = [f"metrics/cm_clean_metric_{i+1:02d}" for i in range(12)]
     clean_segment_ids = [f"segments/seg_clean_{i+1:02d}" for i in range(8)]
     clean_calc_ids = [f"calculatedMetrics/cm_clean_ratio_{c}" for c in "abcde"]
@@ -433,7 +433,7 @@ def build_clean_snapshot() -> dict[str, Any]:
     ]):
         refs = [clean_metric_ids[num_idx], clean_metric_ids[denom_idx]]
         # Each calc metric references a unique clean segment; collectively
-        # 5 of 8 segments are referenced so SEG-003 stays quiet.
+        # 5 of 8 segments are referenced for opt-in SEG-003 coverage.
         seg_refs = [clean_segment_ids[i]]
         calc_metrics.append({
             "metric_id": f"calculatedMetrics/{mid}",
@@ -476,8 +476,8 @@ def build_clean_snapshot() -> dict[str, Any]:
 
     segments = []
     for i in range(8):
-        # First three segments reference the first three clean calc metrics so
-        # CALC-005 (>50% orphan calc metrics) doesn't fire — 3 of 5 referenced.
+        # First three segments reference the first three clean calc metrics for
+        # opt-in CALC-005 coverage — 3 of 5 are referenced.
         seg_metric_refs = [clean_calc_ids[i]] if i < 3 else []
         segments.append({
             "segment_id": f"segments/seg_clean_{i+1:02d}",

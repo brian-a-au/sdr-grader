@@ -114,7 +114,7 @@ def build_distribution(report: Report, data: dict[str, Any]) -> Distribution:
     n = int(data.get("n_instances") or 0)
 
     overall_chart = DistributionChart(
-        label="Overall score vs publicly graded instances",
+        label="Overall score vs reference distribution",
         svg=histogram_chart(
             your_score=report.overall_pct, median=median, p25=p25, p75=p75
         ),
