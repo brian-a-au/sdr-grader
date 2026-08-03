@@ -269,6 +269,8 @@ def test_pull_request_package_gate_is_read_only_isolated_and_complete():
     assert "PYTHONPATH" in smoke and "PYTHONHOME" in smoke
     assert "PYTHONNOUSERSITE=1" in smoke
     assert "sys.path" in smoke and "GITHUB_WORKSPACE" in smoke
+    assert "pathlib.Path(sys.prefix).resolve()" in smoke
+    assert "pathlib.Path(sys.executable).resolve().parents[1]" not in smoke
     assert "readme-command.json" in smoke
     assert "--distribution-data bundled" in smoke
     assert "scripts/" not in smoke

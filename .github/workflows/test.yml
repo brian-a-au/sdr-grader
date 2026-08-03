@@ -233,7 +233,7 @@ jobs:
 
           checkout = pathlib.Path(sys.argv[1]).resolve()
           assert pathlib.Path(sdr_grader.__file__).resolve().is_relative_to(
-              pathlib.Path(sys.executable).resolve().parents[1]
+              pathlib.Path(sys.prefix).resolve()
           )
           assert all(
               not pathlib.Path(entry or ".").resolve().is_relative_to(checkout)
