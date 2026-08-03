@@ -3,6 +3,40 @@
 All notable changes follow the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
+## 1.2.2 — 2026-08-03
+
+Documentation and release-assurance patch. Grading rules, rubric pack `2.0`,
+report schema `1`, CLI behavior, scores, findings, and exit codes are unchanged.
+
+### Fixed
+
+- The package README now uses release-aware absolute links that render and
+  resolve from PyPI, gives an installed-wheel quickstart for each supported
+  operating-system command style, and distinguishes installed workflows from
+  source-checkout maintenance tasks.
+- Public schema, privacy, CI, customization, troubleshooting, extension, and
+  Claude follow-up guidance now matches the shipped package and its actual
+  trust, network, provenance, and helper boundaries.
+- Generated report copy uses the provenance-neutral distribution label
+  `Overall score vs reference distribution` and describes the real rule-audit
+  path without promising a per-finding source-YAML link.
+
+### Changed
+
+- Release validation now checks strict long-description rendering, wheel and
+  sdist description equality, exact package inventory, isolated installation,
+  and compatibility with the immutable `v1.2.1` baseline.
+- The tagged workflow pins uv `0.11.16`, builds immutable distributions once,
+  and passes their named artifacts and digests through smoke, approval,
+  publication, and post-publication verification jobs without rebuilding.
+
+### Security
+
+- Pre- and post-publication README checks use bounded unauthenticated HTTPS,
+  validate every redirect against explicit host and path allowlists, and
+  distinguish exhausted transient transport failures from persistent content
+  or policy defects.
+
 ## 1.2.1 — 2026-08-01
 
 Patch release aligning the public grader package with the input-safety boundary

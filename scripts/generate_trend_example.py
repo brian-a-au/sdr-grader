@@ -39,7 +39,7 @@ def generate(output_path: Path):
         from sdr_grader.trend import build_trend_report, render_trend
 
         trend = build_trend_report(td, load_rubric(STRICT_PACK))
-        html = render_trend(trend)
+        html = "\n".join(line.rstrip() for line in render_trend(trend).splitlines()) + "\n"
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_text(html, encoding="utf-8")
     return trend

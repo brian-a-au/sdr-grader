@@ -501,7 +501,7 @@ def test_package_plugin_marketplace_and_changelog_versions_match():
     marketplace = json.loads(MARKETPLACE.read_text(encoding="utf-8"))
     changelog = (REPO_ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
 
-    assert __version__ == "1.2.1"
+    assert __version__ == "1.2.2"
     assert manifest["version"] == __version__
     assert marketplace["plugins"][0]["version"] == __version__
     assert re.search(
