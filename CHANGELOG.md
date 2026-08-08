@@ -3,6 +3,18 @@
 All notable changes follow the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
+### Upcoming
+
+- Added four deterministic, HTML-only presentation palettes in the exact
+  public order `default`, `ADBE`, `OMTR`, `BLUE` for normal and trend reports.
+  Rubric selection, report data, JSON, findings, scores, grades, and exit codes
+  are unchanged.
+- Added a copy-safe color-pack contract snapshot for cross-repository parity
+  checks and made a green, linked `sdr-visualizer` sibling change in the same
+  release cycle a release requirement. Palette names and source swatches are
+  inspiration only; they include no logos and imply no affiliation,
+  endorsement, or official approval.
+
 ## 1.2.2 — 2026-08-03
 
 Documentation and release-assurance patch. Grading rules, rubric pack `2.0`,
