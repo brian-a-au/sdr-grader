@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-color-pack="{{ color_pack_code }}">
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
@@ -8,6 +8,7 @@
 <title>SDR Grade Trend — {{ trend.instance_name }}</title>
 <style>
 {{ css }}
+{{ color_pack_css }}
 </style>
 </head>
 <body>
@@ -22,6 +23,7 @@
           ·
           {{ trend.snapshot_count }} snapshot{% if trend.snapshot_count != 1 %}s{% endif %}
           from {{ trend.first_iso }} to {{ trend.latest_iso }}
+          · Color pack: {{ color_pack_code }}
         </p>
       </div>
       <div class="grade-block">

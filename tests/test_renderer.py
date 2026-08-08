@@ -11,8 +11,12 @@ The renderer's output is the visual contract (SPEC §3). These tests guard:
 
 from __future__ import annotations
 
+import dataclasses
 from html.parser import HTMLParser
 from pathlib import Path
+
+import pytest
+from markupsafe import Markup
 
 from fixtures.demo_report import build_demo_report
 from sdr_grader import __version__
@@ -23,6 +27,7 @@ from sdr_grader.render import (
     FindingBlock,
     render,
 )
+from sdr_grader.render.color_packs import COLOR_PACK_CODES, resolve_color_pack
 from sdr_grader.rules.rubric import load_rubric
 
 GOLDEN = Path(__file__).parent.parent / "examples" / "templated-report.html"
@@ -147,6 +152,134 @@ def test_render_is_deterministic():
     a = render(build_demo_report())
     b = render(build_demo_report())
     assert a == b, "renderer must produce byte-identical output for identical input"
+
+
+@pytest.mark.parametrize("code", COLOR_PACK_CODES)
+def test_render_applies_every_color_pack_with_visible_identity(code):
+    report = build_demo_report()
+    finding = report.findings[0]
+    report.findings = [
+        dataclasses.replace(finding, id=f"TEST-{index}", severity=severity)
+        for index, severity in enumerate(
+            ("critical", "high", "medium", "low"),
+            start=1,
+        )
+    ]
+    html = render(report, color_pack=code)
+    pack = resolve_color_pack(code)
+
+    assert f'data-color-pack="{code}"' in html
+    assert f"Color pack: {code}" in html
+    assert f"--sdr-accent-primary: {pack.roles['accent-primary']};" in html
+    assert "Critical" in html
+    assert "High" in html
+    assert "Medium" in html
+    assert "Low" in html
+
+
+def test_render_omitted_and_explicit_default_are_byte_identical():
+    report = build_demo_report()
+    html = render(report)
+    assert html == render(report, color_pack="default")
+    assert html.index("/* ---------- Reset & base ---------- */") < html.index(":root {")
+    for declaration in (
+        "--sdr-report-severity-critical: #8B2A1F;",
+        "--sdr-report-severity-high: #B8651A;",
+        "--sdr-report-surface-code: #F3F1E8;",
+        "--sdr-report-border-code: #C9C5B6;",
+        "--sdr-report-trend-card: #F3F1EA;",
+    ):
+        assert declaration in html
+
+
+@pytest.mark.parametrize("code", COLOR_PACK_CODES[1:])
+def test_render_nondefault_pack_is_deterministic(code):
+    report = build_demo_report()
+    assert render(report, color_pack=code) == render(report, color_pack=code)
+
+
+def test_render_color_pack_state_does_not_leak_between_calls():
+    report = build_demo_report()
+    expected_default = render(report)
+
+    render(report, color_pack="ADBE")
+    render(report, color_pack="BLUE")
+
+    assert render(report) == expected_default
+
+
+def test_render_rejects_invalid_color_pack_before_template_work(monkeypatch):
+    from sdr_grader.render import renderer as renderer_mod
+
+    monkeypatch.setattr(renderer_mod, "_template", lambda: pytest.fail("template used"))
+
+    with pytest.raises(ValueError, match="available color packs"):
+        render(build_demo_report(), color_pack="adbe")
+
+
+def test_distribution_recoloring_is_attribute_scoped_and_preserves_trust():
+    from sdr_grader.render.renderer import _recolor_distribution_svg
+
+    pack = resolve_color_pack("ADBE")
+    trusted = Markup(
+        '<svg><text fill="#8a8a82">literal #1a1a1a &lt;em&gt;x&lt;/em&gt;</text>'
+        '<text>literal fill="#1a1a1a" stroke="#d8d6cf"</text>'
+        '<path fill="#1a1a1a" stroke="#d8d6cf"/>'
+        '<path data-fill="#1a1a1a"/>'
+        '<path fill="#ABCDEF"/></svg>'
+    )
+    plain = (
+        '<svg><text fill="#8a8a82">literal #1a1a1a <script>x</script></text>'
+        '<path fill="#1a1a1a" stroke="#d8d6cf"/></svg>'
+    )
+
+    recolored_trusted = _recolor_distribution_svg(trusted, pack)
+    recolored_plain = _recolor_distribution_svg(plain, pack)
+
+    assert isinstance(recolored_trusted, Markup)
+    assert type(recolored_plain) is str
+    assert "literal #1a1a1a" in recolored_trusted
+    assert 'literal fill="#1a1a1a" stroke="#d8d6cf"' in recolored_trusted
+    assert "literal #1a1a1a" in recolored_plain
+    assert "&lt;em&gt;x&lt;/em&gt;" in recolored_trusted
+    assert "<script>x</script>" in recolored_plain
+    assert f'fill="{pack.roles["chart-axis"]}"' in recolored_trusted
+    assert f'fill="{pack.roles["chart-primary"]}"' in recolored_trusted
+    assert f'stroke="{pack.roles["chart-grid"]}"' in recolored_trusted
+    assert 'data-fill="#1a1a1a"' in recolored_trusted
+    assert 'fill="#ABCDEF"' in recolored_trusted
+
+    report = build_demo_report()
+    report.distribution = Distribution(
+        charts=[DistributionChart(label="Adversarial", svg=plain)]
+    )
+    html = render(report, color_pack="ADBE")
+    assert "<script>x</script>" not in html
+    assert "&lt;script&gt;x&lt;/script&gt;" in html
+    assert "literal #1a1a1a" in html
+
+
+def test_default_distribution_svg_copy_is_byte_preserving():
+    report = build_demo_report()
+    assert report.distribution is not None
+    original = report.distribution.charts[0].svg
+
+    html = render(report, color_pack="default")
+
+    assert str(original) in html
+    assert report.distribution.charts[0].svg is original
+
+
+def test_report_css_uses_semantic_variables_and_pack_aware_print_roles():
+    from sdr_grader.render import renderer as renderer_mod
+
+    css = renderer_mod._css()
+    assert "#[0-9" not in css
+    assert "var(--sdr-report-severity-critical)" in css
+    assert "var(--sdr-print-background)" in css
+    assert "var(--sdr-print-foreground)" in css
+    assert "var(--sdr-print-border)" in css
+    assert ".sev" in css and "border: 1px solid currentColor" in css
 
 
 def test_render_matches_golden():

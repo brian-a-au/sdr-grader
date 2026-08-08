@@ -35,6 +35,7 @@ from sdr_grader.input.adapt import adapt_snapshot as _adapt_snapshot
 from sdr_grader.input.loader import STDIN_TOKEN, load_snapshot
 from sdr_grader.input.shell_out import shell_aa, shell_cja
 from sdr_grader.render import cap_component_items, render
+from sdr_grader.render.color_packs import COLOR_PACK_CODES
 from sdr_grader.rules.rubric import load_rubric
 from sdr_grader.rules.suppression import (
     DEFAULT_SUPPRESSION_FILENAME,
@@ -152,7 +153,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         # HTML gets the display-capped copy; JSON serializes the full report.
         # Both artifacts are fully rendered before either reaches a final path.
-        html = render(cap_component_items(report))
+        html = render(cap_component_items(report), color_pack=args.color_pack)
         artifacts = {output_path: html}
         if json_path is not None:
             import json as _json
@@ -242,6 +243,12 @@ def _build_parser() -> argparse.ArgumentParser:
         "--pack",
         default="strict",
         help="Name of a bundled rubric pack. Default: strict.",
+    )
+    parser.add_argument(
+        "--color-pack",
+        choices=COLOR_PACK_CODES,
+        default="default",
+        help="Color pack for generated HTML. Default: default.",
     )
     parser.add_argument(
         "--platform",
@@ -410,7 +417,7 @@ def _run_trend(args, rubric, suppression, rubric_dir, suppression_path) -> int:
         return RUNTIME_ERROR
 
     try:
-        html = render_trend(trend)
+        html = render_trend(trend, color_pack=args.color_pack)
     except Exception:
         print("error: could not prepare trend output", file=sys.stderr)
         return RUNTIME_ERROR

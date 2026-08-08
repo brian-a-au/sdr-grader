@@ -517,7 +517,7 @@ def test_cli_render_failure_preserves_existing_output_set(tmp_path, monkeypatch,
     html.write_text("old html", encoding="utf-8")
     json_path.write_text("old json", encoding="utf-8")
 
-    def fail_render(_report):
+    def fail_render(_report, *, color_pack="default"):
         raise RuntimeError("injected render failure")
 
     monkeypatch.setattr("sdr_grader.cli.main.render", fail_render)
@@ -538,6 +538,128 @@ def test_cli_render_failure_preserves_existing_output_set(tmp_path, monkeypatch,
     err = capsys.readouterr().err
     assert "could not prepare report outputs" in err
     assert "Wrote " not in err
+
+
+@pytest.mark.parametrize("code", ("default", "ADBE", "OMTR", "BLUE"))
+def test_cli_color_pack_applies_to_standard_report(tmp_path, code):
+    output = tmp_path / f"report-{code}.html"
+
+    rc = main(
+        [
+            str(FIXTURES / "cja_snapshot_clean.json"),
+            "--output",
+            str(output),
+            "--color-pack",
+            code,
+            "--quiet",
+        ]
+    )
+
+    assert rc == SUCCESS
+    html = output.read_text(encoding="utf-8")
+    assert f'data-color-pack="{code}"' in html
+    assert f"Color pack: {code}" in html
+
+
+@pytest.mark.parametrize("code", ("default", "ADBE", "OMTR", "BLUE"))
+def test_cli_color_pack_applies_to_trend_report(tmp_path, code):
+    snapshots = _make_trend_dir(tmp_path)
+    output = tmp_path / f"trend-{code}.html"
+
+    rc = main(
+        [
+            str(snapshots),
+            "--trend",
+            "--output",
+            str(output),
+            "--color-pack",
+            code,
+            "--quiet",
+        ]
+    )
+
+    assert rc == SUCCESS
+    html = output.read_text(encoding="utf-8")
+    assert f'data-color-pack="{code}"' in html
+    assert f"Color pack: {code}" in html
+
+
+def test_cli_invalid_color_pack_preserves_existing_outputs(tmp_path, capsys):
+    html = tmp_path / "report.html"
+    json_path = tmp_path / "report.json"
+    html.write_text("old html", encoding="utf-8")
+    json_path.write_text("old json", encoding="utf-8")
+
+    with pytest.raises(SystemExit) as exc:
+        main(
+            [
+                str(FIXTURES / "cja_snapshot_clean.json"),
+                "--output",
+                str(html),
+                "--json",
+                str(json_path),
+                "--color-pack",
+                "adbe",
+            ]
+        )
+
+    assert exc.value.code == 2
+    assert html.read_text(encoding="utf-8") == "old html"
+    assert json_path.read_text(encoding="utf-8") == "old json"
+    diagnostics = capsys.readouterr().err
+    for code in ("default", "ADBE", "OMTR", "BLUE"):
+        assert code in diagnostics
+
+
+def test_cli_color_pack_is_distinct_from_rubric_pack(tmp_path):
+    output = tmp_path / "report.html"
+
+    rc = main(
+        [
+            str(FIXTURES / "cja_snapshot_clean.json"),
+            "--pack",
+            "strict",
+            "--color-pack",
+            "BLUE",
+            "--output",
+            str(output),
+            "--quiet",
+        ]
+    )
+
+    assert rc == SUCCESS
+    html = output.read_text(encoding="utf-8")
+    assert 'Rubric: <span class="mono">strict@' in html
+    assert "Color pack: BLUE" in html
+
+
+def test_cli_color_pack_keeps_json_byte_identical_including_svg(tmp_path):
+    json_outputs = []
+    html_outputs = []
+    for code in ("default", "BLUE"):
+        html = tmp_path / f"report-{code}.html"
+        json_path = tmp_path / f"report-{code}.json"
+        rc = main(
+            [
+                str(FIXTURES / "cja_snapshot_clean.json"),
+                "--distribution-data",
+                "bundled",
+                "--color-pack",
+                code,
+                "--output",
+                str(html),
+                "--json",
+                str(json_path),
+                "--quiet",
+            ]
+        )
+        assert rc == SUCCESS
+        html_outputs.append(html.read_bytes())
+        json_outputs.append(json_path.read_bytes())
+
+    assert html_outputs[0] != html_outputs[1]
+    assert json_outputs[0] == json_outputs[1]
+    assert b'"svg": "<svg' in json_outputs[0]
 
 
 def test_cli_json_serialization_failure_preserves_existing_output_set(
@@ -619,7 +741,9 @@ def _write_directory_snapshot(
     instance_id: str | None = None,
 ) -> Path:
     snapshot = json.loads(
-        (FIXTURES / f"{platform}_snapshot_messy.json").read_text(encoding="utf-8")
+        (FIXTURES / f"{platform}_snapshot_messy.json").read_text(
+            encoding="utf-8"
+        )
     )
     if platform == "cja":
         snapshot["metadata"]["Data View ID"] = instance_id or "shared-instance"
@@ -805,9 +929,7 @@ def test_cli_current_older_and_unparseable_generators_are_quiet(
     version,
 ):
     snapshot = json.loads(
-        (FIXTURES / f"{platform}_snapshot_messy.json").read_text(
-            encoding="utf-8"
-        )
+        (FIXTURES / f"{platform}_snapshot_messy.json").read_text(encoding="utf-8")
     )
     if platform == "cja":
         snapshot["metadata"]["Tool Version"] = version
