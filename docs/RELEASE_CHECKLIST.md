@@ -29,6 +29,10 @@ Record the successful run URLs for these stable checks:
 - [ ] `Version identity`: `________`
 - [ ] `Dependency review`: `________`
 - [ ] `CodeQL / Python`: `________`
+- [ ] Cross-repository color-pack contract comparator against the exact grader
+      and visualizer candidate commits: `________`
+- [ ] Linked green sibling `sdr-visualizer` PR or commit from the same release
+      cycle (URL and SHA): `________`
 - [ ] Strict plugin and clean local marketplace smoke: `________`
 - [ ] Private compatibility-cohort attestation and entry count: `________`
 - [ ] Calibration-cohort attestation and admitted entry count: `________`
@@ -39,6 +43,12 @@ identify the candidate, tool version, corpus revision, compatibility count,
 and calibration-admitted count without customer identifiers, stable
 fingerprints, raw scores, or local paths. A compatibility pass is not
 calibration evidence.
+
+Color-pack changes are a paired release gate. The comparator must prove exact
+equality of the ordered catalog, every ordered source-swatch list, and the
+required semantic-role list exported by both repositories. The linked sibling
+PR or commit must be green in the same release cycle. Do not publish a
+one-sided grader or visualizer color-pack change.
 
 ## Artifact evidence
 

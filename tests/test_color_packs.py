@@ -15,6 +15,7 @@ from sdr_grader.render.color_packs import (
     TEXT_CONTRAST_PAIRS,
     ColorPack,
     InvalidColorPackError,
+    color_pack_contract_snapshot,
     resolve_color_pack,
     serialize_color_pack_css,
 )
@@ -54,6 +55,23 @@ EXPECTED_ROLES = (
 )
 
 EXPECTED_SOURCE_SWATCHES = {
+    "default": (
+        "#FAFAF7",
+        "#FFFFFF",
+        "#F5F3EB",
+        "#ECE9E0",
+        "#1A1A1A",
+        "#6B6B66",
+        "#C8C4B8",
+        "#D8D6CF",
+        "#8A8A82",
+        "#4A6F6F",
+        "#5E6B78",
+        "#8A6A4A",
+        "#B8651A",
+        "#3D6B4F",
+        "#8C4A3F",
+    ),
     "ADBE": (
         "#ED2224",
         "#FBB034",
@@ -73,6 +91,12 @@ EXPECTED_SOURCE_SWATCHES = {
         "#161616",
         "#FFFFFF",
     ),
+}
+
+EXPECTED_CONTRACT_SNAPSHOT = {
+    "catalog": ("default", "ADBE", "OMTR", "BLUE"),
+    "source_swatches": EXPECTED_SOURCE_SWATCHES,
+    "required_roles": EXPECTED_ROLES,
 }
 
 
@@ -106,6 +130,25 @@ def test_every_pack_defines_the_complete_shared_role_contract():
 def test_brand_source_swatches_are_exact_and_ordered():
     for code, expected in EXPECTED_SOURCE_SWATCHES.items():
         assert COLOR_PACKS[code].source_swatches == expected
+
+
+def test_contract_snapshot_is_exact_json_compatible_public_metadata():
+    snapshot = color_pack_contract_snapshot()
+
+    assert snapshot == EXPECTED_CONTRACT_SNAPSHOT
+    assert tuple(snapshot) == ("catalog", "source_swatches", "required_roles")
+
+
+def test_contract_snapshot_returns_fresh_copy_safe_nested_values():
+    first = color_pack_contract_snapshot()
+    second = color_pack_contract_snapshot()
+
+    first["catalog"] = ("custom",)
+    first["source_swatches"]["default"] = ("#000000",)
+    first["required_roles"] = ()
+
+    assert second == EXPECTED_CONTRACT_SNAPSHOT
+    assert color_pack_contract_snapshot() == EXPECTED_CONTRACT_SNAPSHOT
 
 
 @pytest.mark.parametrize("code", COLOR_PACK_CODES)

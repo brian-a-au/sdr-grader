@@ -332,6 +332,21 @@ def resolve_color_pack(code: str) -> ColorPack:
     return COLOR_PACKS[code]
 
 
+def color_pack_contract_snapshot() -> dict[str, object]:
+    """Return a copy-safe snapshot of the shared, source-only pack contract.
+
+    Derived semantic role values are deliberately excluded: sibling parity is
+    defined by the public catalog, reviewed source swatches, and role names.
+    """
+    return {
+        "catalog": tuple(COLOR_PACK_CODES),
+        "source_swatches": {
+            code: tuple(COLOR_PACKS[code].source_swatches) for code in COLOR_PACK_CODES
+        },
+        "required_roles": tuple(REQUIRED_COLOR_ROLES),
+    }
+
+
 def serialize_color_pack_css(pack: ColorPack) -> str:
     """Serialize a pack to a stable, self-contained CSS custom-property block."""
     declarations = [f"  --sdr-{role}: {pack.roles[role]};" for role in REQUIRED_COLOR_ROLES]
@@ -346,6 +361,7 @@ __all__ = [
     "TEXT_CONTRAST_PAIRS",
     "ColorPack",
     "InvalidColorPackError",
+    "color_pack_contract_snapshot",
     "resolve_color_pack",
     "serialize_color_pack_css",
 ]

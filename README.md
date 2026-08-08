@@ -167,6 +167,41 @@ defines keys, paths, and failure behavior.
   adapter, rubric, and grader identity plus the complete report model. See the
   tagged [JSON output contract](https://github.com/brian-a-au/sdr-grader/blob/v1.2.2/docs/JSON_OUTPUT.md).
 
+### HTML color packs
+
+Generated HTML supports exactly four built-in color packs, in this public
+order: `default`, `ADBE`, `OMTR`, `BLUE`. Select one for a normal report or a
+trend report with the case-sensitive `--color-pack` option:
+
+```bash
+sdr-grader snapshot.json --color-pack ADBE --output grade.html
+sdr-grader snapshots/ --trend --color-pack BLUE --output trend.html
+```
+
+The same choice is available to renderer API callers:
+
+```python
+from sdr_grader.render import render
+from sdr_grader.trend import render_trend
+
+grade_html = render(report, color_pack="OMTR")
+trend_html = render_trend(trend, color_pack="BLUE")
+```
+
+`--pack` and `--color-pack` are independent. `--pack` selects the scoring
+rubric (`strict` or `pragmatic`); `--color-pack` selects only the presentation
+palette for generated HTML. It does not enter the report model or separately
+written JSON, and does not change findings, scoring, grades, or exit codes.
+
+The named palettes use source swatches as design inspiration only. They are
+not official brand assets, contain no logos, and do not imply affiliation,
+sponsorship, endorsement, or approval by any company. Reviewed text and
+essential-graphic color pairs are tested at WCAG contrast thresholds, but
+color is not the only severity cue: reports retain severity text and bordered
+structure. Print-specific foreground, background, and border roles are also
+tested. Every palette remains embedded in the same self-contained HTML, so
+reports continue to work offline without external CSS or JavaScript.
+
 Rendered examples for this release:
 
 | | Clean (A) | Messy (F) |
