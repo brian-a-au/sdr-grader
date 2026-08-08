@@ -232,13 +232,32 @@ def sparkline_svg(
     *,
     width: int,
     height: int,
-    chart_primary: str = "#1a1a1a",
-    chart_secondary: str = "#8a8a82",
-    chart_grid: str = "#d8d6cf",
-    severity_critical: str = "#8b2a1f",
-    severity_high: str = "#b8651a",
 ) -> Markup:
     """Static SVG line over a 0-100 y-domain, suitable for inline embedding."""
+    return _sparkline_svg_with_pack(values, width=width, height=height, color_pack=None)
+
+
+def _sparkline_svg_with_pack(
+    values: list[int],
+    *,
+    width: int,
+    height: int,
+    color_pack: ColorPack | None,
+) -> Markup:
+    """Render a sparkline with either legacy literals or validated pack roles."""
+    if color_pack is None:
+        chart_primary = "#1a1a1a"
+        chart_secondary = "#8a8a82"
+        chart_grid = "#d8d6cf"
+        severity_critical = "#8b2a1f"
+        severity_high = "#b8651a"
+    else:
+        chart_primary = color_pack.roles["chart-primary"]
+        chart_secondary = _renderer_color_value(color_pack, "chart-secondary")
+        chart_grid = _renderer_color_value(color_pack, "chart-grid")
+        severity_critical = _renderer_color_value(color_pack, "severity-critical")
+        severity_high = _renderer_color_value(color_pack, "severity-high")
+
     if not values:
         return Markup(
             f'<svg viewBox="0 0 {width} {height}" '
@@ -293,15 +312,11 @@ def _pack_sparkline_svg(
         # Preserve the pre-feature SVG bytes; CSS color spelling is irrelevant
         # visually, but this renderer has an established deterministic contract.
         return sparkline_svg(values, width=width, height=height)
-    return sparkline_svg(
+    return _sparkline_svg_with_pack(
         values,
         width=width,
         height=height,
-        chart_primary=color_pack.roles["chart-primary"],
-        chart_secondary=_renderer_color_value(color_pack, "chart-secondary"),
-        chart_grid=_renderer_color_value(color_pack, "chart-grid"),
-        severity_critical=_renderer_color_value(color_pack, "severity-critical"),
-        severity_high=_renderer_color_value(color_pack, "severity-high"),
+        color_pack=color_pack,
     )
 
 
@@ -348,7 +363,7 @@ def _trend_css() -> str:
 .grade-block { text-align: right; flex-shrink: 0; }
 .grade-letter { font-family: 'Charter','Iowan Old Style',Georgia,serif; font-size: 56px; font-weight: 600; line-height: 1; }
 .grade-pct { font-family: 'Söhne', 'Inter', system-ui, sans-serif; font-size: 14px; color: var(--sdr-text-primary); margin-top: 4px; }
-.grade-meta { font-family: 'Söhne', 'Inter', system-ui, sans-serif; font-size: 11px; color: var(--sdr-border-strong); margin-top: 4px; }
+.grade-meta { font-family: 'Söhne', 'Inter', system-ui, sans-serif; font-size: 11px; color: var(--sdr-text-muted); margin-top: 4px; }
 .delta { font-family: 'Söhne', 'Inter', sans-serif; font-size: 11px; }
 .delta.trend-up { color: var(--sdr-report-trend-up); }
 .delta.trend-down { color: var(--sdr-report-trend-down); }
@@ -370,5 +385,5 @@ def _trend_css() -> str:
 .churn { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 16px 0; }
 .churn h3 { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--sdr-text-muted); font-family: 'Söhne', 'Inter', sans-serif; font-weight: 500; }
 .churn ul { padding-left: 20px; margin: 8px 0; }
-.churn .empty { color: var(--sdr-border-strong); font-style: italic; font-size: 13px; }
+.churn .empty { color: var(--sdr-text-muted); font-style: italic; font-size: 13px; }
 """

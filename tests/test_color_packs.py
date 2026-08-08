@@ -176,6 +176,20 @@ def test_declared_non_text_pairs_meet_wcag_graphics_contrast(code):
 
 
 @pytest.mark.parametrize("code", COLOR_PACK_CODES)
+def test_brand_accents_are_distinct_from_status_roles(code):
+    roles = COLOR_PACKS[code].roles
+    status_roles = tuple(
+        role for role in REQUIRED_COLOR_ROLES if role.startswith(("severity-", "change-"))
+    )
+
+    for accent_role in ("accent-primary", "accent-secondary"):
+        collisions = [
+            status_role for status_role in status_roles if roles[accent_role] == roles[status_role]
+        ]
+        assert not collisions, (code, accent_role, collisions)
+
+
+@pytest.mark.parametrize("code", COLOR_PACK_CODES)
 def test_css_serialization_is_stable_and_uses_only_contract_names_and_hexes(code):
     pack = resolve_color_pack(code)
     first = serialize_color_pack_css(pack)

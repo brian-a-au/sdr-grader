@@ -218,7 +218,7 @@ _DISTRIBUTION_SVG_ROLE_BY_LITERAL = MappingProxyType(
     {
         "#d8d6cf": "chart-grid",
         "#8a8a82": "chart-axis",
-        "#ece9e0": "surface-emphasis",
+        "#ece9e0": "chart-grid",
         "#6b6b66": "chart-axis",
         "#1a1a1a": "chart-primary",
         "#2a2a2a": "text-primary",

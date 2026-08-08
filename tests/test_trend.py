@@ -14,7 +14,7 @@ from sdr_grader.core.exceptions import InvalidSnapshotError
 from sdr_grader.render.color_packs import COLOR_PACK_CODES, resolve_color_pack
 from sdr_grader.rules.rubric import load_rubric
 from sdr_grader.trend import build_trend_report, render_trend
-from sdr_grader.trend.renderer import sparkline_svg
+from sdr_grader.trend.renderer import _pack_sparkline_svg, sparkline_svg
 
 FIXTURES = Path(__file__).parent / "fixtures"
 STRICT_PACK = (
@@ -189,23 +189,35 @@ def test_render_trend_default_identity_determinism_and_state_isolation(tmp_path)
     assert 'stroke="#d8d6cf"' in expected
     assert 'fill="#8a8a82"' in expected
     assert 'stroke="#1a1a1a"' in expected
-    assert render_trend(trend, color_pack="ADBE") == render_trend(
-        trend, color_pack="ADBE"
-    )
     render_trend(trend, color_pack="ADBE")
     render_trend(trend, color_pack="BLUE")
     assert render_trend(trend) == expected
 
 
-def test_render_trend_uses_pack_roles_for_svg_and_print(tmp_path):
+@pytest.mark.parametrize("code", COLOR_PACK_CODES[1:])
+def test_render_trend_nondefault_packs_are_deterministic(tmp_path, code):
     _build_series(tmp_path)
     trend = build_trend_report(tmp_path, load_rubric(STRICT_PACK))
-    pack = resolve_color_pack("OMTR")
-    html = render_trend(trend, color_pack="OMTR")
+
+    assert render_trend(trend, color_pack=code) == render_trend(trend, color_pack=code)
+
+
+@pytest.mark.parametrize("code", COLOR_PACK_CODES[1:])
+def test_render_trend_uses_pack_roles_for_svg_and_print(tmp_path, code):
+    _build_series(tmp_path)
+    trend = build_trend_report(tmp_path, load_rubric(STRICT_PACK))
+    pack = resolve_color_pack(code)
+    html = render_trend(trend, color_pack=code)
 
     assert f'stroke="{pack.roles["chart-primary"]}"' in html
     assert f'stroke="{pack.roles["chart-grid"]}"' in html
     assert f'fill="{pack.roles["chart-secondary"]}"' in html
+    assert f'stroke="{pack.roles["severity-critical"]}"' in _pack_sparkline_svg(
+        [50], width=120, height=30, color_pack=pack
+    )
+    assert f'stroke="{pack.roles["severity-high"]}"' in _pack_sparkline_svg(
+        [65], width=120, height=30, color_pack=pack
+    )
     assert "@media print" in html
     assert "var(--sdr-print-background)" in html
     assert "var(--sdr-print-foreground)" in html
@@ -231,6 +243,16 @@ def test_render_trend_self_contained():
     assert "<svg" in svg
     assert "polyline" in svg
     assert "http://" not in svg.replace('xmlns="http://www.w3.org/2000/svg"', "")
+
+
+def test_public_sparkline_rejects_raw_color_injection_arguments():
+    with pytest.raises(TypeError, match="unexpected keyword argument 'chart_primary'"):
+        sparkline_svg(
+            [80],
+            width=200,
+            height=50,
+            chart_primary='"></polyline><script>alert(1)</script><polyline stroke="',
+        )
 
 
 def test_sparkline_handles_single_point():

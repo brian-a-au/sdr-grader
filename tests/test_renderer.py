@@ -45,6 +45,21 @@ EXPECTED_SECTIONS = [
 ]
 
 
+def _contrast_ratio(first: str, second: str) -> float:
+    def relative_luminance(hex_color: str) -> float:
+        channels = [int(hex_color[index : index + 2], 16) / 255 for index in (1, 3, 5)]
+        linear = [
+            channel / 12.92 if channel <= 0.04045 else ((channel + 0.055) / 1.055) ** 2.4
+            for channel in channels
+        ]
+        return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
+
+    lighter, darker = sorted(
+        (relative_luminance(first), relative_luminance(second)), reverse=True
+    )
+    return (lighter + 0.05) / (darker + 0.05)
+
+
 def test_render_contains_all_sections():
     html = render(build_demo_report())
     for marker in EXPECTED_SECTIONS:
@@ -217,20 +232,23 @@ def test_render_rejects_invalid_color_pack_before_template_work(monkeypatch):
         render(build_demo_report(), color_pack="adbe")
 
 
-def test_distribution_recoloring_is_attribute_scoped_and_preserves_trust():
+@pytest.mark.parametrize("code", COLOR_PACK_CODES[1:])
+def test_distribution_recoloring_is_attribute_scoped_and_preserves_trust(code):
     from sdr_grader.render.renderer import _recolor_distribution_svg
 
-    pack = resolve_color_pack("ADBE")
+    pack = resolve_color_pack(code)
     trusted = Markup(
         '<svg><text fill="#8a8a82">literal #1a1a1a &lt;em&gt;x&lt;/em&gt;</text>'
         '<text>literal fill="#1a1a1a" stroke="#d8d6cf"</text>'
         '<path fill="#1a1a1a" stroke="#d8d6cf"/>'
+        '<rect fill="#ece9e0"/>'
         '<path data-fill="#1a1a1a"/>'
         '<path fill="#ABCDEF"/></svg>'
     )
     plain = (
         '<svg><text fill="#8a8a82">literal #1a1a1a <script>x</script></text>'
-        '<path fill="#1a1a1a" stroke="#d8d6cf"/></svg>'
+        '<path fill="#1a1a1a" stroke="#d8d6cf"/>'
+        '<rect fill="#ece9e0"/></svg>'
     )
 
     recolored_trusted = _recolor_distribution_svg(trusted, pack)
@@ -246,6 +264,12 @@ def test_distribution_recoloring_is_attribute_scoped_and_preserves_trust():
     assert f'fill="{pack.roles["chart-axis"]}"' in recolored_trusted
     assert f'fill="{pack.roles["chart-primary"]}"' in recolored_trusted
     assert f'stroke="{pack.roles["chart-grid"]}"' in recolored_trusted
+    assert f'fill="{pack.roles["chart-grid"]}"' in recolored_trusted
+    assert f'fill="{pack.roles["chart-axis"]}"' in recolored_plain
+    assert f'fill="{pack.roles["chart-primary"]}"' in recolored_plain
+    assert f'stroke="{pack.roles["chart-grid"]}"' in recolored_plain
+    assert f'fill="{pack.roles["chart-grid"]}"' in recolored_plain
+    assert _contrast_ratio(pack.roles["chart-grid"], pack.roles["surface-page"]) >= 3.0
     assert 'data-fill="#1a1a1a"' in recolored_trusted
     assert 'fill="#ABCDEF"' in recolored_trusted
 
@@ -253,7 +277,7 @@ def test_distribution_recoloring_is_attribute_scoped_and_preserves_trust():
     report.distribution = Distribution(
         charts=[DistributionChart(label="Adversarial", svg=plain)]
     )
-    html = render(report, color_pack="ADBE")
+    html = render(report, color_pack=code)
     assert "<script>x</script>" not in html
     assert "&lt;script&gt;x&lt;/script&gt;" in html
     assert "literal #1a1a1a" in html
@@ -272,14 +296,20 @@ def test_default_distribution_svg_copy_is_byte_preserving():
 
 def test_report_css_uses_semantic_variables_and_pack_aware_print_roles():
     from sdr_grader.render import renderer as renderer_mod
+    from sdr_grader.trend.renderer import _trend_css
 
     css = renderer_mod._css()
+    trend_css = _trend_css()
     assert "#[0-9" not in css
     assert "var(--sdr-report-severity-critical)" in css
     assert "var(--sdr-print-background)" in css
     assert "var(--sdr-print-foreground)" in css
     assert "var(--sdr-print-border)" in css
     assert ".sev" in css and "border: 1px solid currentColor" in css
+    assert "color: var(--sdr-border-strong)" not in css
+    assert "color: var(--sdr-border-strong)" not in trend_css
+    assert "color: var(--sdr-text-muted)" in css
+    assert "color: var(--sdr-text-muted)" in trend_css
 
 
 def test_render_matches_golden():
