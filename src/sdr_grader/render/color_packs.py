@@ -46,6 +46,50 @@ REQUIRED_COLOR_ROLES = (
     "print-border",
 )
 
+COLOR_PACK_CODES = ("default", "ADBE", "OMTR", "BLUE")
+
+# This mapping and the two tuples above are deliberately literal declarations.
+# The cross-repository parity check reads them with ast.literal_eval, so comparing
+# a sibling checkout never imports or executes either repository's Python code.
+_SOURCE_SWATCHES = {
+    "default": (
+        "#FAFAF7",
+        "#FFFFFF",
+        "#F5F3EB",
+        "#ECE9E0",
+        "#1A1A1A",
+        "#6B6B66",
+        "#C8C4B8",
+        "#D8D6CF",
+        "#8A8A82",
+        "#4A6F6F",
+        "#5E6B78",
+        "#8A6A4A",
+        "#B8651A",
+        "#3D6B4F",
+        "#8C4A3F",
+    ),
+    "ADBE": (
+        "#ED2224",
+        "#FBB034",
+        "#FFDD00",
+        "#C1D82F",
+        "#00A4E4",
+        "#8A7967",
+        "#6A737B",
+    ),
+    "OMTR": ("#70A100", "#707070", "#000000", "#FFFFFF"),
+    "BLUE": (
+        "#001141",
+        "#0043CE",
+        "#0F62FE",
+        "#78A9FF",
+        "#D0E2FF",
+        "#161616",
+        "#FFFFFF",
+    ),
+}
+
 # These pairs are the executable accessibility contract. Text pairs are for
 # normal-size text (4.5:1); non-text pairs cover essential graphics (3:1).
 TEXT_CONTRAST_PAIRS = (
@@ -142,23 +186,7 @@ def _pack(
 
 _DEFAULT = _pack(
     "default",
-    (
-        "#FAFAF7",
-        "#FFFFFF",
-        "#F5F3EB",
-        "#ECE9E0",
-        "#1A1A1A",
-        "#6B6B66",
-        "#C8C4B8",
-        "#D8D6CF",
-        "#8A8A82",
-        "#4A6F6F",
-        "#5E6B78",
-        "#8A6A4A",
-        "#B8651A",
-        "#3D6B4F",
-        "#8C4A3F",
-    ),
+    _SOURCE_SWATCHES["default"],
     (
         "#FAFAF7",  # surface-page
         "#FFFFFF",  # surface-panel
@@ -196,15 +224,7 @@ _DEFAULT = _pack(
 
 _ADBE = _pack(
     "ADBE",
-    (
-        "#ED2224",
-        "#FBB034",
-        "#FFDD00",
-        "#C1D82F",
-        "#00A4E4",
-        "#8A7967",
-        "#6A737B",
-    ),
+    _SOURCE_SWATCHES["ADBE"],
     (
         "#FFFFFF",
         "#FFFFFF",
@@ -242,7 +262,7 @@ _ADBE = _pack(
 
 _OMTR = _pack(
     "OMTR",
-    ("#70A100", "#707070", "#000000", "#FFFFFF"),
+    _SOURCE_SWATCHES["OMTR"],
     (
         "#FFFFFF",
         "#FFFFFF",
@@ -280,7 +300,7 @@ _OMTR = _pack(
 
 _BLUE = _pack(
     "BLUE",
-    ("#001141", "#0043CE", "#0F62FE", "#78A9FF", "#D0E2FF", "#161616", "#FFFFFF"),
+    _SOURCE_SWATCHES["BLUE"],
     (
         "#FFFFFF",
         "#FFFFFF",
@@ -316,7 +336,6 @@ _BLUE = _pack(
     ),
 )
 
-COLOR_PACK_CODES = ("default", "ADBE", "OMTR", "BLUE")
 COLOR_PACKS: Mapping[str, ColorPack] = MappingProxyType(
     {pack.code: pack for pack in (_DEFAULT, _ADBE, _OMTR, _BLUE)}
 )
@@ -340,9 +359,7 @@ def color_pack_contract_snapshot() -> dict[str, object]:
     """
     return {
         "catalog": tuple(COLOR_PACK_CODES),
-        "source_swatches": {
-            code: tuple(COLOR_PACKS[code].source_swatches) for code in COLOR_PACK_CODES
-        },
+        "source_swatches": {code: tuple(_SOURCE_SWATCHES[code]) for code in COLOR_PACK_CODES},
         "required_roles": tuple(REQUIRED_COLOR_ROLES),
     }
 
