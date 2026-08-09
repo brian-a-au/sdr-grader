@@ -23,7 +23,7 @@ from sdr_grader.rules.rubric import VALID_PLATFORMS, load_rubric
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 REPOSITORY_URL = "https://github.com/brian-a-au/sdr-grader"
-RELEASE_TAG = "v1.2.2"
+RELEASE_TAG = "v1.2.3"
 
 
 def _markdown_targets(document: str) -> list[str]:
@@ -165,7 +165,7 @@ def test_readme_first_run_is_auth_free_and_platform_complete():
     first_run = readme.split("## First local grade", 1)[1].split("## ", 1)[0]
     fixture_url = (
         "https://raw.githubusercontent.com/brian-a-au/sdr-grader/"
-        "v1.2.2/tests/fixtures/cja_snapshot_clean.json"
+        "v1.2.3/tests/fixtures/cja_snapshot_clean.json"
     )
 
     assert "cja_auto_sdr" in first_run and "aa_auto_sdr" in first_run
@@ -433,8 +433,8 @@ def test_security_is_the_five_surface_privacy_authority():
     assert "../SECURITY.md" in ci
     assert "JSON_OUTPUT.md" in ci
     for document in (skill_readme, skill):
-        assert "blob/v1.2.2/docs/JSON_OUTPUT.md" in document
-        assert "blob/v1.2.2/SECURITY.md#report-sharing-privacy-matrix" in document
+        assert "blob/v1.2.3/docs/JSON_OUTPUT.md" in document
+        assert "blob/v1.2.3/SECURITY.md#report-sharing-privacy-matrix" in document
 
 
 def test_claude_skill_requires_user_paths_consent_and_inert_data():
@@ -506,7 +506,7 @@ def test_public_ci_example_uses_reviewed_pins_and_opt_in_artifacts():
     )
     assert checkout["with"]["persist-credentials"] is False
     assert by_name["Install uv"]["with"]["version"] == "0.11.16"
-    assert by_name["Install sdr-grader"]["run"] == "uv tool install sdr-grader==1.2.2"
+    assert by_name["Install sdr-grader"]["run"] == "uv tool install sdr-grader==1.2.3"
 
     grader_command = by_name["Run grader"]["run"].replace("\\\n", " ")
     assert "sdr-grader path/to/snapshot.json" in grader_command

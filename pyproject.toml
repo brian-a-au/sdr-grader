@@ -37,8 +37,8 @@ sdr-grader = "sdr_grader.cli.main:main"
 
 [project.urls]
 Homepage = "https://github.com/brian-a-au/sdr-grader"
-Documentation = "https://github.com/brian-a-au/sdr-grader/blob/v1.2.2/README.md"
-Source = "https://github.com/brian-a-au/sdr-grader/tree/v1.2.2"
+Documentation = "https://github.com/brian-a-au/sdr-grader/blob/v1.2.3/README.md"
+Source = "https://github.com/brian-a-au/sdr-grader/tree/v1.2.3"
 Issues = "https://github.com/brian-a-au/sdr-grader/issues"
 Changelog = "https://github.com/brian-a-au/sdr-grader/blob/main/CHANGELOG.md"
 

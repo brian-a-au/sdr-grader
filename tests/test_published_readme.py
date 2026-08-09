@@ -12,7 +12,7 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRIPT = REPO_ROOT / "scripts" / "verify_published_readme.py"
-VERSION = "1.2.2"
+VERSION = "1.2.3"
 
 
 def _load_module():
@@ -91,7 +91,7 @@ class _Opener:
 def test_prepublication_checks_candidate_digests_and_exact_tag_links(tmp_path):
     module = _load_module()
     description = (
-        "[docs](https://github.com/brian-a-au/sdr-grader/blob/v1.2.2/README.md)\n"
+        "[docs](https://github.com/brian-a-au/sdr-grader/blob/v1.2.3/README.md)\n"
         "[install](https://github.com/brian-a-au/cja_auto_sdr#install-from-pypi-recommended)\n"
     )
     dist, _wheel, evidence = _artifacts(tmp_path, description)
@@ -104,8 +104,8 @@ def test_prepublication_checks_candidate_digests_and_exact_tag_links(tmp_path):
         fetch=lambda url, **_kwargs: seen.append(url) or b"ok",
     )
 
-    assert "https://github.com/brian-a-au/sdr-grader/tree/v1.2.2" in seen
-    assert "https://github.com/brian-a-au/sdr-grader/blob/v1.2.2/README.md" in seen
+    assert "https://github.com/brian-a-au/sdr-grader/tree/v1.2.3" in seen
+    assert "https://github.com/brian-a-au/sdr-grader/blob/v1.2.3/README.md" in seen
     assert "https://github.com/brian-a-au/cja_auto_sdr#install-from-pypi-recommended" in seen
 
 
@@ -127,7 +127,7 @@ def test_prepublication_rejects_non_tagged_release_link(tmp_path):
 
 def test_postpublication_requires_pypi_description_and_byte_digest_equality(tmp_path):
     module = _load_module()
-    description = "[docs](https://github.com/brian-a-au/sdr-grader/blob/v1.2.2/README.md)\n"
+    description = "[docs](https://github.com/brian-a-au/sdr-grader/blob/v1.2.3/README.md)\n"
     dist, wheel, evidence = _artifacts(tmp_path, description)
     wheel_url = f"https://files.pythonhosted.org/packages/{wheel.name}"
     sdist = next(dist.glob("*.tar.gz"))
@@ -151,8 +151,8 @@ def test_postpublication_requires_pypi_description_and_byte_digest_equality(tmp_
         f"https://pypi.org/pypi/sdr-grader/{VERSION}/json": json.dumps(pypi).encode(),
         wheel_url: wheel.read_bytes(),
         sdist_url: sdist.read_bytes(),
-        "https://github.com/brian-a-au/sdr-grader/tree/v1.2.2": b"tag",
-        "https://github.com/brian-a-au/sdr-grader/blob/v1.2.2/README.md": b"readme",
+        "https://github.com/brian-a-au/sdr-grader/tree/v1.2.3": b"tag",
+        "https://github.com/brian-a-au/sdr-grader/blob/v1.2.3/README.md": b"readme",
     }
 
     module.verify_postpublication(
@@ -177,7 +177,7 @@ def test_bounded_client_disables_auth_cookies_and_validates_redirects():
     module = _load_module()
     opener = _Opener(
         [
-            _Response(b"", status=302, headers={"Location": "/brian-a-au/sdr-grader/tree/v1.2.2"}),
+            _Response(b"", status=302, headers={"Location": "/brian-a-au/sdr-grader/tree/v1.2.3"}),
             _Response(b"ok"),
         ]
     )

@@ -5,6 +5,12 @@ spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
 ### Upcoming
 
+## 1.2.3 — 2026-08-09
+
+Maintainer-approved presentation-only patch release paired with
+`sdr-visualizer` 1.0.8. Grading, report JSON, rubric `2.0`, and schema `1`
+contracts are unchanged.
+
 - Added four deterministic, HTML-only presentation palettes in the exact
   public order `default`, `ADBE`, `OMTR`, `BLUE` for normal and trend reports.
   Rubric selection, report data, JSON, findings, scores, grades, and exit codes
