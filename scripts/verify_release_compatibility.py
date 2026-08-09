@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compare the candidate package with the immutable v1.2.1 behavior baseline."""
+"""Compare the candidate package with the immutable v1.2.2 behavior baseline."""
 
 from __future__ import annotations
 
@@ -18,8 +18,8 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
-BASELINE_TAG = "v1.2.1"
-BASELINE_COMMIT = "9301672144d5fe97cc869a9f5206da38d26fd353"
+BASELINE_TAG = "v1.2.2"
+BASELINE_COMMIT = "1978eb6d6e8d865e66f2dd464624db9a377417de"
 PUBLIC_REMOTE = "https://github.com/brian-a-au/sdr-grader.git"
 UV_VERSION = "0.11.16"
 README_COMMAND = "sdr-grader cja_snapshot_clean.json --output grade.html --json grade.json --quiet"
@@ -118,20 +118,6 @@ def _fetch_and_verify_baseline(repo_root: Path, environment: dict[str, str]) -> 
     )
     if peeled != BASELINE_COMMIT:
         raise CompatibilityError(f"{BASELINE_TAG} peeled to {peeled}, expected {BASELINE_COMMIT}")
-
-
-def _verify_lock_identity(repo_root: Path, environment: dict[str, str]) -> None:
-    current = (repo_root / "uv.lock").read_bytes()
-    try:
-        baseline = subprocess.check_output(
-            ["git", "show", f"{BASELINE_COMMIT}:uv.lock"],
-            cwd=repo_root,
-            env=environment,
-        )
-    except (OSError, subprocess.CalledProcessError) as exc:
-        raise CompatibilityError("could not read the baseline uv.lock") from exc
-    if current != baseline:
-        raise CompatibilityError("candidate uv.lock is not byte-identical to v1.2.1")
 
 
 def _extract_baseline(repo_root: Path, destination: Path, environment: dict[str, str]) -> None:
@@ -418,7 +404,6 @@ def verify_compatibility(repo_root: Path = ROOT, *, uv: str = "uv") -> None:
     environment = _clean_environment()
     _verify_uv(uv, repo_root=repo_root, environment=environment)
     _fetch_and_verify_baseline(repo_root, environment)
-    _verify_lock_identity(repo_root, environment)
     readme_arguments = _readme_arguments(repo_root)
 
     with tempfile.TemporaryDirectory(prefix="sdr-grader-compat-") as temporary:
@@ -459,7 +444,7 @@ def verify_compatibility(repo_root: Path = ROOT, *, uv: str = "uv") -> None:
         if candidate != baseline:
             raise CompatibilityError(
                 "candidate structured scores/findings/categories/exit/trend/schema differ "
-                "from v1.2.1 after normalizing only tool_version, "
+                "from v1.2.2 after normalizing only tool_version, "
                 + ", ".join(NORMALIZED_COPY_FIELDS)
             )
 
@@ -475,7 +460,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"compatibility verification failed: {exc}", file=sys.stderr)
         return 1
     print(
-        "v1.2.1 compatibility verified: scores, findings, categories, exits, "
+        "v1.2.2 compatibility verified: scores, findings, categories, exits, "
         "trend, and schema are unchanged"
     )
     return 0

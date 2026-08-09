@@ -263,5 +263,5 @@ jobs:
           PY
           )
 
-      - name: Verify v1.2.1 compatibility
+      - name: Verify v1.2.2 compatibility
         run: python3 scripts/verify_release_compatibility.py --uv uv
