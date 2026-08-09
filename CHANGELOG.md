@@ -10,13 +10,14 @@ spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
   Rubric selection, report data, JSON, findings, scores, grades, and exit codes
   are unchanged.
 - Added a copy-safe color-pack contract snapshot for cross-repository parity
-  checks and made a green, linked `sdr-visualizer` sibling change in the same
+  checks over catalog, source swatches, role names, and text/non-text contrast
+  pairs, and made a green, linked `sdr-visualizer` sibling change in the same
   release cycle a release requirement. Palette names and source swatches are
   inspiration only; they include no logos and imply no affiliation,
   endorsement, or official approval.
 - Corrected the default high-severity presentation color to the accessible
-  shared role value and expanded the mirrored contrast gates to cover rendered
-  severity text and control boundaries.
+  shared role value, recolored the default distribution view without changing
+  report JSON, and expanded mirrored contrast gates for text and controls.
 
 ## 1.2.2 — 2026-08-03
 

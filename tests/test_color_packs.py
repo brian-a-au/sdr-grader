@@ -97,6 +97,8 @@ EXPECTED_CONTRACT_SNAPSHOT = {
     "catalog": ("default", "ADBE", "OMTR", "BLUE"),
     "source_swatches": EXPECTED_SOURCE_SWATCHES,
     "required_roles": EXPECTED_ROLES,
+    "text_contrast_pairs": TEXT_CONTRAST_PAIRS,
+    "non_text_contrast_pairs": NON_TEXT_CONTRAST_PAIRS,
 }
 
 
@@ -114,6 +116,14 @@ def _contrast_ratio(first: str, second: str) -> float:
         (_relative_luminance(first), _relative_luminance(second)), reverse=True
     )
     return (lighter + 0.05) / (darker + 0.05)
+
+
+def _failing_contrast_pairs(roles, pairs, minimum):
+    return [
+        (foreground, background)
+        for foreground, background in pairs
+        if _contrast_ratio(roles[foreground], roles[background]) < minimum
+    ]
 
 
 def test_catalog_has_exact_public_identifiers_in_order():
@@ -136,7 +146,13 @@ def test_contract_snapshot_is_exact_json_compatible_public_metadata():
     snapshot = color_pack_contract_snapshot()
 
     assert snapshot == EXPECTED_CONTRACT_SNAPSHOT
-    assert tuple(snapshot) == ("catalog", "source_swatches", "required_roles")
+    assert tuple(snapshot) == (
+        "catalog",
+        "source_swatches",
+        "required_roles",
+        "text_contrast_pairs",
+        "non_text_contrast_pairs",
+    )
 
 
 def test_contract_snapshot_returns_fresh_copy_safe_nested_values():
@@ -146,6 +162,7 @@ def test_contract_snapshot_returns_fresh_copy_safe_nested_values():
     first["catalog"] = ("custom",)
     first["source_swatches"]["default"] = ("#000000",)
     first["required_roles"] = ()
+    first["text_contrast_pairs"] = ()
 
     assert second == EXPECTED_CONTRACT_SNAPSHOT
     assert color_pack_contract_snapshot() == EXPECTED_CONTRACT_SNAPSHOT
@@ -177,24 +194,23 @@ def test_contrast_pair_contract_covers_status_text_and_control_boundaries():
 def test_declared_text_pairs_meet_wcag_normal_text_contrast(code):
     roles = COLOR_PACKS[code].roles
     assert TEXT_CONTRAST_PAIRS
-    for foreground, background in TEXT_CONTRAST_PAIRS:
-        assert _contrast_ratio(roles[foreground], roles[background]) >= 4.5, (
-            code,
-            foreground,
-            background,
-        )
+    assert _failing_contrast_pairs(roles, TEXT_CONTRAST_PAIRS, 4.5) == [], code
 
 
 @pytest.mark.parametrize("code", COLOR_PACK_CODES)
 def test_declared_non_text_pairs_meet_wcag_graphics_contrast(code):
     roles = COLOR_PACKS[code].roles
     assert NON_TEXT_CONTRAST_PAIRS
-    for foreground, background in NON_TEXT_CONTRAST_PAIRS:
-        assert _contrast_ratio(roles[foreground], roles[background]) >= 3.0, (
-            code,
-            foreground,
-            background,
-        )
+    assert _failing_contrast_pairs(roles, NON_TEXT_CONTRAST_PAIRS, 3.0) == [], code
+
+
+def test_contrast_gate_detects_a_mutated_control_boundary():
+    roles = dict(COLOR_PACKS["default"].roles)
+    roles["border-strong"] = roles["border-default"]
+
+    assert ("border-strong", "surface-panel") in _failing_contrast_pairs(
+        roles, NON_TEXT_CONTRAST_PAIRS, 3.0
+    )
 
 
 @pytest.mark.parametrize("code", COLOR_PACK_CODES)

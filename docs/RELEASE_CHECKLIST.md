@@ -30,7 +30,8 @@ Record the successful run URLs for these stable checks:
 - [ ] `Dependency review`: `________`
 - [ ] `CodeQL / Python`: `________`
 - [ ] Cross-repository color-pack contract comparator against the exact grader
-      and visualizer candidate commits: `________`
+      and visualizer candidate commits, including mirrored text/non-text
+      contrast-pair gates: `________`
 - [ ] Linked green sibling `sdr-visualizer` PR or commit from the same release
       cycle (URL and SHA): `________`
 - [ ] Strict plugin and clean local marketplace smoke: `________`

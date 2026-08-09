@@ -350,9 +350,6 @@ def _recolor_distribution_svg(svg: str | Markup, pack: ColorPack) -> str | Marku
     copy is transformed, and only exact ``fill``/``stroke`` attribute values
     emitted by ``render.svg`` are eligible; text nodes are never searched.
     """
-    if pack.code == "default":
-        return svg
-
     def replace_attribute(match: re.Match[str]) -> str:
         literal = match.group("color")
         role = _DISTRIBUTION_SVG_ROLE_BY_LITERAL.get(literal)

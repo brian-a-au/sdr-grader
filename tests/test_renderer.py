@@ -12,6 +12,7 @@ The renderer's output is the visual contract (SPEC §3). These tests guard:
 from __future__ import annotations
 
 import dataclasses
+import re
 from html.parser import HTMLParser
 from pathlib import Path
 
@@ -242,7 +243,7 @@ def test_render_rejects_invalid_color_pack_before_template_work(monkeypatch):
         render(build_demo_report(), color_pack="adbe")
 
 
-@pytest.mark.parametrize("code", COLOR_PACK_CODES[1:])
+@pytest.mark.parametrize("code", COLOR_PACK_CODES)
 def test_distribution_recoloring_is_attribute_scoped_and_preserves_trust(code):
     from sdr_grader.render.renderer import _recolor_distribution_svg
 
@@ -293,14 +294,20 @@ def test_distribution_recoloring_is_attribute_scoped_and_preserves_trust(code):
     assert "literal #1a1a1a" in html
 
 
-def test_default_distribution_svg_copy_is_byte_preserving():
+def test_default_distribution_recolors_only_the_rendered_view_for_accessibility():
     report = build_demo_report()
     assert report.distribution is not None
     original = report.distribution.charts[0].svg
+    pack = resolve_color_pack("default")
 
     html = render(report, color_pack="default")
 
-    assert str(original) in html
+    assert str(original) not in html
+    assert f'fill="{pack.roles["chart-axis"]}"' in html
+    assert f'fill="{pack.roles["chart-grid"]}"' in html
+    assert _contrast_ratio(pack.roles["chart-axis"], pack.roles["surface-panel"]) >= 4.5
+    assert _contrast_ratio(pack.roles["chart-grid"], pack.roles["surface-panel"]) >= 3.0
+    assert str(report.distribution.charts[0].svg) == str(original)
     assert report.distribution.charts[0].svg is original
 
 
@@ -310,7 +317,13 @@ def test_report_css_uses_semantic_variables_and_pack_aware_print_roles():
 
     css = renderer_mod._css()
     trend_css = _trend_css()
-    assert "#[0-9" not in css
+    raw_color = re.compile(r"#[0-9A-Fa-f]{3,8}|rgba?\([^)]*\)")
+    assert raw_color.findall(".mutant { color: #ED2224; background: rgb(0, 0, 0); }") == [
+        "#ED2224",
+        "rgb(0, 0, 0)",
+    ]
+    assert raw_color.findall(css) == []
+    assert raw_color.findall(trend_css) == []
     assert "var(--sdr-report-severity-critical)" in css
     assert "var(--sdr-print-background)" in css
     assert "var(--sdr-print-foreground)" in css
