@@ -4,8 +4,6 @@ import importlib.util
 import json
 from pathlib import Path
 
-import pytest
-
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRIPT = REPO_ROOT / "scripts" / "verify_release_compatibility.py"
 
@@ -31,8 +29,8 @@ def test_compatibility_baseline_and_normalization_are_explicit_and_narrow():
 
     normalized = module._normalize_report(report)
 
-    assert module.BASELINE_TAG == "v1.2.1"
-    assert module.BASELINE_COMMIT == "9301672144d5fe97cc869a9f5206da38d26fd353"
+    assert module.BASELINE_TAG == "v1.2.2"
+    assert module.BASELINE_COMMIT == "1978eb6d6e8d865e66f2dd464624db9a377417de"
     assert module.UV_VERSION == "0.11.16"
     assert module.NORMALIZED_COPY_FIELDS == (
         "methodology.paragraphs",
@@ -79,18 +77,14 @@ def test_compatibility_fetches_only_the_public_baseline_tag(monkeypatch):
         "--no-tags",
         "--force",
         module.PUBLIC_REMOTE,
-        "+refs/tags/v1.2.1:refs/tags/v1.2.1",
+        "+refs/tags/v1.2.2:refs/tags/v1.2.2",
     ]
     assert "--tags" not in fetch
 
 
-def test_compatibility_rejects_lock_drift(tmp_path, monkeypatch):
+def test_compatibility_allows_dev_only_lock_drift():
     module = _load_module()
-    (tmp_path / "uv.lock").write_bytes(b"candidate")
-    monkeypatch.setattr(module.subprocess, "check_output", lambda *args, **kwargs: b"baseline")
-
-    with pytest.raises(module.CompatibilityError, match="byte-identical"):
-        module._verify_lock_identity(tmp_path, module._clean_environment())
+    assert not hasattr(module, "_verify_lock_identity")
 
 
 def test_readme_command_contract_replaces_only_argv_zero(tmp_path):

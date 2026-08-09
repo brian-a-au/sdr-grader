@@ -261,7 +261,7 @@ def test_pull_request_package_gate_is_read_only_isolated_and_complete():
     assert "check --strict dist/*" in by_name["Validate public distributions"]["run"]
     assert "scripts/verify_release_artifacts.py" in by_name["Validate public distributions"]["run"]
     assert (
-        "scripts/verify_release_compatibility.py" in by_name["Verify v1.2.1 compatibility"]["run"]
+        "scripts/verify_release_compatibility.py" in by_name["Verify v1.2.2 compatibility"]["run"]
     )
 
     smoke = by_name["Smoke installed wheel outside checkout"]["run"]
@@ -283,13 +283,13 @@ def test_release_validation_inputs_are_exact_and_every_locked_requirement_is_has
     locked = (requirements / "release-validation.txt").read_text(encoding="utf-8")
 
     assert inputs.splitlines() == [
-        "twine==6.2.0",
+        "twine==7.0.0",
         "readme-renderer[md]==45.0",
     ]
     assert (
         "uv pip compile requirements/release-validation.in --universal --generate-hashes" in locked
     )
-    assert re.search(r"^twine==6\.2\.0 \\\n\s+--hash=sha256:", locked, re.MULTILINE)
+    assert re.search(r"^twine==7\.0\.0 \\\n\s+--hash=sha256:", locked, re.MULTILINE)
     assert re.search(r"^readme-renderer==45\.0 \\\n\s+--hash=sha256:", locked, re.MULTILINE)
     requirements_without_hashes = [
         line
