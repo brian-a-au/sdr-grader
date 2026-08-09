@@ -151,6 +151,28 @@ def test_contract_snapshot_returns_fresh_copy_safe_nested_values():
     assert color_pack_contract_snapshot() == EXPECTED_CONTRACT_SNAPSHOT
 
 
+def test_contrast_pair_contract_covers_status_text_and_control_boundaries():
+    assert TEXT_CONTRAST_PAIRS == (
+        ("text-primary", "surface-page"),
+        ("text-primary", "surface-panel"),
+        ("text-primary", "surface-emphasis"),
+        ("text-muted", "surface-page"),
+        ("text-muted", "surface-panel"),
+        ("text-inverse", "accent-primary"),
+        ("text-inverse", "accent-secondary"),
+        ("severity-critical", "surface-panel"),
+        ("severity-high", "surface-panel"),
+        ("severity-medium", "surface-panel"),
+        ("severity-low", "surface-panel"),
+        ("print-foreground", "print-background"),
+    )
+    assert NON_TEXT_CONTRAST_PAIRS[:3] == (
+        ("border-strong", "surface-page"),
+        ("border-strong", "surface-panel"),
+        ("focus-ring", "surface-page"),
+    )
+
+
 @pytest.mark.parametrize("code", COLOR_PACK_CODES)
 def test_declared_text_pairs_meet_wcag_normal_text_contrast(code):
     roles = COLOR_PACKS[code].roles

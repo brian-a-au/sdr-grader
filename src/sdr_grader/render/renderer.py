@@ -191,7 +191,8 @@ _SVG_COLOR_ATTRIBUTE_RE = re.compile(
     r'(?P<color>#[0-9a-fA-F]{6})(?P<suffix>")'
 )
 
-# The default literals preserve the report's pre-feature computed colors.
+# Default literals preserve the report's pre-feature computed colors except
+# where the shared accessibility contract requires a corrected role value.
 # Non-default packs bind each renderer-specific compatibility alias back to a
 # shared semantic role. This keeps old visual distinctions without expanding
 # the mirrored public role schema.
@@ -199,7 +200,7 @@ _RENDERER_COLOR_ALIASES = MappingProxyType(
     {
         "text-secondary": ("#2A2A2A", "text-primary"),
         "severity-critical": ("#8B2A1F", "severity-critical"),
-        "severity-high": ("#B8651A", "severity-high"),
+        "severity-high": ("#9C4F10", "severity-high"),
         "severity-medium": ("#6B6B1A", "severity-medium"),
         "severity-low": ("#4A4A4A", "severity-low"),
         "change-added": ("#2A5934", "change-added"),

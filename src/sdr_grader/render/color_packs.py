@@ -100,11 +100,16 @@ TEXT_CONTRAST_PAIRS = (
     ("text-muted", "surface-panel"),
     ("text-inverse", "accent-primary"),
     ("text-inverse", "accent-secondary"),
+    ("severity-critical", "surface-panel"),
+    ("severity-high", "surface-panel"),
+    ("severity-medium", "surface-panel"),
+    ("severity-low", "surface-panel"),
     ("print-foreground", "print-background"),
 )
 
 NON_TEXT_CONTRAST_PAIRS = (
     ("border-strong", "surface-page"),
+    ("border-strong", "surface-panel"),
     ("focus-ring", "surface-page"),
     ("accent-primary", "surface-page"),
     ("accent-secondary", "surface-page"),

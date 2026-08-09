@@ -14,6 +14,9 @@ spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
   release cycle a release requirement. Palette names and source swatches are
   inspiration only; they include no logos and imply no affiliation,
   endorsement, or official approval.
+- Corrected the default high-severity presentation color to the accessible
+  shared role value and expanded the mirrored contrast gates to cover rendered
+  severity text and control boundaries.
 
 ## 1.2.2 — 2026-08-03
 

@@ -199,12 +199,22 @@ def test_render_omitted_and_explicit_default_are_byte_identical():
     assert html.index("/* ---------- Reset & base ---------- */") < html.index(":root {")
     for declaration in (
         "--sdr-report-severity-critical: #8B2A1F;",
-        "--sdr-report-severity-high: #B8651A;",
+        "--sdr-report-severity-high: #9C4F10;",
         "--sdr-report-surface-code: #F3F1E8;",
         "--sdr-report-border-code: #C9C5B6;",
         "--sdr-report-trend-card: #F3F1EA;",
     ):
         assert declaration in html
+
+
+def test_default_high_severity_alias_uses_accessible_shared_text_role():
+    from sdr_grader.render.renderer import _renderer_color_value
+
+    pack = resolve_color_pack("default")
+    resolved = _renderer_color_value(pack, "severity-high")
+
+    assert resolved == pack.roles["severity-high"] == "#9C4F10"
+    assert _contrast_ratio(resolved, pack.roles["surface-panel"]) >= 4.5
 
 
 @pytest.mark.parametrize("code", COLOR_PACK_CODES[1:])
