@@ -38,8 +38,8 @@ def _fixture(tmp_path: Path):
     dist = tmp_path / "dist"
     dist.mkdir()
     files = {
-        "sdr_grader-1.2.2-py3-none-any.whl": b"wheel",
-        "sdr_grader-1.2.2.tar.gz": b"sdist",
+        "sdr_grader-1.2.3-py3-none-any.whl": b"wheel",
+        "sdr_grader-1.2.3.tar.gz": b"sdist",
     }
     records = []
     for name, payload in files.items():
@@ -69,7 +69,7 @@ def _fixture(tmp_path: Path):
             "digest": f"sha256:{hashlib.sha256(evidence.read_bytes()).hexdigest()}",
         }
     )
-    release = {"tagName": "v1.2.2", "isDraft": True, "assets": assets}
+    release = {"tagName": "v1.2.3", "isDraft": True, "assets": assets}
     return dist, evidence, release
 
 
@@ -78,7 +78,7 @@ def _verify(dist: Path, evidence: Path, release: dict) -> None:
         release=release,
         evidence_path=evidence,
         dist_dir=dist,
-        expected_tag="v1.2.2",
+        expected_tag="v1.2.3",
     )
 
 
@@ -115,7 +115,7 @@ def test_existing_release_rejects_unsafe_remote_state(tmp_path, mutate, message)
 
 def test_existing_release_rejects_changed_retained_candidate(tmp_path):
     dist, evidence, release = _fixture(tmp_path)
-    (dist / "sdr_grader-1.2.2.tar.gz").write_bytes(b"changed")
+    (dist / "sdr_grader-1.2.3.tar.gz").write_bytes(b"changed")
 
     with pytest.raises(release_assets.ReleaseAssetError, match="candidate mismatch"):
         _verify(dist, evidence, release)
@@ -135,7 +135,7 @@ def test_main_fails_closed_on_invalid_release_json(tmp_path, capsys):
                 "--dist-dir",
                 str(tmp_path / "dist"),
                 "--expected-tag",
-                "v1.2.2",
+                "v1.2.3",
             ]
         )
         == 1

@@ -12,7 +12,7 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRIPT = REPO_ROOT / "scripts" / "verify_release_artifacts.py"
-VERSION = "1.2.2"
+VERSION = "1.2.3"
 SDIST_ROOT = f"sdr_grader-{VERSION}"
 DIST_INFO = f"sdr_grader-{VERSION}.dist-info"
 

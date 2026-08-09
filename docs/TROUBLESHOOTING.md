@@ -1,7 +1,7 @@
 # Troubleshooting installed `sdr-grader`
 
 This guide covers the public, installed-user failure modes for `sdr-grader`
-1.2.2. Run `sdr-grader --version` first so the diagnostic is tied to a known
+1.2.3. Run `sdr-grader --version` first so the diagnostic is tied to a known
 release. File, directory, and stdin grading are local; only `--dataview` and
 `--rsid` invoke child generators that call Adobe APIs.
 
