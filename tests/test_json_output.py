@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from fixtures.demo_report import build_demo_report
 from sdr_grader import __version__
-from sdr_grader.render import Remediation
+from sdr_grader.render import Remediation, render
 from sdr_grader.render.json_output import report_to_dict
 
 
@@ -51,3 +53,14 @@ def test_conflicting_remediation_aliases_are_rejected():
             priority_weight=5,
             impact_pts=3,
         )
+
+
+def test_color_pack_rendering_does_not_change_report_json_including_svg():
+    report = build_demo_report()
+    before = json.dumps(report_to_dict(report), ensure_ascii=False, sort_keys=True)
+    assert '"svg":' in before
+
+    for code in ("default", "ADBE", "OMTR", "BLUE"):
+        render(report, color_pack=code)
+        after = json.dumps(report_to_dict(report), ensure_ascii=False, sort_keys=True)
+        assert after == before

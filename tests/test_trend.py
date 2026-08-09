@@ -11,9 +11,10 @@ import pytest
 from sdr_grader.cli.exit_codes import RUNTIME_ERROR, SUCCESS
 from sdr_grader.cli.main import main
 from sdr_grader.core.exceptions import InvalidSnapshotError
+from sdr_grader.render.color_packs import COLOR_PACK_CODES, resolve_color_pack
 from sdr_grader.rules.rubric import load_rubric
 from sdr_grader.trend import build_trend_report, render_trend
-from sdr_grader.trend.renderer import sparkline_svg
+from sdr_grader.trend.renderer import _pack_sparkline_svg, sparkline_svg
 
 FIXTURES = Path(__file__).parent / "fixtures"
 STRICT_PACK = (
@@ -165,12 +166,93 @@ def test_render_trend_produces_html_with_expected_sections(tmp_path):
     assert 'id="churn"' in html
 
 
+@pytest.mark.parametrize("code", COLOR_PACK_CODES)
+def test_render_trend_applies_every_color_pack_with_visible_identity(tmp_path, code):
+    _build_series(tmp_path)
+    trend = build_trend_report(tmp_path, load_rubric(STRICT_PACK))
+    html = render_trend(trend, color_pack=code)
+    pack = resolve_color_pack(code)
+
+    assert f'data-color-pack="{code}"' in html
+    assert f"Color pack: {code}" in html
+    assert f"--sdr-accent-primary: {pack.roles['accent-primary']};" in html
+    assert "Appeared" in html
+    assert "Resolved" in html
+
+
+def test_render_trend_default_identity_determinism_and_state_isolation(tmp_path):
+    _build_series(tmp_path)
+    trend = build_trend_report(tmp_path, load_rubric(STRICT_PACK))
+    expected = render_trend(trend)
+
+    assert expected == render_trend(trend, color_pack="default")
+    assert 'stroke="#d8d6cf"' in expected
+    assert 'fill="#8a8a82"' in expected
+    assert 'stroke="#1a1a1a"' in expected
+    render_trend(trend, color_pack="ADBE")
+    render_trend(trend, color_pack="BLUE")
+    assert render_trend(trend) == expected
+
+
+@pytest.mark.parametrize("code", COLOR_PACK_CODES[1:])
+def test_render_trend_nondefault_packs_are_deterministic(tmp_path, code):
+    _build_series(tmp_path)
+    trend = build_trend_report(tmp_path, load_rubric(STRICT_PACK))
+
+    assert render_trend(trend, color_pack=code) == render_trend(trend, color_pack=code)
+
+
+@pytest.mark.parametrize("code", COLOR_PACK_CODES[1:])
+def test_render_trend_uses_pack_roles_for_svg_and_print(tmp_path, code):
+    _build_series(tmp_path)
+    trend = build_trend_report(tmp_path, load_rubric(STRICT_PACK))
+    pack = resolve_color_pack(code)
+    html = render_trend(trend, color_pack=code)
+
+    assert f'stroke="{pack.roles["chart-primary"]}"' in html
+    assert f'stroke="{pack.roles["chart-grid"]}"' in html
+    assert f'fill="{pack.roles["chart-secondary"]}"' in html
+    assert f'stroke="{pack.roles["severity-critical"]}"' in _pack_sparkline_svg(
+        [50], width=120, height=30, color_pack=pack
+    )
+    assert f'stroke="{pack.roles["severity-high"]}"' in _pack_sparkline_svg(
+        [65], width=120, height=30, color_pack=pack
+    )
+    assert "@media print" in html
+    assert "var(--sdr-print-background)" in html
+    assert "var(--sdr-print-foreground)" in html
+    assert "var(--sdr-print-border)" in html
+
+
+def test_render_trend_rejects_invalid_pack_before_building_view(tmp_path, monkeypatch):
+    from sdr_grader.trend import renderer as trend_renderer
+
+    _build_series(tmp_path)
+    trend = build_trend_report(tmp_path, load_rubric(STRICT_PACK))
+    monkeypatch.setattr(
+        trend_renderer, "_build_view", lambda *_args: pytest.fail("view built")
+    )
+
+    with pytest.raises(ValueError, match="available color packs"):
+        render_trend(trend, color_pack="blue")
+
+
 def test_render_trend_self_contained():
     pct_series = [55, 60, 70, 80]
     svg = sparkline_svg(pct_series, width=200, height=50)
     assert "<svg" in svg
     assert "polyline" in svg
     assert "http://" not in svg.replace('xmlns="http://www.w3.org/2000/svg"', "")
+
+
+def test_public_sparkline_rejects_raw_color_injection_arguments():
+    with pytest.raises(TypeError, match="unexpected keyword argument 'chart_primary'"):
+        sparkline_svg(
+            [80],
+            width=200,
+            height=50,
+            chart_primary='"></polyline><script>alert(1)</script><polyline stroke="',
+        )
 
 
 def test_sparkline_handles_single_point():

@@ -55,3 +55,13 @@ def test_category_chart_clamps_negative_median():
     """Spec F40: a negative external median pins to the bar start."""
     svg = category_comparison_chart([("Governance", 80, -30)])
     assert 'x1="140.0"' in svg
+
+
+def test_distribution_svg_generation_is_pack_invariant():
+    histogram = histogram_chart(your_score=72, median=65, p25=50, p75=80)
+    categories = category_comparison_chart([("#1a1a1a <em>label</em>", 55, 60)])
+
+    assert 'stroke="#1a1a1a"' in histogram
+    assert "#1a1a1a &lt;em&gt;label&lt;/em&gt;" in categories
+    assert "data-color-pack" not in histogram
+    assert "data-color-pack" not in categories

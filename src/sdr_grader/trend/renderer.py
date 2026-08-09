@@ -15,7 +15,12 @@ from typing import Any
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 from markupsafe import Markup
 
+from sdr_grader.render.color_packs import ColorPack, resolve_color_pack
 from sdr_grader.render.dates import human_date, to_utc
+from sdr_grader.render.renderer import (
+    _renderer_color_value,
+    _serialize_renderer_color_css,
+)
 from sdr_grader.trend.models import TrendPoint, TrendReport
 
 _HERE = Path(__file__).parent
@@ -59,11 +64,18 @@ class _CategoryTrace:
     delta: int                     # latest - first
 
 
-def render_trend(trend: TrendReport) -> str:
+def render_trend(trend: TrendReport, color_pack: str = "default") -> str:
+    pack = resolve_color_pack(color_pack)
     template = _template()
     css = Markup(_css())
-    view = _build_view(trend)
-    return template.render(trend=view, css=css)
+    color_pack_css = Markup(_serialize_renderer_color_css(pack))
+    view = _build_view(trend, pack)
+    return template.render(
+        trend=view,
+        css=css,
+        color_pack_code=pack.code,
+        color_pack_css=color_pack_css,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -71,7 +83,11 @@ def render_trend(trend: TrendReport) -> str:
 # ---------------------------------------------------------------------------
 
 
-def _build_view(trend: TrendReport) -> dict[str, Any]:
+def _build_view(
+    trend: TrendReport,
+    color_pack: ColorPack | None = None,
+) -> dict[str, Any]:
+    pack = color_pack or resolve_color_pack("default")
     if not trend.points:
         raise ValueError(
             "TrendReport has no points; a trend needs at least one graded snapshot"
@@ -120,7 +136,12 @@ def _build_view(trend: TrendReport) -> dict[str, Any]:
         "overall_latest": overall_latest,
         "overall_delta": overall_delta,
         "overall_latest_grade": trend.latest.report.grade,
-        "overall_sparkline": sparkline_svg(pct_series, width=480, height=80),
+        "overall_sparkline": _pack_sparkline_svg(
+            pct_series,
+            width=480,
+            height=80,
+            color_pack=pack,
+        ),
         "category_traces": [
             {
                 "slug": trace.name,
@@ -128,7 +149,12 @@ def _build_view(trend: TrendReport) -> dict[str, Any]:
                 "latest_pct": trace.latest_pct,
                 "delta": trace.delta,
                 "delta_class": _delta_class(trace.delta),
-                "sparkline": sparkline_svg(trace.points, width=180, height=44),
+                "sparkline": _pack_sparkline_svg(
+                    trace.points,
+                    width=180,
+                    height=44,
+                    color_pack=pack,
+                ),
             }
             for trace in category_traces
         ],
@@ -201,8 +227,37 @@ def _findings_churn(trend: TrendReport) -> tuple[list[str], list[str]]:
 # ---------------------------------------------------------------------------
 
 
-def sparkline_svg(values: list[int], *, width: int, height: int) -> Markup:
+def sparkline_svg(
+    values: list[int],
+    *,
+    width: int,
+    height: int,
+) -> Markup:
     """Static SVG line over a 0-100 y-domain, suitable for inline embedding."""
+    return _sparkline_svg_with_pack(values, width=width, height=height, color_pack=None)
+
+
+def _sparkline_svg_with_pack(
+    values: list[int],
+    *,
+    width: int,
+    height: int,
+    color_pack: ColorPack | None,
+) -> Markup:
+    """Render a sparkline with either legacy literals or validated pack roles."""
+    if color_pack is None:
+        chart_primary = "#1a1a1a"
+        chart_secondary = "#8a8a82"
+        chart_grid = "#d8d6cf"
+        severity_critical = "#8b2a1f"
+        severity_high = "#b8651a"
+    else:
+        chart_primary = color_pack.roles["chart-primary"]
+        chart_secondary = _renderer_color_value(color_pack, "chart-secondary")
+        chart_grid = _renderer_color_value(color_pack, "chart-grid")
+        severity_critical = _renderer_color_value(color_pack, "severity-critical")
+        severity_high = _renderer_color_value(color_pack, "severity-high")
+
     if not values:
         return Markup(
             f'<svg viewBox="0 0 {width} {height}" '
@@ -224,23 +279,44 @@ def sparkline_svg(values: list[int], *, width: int, height: int) -> Markup:
     last_x, last_y = points[-1]
     first_x, first_y = points[0]
 
-    bar_color = "#1a1a1a"
+    bar_color = chart_primary
     if values[-1] < 60:
-        bar_color = "#8b2a1f"
+        bar_color = severity_critical
     elif values[-1] < 70:
-        bar_color = "#b8651a"
+        bar_color = severity_high
 
     return Markup(
         f'<svg viewBox="0 0 {width} {height}" xmlns="http://www.w3.org/2000/svg" '
         'role="img" aria-label="Trend sparkline">'
         f'<rect x="0" y="0" width="{width}" height="{height}" fill="none"/>'
         f'<line x1="{pad_x}" y1="{height - pad_y}" x2="{width - pad_x}" '
-        f'y2="{height - pad_y}" stroke="#d8d6cf"/>'
+        f'y2="{height - pad_y}" stroke="{chart_grid}"/>'
         f'<polyline fill="none" stroke="{bar_color}" stroke-width="1.6" '
         f'points="{polyline}"/>'
-        f'<circle cx="{first_x:.1f}" cy="{first_y:.1f}" r="2" fill="#8a8a82"/>'
+        f'<circle cx="{first_x:.1f}" cy="{first_y:.1f}" r="2" '
+        f'fill="{chart_secondary}"/>'
         f'<circle cx="{last_x:.1f}" cy="{last_y:.1f}" r="3" fill="{bar_color}"/>'
         "</svg>"
+    )
+
+
+def _pack_sparkline_svg(
+    values: list[int],
+    *,
+    width: int,
+    height: int,
+    color_pack: ColorPack,
+) -> Markup:
+    """Pass resolved semantic colors explicitly into render-only trend SVG."""
+    if color_pack.code == "default":
+        # Preserve the pre-feature SVG bytes; CSS color spelling is irrelevant
+        # visually, but this renderer has an established deterministic contract.
+        return sparkline_svg(values, width=width, height=height)
+    return _sparkline_svg_with_pack(
+        values,
+        width=width,
+        height=height,
+        color_pack=color_pack,
     )
 
 
@@ -281,33 +357,33 @@ def _trend_css() -> str:
 @media (max-width: 720px) { .report { padding: 32px 20px 64px; } }
 .report-header { margin-bottom: 40px; }
 .header-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; }
-.kicker { font-family: 'Söhne', 'Inter', system-ui, sans-serif; font-size: 11px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: #6b6b66; margin: 0 0 12px 0; }
+.kicker { font-family: 'Söhne', 'Inter', system-ui, sans-serif; font-size: 11px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--sdr-text-muted); margin: 0 0 12px 0; }
 .instance-name { font-family: 'Charter','Iowan Old Style',Georgia,serif; font-weight: 500; font-size: 36px; line-height: 1.15; letter-spacing: -0.01em; margin: 0 0 8px 0; }
-.instance-meta { font-family: 'Söhne', 'Inter', system-ui, sans-serif; font-size: 13px; color: #6b6b66; margin: 0; }
+.instance-meta { font-family: 'Söhne', 'Inter', system-ui, sans-serif; font-size: 13px; color: var(--sdr-text-muted); margin: 0; }
 .grade-block { text-align: right; flex-shrink: 0; }
 .grade-letter { font-family: 'Charter','Iowan Old Style',Georgia,serif; font-size: 56px; font-weight: 600; line-height: 1; }
-.grade-pct { font-family: 'Söhne', 'Inter', system-ui, sans-serif; font-size: 14px; color: #1a1a1a; margin-top: 4px; }
-.grade-meta { font-family: 'Söhne', 'Inter', system-ui, sans-serif; font-size: 11px; color: #8a8a82; margin-top: 4px; }
+.grade-pct { font-family: 'Söhne', 'Inter', system-ui, sans-serif; font-size: 14px; color: var(--sdr-text-primary); margin-top: 4px; }
+.grade-meta { font-family: 'Söhne', 'Inter', system-ui, sans-serif; font-size: 11px; color: var(--sdr-text-muted); margin-top: 4px; }
 .delta { font-family: 'Söhne', 'Inter', sans-serif; font-size: 11px; }
-.delta.trend-up { color: #355c2c; }
-.delta.trend-down { color: #8b2a1f; }
-.delta.trend-flat { color: #6b6b66; }
+.delta.trend-up { color: var(--sdr-report-trend-up); }
+.delta.trend-down { color: var(--sdr-report-trend-down); }
+.delta.trend-flat { color: var(--sdr-report-trend-flat); }
 .trend-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; margin: 24px 0; }
-.trend-card { padding: 16px 20px; background: #f3f1ea; border-radius: 6px; }
-.trend-card h3 { margin: 0 0 4px 0; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: #6b6b66; font-family: 'Söhne', 'Inter', sans-serif; font-weight: 500; }
-.trend-card .latest { font-family: 'Charter','Iowan Old Style','Source Serif Pro',Georgia,serif; font-size: 22px; color: #1a1a1a; font-weight: 600; }
+.trend-card { padding: 16px 20px; background: var(--sdr-report-trend-card); border-radius: 6px; }
+.trend-card h3 { margin: 0 0 4px 0; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--sdr-text-muted); font-family: 'Söhne', 'Inter', sans-serif; font-weight: 500; }
+.trend-card .latest { font-family: 'Charter','Iowan Old Style','Source Serif Pro',Georgia,serif; font-size: 22px; color: var(--sdr-text-primary); font-weight: 600; }
 .trend-card .delta { font-family: 'Söhne', 'Inter', sans-serif; font-size: 11px; margin-left: 8px; }
-.trend-card .delta.trend-up { color: #355c2c; }
-.trend-card .delta.trend-down { color: #8b2a1f; }
-.trend-card .delta.trend-flat { color: #6b6b66; }
+.trend-card .delta.trend-up { color: var(--sdr-report-trend-up); }
+.trend-card .delta.trend-down { color: var(--sdr-report-trend-down); }
+.trend-card .delta.trend-flat { color: var(--sdr-report-trend-flat); }
 .trend-card svg { width: 100%; height: auto; margin-top: 8px; }
 .trend-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-family: 'Söhne', 'Inter', sans-serif; font-size: 13px; }
-.trend-table th, .trend-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #ece9e0; }
-.trend-table th { color: #6b6b66; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; font-size: 11px; }
+.trend-table th, .trend-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--sdr-surface-emphasis); }
+.trend-table th { color: var(--sdr-text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; font-size: 11px; }
 .trend-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .trend-table td.grade { font-family: 'Charter','Iowan Old Style','Source Serif Pro',Georgia,serif; font-weight: 600; }
 .churn { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 16px 0; }
-.churn h3 { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: #6b6b66; font-family: 'Söhne', 'Inter', sans-serif; font-weight: 500; }
+.churn h3 { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--sdr-text-muted); font-family: 'Söhne', 'Inter', sans-serif; font-weight: 500; }
 .churn ul { padding-left: 20px; margin: 8px 0; }
-.churn .empty { color: #8a8a82; font-style: italic; font-size: 13px; }
+.churn .empty { color: var(--sdr-text-muted); font-style: italic; font-size: 13px; }
 """

@@ -1,12 +1,13 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-color-pack="{{ color_pack_code }}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'; connect-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>{{ report.id }} — {{ report.instance_name }}</title>
-<style>{{ css }}</style>
+<style>{{ css }}
+{{ color_pack_css }}</style>
 </head>
 <body>
 <main class="page">
@@ -183,6 +184,7 @@
     against snapshot <span class="mono">{{ report.generated_at_iso }}</span>.
     Rubric: <span class="mono">{{ report.rubric.pack }}@{{ report.rubric.version }}</span>.
     Adapter: <span class="mono">{{ report.adapter.tool }}@{{ report.adapter.version }}</span>.
+    Color pack: {{ color_pack_code }}.
     {{ report.components_evaluated }} components evaluated; {{ report.components_skipped }} components skipped
     {% if report.components_skipped_reason %}(reason: {{ report.components_skipped_reason }}){% endif %}.
     {% if report.tool_url %}Source: <a href="{{ report.tool_url }}">{{ report.tool_url | replace('https://', '') }}</a>.{% endif %}
