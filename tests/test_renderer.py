@@ -295,20 +295,49 @@ def test_distribution_recoloring_is_attribute_scoped_and_preserves_trust(code):
 
 
 def test_default_distribution_recolors_only_the_rendered_view_for_accessibility():
+    import json
+
+    from sdr_grader.render.json_output import report_to_dict
+
     report = build_demo_report()
     assert report.distribution is not None
     original = report.distribution.charts[0].svg
+    original_svg_bytes = str(original).encode()
+    original_json_bytes = json.dumps(
+        report_to_dict(report), ensure_ascii=False, sort_keys=True
+    ).encode()
     pack = resolve_color_pack("default")
 
     html = render(report, color_pack="default")
+    distribution_html = html[
+        html.index('<section id="distribution">') : html.index(
+            "</section>", html.index('<section id="distribution">')
+        )
+    ]
 
-    assert str(original) not in html
-    assert f'fill="{pack.roles["chart-axis"]}"' in html
-    assert f'fill="{pack.roles["chart-grid"]}"' in html
+    assert str(original) not in distribution_html
+    assert re.search(
+        rf'<text\b[^>]*\bfill="{pack.roles["chart-axis"]}"',
+        distribution_html,
+    )
+    assert re.search(
+        rf'<(?:line|rect)\b[^>]*\b(?:fill|stroke)="{pack.roles["chart-grid"]}"',
+        distribution_html,
+    )
+    assert not re.search(r'<text\b[^>]*\bfill="#8a8a82"', distribution_html, re.IGNORECASE)
+    assert not re.search(
+        r'<(?:line|rect)\b[^>]*\b(?:fill|stroke)="#ece9e0"',
+        distribution_html,
+        re.IGNORECASE,
+    )
     assert _contrast_ratio(pack.roles["chart-axis"], pack.roles["surface-panel"]) >= 4.5
     assert _contrast_ratio(pack.roles["chart-grid"], pack.roles["surface-panel"]) >= 3.0
-    assert str(report.distribution.charts[0].svg) == str(original)
+    assert str(report.distribution.charts[0].svg).encode() == original_svg_bytes
     assert report.distribution.charts[0].svg is original
+    assert (
+        json.dumps(report_to_dict(report), ensure_ascii=False, sort_keys=True).encode()
+        == original_json_bytes
+    )
 
 
 def test_report_css_uses_semantic_variables_and_pack_aware_print_roles():
