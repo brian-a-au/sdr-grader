@@ -1,0 +1,81 @@
+name: Fetch frozen release candidate
+description: Reuse current-attempt artifacts or recover the exact candidate from its release.
+
+inputs:
+  token:
+    description: GitHub token permitted to read draft or public release assets.
+    required: true
+  dist_dir:
+    description: Destination for the wheel and sdist.
+    required: false
+    default: dist
+  evidence_dir:
+    description: Destination for release-artifacts.json.
+    required: false
+    default: release-evidence
+
+runs:
+  using: composite
+  steps:
+    - name: Download current-attempt distributions
+      if: github.run_attempt == 1
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: candidate-dist-${{ github.sha }}
+        path: ${{ inputs.dist_dir }}/
+
+    - name: Download current-attempt evidence
+      if: github.run_attempt == 1
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: candidate-evidence-${{ github.sha }}
+        path: ${{ inputs.evidence_dir }}/
+
+    - name: Recover distributions and evidence from the existing release
+      if: github.run_attempt > 1
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        DIST_DIR: ${{ inputs.dist_dir }}
+        EVIDENCE_DIR: ${{ inputs.evidence_dir }}
+      run: |
+        set -euo pipefail
+        mkdir -p "${DIST_DIR}" "${EVIDENCE_DIR}"
+        gh release download "${GITHUB_REF_NAME}" \
+          --repo "${GITHUB_REPOSITORY}" \
+          --pattern "*.whl" \
+          --pattern "*.tar.gz" \
+          --dir "${DIST_DIR}"
+        gh release download "${GITHUB_REF_NAME}" \
+          --repo "${GITHUB_REPOSITORY}" \
+          --pattern "release-artifacts.json" \
+          --dir "${EVIDENCE_DIR}"
+
+    - name: Verify recovered distribution provenance
+      if: github.run_attempt > 1
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        DIST_DIR: ${{ inputs.dist_dir }}
+      run: |
+        set -euo pipefail
+        for ARTIFACT in "${DIST_DIR}"/*; do
+          gh attestation verify "${ARTIFACT}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --signer-workflow "${GITHUB_REPOSITORY}/.github/workflows/release.yml" \
+            --source-ref "${GITHUB_REF}" \
+            --source-digest "${GITHUB_SHA}" \
+            --deny-self-hosted-runners
+        done
+
+    - name: Verify fetched candidate identity
+      shell: bash
+      env:
+        DIST_DIR: ${{ inputs.dist_dir }}
+        EVIDENCE_DIR: ${{ inputs.evidence_dir }}
+      run: |
+        python3 scripts/verify_published_readme.py candidate \
+          --dist-dir "${DIST_DIR}" \
+          --evidence "${EVIDENCE_DIR}/release-artifacts.json" \
+          --version "${GITHUB_REF_NAME#v}" \
+          --source-sha "${GITHUB_SHA}"
