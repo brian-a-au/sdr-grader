@@ -1,4 +1,4 @@
-name: sdr-grader v1.2.2 release soak
+name: sdr-grader v1.2.3 release soak
 
 on:
   workflow_dispatch:
@@ -10,33 +10,33 @@ permissions:
   contents: read
 
 concurrency:
-  group: sdr-grader-v1.2.2-release-soak
+  group: sdr-grader-v1.2.3-release-soak
   cancel-in-progress: false
 
 env:
-  SOAK_MARKER_PREFIX: "sdr-grader-v1.2.2"
-  SOAK_START_ISO: "2026-08-03T20:09:09Z"
-  SOAK_START_EPOCH: "1785787749"
-  SOAK_END_ISO: "2026-08-05T20:09:09Z"
-  SOAK_END_EPOCH: "1785960549"
-  GRADER_VERSION: "1.2.2"
-  GRADER_TAG: "v1.2.2"
-  GRADER_COMMIT: "1978eb6d6e8d865e66f2dd464624db9a377417de"
-  GRADER_TAG_OBJECT: "21914dd1e1a48fe9c9050225c86c9f6f2665b26d"
-  GRADER_WHEEL: "sdr_grader-1.2.2-py3-none-any.whl"
-  GRADER_SDIST: "sdr_grader-1.2.2.tar.gz"
-  GRADER_WHEEL_SHA: "6e8c3dfa3808dd338e57894856a5cc212bde0cc21e616f45a57b4f404de440dc"
-  GRADER_SDIST_SHA: "d6566134cad3fd65cab8d44d983264f2dcd3a83af678d30846455aa28df20789"
-  GRADER_EVIDENCE_SHA: "b255bc78a5e534229e3454f1b3173e46fc333d938c4fde332fb920c6e02d4496"
-  VISUALIZER_VERSION: "1.0.6"
-  VISUALIZER_TAG: "v1.0.6"
-  VISUALIZER_COMMIT: "df4811627463cdd13c33c9c06ea60b953e32a830"
-  VISUALIZER_TAG_OBJECT: "5ec93bbb8998798c5878c79780e68f98619b836a"
-  VISUALIZER_WHEEL: "sdr_visualizer-1.0.6-py3-none-any.whl"
-  VISUALIZER_SDIST: "sdr_visualizer-1.0.6.tar.gz"
-  VISUALIZER_WHEEL_SHA: "b863e4cf52660bca04414b31014763e38d0f14cdb743497eb2e6f9ba52255674"
-  VISUALIZER_SDIST_SHA: "44014a6b4b48835cbc105036f1e1dca2d2d67a5d2bce4dabce84382e2c3a13e8"
-  VISUALIZER_SUMS_SHA: "8f6b49eae2bf27eeccd0e7dc0b146c9c85c325f3e54d5c8d7e2e344076a9db6d"
+  SOAK_MARKER_PREFIX: "sdr-grader-v1.2.3"
+  SOAK_START_ISO: "2026-08-10T02:35:51Z"
+  SOAK_START_EPOCH: "1786329351"
+  SOAK_END_ISO: "2026-08-12T02:35:51Z"
+  SOAK_END_EPOCH: "1786502151"
+  GRADER_VERSION: "1.2.3"
+  GRADER_TAG: "v1.2.3"
+  GRADER_COMMIT: "e3e82dca03ac831da6aa4825e4c1bf087f8ea0b7"
+  GRADER_TAG_OBJECT: "1a71e615563cf98087a1e0bd1503f3ad7feeba7b"
+  GRADER_WHEEL: "sdr_grader-1.2.3-py3-none-any.whl"
+  GRADER_SDIST: "sdr_grader-1.2.3.tar.gz"
+  GRADER_WHEEL_SHA: "29def223ea89eb11f5cf138085ee2b3019d86a9d203707ed30f78a8775a85d9d"
+  GRADER_SDIST_SHA: "aa004044902f2a24c4327b7001a09d4a2aa8a603eff85c920c550659443de80c"
+  GRADER_EVIDENCE_SHA: "1bcec5fdc6f1e1ed72e46c87b212f236867d968dfce9c74622986a81e41a6a98"
+  VISUALIZER_VERSION: "1.0.8"
+  VISUALIZER_TAG: "v1.0.8"
+  VISUALIZER_COMMIT: "42da01927de9b75c3c0256d9258fc4e33f0f61e3"
+  VISUALIZER_TAG_OBJECT: "8fbb75ccbb51c04e906afa1f20195401e184f71c"
+  VISUALIZER_WHEEL: "sdr_visualizer-1.0.8-py3-none-any.whl"
+  VISUALIZER_SDIST: "sdr_visualizer-1.0.8.tar.gz"
+  VISUALIZER_WHEEL_SHA: "a69afa3ac9e09e817af9b4fb1fad3a25f80efffe9809c724edc39169c223ed53"
+  VISUALIZER_SDIST_SHA: "cce94b0c6967d06b61b5043e077b14ab69d2f64ff15a7389632b9adf0cd93ca1"
+  VISUALIZER_SUMS_SHA: "c00b913241534ad75488d6d25f6ab3cf7c925fbe45ae4f441da8c603be2572ef"
 
 jobs:
   verify:
@@ -53,7 +53,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-          ref: 1978eb6d6e8d865e66f2dd464624db9a377417de
+          ref: e3e82dca03ac831da6aa4825e4c1bf087f8ea0b7
 
       - name: Install uv
         uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
@@ -99,7 +99,8 @@ jobs:
             --arg sdist "${GRADER_SDIST}" \
             --arg wheel_sha "${GRADER_WHEEL_SHA}" \
             --arg sdist_sha "${GRADER_SDIST_SHA}" \
-            '.info.version == "1.2.2" and .info.requires_python == ">=3.11" and
+            --arg version "${GRADER_VERSION}" \
+            '.info.version == $version and .info.requires_python == ">=3.11" and
              (.urls | length) == 2 and
              ([.urls[] | select(.yanked)] | length) == 0 and
              ([.urls[] | select(.filename == $wheel and .digests.sha256 == $wheel_sha)] | length) == 1 and
@@ -147,7 +148,7 @@ jobs:
             --arg sdist "${VISUALIZER_SDIST}" \
             --arg wheel_sha "${VISUALIZER_WHEEL_SHA}" \
             --arg sdist_sha "${VISUALIZER_SDIST_SHA}" \
-            '.info.version == "1.0.6" and (.urls | length) == 2 and
+            '.info.version == "1.0.8" and (.urls | length) == 2 and
              ([.urls[] | select(.yanked)] | length) == 0 and
              ([.urls[] | select(.filename == $wheel and .digests.sha256 == $wheel_sha)] | length) == 1 and
              ([.urls[] | select(.filename == $sdist and .digests.sha256 == $sdist_sha)] | length) == 1' \
@@ -301,10 +302,10 @@ jobs:
           claude plugin list --json > "${ROOT}/plugin-list.json"
           INSTALL_PATH="$(
             "${ENV_DIR}/bin/python" -c \
-              'import json,sys; items=json.load(open(sys.argv[1])); matches=[item for item in items if item.get("id") == "sdr-grader@sdr-grader"]; assert len(matches) == 1, matches; item=matches[0]; assert item.get("version") == "1.2.2", item; print(item["installPath"])' \
-              "${ROOT}/plugin-list.json"
+              'import json,sys; items=json.load(open(sys.argv[1])); matches=[item for item in items if item.get("id") == "sdr-grader@sdr-grader"]; assert len(matches) == 1, matches; item=matches[0]; assert item.get("version") == sys.argv[2], item; print(item["installPath"])' \
+              "${ROOT}/plugin-list.json" "${GRADER_VERSION}"
           )"
-          jq -e '.version == "1.2.2"' \
+          jq -e --arg version "${GRADER_VERSION}" '.version == $version' \
             "${INSTALL_PATH}/.claude-plugin/plugin.json" >/dev/null
           HELPER="${INSTALL_PATH}/skills/sdr-grader/scripts/query_grade.py"
           "${ENV_DIR}/bin/sdr-grader" tests/fixtures/cja_snapshot_messy.json \
@@ -312,7 +313,7 @@ jobs:
           printf '%s\n' \
             'suppress:' \
             '  - rule: CALC-014' \
-            '    reason: v1.2.2 release soak' \
+            '    reason: v1.2.3 release soak' \
             > "${ROOT}/suppression.yaml"
           "${ENV_DIR}/bin/sdr-grader" tests/fixtures/cja_snapshot_messy.json \
             --suppress-config "${ROOT}/suppression.yaml" \
@@ -395,9 +396,9 @@ jobs:
           NOW="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
           cat > checkpoint/checkpoint.json <<EOF
           {
-            "release": "sdr-grader v1.2.2",
+            "release": "sdr-grader v1.2.3",
             "commit": "${GRADER_COMMIT}",
-            "companion": "sdr-visualizer v1.0.6",
+            "companion": "sdr-visualizer v1.0.8",
             "monitor_sha": "${GITHUB_SHA}",
             "soak_start": "${SOAK_START_ISO}",
             "observed_at": "${NOW}",
@@ -418,7 +419,7 @@ jobs:
       - name: Retain checkpoint evidence
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: sdr-grader-v1.2.2-soak-${{ github.run_id }}
+          name: sdr-grader-v1.2.3-soak-${{ github.run_id }}
           path: checkpoint/checkpoint.json
           if-no-files-found: error
           retention-days: 90
@@ -454,7 +455,7 @@ jobs:
           gh api "repos/${REPOSITORY}/actions/runs/${CURRENT_RUN_ID}" \
             > "${RUNNER_TEMP}/current-run.json"
           gh api --paginate --slurp \
-            "repos/${REPOSITORY}/issues/41/comments?per_page=100" \
+            "repos/${REPOSITORY}/issues/46/comments?per_page=100" \
             > "${RUNNER_TEMP}/comments.json"
           CLEARANCE_CUTOFF="$(date -u -d "@$(( $(date -u +%s) - 7200 ))" '+%Y-%m-%dT%H:%M:%SZ')"
           if jq -e \
@@ -487,17 +488,17 @@ jobs:
             --comment-output "${RUNNER_TEMP}/announcement-go.md" \
             --start-epoch "${SOAK_START_EPOCH}" \
             --end-epoch "${SOAK_END_EPOCH}" \
-            --start-url "https://github.com/brian-a-au/sdr-grader/pull/41#issuecomment-5171182302" \
-            --release "sdr-grader v1.2.2" \
+            --start-url "https://github.com/brian-a-au/sdr-grader/pull/46#issuecomment-5235269302" \
+            --release "sdr-grader v1.2.3" \
             --release-commit "${GRADER_COMMIT}" \
-            --companion "sdr-visualizer v1.0.6" \
+            --companion "sdr-visualizer v1.0.8" \
             --marker-prefix "${SOAK_MARKER_PREFIX}"
 
       - name: Retain the complete final timeline
         if: steps.private-gate.outputs.ready == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: sdr-grader-v1.2.2-final-timeline-${{ github.run_id }}
+          name: sdr-grader-v1.2.3-final-timeline-${{ github.run_id }}
           path: ${{ runner.temp }}/timeline.json
           if-no-files-found: error
           retention-days: 90
@@ -518,7 +519,7 @@ jobs:
               select(.body | contains($marker_prefix + "-announcement-go"))
             ] | length >= 1' \
             "${RUNNER_TEMP}/comments.json" >/dev/null; then
-            gh pr comment 41 --repo "${GITHUB_REPOSITORY}" \
+            gh pr comment 46 --repo "${GITHUB_REPOSITORY}" \
               --body-file "${RUNNER_TEMP}/announcement-go.md"
           fi
           gh api --method PUT \

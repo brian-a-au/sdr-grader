@@ -59,6 +59,8 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
+      id-token: write
+      attestations: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -99,6 +101,11 @@ jobs:
             --expected-version "${GITHUB_REF_NAME#v}" \
             --source-sha "${GITHUB_SHA}" \
             --output release-evidence/release-artifacts.json
+
+      - name: Attest immutable distributions for rerun recovery
+        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
+        with:
+          subject-path: "dist/*"
 
       - name: Upload immutable distributions
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -145,24 +152,10 @@ jobs:
         with:
           version: 0.11.16
 
-      - name: Download immutable distributions
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      - name: Fetch frozen release candidate
+        uses: ./.github/actions/fetch-release-candidate
         with:
-          name: candidate-dist-${{ github.sha }}
-          path: dist/
-
-      - name: Download candidate evidence
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with:
-          name: candidate-evidence-${{ github.sha }}
-          path: release-evidence/
-
-      - name: Verify retained candidate digests
-        run: |
-          python3 scripts/verify_published_readme.py candidate \
-            --dist-dir dist \
-            --evidence release-evidence/release-artifacts.json \
-            --version "${GITHUB_REF_NAME#v}"
+          token: ${{ github.token }}
 
       - name: Install wheel and sdist outside checkout and compare behavior
         shell: bash
@@ -229,24 +222,10 @@ jobs:
       - name: Set up Python
         run: uv python install 3.12
 
-      - name: Download immutable distributions
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      - name: Fetch frozen release candidate
+        uses: ./.github/actions/fetch-release-candidate
         with:
-          name: candidate-dist-${{ github.sha }}
-          path: dist/
-
-      - name: Download candidate evidence
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with:
-          name: candidate-evidence-${{ github.sha }}
-          path: release-evidence/
-
-      - name: Verify retained candidate digests
-        run: |
-          python3 scripts/verify_published_readme.py candidate \
-            --dist-dir dist \
-            --evidence release-evidence/release-artifacts.json \
-            --version "${GITHUB_REF_NAME#v}"
+          token: ${{ github.token }}
 
       - name: Install frozen wheel and materialize its plugin
         shell: bash
@@ -336,17 +315,10 @@ jobs:
       - name: Set up Python
         run: uv python install 3.12
 
-      - name: Download immutable distributions
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      - name: Fetch frozen release candidate
+        uses: ./.github/actions/fetch-release-candidate
         with:
-          name: candidate-dist-${{ github.sha }}
-          path: dist/
-
-      - name: Download candidate evidence
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with:
-          name: candidate-evidence-${{ github.sha }}
-          path: release-evidence/
+          token: ${{ github.token }}
 
       - name: Verify candidate description and bounded live tag links
         run: |
@@ -363,17 +335,15 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Download immutable distributions
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          name: candidate-dist-${{ github.sha }}
-          path: dist/
+          persist-credentials: false
+          ref: ${{ github.ref }}
 
-      - name: Download candidate evidence
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      - name: Fetch frozen release candidate
+        uses: ./.github/actions/fetch-release-candidate
         with:
-          name: candidate-evidence-${{ github.sha }}
-          path: release-evidence/
+          token: ${{ github.token }}
 
       - name: Inspect existing GitHub release
         id: release-state
@@ -441,24 +411,10 @@ jobs:
           persist-credentials: false
           ref: ${{ github.ref }}
 
-      - name: Download immutable distributions
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      - name: Fetch frozen release candidate
+        uses: ./.github/actions/fetch-release-candidate
         with:
-          name: candidate-dist-${{ github.sha }}
-          path: dist/
-
-      - name: Download candidate evidence
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with:
-          name: candidate-evidence-${{ github.sha }}
-          path: release-evidence/
-
-      - name: Verify retained candidate digests
-        run: |
-          python3 scripts/verify_published_readme.py candidate \
-            --dist-dir dist \
-            --evidence release-evidence/release-artifacts.json \
-            --version "${GITHUB_REF_NAME#v}"
+          token: ${{ github.token }}
 
       - name: Verify recoverable PyPI state
         id: pypi-state
@@ -505,17 +461,11 @@ jobs:
       - name: Set up Python
         run: uv python install 3.12
 
-      - name: Download candidate distributions
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      - name: Fetch frozen release candidate
+        uses: ./.github/actions/fetch-release-candidate
         with:
-          name: candidate-dist-${{ github.sha }}
-          path: candidate-dist/
-
-      - name: Download candidate evidence
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with:
-          name: candidate-evidence-${{ github.sha }}
-          path: release-evidence/
+          token: ${{ github.token }}
+          dist_dir: candidate-dist
 
       - name: Verify PyPI description, bytes, and bounded links
         run: |
@@ -569,17 +519,11 @@ jobs:
         with:
           version: 0.11.16
 
-      - name: Download candidate distributions
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      - name: Fetch frozen release candidate
+        uses: ./.github/actions/fetch-release-candidate
         with:
-          name: candidate-dist-${{ github.sha }}
-          path: candidate-dist/
-
-      - name: Download candidate evidence
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with:
-          name: candidate-evidence-${{ github.sha }}
-          path: release-evidence/
+          token: ${{ github.token }}
+          dist_dir: candidate-dist
 
       - name: Verify GitHub release bytes
         env:

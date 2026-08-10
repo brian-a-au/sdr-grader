@@ -5,6 +5,7 @@ import importlib.util
 import io
 import json
 import tarfile
+import urllib.error
 import zipfile
 from pathlib import Path
 
@@ -13,6 +14,7 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRIPT = REPO_ROOT / "scripts" / "verify_published_readme.py"
 VERSION = "1.2.3"
+SOURCE_SHA = "e3e82dca03ac831da6aa4825e4c1bf087f8ea0b7"
 
 
 def _load_module():
@@ -46,6 +48,7 @@ def _artifacts(tmp_path: Path, description: str) -> tuple[Path, Path, Path]:
         json.dumps(
             {
                 "schema_version": 1,
+                "source_sha": SOURCE_SHA,
                 "version": VERSION,
                 "artifacts": [
                     {
@@ -154,12 +157,28 @@ def test_postpublication_requires_pypi_description_and_byte_digest_equality(tmp_
         "https://github.com/brian-a-au/sdr-grader/tree/v1.2.3": b"tag",
         "https://github.com/brian-a-au/sdr-grader/blob/v1.2.3/README.md": b"readme",
     }
+    fetches = []
+
+    def fetch(url, **kwargs):
+        fetches.append((url, kwargs))
+        return payloads[url]
 
     module.verify_postpublication(
         dist,
         evidence,
         version=VERSION,
-        fetch=lambda url, **_kwargs: payloads[url],
+        fetch=fetch,
+    )
+    metadata_url = f"https://pypi.org/pypi/sdr-grader/{VERSION}/json"
+    assert [
+        kwargs.get("retry_not_found", False)
+        for url, kwargs in fetches
+        if url == metadata_url
+    ] == [True]
+    assert all(
+        not kwargs.get("retry_not_found", False)
+        for url, kwargs in fetches
+        if url != metadata_url
     )
 
     pypi["info"]["description"] += "drift"
@@ -197,6 +216,52 @@ def test_bounded_client_disables_auth_cookies_and_validates_redirects():
     with pytest.raises(module.PolicyError, match="host"):
         module.BoundedClient(opener=unsafe, sleep=lambda _delay: None).fetch(
             "https://github.com/brian-a-au/sdr-grader"
+        )
+
+
+def test_bounded_client_retries_not_found_only_when_explicitly_allowed():
+    module = _load_module()
+    url = f"https://pypi.org/pypi/sdr-grader/{VERSION}/json"
+    sleeps = []
+    client = module.BoundedClient(
+        opener=_Opener(
+            [urllib.error.HTTPError(url, 404, "Not Found", {}, None) for _ in range(5)]
+            + [_Response(b"published")]
+        ),
+        sleep=sleeps.append,
+    )
+
+    assert client.fetch(url, retry_not_found=True) == b"published"
+    assert sleeps == [1, 2, 4, 8, 16]
+
+    persistent = module.BoundedClient(
+        opener=_Opener([urllib.error.HTTPError(url, 404, "Not Found", {}, None)]),
+        sleep=lambda _delay: pytest.fail("ordinary 404 responses must not be retried"),
+    )
+    with pytest.raises(module.ContentError, match="persistent HTTP 404"):
+        persistent.fetch(url)
+
+
+def test_candidate_evidence_can_be_bound_to_the_release_commit(tmp_path):
+    module = _load_module()
+    dist, _wheel, evidence = _artifacts(tmp_path, "release")
+
+    module.verify_candidate(
+        dist,
+        evidence,
+        version=VERSION,
+        source_sha=SOURCE_SHA,
+    )
+
+    payload = json.loads(evidence.read_text(encoding="utf-8"))
+    payload["source_sha"] = "0" * 40
+    evidence.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(module.ContentError, match="source commit"):
+        module.verify_candidate(
+            dist,
+            evidence,
+            version=VERSION,
+            source_sha=SOURCE_SHA,
         )
 
 

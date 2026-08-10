@@ -22,6 +22,7 @@ PROJECT = "sdr-grader"
 REPOSITORY_OWNER = "brian-a-au"
 REPOSITORY_NAME = "sdr-grader"
 MAX_ATTEMPTS = 3
+PYPI_PROPAGATION_ATTEMPTS = 6
 MAX_REDIRECTS = 5
 REQUEST_TIMEOUT_SECONDS = 15.0
 TOTAL_TIMEOUT_SECONDS = 60.0
@@ -71,27 +72,46 @@ class BoundedClient:
         self._opener = opener or urllib.request.build_opener(_NoRedirect())
         self._sleep = sleep
 
-    def fetch(self, url: str, *, max_bytes: int = MAX_LINK_BYTES) -> bytes:
+    def fetch(
+        self,
+        url: str,
+        *,
+        max_bytes: int = MAX_LINK_BYTES,
+        retry_not_found: bool = False,
+    ) -> bytes:
         if not isinstance(max_bytes, int) or max_bytes <= 0:
             raise PolicyError("response byte bound must be a positive integer")
         deadline = time.monotonic() + TOTAL_TIMEOUT_SECONDS
         last_error = "unknown transient failure"
-        for attempt in range(MAX_ATTEMPTS):
+        max_attempts = PYPI_PROPAGATION_ATTEMPTS if retry_not_found else MAX_ATTEMPTS
+        for attempt in range(max_attempts):
             try:
-                return self._fetch_once(url, max_bytes=max_bytes, deadline=deadline)
+                return self._fetch_once(
+                    url,
+                    max_bytes=max_bytes,
+                    deadline=deadline,
+                    retry_not_found=retry_not_found,
+                )
             except _TransientAttempt as exc:
                 last_error = str(exc)
-                if attempt + 1 == MAX_ATTEMPTS:
+                if attempt + 1 == max_attempts:
                     break
                 delay = min(2**attempt, max(0.0, deadline - time.monotonic()))
                 if delay <= 0:
                     break
                 self._sleep(delay)
         raise TransientExhaustedError(
-            f"transient request failure exhausted {MAX_ATTEMPTS} attempts: {last_error}"
+            f"transient request failure exhausted {max_attempts} attempts: {last_error}"
         )
 
-    def _fetch_once(self, url: str, *, max_bytes: int, deadline: float) -> bytes:
+    def _fetch_once(
+        self,
+        url: str,
+        *,
+        max_bytes: int,
+        deadline: float,
+        retry_not_found: bool,
+    ) -> bytes:
         current = _validated_url(url)
         for hop in range(MAX_REDIRECTS + 1):
             remaining = deadline - time.monotonic()
@@ -112,7 +132,7 @@ class BoundedClient:
             except urllib.error.HTTPError as exc:
                 if exc.code in REDIRECT_STATUSES:
                     response = exc
-                elif exc.code in TRANSIENT_HTTP_STATUSES:
+                elif exc.code in TRANSIENT_HTTP_STATUSES or (retry_not_found and exc.code == 404):
                     raise _TransientAttempt(f"HTTP {exc.code}") from exc
                 else:
                     raise ContentError(f"persistent HTTP {exc.code} for {request_url}") from exc
@@ -130,7 +150,7 @@ class BoundedClient:
                             raise PolicyError("redirect hop limit exceeded")
                         current = _validated_url(urljoin(request_url, location))
                         continue
-                    if status in TRANSIENT_HTTP_STATUSES:
+                    if status in TRANSIENT_HTTP_STATUSES or (retry_not_found and status == 404):
                         raise _TransientAttempt(f"HTTP {status}")
                     if not 200 <= status < 300:
                         raise ContentError(f"persistent HTTP {status} for {request_url}")
@@ -150,9 +170,15 @@ def verify_candidate(
     evidence_path: Path,
     *,
     version: str,
+    source_sha: str | None = None,
 ) -> dict[str, Any]:
     """Verify downloaded distributions against their retained digest evidence."""
-    _description, artifacts = _candidate_context(dist_dir, evidence_path, version=version)
+    _description, artifacts = _candidate_context(
+        dist_dir,
+        evidence_path,
+        version=version,
+        source_sha=source_sha,
+    )
     return {
         "mode": "candidate",
         "version": version,
@@ -191,7 +217,13 @@ def verify_postpublication(
     fetcher = fetch or BoundedClient().fetch
     metadata_url = f"https://pypi.org/pypi/{PROJECT}/{version}/json"
     try:
-        metadata = json.loads(fetcher(metadata_url, max_bytes=MAX_JSON_BYTES))
+        metadata = json.loads(
+            fetcher(
+                metadata_url,
+                max_bytes=MAX_JSON_BYTES,
+                retry_not_found=True,
+            )
+        )
     except (UnicodeDecodeError, json.JSONDecodeError, TypeError) as exc:
         raise ContentError("PyPI metadata is not valid bounded JSON") from exc
     if not isinstance(metadata, dict):
@@ -254,6 +286,7 @@ def _candidate_context(
     evidence_path: Path,
     *,
     version: str,
+    source_sha: str | None = None,
 ) -> tuple[str, dict[str, dict[str, Any]]]:
     if re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", version) is None:
         raise PolicyError("version must be exactly X.Y.Z")
@@ -276,6 +309,11 @@ def _candidate_context(
         raise ContentError("candidate evidence is unreadable") from exc
     if not isinstance(evidence, dict) or evidence.get("version") != version:
         raise ContentError("candidate evidence version differs")
+    if source_sha is not None:
+        if re.fullmatch(r"[0-9a-f]{40}", source_sha) is None:
+            raise PolicyError("source commit must be a full lowercase SHA")
+        if evidence.get("source_sha") != source_sha:
+            raise ContentError("candidate evidence source commit differs")
     entries = evidence.get("artifacts")
     if not isinstance(entries, list):
         raise ContentError("candidate evidence has no artifact list")
@@ -484,6 +522,8 @@ def _parser() -> argparse.ArgumentParser:
         command.add_argument("--dist-dir", type=Path, required=True)
         command.add_argument("--evidence", type=Path, required=True)
         command.add_argument("--version", required=True)
+        if mode == "candidate":
+            command.add_argument("--source-sha")
     return parser
 
 
@@ -495,7 +535,10 @@ def main(argv: list[str] | None = None) -> int:
         "postpublication": verify_postpublication,
     }[args.mode]
     try:
-        result = verifier(args.dist_dir, args.evidence, version=args.version)
+        kwargs = {"version": args.version}
+        if args.mode == "candidate":
+            kwargs["source_sha"] = args.source_sha
+        result = verifier(args.dist_dir, args.evidence, **kwargs)
     except TransientExhaustedError as exc:
         print(f"transient-exhausted: {exc}", file=sys.stderr)
         return 75

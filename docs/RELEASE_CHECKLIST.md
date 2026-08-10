@@ -152,11 +152,18 @@ guidance when the defect affects privacy or security.
 
 | Observed state | Permitted recovery |
 | --- | --- |
-| No candidate files on PyPI; GitHub release is still a draft | Rerun the failed release job. The normal publication path uploads the frozen candidate. |
-| Some candidate files exist on PyPI and every existing digest matches | Rerun the failed job. The digest gate permits only the missing candidate file to upload, then attestation and draft publication continue. |
-| All candidate files exist on PyPI and every digest matches | Rerun the failed job. Upload is skipped; attestation and publication continue against the same bytes. |
+| No candidate files on PyPI; GitHub release is still a draft with the exact candidate assets | Rerun the complete release workflow. Recovery verifies the distributions' tag-bound provenance and retained SHA-bound evidence before the normal publication path uploads them. |
+| Some candidate files exist on PyPI, every existing digest matches, and the exact GitHub draft exists | Rerun the complete release workflow. Recovery verifies the draft distributions' provenance and evidence; the digest gate permits only the missing candidate file to upload, then publication continues. |
+| All candidate files exist on PyPI, every digest matches, and the exact GitHub draft exists | Rerun the complete release workflow. Recovery verifies the draft distributions' provenance and evidence; upload is skipped and publication continues against the same bytes. |
+| The failed run has no exact GitHub draft to recover | Stop. GitHub removes run artifacts when rerunning, and rebuilding is forbidden. Choose a new version after review. |
 | Any PyPI filename or digest differs from the frozen candidate | Stop. Do not upload, publish the draft, move the tag, or reuse the version. Classify the incident and choose a new version only after review. |
 | GitHub release is public but endpoint verification fails | Do not rebuild. Compare PyPI, GitHub, and evidence digests, then fix forward or yank following the security classification. |
+
+Release workflow revisions are frozen into each tag. A fix merged after a tag
+cannot change that tag's historical workflow run or make it load a new local
+action. Apply this recovery path only to future tags that contain it; preserve
+older red runs as incident evidence and use a new main-branch verification or
+soak run to prove the fix.
 
 ## Publication approval
 
@@ -189,20 +196,20 @@ plugin are simultaneously live and healthy.
 - [ ] Final readiness audit path: `________`
 - [ ] Announcement approver and timestamp: `________`
 
-For the bounded v1.2.2 soak, `.github/workflows/release-soak.yml` records
+For the bounded v1.2.3 soak, `.github/workflows/release-soak.yml` records
 hourly public-release checkpoints from a frozen monitor revision. New or
 updated grader issues block until a maintainer applies either
 `soak-triaged-nonblocking` or `soak-triaged-resolved`. A failed workflow run
 does not count as an observation and blocks finalization unless a maintainer
-records an infrastructure-only disposition in release PR #41 using the marker
-`sdr-grader-v1.2.2-soak-run-<run-id>-triaged-infrastructure`; release-health
+records an infrastructure-only disposition in release PR #46 using the marker
+`sdr-grader-v1.2.3-soak-run-<run-id>-triaged-infrastructure`; release-health
 failures restart the 48-hour soak instead. Rerunning a failed workflow is not
 allowed because the runs API exposes only the latest attempt; use a new manual
 dispatch so the failed run remains in the timeline. GitHub's repository-scoped
 workflow token cannot read private vulnerability reports or secret-scanning
 alerts, so the final GO additionally requires an owner-authenticated,
 post-48h clearance comment carrying
-`sdr-grader-v1.2.2-private-advisory-clear`. That clearance must be no more than
+`sdr-grader-v1.2.3-private-advisory-clear`. That clearance must be no more than
 two hours old, records aggregate counts only, and never includes advisory or
 alert content. The owner-side gate refreshes it until the announcement-GO
 record is observable.
