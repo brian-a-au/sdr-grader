@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>SDR Grader · README showcase</title>
+<style>
+/* Editorial frame for the README showcase. Every color, weight, and typeface is
+   drawn from the report's own design tokens (src/sdr_grader/render/static/report.css)
+   so the live report excerpt reads as one system, not a pasted-in screenshot.
+   Ground stays a flat warm ink — no large gradients — to keep the 256-color GIF
+   band-free and the encoded bytes small. */
+:root {
+  --ink: #191712;          /* warm near-black ground (report ink #1A1A1A, warmed) */
+  --paper: #FAFAF7;        /* report surface --sdr-surface-page */
+  --headline: #F5F2E8;     /* cream headline on ink */
+  --body: #D4CFBF;         /* description / secondary cream */
+  --muted: #A29D8C;        /* labels, disclosure — warm gray */
+  --faint: #6F6B5C;        /* step numerals, hairline text */
+  --teal: #8FBCB0;         /* accent, from report --sdr-accent-primary #4A6F6F */
+  --sage: #A9C78F;         /* positive echo of report green #355C2C */
+  --line: #332F25;         /* hairline on ink */
+  --font-serif: "Charter", "Iowan Old Style", "Source Serif Pro", Georgia, serif;
+  --font-ui: "Söhne", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", "Menlo", "Consolas", monospace;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--ink); color: var(--headline); font-family: var(--font-ui); }
+.stage {
+  position: relative;
+  width: 1120px;
+  height: 720px;
+  overflow: hidden;
+  background: var(--ink);
+}
+/* Hairline of warm light along the top edge — a flat fill, so no GIF banding. */
+.stage::before { content: ""; position: absolute; inset: 0 0 auto; height: 1px; background: #2c281d; }
+
+header { position: absolute; inset: 36px 40px auto; display: flex; align-items: center; justify-content: space-between; }
+.brand { display: flex; align-items: center; gap: 11px; font-size: 15px; font-weight: 600; letter-spacing: -0.01em; color: var(--headline); }
+.brand b { width: 19px; height: 19px; border-radius: 5px; background: linear-gradient(150deg, var(--teal), var(--sage)); box-shadow: 0 0 0 1px rgba(255,255,255,.06) inset; }
+.tag { font-family: var(--font-ui); font-size: 10.5px; font-weight: 500; letter-spacing: 0.18em; color: var(--muted); text-transform: uppercase; }
+
+.story { position: absolute; left: 40px; top: 156px; width: 272px; }
+.kicker { font-family: var(--font-ui); color: var(--teal); font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; }
+h1 { font-family: var(--font-serif); font-size: 46px; font-weight: 500; line-height: 1.04; letter-spacing: -0.02em; margin: 22px 0 20px; color: var(--headline); }
+.description { font-size: 16px; line-height: 1.62; color: var(--body); margin: 0; }
+.proof { border-top: 1px solid var(--line); margin-top: 26px; padding-top: 18px; font-family: var(--font-mono); font-size: 12px; line-height: 1.9; color: var(--muted); letter-spacing: 0.01em; }
+
+.window {
+  position: absolute; top: 96px; left: 348px; width: 732px; height: 552px;
+  background: var(--paper); color: #1A1A1A; border-radius: 12px; overflow: hidden;
+  border: 1px solid rgba(0,0,0,.4);
+  box-shadow: 0 1px 0 rgba(255,255,255,.05) inset, 0 26px 50px -20px rgba(0,0,0,.6), 0 8px 18px -10px rgba(0,0,0,.45);
+}
+.window-bar { height: 38px; background: #EFEDE4; display: flex; align-items: center; gap: 7px; padding: 0 16px; border-bottom: 1px solid #DBD8CC; }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: #CFCBBB; }
+.dot:nth-child(1) { background: #C89184; }
+.dot:nth-child(2) { background: #CBAE79; }
+.dot:nth-child(3) { background: #8FAA85; }
+.filename { margin-left: 11px; color: #8A8A82; font: 11px/1 var(--font-mono); }
+.excerpt { padding: 26px 30px; }
+
+.scene { position: absolute; inset: 0; }
+
+footer { position: absolute; bottom: 27px; left: 40px; right: 40px; display: flex; align-items: center; justify-content: space-between; }
+.steps { display: flex; gap: 26px; font-family: var(--font-ui); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.steps span { display: inline-flex; align-items: center; gap: 8px; transition: color 0.3s; }
+.steps b { font-family: var(--font-mono); font-weight: 400; font-size: 10px; letter-spacing: 0.05em; color: var(--faint); transition: color 0.3s; }
+.steps span.active { color: var(--headline); }
+.steps span.active b { color: var(--teal); }
+.disclosure { font-family: var(--font-ui); font-size: 10.5px; letter-spacing: 0.03em; color: var(--faint); }
+
+.progress { position: absolute; bottom: 0; left: 0; height: 2px; width: 100%; background: linear-gradient(90deg, var(--teal), var(--sage)); transform-origin: left; }
+</style>
+<div class="stage">
+  <header><div class="brand"><b></b> sdr-grader</div><div class="tag">From snapshot to next step</div></header>
+  <div id="scenes"></div>
+  <footer><div class="steps"><span><b>01</b> Verify</span><span><b>02</b> Diagnose</span><span><b>03</b> Act</span><span><b>04</b> Repeat</span></div><div class="disclosure">Synthetic examples · Independent snapshots · Actual report excerpts</div></footer>
+  <div class="progress"></div>
+</div>
+</html>
