@@ -22,7 +22,17 @@ same input and rubric always produce the same grade. The convenience modes
 `--dataview` and `--rsid` are different: they launch a child generator, and
 that child calls Adobe APIs before the local grader runs.
 
-![sdr-grader report card: a CJA implementation graded F at 47%, with per-category scores](https://raw.githubusercontent.com/brian-a-au/sdr-grader/v1.2.4/docs/assets/report-card.png)
+**See what’s healthy. Know what to fix.**
+
+<a href="https://raw.githubusercontent.com/brian-a-au/sdr-grader/03ffdcaabf8be13ce6bc4ddf1e81041a9fcf4f97/docs/assets/grader-showcase.png">
+  <img src="https://raw.githubusercontent.com/brian-a-au/sdr-grader/03ffdcaabf8be13ce6bc4ddf1e81041a9fcf4f97/docs/assets/grader-showcase.gif" width="1120" height="720" alt="SDR Grader demo: an A-grade CJA report at 100%, mixed category scores in a separate diagnostic example, a high-severity finding with remediation, and an A-grade Adobe Analytics report at 100%.">
+</a>
+
+*21-second loop · Actual report excerpts from independent synthetic snapshots.
+Click the animation for a still image.* Explore the complete
+[healthy CJA report](https://raw.githack.com/brian-a-au/sdr-grader/v1.2.4/examples/grade-cja-clean.html),
+[diagnostic CJA report](https://raw.githack.com/brian-a-au/sdr-grader/v1.2.4/examples/grade-cja-messy.html),
+or [healthy AA report](https://raw.githack.com/brian-a-au/sdr-grader/v1.2.4/examples/grade-aa-clean.html).
 
 ## What it grades
 
