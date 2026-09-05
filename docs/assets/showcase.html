@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>SDR Grader · README showcase</title>
+<style>
+* { box-sizing: border-box; }
+body { margin: 0; background: #142d29; color: #f8f6ed; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+.stage { position: relative; width: 1120px; height: 720px; overflow: hidden; }
+header { position: absolute; inset: 30px 34px auto; display: flex; align-items: center; justify-content: space-between; }
+.brand { font-size: 19px; font-weight: 650; letter-spacing: -.5px; }
+.brand b { color: #badd8c; margin-right: 9px; }
+.tag { font-size: 12px; letter-spacing: 1.7px; color: #b8cbc3; text-transform: uppercase; }
+.story { position: absolute; left: 34px; top: 128px; width: 278px; }
+.kicker { color: #badd8c; font-size: 12px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; }
+h1 { font-family: Georgia, serif; font-size: 49px; font-weight: 400; line-height: 1.06; letter-spacing: -2px; margin: 25px 0 23px; }
+.description { font-size: 17px; line-height: 1.65; color: #cedbd5; margin: 0; }
+.proof { border-top: 1px solid #496059; margin-top: 28px; padding-top: 19px; font-family: monospace; font-size: 13px; line-height: 1.8; color: #badd8c; }
+.window { position: absolute; top: 90px; left: 340px; width: 746px; height: 553px; background: #faf9f4; color: #242721; border-radius: 11px; overflow: hidden; box-shadow: 0 16px 38px #081a1940; }
+.window-bar { height: 39px; background: #ebece4; display: flex; align-items: center; gap: 6px; padding: 0 17px; border-bottom: 1px solid #d9dcd0; }
+.dot { width: 7px; height: 7px; border-radius: 100%; background: #a4ada0; }
+.filename { margin-left: 12px; color: #596458; font: 11px monospace; }
+.excerpt { padding: 25px 31px; }
+.scene { position: absolute; inset: 0; }
+footer { position: absolute; bottom: 25px; left: 34px; right: 34px; display: flex; align-items: center; justify-content: space-between; }
+.steps { display: flex; gap: 22px; font-size: 12px; color: #9eb5aa; }
+.steps span.active { color: #d2edb4; }
+.steps b { display: inline-block; width: 19px; font-weight: 400; }
+.disclosure { font-size: 11px; color: #b8cbc3; }
+.progress { position: absolute; bottom: 0; height: 3px; width: 100%; background: #badd8c; transform-origin: left; }
+</style>
+<div class="stage">
+  <header><div class="brand"><b>▥</b> sdr-grader</div><div class="tag">From snapshot to next step</div></header>
+  <div id="scenes"></div>
+  <footer><div class="steps"><span><b>01</b> Verify</span><span><b>02</b> Diagnose</span><span><b>03</b> Act</span><span><b>04</b> Repeat</span></div><div class="disclosure">Synthetic examples · Independent snapshots · Actual report excerpts</div></footer>
+  <div class="progress"></div>
+</div>
+</html>
