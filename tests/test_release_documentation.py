@@ -282,21 +282,33 @@ def test_release_validation_inputs_are_exact_and_every_locked_requirement_is_has
     inputs = (requirements / "release-validation.in").read_text(encoding="utf-8")
     locked = (requirements / "release-validation.txt").read_text(encoding="utf-8")
 
-    assert inputs.splitlines() == [
-        "twine==7.0.0",
-        "readme-renderer[md]==45.0",
-    ]
+    pins = {}
+    for line in inputs.splitlines():
+        match = re.fullmatch(r"([a-z-]+)(\[md\])?==([0-9]+(?:\.[0-9]+)+)", line)
+        assert match is not None, f"Validator must have an exact version pin: {line}"
+        name, extra, version = match.groups()
+        assert name not in pins, f"Duplicate validator: {name}"
+        pins[name] = (extra, version)
+    assert set(pins) == {"twine", "readme-renderer"}
+    assert pins["twine"][0] is None
+    assert pins["readme-renderer"][0] == "[md]"
     assert (
         "uv pip compile requirements/release-validation.in --universal --generate-hashes" in locked
     )
-    assert re.search(r"^twine==7\.0\.0 \\\n\s+--hash=sha256:", locked, re.MULTILINE)
-    assert re.search(r"^readme-renderer==45\.0 \\\n\s+--hash=sha256:", locked, re.MULTILINE)
-    requirements_without_hashes = [
-        line
-        for line in locked.splitlines()
-        if line and not line.startswith((" ", "#")) and "==" in line and not line.endswith(" \\")
-    ]
-    assert requirements_without_hashes == []
+    locked_pins = {}
+    for block in re.split(r"\n(?=\S)", locked):
+        if block.startswith("#"):
+            continue
+        requirement = block.splitlines()[0]
+        match = re.match(r"([a-z0-9-]+)==([^ ;]+)", requirement)
+        assert match is not None, f"Locked requirement must be pinned: {requirement}"
+        name, version = match.groups()
+        locked_pins[name] = version
+        assert re.search(r"^    --hash=sha256:[0-9a-f]{64}(?: \\)?$", block, re.MULTILINE), (
+            f"Missing SHA-256 hash: {requirement}"
+        )
+    for name, (_, version) in pins.items():
+        assert locked_pins[name] == version
 
 
 def test_troubleshooting_covers_public_failure_modes_and_privacy_authority():
