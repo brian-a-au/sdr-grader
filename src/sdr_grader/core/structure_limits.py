@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from sdr_grader.core.exceptions import InvalidSnapshotError
@@ -9,6 +10,7 @@ from sdr_grader.core.exceptions import InvalidSnapshotError
 MAX_STRUCTURE_DEPTH = 100
 MAX_STRUCTURE_NODES = 250_000
 MAX_DEFINITION_NODES = 10_000
+_SURROGATE_RE = re.compile(r"[\ud800-\udfff]")
 
 
 def measure_structure(value: Any) -> tuple[int, int]:
@@ -71,9 +73,7 @@ def validate_unicode_scalars(value: Any, *, label: str) -> None:
 
 
 def _validate_string(value: Any, *, label: str) -> None:
-    if isinstance(value, str) and any(
-        0xD800 <= ord(character) <= 0xDFFF for character in value
-    ):
+    if isinstance(value, str) and _SURROGATE_RE.search(value):
         raise InvalidSnapshotError(f"{label} contains a Unicode surrogate code point")
 
 
@@ -99,7 +99,6 @@ def _validate_structure(
         if isinstance(node, dict):
             for key in node:
                 _validate_string(key, label=label)
-        if isinstance(node, dict):
             stack.extend((child, depth + 1) for child in node.values())
         elif isinstance(node, list):
             stack.extend((child, depth + 1) for child in node)
