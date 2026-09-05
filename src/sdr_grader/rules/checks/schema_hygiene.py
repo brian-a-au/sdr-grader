@@ -20,11 +20,10 @@ from sdr_grader.rules.checks._helpers import (
     all_component_ids,
     all_components,
     all_segment_ids,
-    category_display,
     collect_referenced_ids,
-    compact,
     cycle_groups,
     join_with_and,
+    make_finding,
     parse_platform_setting,
     pct,
     platform_noun,
@@ -69,7 +68,7 @@ def check_missing_descriptions(
         for t, m, n in over
     ) + f" The rubric threshold is {round(threshold * 100)}%."
     return [
-        _make_finding(
+        make_finding(
             ctx,
             title=f"{total_missing} components lack descriptions",
             paragraph=paragraph,
@@ -131,7 +130,7 @@ def check_duplicate_component_names(
         "disagree” complaints from executives."
     )
     return [
-        _make_finding(
+        make_finding(
             ctx,
             title=(
                 f"{len(duplicates)} duplicate component "
@@ -184,7 +183,7 @@ def check_broken_references(
         "updating their consumers."
     )
     return [
-        _make_finding(
+        make_finding(
             ctx,
             title=f"{total} broken reference{'s' if total != 1 else ''}",
             paragraph=paragraph,
@@ -247,7 +246,7 @@ def check_type_name_mismatch(
     )
     title = f"{len(suspicious)} metric type-name mismatch{'es' if plural else ''}"
     return [
-        _make_finding(
+        make_finding(
             ctx,
             title=title,
             paragraph=paragraph,
@@ -308,7 +307,7 @@ def check_deprecated_components(
         "actually completed — consumers are still hitting the old definitions."
     )
     return [
-        _make_finding(
+        make_finding(
             ctx,
             title=f"{len(items)} deprecated component{'s' if len(items) != 1 else ''} still in use",
             paragraph=paragraph,
@@ -397,7 +396,7 @@ def check_persistence_lookback_cap(
         "time, masking the intended attribution behaviour."
     )
     return [
-        _make_finding(
+        make_finding(
             ctx,
             title=f"{len(violations)} persistence lookback{'s' if len(violations) != 1 else ''} exceed cap",
             paragraph=paragraph,
@@ -462,7 +461,7 @@ def check_derived_field_cycles(
         "or fails to render in Workspace."
     )
     return [
-        _make_finding(
+        make_finding(
             ctx,
             title=f"{len(groups)} derived-field reference cycle{'s' if plural else ''}",
             paragraph=paragraph,
@@ -548,7 +547,7 @@ def check_derived_field_broken_refs(
         "namespace differences before flagging."
     )
     return [
-        _make_finding(
+        make_finding(
             ctx,
             title=f"{len(broken)} broken derived-field reference{'s' if len(broken) != 1 else ''}",
             paragraph=paragraph,
@@ -595,33 +594,3 @@ def _human_target(target: str) -> str:
         "dimensions": "dimensions",
         "derived_fields": "derived fields",
     }.get(target, target.replace("_", " "))
-
-
-def _make_finding(
-    ctx: RuleContext,
-    *,
-    title: str,
-    paragraph: str,
-    distribution: str | None = None,
-    extra_blocks: list[FindingBlock] | None = None,
-) -> Finding:
-    body: list[FindingBlock] = [FindingBlock(kind="paragraph", html=paragraph)]
-    if distribution is not None:
-        body.append(FindingBlock(kind="section", label="Distribution", body_html=distribution))
-    if extra_blocks:
-        body.extend(extra_blocks)
-    if ctx.remediation:
-        body.append(
-            FindingBlock(
-                kind="section",
-                label="How to remediate",
-                body_html=compact(ctx.remediation),
-            )
-        )
-    return Finding(
-        id=ctx.rule_id,
-        severity=ctx.severity,  # type: ignore[arg-type]
-        category=category_display(ctx.category),
-        title=title,
-        body=body,
-    )

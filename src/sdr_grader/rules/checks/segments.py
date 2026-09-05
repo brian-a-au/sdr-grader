@@ -7,10 +7,9 @@ from typing import TYPE_CHECKING
 
 from sdr_grader.render import Finding, FindingBlock
 from sdr_grader.rules.checks._helpers import (
-    category_display,
     collect_referenced_ids,
-    compact,
     cycle_groups,
+    make_finding,
 )
 from sdr_grader.rules.registry import register_check
 
@@ -43,7 +42,7 @@ def check_container_mixing(
         "differences from segments that look superficially similar."
     )
     return [
-        _make_finding(
+        make_finding(
             ctx,
             title=f"{len(mixed)} segment{'s' if len(mixed) != 1 else ''} mix container types",
             paragraph=paragraph,
@@ -79,7 +78,7 @@ def check_orphan_segments(
         "until nobody can tell which are still in use."
     )
     return [
-        _make_finding(
+        make_finding(
             ctx,
             title=f"{len(orphans)} orphan segment{'s' if len(orphans) != 1 else ''}",
             paragraph=paragraph,
@@ -112,7 +111,7 @@ def check_circular_segments(
         "and produce inconsistent populations between platform UI and exports."
     )
     return [
-        _make_finding(
+        make_finding(
             ctx,
             title=f"{len(groups)} circular segment reference{'s' if len(groups) != 1 else ''}",
             paragraph=paragraph,
@@ -147,7 +146,7 @@ def check_segments_missing_descriptions(
     )
     suffix = "s lack" if len(missing) != 1 else " lacks"
     return [
-        _make_finding(
+        make_finding(
             ctx,
             title=f"{len(missing)} segment{suffix} descriptions",
             paragraph=paragraph,
@@ -183,7 +182,7 @@ def check_duplicate_segments(
         "the audience library and make consolidation harder."
     )
     return [
-        _make_finding(
+        make_finding(
             ctx,
             title=(
                 f"{len(duplicates)} duplicate segment definition group"
@@ -222,39 +221,10 @@ def check_segment_nesting_depth(
         "effects."
     )
     return [
-        _make_finding(
+        make_finding(
             ctx,
             title=f"{len(deep)} segment{'s' if len(deep) != 1 else ''} exceed nesting threshold",
             paragraph=paragraph,
             extra_blocks=[FindingBlock(kind="components", items=items)],
         )
     ]
-
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-
-def _make_finding(
-    ctx: RuleContext, *, title: str, paragraph: str,
-    extra_blocks: list[FindingBlock] | None = None,
-) -> Finding:
-    body: list[FindingBlock] = [FindingBlock(kind="paragraph", html=paragraph)]
-    if extra_blocks:
-        body.extend(extra_blocks)
-    if ctx.remediation:
-        body.append(
-            FindingBlock(
-                kind="section",
-                label="How to remediate",
-                body_html=compact(ctx.remediation),
-            )
-        )
-    return Finding(
-        id=ctx.rule_id,
-        severity=ctx.severity,  # type: ignore[arg-type]
-        category=category_display(ctx.category),
-        title=title,
-        body=body,
-    )

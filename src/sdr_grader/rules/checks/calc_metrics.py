@@ -10,9 +10,8 @@ from sdr_grader.render import Finding, FindingBlock
 from sdr_grader.rules.checks._helpers import (
     all_component_ids,
     all_segment_ids,
-    category_display,
     collect_referenced_ids,
-    compact,
+    make_finding,
 )
 from sdr_grader.rules.registry import register_check
 
@@ -46,7 +45,7 @@ def check_calc_metrics_missing_descriptions(
         "that are invisible from the formula alone."
     )
     return [
-        _make_finding(
+        make_finding(
             ctx, title=f"{len(missing)} calculated metrics lack descriptions", paragraph=paragraph
         )
     ]
@@ -79,7 +78,7 @@ def check_calc_formula_broken_refs(impl: Implementation, ctx: RuleContext) -> li
         "calculated metrics that don't exist in this snapshot."
     )
     return [
-        _make_finding(
+        make_finding(
             ctx,
             title=f"{len(broken)} broken calculated metric reference{'s' if len(broken) != 1 else ''}",
             paragraph=paragraph,
@@ -107,7 +106,7 @@ def check_calc_complexity_threshold(impl: Implementation, ctx: RuleContext) -> l
         "formulas are hard to review and easy to miscalibrate."
     )
     return [
-        _make_finding(
+        make_finding(
             ctx,
             title=f"{len(over)} high-complexity calc metric{'s' if len(over) != 1 else ''}",
             paragraph=paragraph,
@@ -140,7 +139,7 @@ def check_orphan_calc_metrics(impl: Implementation, ctx: RuleContext) -> list[Fi
         "consolidation becomes prohibitively expensive."
     )
     return [
-        _make_finding(
+        make_finding(
             ctx,
             title=f"{len(orphans)} orphan calculated metric{'s' if len(orphans) != 1 else ''}",
             paragraph=paragraph,
@@ -194,7 +193,7 @@ def check_calc_near_duplicates(impl: Implementation, ctx: RuleContext) -> list[F
         "subtly different numbers in different reports."
     )
     return [
-        _make_finding(
+        make_finding(
             ctx,
             title=f"{len(items)} near-duplicate calculated metric group{'s' if len(items) != 1 else ''}",
             paragraph=paragraph,
@@ -228,7 +227,7 @@ def check_calc_identical_formula_text(impl: Implementation, ctx: RuleContext) ->
         "red flag for accidental copy-paste rather than intentional duplication."
     )
     return [
-        _make_finding(
+        make_finding(
             ctx,
             title=f"{len(duplicates)} repeated formula text{'s' if len(duplicates) != 1 else ''}",
             paragraph=paragraph,
@@ -263,7 +262,7 @@ def check_calc_deprecated_allocations(impl: Implementation, ctx: RuleContext) ->
         "unpredictably or be removed in a future platform release."
     )
     return [
-        _make_finding(
+        make_finding(
             ctx,
             title=f"{len(hits)} deprecated allocation{'s' if len(hits) != 1 else ''}",
             paragraph=paragraph,
@@ -310,30 +309,3 @@ def _near_duplicate_candidates(
 
 def _jaccard(left: frozenset[str], right: frozenset[str]) -> float:
     return len(left & right) / len(left | right)
-
-
-def _make_finding(
-    ctx: RuleContext,
-    *,
-    title: str,
-    paragraph: str,
-    extra_blocks: list[FindingBlock] | None = None,
-) -> Finding:
-    body: list[FindingBlock] = [FindingBlock(kind="paragraph", html=paragraph)]
-    if extra_blocks:
-        body.extend(extra_blocks)
-    if ctx.remediation:
-        body.append(
-            FindingBlock(
-                kind="section",
-                label="How to remediate",
-                body_html=compact(ctx.remediation),
-            )
-        )
-    return Finding(
-        id=ctx.rule_id,
-        severity=ctx.severity,  # type: ignore[arg-type]
-        category=category_display(ctx.category),
-        title=title,
-        body=body,
-    )

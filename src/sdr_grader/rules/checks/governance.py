@@ -14,8 +14,7 @@ from typing import TYPE_CHECKING
 from sdr_grader.render import Finding, FindingBlock
 from sdr_grader.rules.checks._helpers import (
     all_components,
-    category_display,
-    compact,
+    make_finding,
     pct,
 )
 from sdr_grader.rules.registry import register_check
@@ -49,7 +48,7 @@ def check_snapshot_history_absent(
         "for compliance review."
     )
     return [
-        _make_finding(
+        make_finding(
             ctx,
             title="No snapshot history detected for this data view",
             paragraph=paragraph,
@@ -90,7 +89,7 @@ def check_snapshot_age(
         "implementation drift makes them unreliable as audit baselines."
     )
     return [
-        _make_finding(
+        make_finding(
             ctx,
             title=f"Snapshot is {age_days} days old",
             paragraph=paragraph,
@@ -123,7 +122,7 @@ def check_sdr_doc_absent(
         "“why” behind component choices."
     )
     return [
-        _make_finding(
+        make_finding(
             ctx,
             title="No SDR documentation detected",
             paragraph=paragraph,
@@ -146,7 +145,7 @@ def check_missing_owners(
         return []
     total = len(components)
     missing = sum(1 for c in components if not c.owner)
-    if total == 0 or (missing / total) <= threshold:
+    if (missing / total) <= threshold:
         return []
     paragraph = (
         f"{missing} of {total} components ({pct(missing, total)}%) have no "
@@ -155,7 +154,7 @@ def check_missing_owners(
         "documentation."
     )
     return [
-        _make_finding(
+        make_finding(
             ctx,
             title=f"{missing} components lack owner attribution",
             paragraph=paragraph,
@@ -178,7 +177,7 @@ def check_missing_tags(
         return []
     total = len(components)
     missing = sum(1 for c in components if not c.tags)
-    if total == 0 or (missing / total) <= threshold:
+    if (missing / total) <= threshold:
         return []
     paragraph = (
         f"{missing} of {total} components ({pct(missing, total)}%) have no "
@@ -187,7 +186,7 @@ def check_missing_tags(
         "purpose requires reading every name."
     )
     return [
-        _make_finding(
+        make_finding(
             ctx,
             title=f"{missing} components lack tags",
             paragraph=paragraph,
@@ -253,7 +252,7 @@ def check_doc_drift(
         "the SDR, you can't easily get them to start trusting it again."
     )
     return [
-        _make_finding(
+        make_finding(
             ctx,
             title=f"{len(drifted)} components modified since last SDR update",
             paragraph=paragraph,
@@ -306,27 +305,3 @@ def _parse_iso(value: str) -> datetime | None:
         except ValueError:
             continue
     return None
-
-
-def _make_finding(
-    ctx: RuleContext, *, title: str, paragraph: str,
-    extra_blocks: list[FindingBlock] | None = None,
-) -> Finding:
-    body: list[FindingBlock] = [FindingBlock(kind="paragraph", html=paragraph)]
-    if extra_blocks:
-        body.extend(extra_blocks)
-    if ctx.remediation:
-        body.append(
-            FindingBlock(
-                kind="section",
-                label="How to remediate",
-                body_html=compact(ctx.remediation),
-            )
-        )
-    return Finding(
-        id=ctx.rule_id,
-        severity=ctx.severity,  # type: ignore[arg-type]
-        category=category_display(ctx.category),
-        title=title,
-        body=body,
-    )

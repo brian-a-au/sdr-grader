@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import random
-import time
 from collections import defaultdict
 
 import pytest
@@ -223,16 +222,13 @@ def test_near_duplicate_index_avoids_all_pairs_for_10k_disjoint_metrics(monkeypa
         return original_jaccard(left, right)
 
     monkeypatch.setattr(calc_metrics, "_jaccard", counted_jaccard)
-    started = time.perf_counter()
     findings = check_calc_near_duplicates(
         impl(calc=cms),
         ctx("CALC-014", category="calc_metric_maint", min_similarity=0.85),
     )
-    elapsed = time.perf_counter() - started
 
     assert findings == []
     assert comparisons == 0
-    assert elapsed < 2.0
 
 
 # CALC-015

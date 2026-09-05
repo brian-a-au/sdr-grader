@@ -8,12 +8,14 @@ re-derive the same conventions.
 from __future__ import annotations
 
 import json
-import math
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any
 
+from sdr_grader.render import Finding, FindingBlock
+
 if TYPE_CHECKING:
     from sdr_grader.core.models import Component, Implementation
+    from sdr_grader.rules.engine import RuleContext
 
 
 PLATFORM_NOUN = {"cja": "data view", "aa": "report suite"}
@@ -88,8 +90,6 @@ def parse_platform_setting(value: Any) -> dict[str, Any] | None:
     """
     if value is None or value == "":
         return None
-    if isinstance(value, float) and math.isnan(value):
-        return None
     if isinstance(value, dict):
         return value
     if isinstance(value, str):
@@ -163,3 +163,33 @@ def cycle_groups(graph: dict[str, list[str]]) -> list[list[str]]:
                     groups.append(sorted(group))
     groups.sort()
     return groups
+
+
+def make_finding(
+    ctx: RuleContext,
+    *,
+    title: str,
+    paragraph: str,
+    distribution: str | None = None,
+    extra_blocks: list[FindingBlock] | None = None,
+) -> Finding:
+    body: list[FindingBlock] = [FindingBlock(kind="paragraph", html=paragraph)]
+    if distribution is not None:
+        body.append(FindingBlock(kind="section", label="Distribution", body_html=distribution))
+    if extra_blocks:
+        body.extend(extra_blocks)
+    if ctx.remediation:
+        body.append(
+            FindingBlock(
+                kind="section",
+                label="How to remediate",
+                body_html=compact(ctx.remediation),
+            )
+        )
+    return Finding(
+        id=ctx.rule_id,
+        severity=ctx.severity,  # type: ignore[arg-type]
+        category=category_display(ctx.category),
+        title=title,
+        body=body,
+    )

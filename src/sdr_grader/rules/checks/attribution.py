@@ -8,8 +8,7 @@ from typing import TYPE_CHECKING
 
 from sdr_grader.render import Finding, FindingBlock
 from sdr_grader.rules.checks._helpers import (
-    category_display,
-    compact,
+    make_finding,
     parse_platform_setting,
 )
 from sdr_grader.rules.registry import register_check
@@ -47,7 +46,7 @@ def check_attribution_default_last_touch(
         "choice, not a silent default."
     )
     return [
-        _make_finding(
+        make_finding(
             ctx,
             title=f"{len(suspects)} undocumented last-touch metric{'s' if len(suspects) != 1 else ''}",
             paragraph=paragraph,
@@ -79,7 +78,7 @@ def check_attribution_missing(
         "stakeholder asks why two metrics that look similar disagree."
     )
     return [
-        _make_finding(
+        make_finding(
             ctx,
             title=f"{len(missing)} calc metric{'s lack' if len(missing) != 1 else ' lacks'} explicit attribution",
             paragraph=paragraph,
@@ -121,7 +120,7 @@ def check_attribution_inconsistency(
         "consistency bug waiting to surface in dashboards."
     )
     return [
-        _make_finding(
+        make_finding(
             ctx,
             title=f"{len(conflicts)} attribution inconsistency group{'s' if len(conflicts) != 1 else ''}",
             paragraph=paragraph,
@@ -188,7 +187,7 @@ def check_attribution_setting_undocumented(
         "where a future reader will look first."
     )
     return [
-        _make_finding(
+        make_finding(
             ctx,
             title=f"{len(offenders)} metric{'s' if plural else ''} with undocumented attribution override",
             paragraph=paragraph,
@@ -213,28 +212,4 @@ def _looks_silent_last_touch(cm: CalculatedMetric) -> bool:
     return not (
         cm.description
         and re.search(r"attribution", cm.description, re.IGNORECASE)
-    )
-
-
-def _make_finding(
-    ctx: RuleContext, *, title: str, paragraph: str,
-    extra_blocks: list[FindingBlock] | None = None,
-) -> Finding:
-    body: list[FindingBlock] = [FindingBlock(kind="paragraph", html=paragraph)]
-    if extra_blocks:
-        body.extend(extra_blocks)
-    if ctx.remediation:
-        body.append(
-            FindingBlock(
-                kind="section",
-                label="How to remediate",
-                body_html=compact(ctx.remediation),
-            )
-        )
-    return Finding(
-        id=ctx.rule_id,
-        severity=ctx.severity,  # type: ignore[arg-type]
-        category=category_display(ctx.category),
-        title=title,
-        body=body,
     )

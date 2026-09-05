@@ -124,16 +124,6 @@ def build_distribution(report: Report, data: dict[str, Any]) -> Distribution:
     rows: list[tuple[str, int, int]] = []
     for cat in report.categories:
         slug = cat.name.lower().replace(" ", "_")
-        # Re-key common abbreviated display names back to the slug taxonomy.
-        slug_lookup = {
-            "schema_hygiene": "schema_hygiene",
-            "naming_consistency": "naming_consistency",
-            "segment_complexity": "segment_complexity",
-            "calc_metric_maint": "calc_metric_maint",
-            "attribution_coverage": "attribution_coverage",
-            "governance_posture": "governance_posture",
-        }
-        slug = slug_lookup.get(slug, slug)
         median_pct = int((cat_data.get(slug) or {}).get("median", 0))
         rows.append((CATEGORY_DISPLAY.get(slug, cat.name), cat.pct, median_pct))
 
