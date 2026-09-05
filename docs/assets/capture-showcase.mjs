@@ -62,7 +62,8 @@ try {
       // Isolate the unchanged report stylesheet from the editorial frame.
       const shadow = element.querySelector('.excerpt').attachShadow({ mode: 'open' });
       shadow.innerHTML = `<style>${scene.css.replaceAll(':root', ':host')}
-        :host { display:block; color:var(--sdr-text-primary); font:16px/1.55 Charter, Georgia, serif; }
+        :host { display:block; color:var(--sdr-text-primary); background:var(--sdr-surface-page);
+          font:16px/1.55 "Charter","Iowan Old Style","Source Serif Pro",Georgia,serif; }
       </style>${scene.html}`;
       document.querySelector('#scenes').append(element);
     }
