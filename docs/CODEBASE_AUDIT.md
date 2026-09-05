@@ -34,7 +34,7 @@ and the adapter/check/rubric contracts govern this review.
    character-range regex, retaining the same rejected Unicode range and error.
    Remove a repeated dict type check in the structure traversal. Existing
    surrogate, Unicode, exact budget-boundary, adapter and fuzz tests cover the
-   change (168 focused tests passed).
+   change (169 focused tests passed).
 
 ## Performance evidence
 
@@ -104,7 +104,7 @@ packages by five; installation time and size were not benchmarked.
 - Local wheel/sdist build, strict Twine metadata checks and the repository's
   artifact validator passed. Pinned v1.2.2 compatibility check passed for
   scores, findings, categories, exit codes, trends and JSON schema.
-- GitHub audit PR checks: pending at preparation time.
+- Audit changes are tracked separately in [PR #55](https://github.com/brian-a-au/sdr-grader/pull/55); GitHub check status is recorded on that PR.
 
 ## Remaining decisions and limitations
 
