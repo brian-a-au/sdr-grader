@@ -29,7 +29,6 @@ classifiers = [
 dependencies = [
     "jinja2>=3.1",
     "pyyaml>=6.0",
-    "pydantic>=2.6",
 ]
 
 [project.scripts]
@@ -37,8 +36,8 @@ sdr-grader = "sdr_grader.cli.main:main"
 
 [project.urls]
 Homepage = "https://github.com/brian-a-au/sdr-grader"
-Documentation = "https://github.com/brian-a-au/sdr-grader/blob/v1.2.3/README.md"
-Source = "https://github.com/brian-a-au/sdr-grader/tree/v1.2.3"
+Documentation = "https://github.com/brian-a-au/sdr-grader/blob/v1.2.4/README.md"
+Source = "https://github.com/brian-a-au/sdr-grader/tree/v1.2.4"
 Issues = "https://github.com/brian-a-au/sdr-grader/issues"
 Changelog = "https://github.com/brian-a-au/sdr-grader/blob/main/CHANGELOG.md"
 

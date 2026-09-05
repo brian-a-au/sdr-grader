@@ -11,10 +11,8 @@ from markupsafe import Markup
 from sdr_grader.render import Finding, FindingBlock
 from sdr_grader.rules.checks._helpers import (
     all_components,
-    category_display,
-    compact,
+    make_finding,
     pct,
-    platform_noun,
 )
 from sdr_grader.rules.registry import register_check
 
@@ -72,7 +70,7 @@ def check_prefix_consistency(
         "s diverge" if len(outliers) != 1 else " diverges",
     )
     return [
-        _make_finding(
+        make_finding(
             ctx,
             title=(
                 f"Inconsistent prefix convention in "
@@ -127,7 +125,7 @@ def check_regex_match_id(
         pattern_str,
     )
     return [
-        _make_finding(
+        make_finding(
             ctx,
             title=f"{len(violators)} ID{'s' if len(violators) != 1 else ''} fail the ID pattern",
             paragraph=paragraph,
@@ -174,7 +172,7 @@ def check_casing_consistency(
         f"{len(outliers)} component name{'s diverge' if len(outliers) != 1 else ' diverges'}."
     )
     return [
-        _make_finding(
+        make_finding(
             ctx,
             title=(
                 f"Inconsistent casing in {_target_display(target, tag_filter)}"
@@ -236,7 +234,7 @@ def check_semantic_consistency(
         "tooling and segmentation drift apart over time."
     )
     return [
-        _make_finding(
+        make_finding(
             ctx,
             title=(
                 f"Mixed synonym usage in {len(conflicts)} group"
@@ -330,36 +328,3 @@ def _names_haystack(impl: Implementation) -> str:
 
 def _count_word(haystack: str, word: str) -> int:
     return len(re.findall(rf"\b{re.escape(word)}s?\b", haystack))
-
-
-def _make_finding(
-    ctx: RuleContext,
-    *,
-    title: str,
-    paragraph: str,
-    extra_blocks: list[FindingBlock] | None = None,
-) -> Finding:
-    body: list[FindingBlock] = [FindingBlock(kind="paragraph", html=paragraph)]
-    if extra_blocks:
-        body.extend(extra_blocks)
-    if ctx.remediation:
-        body.append(
-            FindingBlock(
-                kind="section",
-                label="How to remediate",
-                body_html=compact(ctx.remediation),
-            )
-        )
-    return Finding(
-        id=ctx.rule_id,
-        severity=ctx.severity,  # type: ignore[arg-type]
-        category=category_display(ctx.category),
-        title=title,
-        body=body,
-    )
-
-
-# Quiet linters: platform_noun is exported in case this module grows new rules
-# that need it. Suppressing the unused-import nag without removing it is
-# cheaper than re-importing later.
-_ = platform_noun

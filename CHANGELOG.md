@@ -5,6 +5,25 @@ spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
 ### Upcoming
 
+## 1.2.4 — 2026-09-04
+
+Maintenance and performance patch. Grading rules, rubric `2.0`, JSON schema `1`,
+findings, scores, and exit codes are unchanged.
+
+### Changed
+
+- Consolidated duplicate finding construction and score-to-letter logic while
+  preserving both existing grading-helper import paths.
+- Removed unused Pydantic and four exclusive transitive dependencies.
+- Replaced per-character Python Unicode validation with an equivalent compiled
+  range check. On four bundled fixtures, adaptation and grading measured
+  1.38–1.77× faster; HTML and JSON output hashes remained identical.
+- Removed no-op mappings, unreachable checks, an import-only smoke assertion,
+  and a machine-speed assertion while retaining behavioral coverage.
+- Updated development and release dependencies through Dependabot, and made
+  release-validator tests enforce exact pins and hashes without freezing versions.
+- Refreshed release-pinned documentation, plugin metadata, and example footers.
+
 ## 1.2.3 — 2026-08-09
 
 Maintainer-approved presentation-only patch release paired with

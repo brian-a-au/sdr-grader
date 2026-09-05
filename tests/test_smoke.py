@@ -4,12 +4,6 @@ from pathlib import Path
 
 import pytest
 
-from sdr_grader import __version__
-
-
-def test_package_importable():
-    assert isinstance(__version__, str)
-
 
 def test_sdist_excludes_local_claude_workspaces():
     """Local agent worktrees must never ship in the public source archive."""

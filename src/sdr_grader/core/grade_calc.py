@@ -25,7 +25,8 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 from sdr_grader.render import Finding
-from sdr_grader.rules.rubric import GradeBand, Rubric, RuleDefinition
+from sdr_grader.rules.rubric import Rubric, RuleDefinition
+from sdr_grader.rules.rubric import score_to_letter as score_to_letter
 
 
 @dataclass(frozen=True)
@@ -96,14 +97,3 @@ def compute_grade(
         overall_grade=overall_grade,
         categories=categories,
     )
-
-
-def score_to_letter(score: float, scale: list[GradeBand]) -> str:
-    """Map a numeric score to its letter grade.
-
-    Bands are validated to be strictly descending at rubric load time.
-    """
-    for band in scale:
-        if score >= band.min_score:
-            return band.grade
-    return scale[-1].grade
