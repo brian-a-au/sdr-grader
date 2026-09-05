@@ -24,7 +24,7 @@ Invoke this skill when the user:
 
 ## How to use
 
-Use the canonical [schema-1 JSON output reference](https://github.com/brian-a-au/sdr-grader/blob/v1.2.3/docs/JSON_OUTPUT.md)
+Use the canonical [schema-1 JSON output reference](https://github.com/brian-a-au/sdr-grader/blob/v1.2.4/docs/JSON_OUTPUT.md)
 for the complete field shape, stable identity and grade fields, nullability,
 finding-body variants, HTML-string trust, and the `impact_pts` compatibility
 window. Do not maintain a separate partial schema in this skill.
@@ -38,7 +38,7 @@ Follow this sequence before invoking the helper:
 2. Before the first report read, warn: "Selected helper output will enter your
    Claude conversation context." Require the user's acknowledgment, unless the
    current request already explicitly acknowledges that boundary. Minimize the
-   operation under the canonical [report-sharing privacy matrix](https://github.com/brian-a-au/sdr-grader/blob/v1.2.3/SECURITY.md#report-sharing-privacy-matrix),
+   operation under the canonical [report-sharing privacy matrix](https://github.com/brian-a-au/sdr-grader/blob/v1.2.4/SECURITY.md#report-sharing-privacy-matrix),
    which is the privacy authority.
 3. Prefer `summary` or a filtered `findings` query. Use `show` only when the
    user explicitly requests the full body/remediation of an ID and that exact

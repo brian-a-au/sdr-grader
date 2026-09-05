@@ -59,13 +59,13 @@ baseline. Legacy reports remain readable for single-report operations with a
 warning. Bundled prefixes are examples; custom stable finding IDs such as
 `LAUNCH-001` are supported.
 
-The canonical [schema-1 JSON output reference](https://github.com/brian-a-au/sdr-grader/blob/v1.2.3/docs/JSON_OUTPUT.md)
+The canonical [schema-1 JSON output reference](https://github.com/brian-a-au/sdr-grader/blob/v1.2.4/docs/JSON_OUTPUT.md)
 defines the complete field shape, nullability, finding-body variants, and
 HTML-string trust rules. When the helper is used through Claude, its selected
 output enters Claude conversation context. The skill warns and requires
 acknowledgment before the first read unless the request already explicitly
 acknowledges that boundary. Review and minimize the requested operation; the
-[report-sharing privacy matrix](https://github.com/brian-a-au/sdr-grader/blob/v1.2.3/SECURITY.md#report-sharing-privacy-matrix)
+[report-sharing privacy matrix](https://github.com/brian-a-au/sdr-grader/blob/v1.2.4/SECURITY.md#report-sharing-privacy-matrix)
 is the authority for that boundary and the other report-sharing surfaces.
 
 ## License
