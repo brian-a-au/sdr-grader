@@ -98,7 +98,7 @@ def test_release_workflow_is_tag_only_build_once_and_authority_isolated():
     candidate = text.split("\n  candidate:", 1)[1].split("\n  build:", 1)[0]
     assert "contents: write" not in candidate
     assert "id-token: write" not in candidate
-    build = text.split("\n  build:", 1)[1].split("\n  install-smoke:", 1)[0]
+    build = text.split("\n  build:", 1)[1].split("\n  recover:", 1)[0]
     assert "id-token: write" in build
     assert "attestations: write" in build
     assert "Attest immutable distributions for rerun recovery" in build
@@ -119,7 +119,7 @@ def test_release_workflow_builds_before_isolated_frozen_wheel_plugin_smoke():
         1,
     )[0]
     build = text.split("\n  build:", 1)[1].split(
-        "\n  install-smoke:",
+        "\n  recover:",
         1,
     )[0]
     plugin_smoke = text.split("\n  plugin-smoke:", 1)[1].split(
@@ -137,7 +137,7 @@ def test_release_workflow_builds_before_isolated_frozen_wheel_plugin_smoke():
     assert "uv build --no-sources --clear --no-create-gitignore" in build
     assert "npm install" not in build
     assert "claude plugin" not in build
-    assert "needs: [candidate, build]" in plugin_smoke
+    assert "needs: [candidate, build, recover]" in plugin_smoke
     assert "Fetch frozen release candidate" in plugin_smoke
     assert "uv pip install" in plugin_smoke
     assert "dist/*.whl" in plugin_smoke
@@ -198,8 +198,8 @@ def test_release_workflow_pins_validation_and_builds_candidate_only_once():
         )
 
     recovery_condition = (
-        "needs.build.result == 'success' || "
-        "(github.run_attempt > 1 && needs.build.result == 'skipped')"
+        "github.run_attempt > 1 && needs.build.result == 'skipped' && "
+        "needs.recover.result == 'success'"
     )
     for job_name in ("install-smoke", "plugin-smoke"):
         job = text.split(f"\n  {job_name}:", 1)[1]
@@ -207,7 +207,7 @@ def test_release_workflow_pins_validation_and_builds_candidate_only_once():
         if next_job:
             job = job[: next_job.start()]
         assert "always()" in job
-        assert "needs: [candidate, build]" in job
+        assert "needs: [candidate, build, recover]" in job
         assert "needs.candidate.result == 'success'" in job
         assert recovery_condition in " ".join(job.split())
 
@@ -215,8 +215,8 @@ def test_release_workflow_pins_validation_and_builds_candidate_only_once():
 def test_release_candidate_fetch_is_rerun_safe_and_commit_bound():
     action = _action_text("fetch-release-candidate")
 
-    assert "github.run_attempt == 1" in action
-    assert "github.run_attempt > 1" in action
+    assert "if: inputs.source == 'artifacts'" in action
+    assert "if: inputs.source == 'release'" in action
     assert "candidate-dist-${{ github.sha }}" in action
     assert "candidate-evidence-${{ github.sha }}" in action
     assert 'gh release download "${GITHUB_REF_NAME}"' in action
@@ -418,3 +418,28 @@ def test_codeql_dependency_updates_and_governance_files_are_configured():
         "Announcement approval",
     ):
         assert required in checklist
+
+
+def test_draft_recovery_has_write_access_without_granting_it_to_smoke_jobs():
+    workflow = yaml.safe_load(_workflow_text("release.yml"))
+    jobs = workflow["jobs"]
+    recovery = jobs["recover"]
+    assert recovery["permissions"] == {"contents": "write", "attestations": "read"}
+    assert recovery["needs"] == "candidate"
+    assert recovery["if"] == "github.run_attempt > 1"
+    steps = recovery["steps"]
+    fetch = next(s for s in steps if s.get("uses") == "./.github/actions/fetch-release-candidate")
+    assert fetch["with"]["source"] == "release"
+    assert not any("uv pip install" in s.get("run", "") for s in steps)
+    uploads = [s for s in steps if s.get("uses", "").startswith("actions/upload-artifact@")]
+    assert len(uploads) == 2
+    assert all(s["with"]["overwrite"] is True for s in uploads)
+    for name in ("install-smoke", "plugin-smoke"):
+        job = jobs[name]
+        assert "recover" in job["needs"]
+        assert "needs.recover.result == 'success'" in job["if"]
+        assert job.get("permissions", workflow["permissions"])["contents"] == "read"
+    for name, job in jobs.items():
+        for step in job["steps"]:
+            if step.get("uses") == "./.github/actions/fetch-release-candidate" and name != "recover":
+                assert step.get("with", {}).get("source", "artifacts") == "artifacts"

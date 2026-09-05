@@ -159,6 +159,22 @@ guidance when the defect affects privacy or security.
 | Any PyPI filename or digest differs from the frozen candidate | Stop. Do not upload, publish the draft, move the tag, or reuse the version. Classify the incident and choose a new version only after review. |
 | GitHub release is public but endpoint verification fails | Do not rebuild. Compare PyPI, GitHub, and evidence digests, then fix forward or yank following the security classification. |
 
+On reruns, only `Recover immutable draft artifacts` receives `contents: write`
+(the workflow token permission needed to see a draft) and `attestations: read`.
+It verifies tag/commit-bound provenance, candidate evidence, and the exact draft
+inventory before retaining the same bytes as run artifacts. Smoke and validation
+jobs consume those artifacts with read-only repository access. Recovery must
+succeed before they run; it never installs the recovered package or rebuilds it.
+Do not grant repository write access to the smoke jobs to work around draft
+visibility. A missing, public, or mismatched retained draft fails closed.
+
+After a successful PyPI upload, version-specific metadata may take time to
+propagate. The postpublication verifier allows up to five minutes for that
+endpoint, with at most 16 attempts and backoff capped at 30 seconds. Ordinary
+missing links remain immediate failures; digest or content mismatches are never
+retried as propagation failures. Keep the GitHub release in draft if this bound
+is exhausted and classify the observed PyPI state before recovery.
+
 Release workflow revisions are frozen into each tag. A fix merged after a tag
 cannot change that tag's historical workflow run or make it load a new local
 action. Apply this recovery path only to future tags that contain it; preserve

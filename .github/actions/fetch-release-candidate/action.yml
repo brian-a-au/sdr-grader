@@ -1,9 +1,13 @@
 name: Fetch frozen release candidate
-description: Reuse current-attempt artifacts or recover the exact candidate from its release.
+description: Read verified run artifacts; only the privileged recovery job reads a retained release.
 
 inputs:
+  source:
+    description: artifacts for consumers; release only for the isolated recovery job.
+    required: false
+    default: artifacts
   token:
-    description: GitHub token permitted to read draft or public release assets.
+    description: GitHub token; release recovery requires contents write and attestations read.
     required: true
   dist_dir:
     description: Destination for the wheel and sdist.
@@ -18,21 +22,21 @@ runs:
   using: composite
   steps:
     - name: Download current-attempt distributions
-      if: github.run_attempt == 1
+      if: inputs.source == 'artifacts'
       uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
       with:
         name: candidate-dist-${{ github.sha }}
         path: ${{ inputs.dist_dir }}/
 
     - name: Download current-attempt evidence
-      if: github.run_attempt == 1
+      if: inputs.source == 'artifacts'
       uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
       with:
         name: candidate-evidence-${{ github.sha }}
         path: ${{ inputs.evidence_dir }}/
 
     - name: Recover distributions and evidence from the existing release
-      if: github.run_attempt > 1
+      if: inputs.source == 'release'
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.token }}
@@ -52,7 +56,7 @@ runs:
           --dir "${EVIDENCE_DIR}"
 
     - name: Verify recovered distribution provenance
-      if: github.run_attempt > 1
+      if: inputs.source == 'release'
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.token }}
