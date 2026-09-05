@@ -24,8 +24,8 @@ that child calls Adobe APIs before the local grader runs.
 
 **See what’s healthy. Know what to fix.**
 
-<a href="https://raw.githubusercontent.com/brian-a-au/sdr-grader/03ffdcaabf8be13ce6bc4ddf1e81041a9fcf4f97/docs/assets/grader-showcase.png">
-  <img src="https://raw.githubusercontent.com/brian-a-au/sdr-grader/03ffdcaabf8be13ce6bc4ddf1e81041a9fcf4f97/docs/assets/grader-showcase.gif" width="1120" height="720" alt="SDR Grader demo: an A-grade CJA report at 100%, mixed category scores in a separate diagnostic example, a high-severity finding with remediation, and an A-grade Adobe Analytics report at 100%.">
+<a href="https://raw.githubusercontent.com/brian-a-au/sdr-grader/main/.github/assets/grader-showcase.png">
+  <img src="https://raw.githubusercontent.com/brian-a-au/sdr-grader/main/.github/assets/grader-showcase.gif" width="1120" height="720" alt="SDR Grader demo: an A-grade CJA report at 100%, mixed category scores in a separate diagnostic example, a high-severity finding with remediation, and an A-grade Adobe Analytics report at 100%.">
 </a>
 
 *21-second loop · Actual report excerpts from independent synthetic snapshots.

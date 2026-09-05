@@ -12,7 +12,7 @@ const root = resolve(assets, '../..');
 if (!process.env.SHOWCASE_TOOLS) throw new Error('Set SHOWCASE_TOOLS as documented in SHOWCASE.md');
 const require = createRequire(resolve(process.env.SHOWCASE_TOOLS, 'package.json'));
 const { chromium } = require('playwright-core');
-const output = process.env.SHOWCASE_OUTPUT || assets;
+const output = process.env.SHOWCASE_OUTPUT || join(root, '.github/assets');
 const frames = await mkdtemp(join(tmpdir(), 'sdr-showcase-'));
 await mkdir(output, { recursive: true });
 const browser = await chromium.launch({

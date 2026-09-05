@@ -1,7 +1,7 @@
 # README showcase
 
-`grader-showcase.gif` is a 21.5-second, infinitely looping introduction to the
-grader. `grader-showcase.png` is its still-image alternative. The surrounding
+`.github/assets/grader-showcase.gif` is a 21.5-second, infinitely looping introduction to the
+grader. `.github/assets/grader-showcase.png` is its still-image alternative. The surrounding
 frame is editorial artwork; the report excerpts retain the report's text and
 stylesheet. This is a documentation asset, not a new product interface.
 
@@ -42,8 +42,10 @@ confirm it loops and stays below 2 MB. Keep the opening frame meaningful for
 clients that do not animate GIFs. The README provides a still-image link and
 links to complete, release-pinned reports for readers who need more time.
 
-The README's image and still-image URLs pin the documentation asset commit,
-independently of the package version. When replacing the assets, commit them
-first, then update both absolute URLs to that commit. This keeps the URLs usable
-on GitHub and PyPI without moving a release tag or inventing a package release.
+The generated images live in `.github/assets/` as repository presentation
+assets, separate from release-pinned product documentation in `docs/`.
+The existing README policy requires `main` URLs for this location. Both
+absolute image URLs therefore use `main/.github/assets/`; they become live
+when the docs PR merges. Use the PR's embedded demo to preview before merging.
+This does not move a release tag or alter the published PyPI description.
 Existing version-pinned documentation and example links remain unchanged.
