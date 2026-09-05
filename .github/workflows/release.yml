@@ -123,15 +123,68 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+  recover:
+    name: Recover immutable draft artifacts
+    needs: candidate
+    if: github.run_attempt > 1
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # GitHub's workflow read token cannot see draft releases. Confine this
+    # permission to recovery; never install or execute the recovered package here.
+    permissions:
+      contents: write
+      attestations: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.ref }}
+
+      - name: Recover and verify frozen release candidate
+        uses: ./.github/actions/fetch-release-candidate
+        with:
+          source: release
+          token: ${{ github.token }}
+
+      - name: Verify exact retained draft inventory
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "${GITHUB_REF_NAME}" --repo "${GITHUB_REPOSITORY}" \
+            --json assets,isDraft,tagName > release-metadata.json
+          python3 scripts/verify_github_release_assets.py \
+            --release-metadata release-metadata.json \
+            --evidence release-evidence/release-artifacts.json \
+            --dist-dir dist --expected-tag "${GITHUB_REF_NAME}"
+
+      - name: Retain recovered distributions for read-only consumers
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: candidate-dist-${{ github.sha }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 7
+          overwrite: true
+
+      - name: Retain recovered evidence for read-only consumers
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: candidate-evidence-${{ github.sha }}
+          path: release-evidence/release-artifacts.json
+          if-no-files-found: error
+          retention-days: 30
+          overwrite: true
+
   install-smoke:
     name: Artifact smoke / Python ${{ matrix.python-version }}
-    needs: [candidate, build]
+    needs: [candidate, build, recover]
     if: >-
       ${{
         always() &&
         needs.candidate.result == 'success' &&
-        (needs.build.result == 'success' ||
-         (github.run_attempt > 1 && needs.build.result == 'skipped'))
+        ((github.run_attempt == 1 && needs.build.result == 'success') ||
+         (github.run_attempt > 1 && needs.build.result == 'skipped' &&
+          needs.recover.result == 'success'))
       }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -196,13 +249,14 @@ jobs:
 
   plugin-smoke:
     name: Frozen wheel Claude plugin smoke
-    needs: [candidate, build]
+    needs: [candidate, build, recover]
     if: >-
       ${{
         always() &&
         needs.candidate.result == 'success' &&
-        (needs.build.result == 'success' ||
-         (github.run_attempt > 1 && needs.build.result == 'skipped'))
+        ((github.run_attempt == 1 && needs.build.result == 'success') ||
+         (github.run_attempt > 1 && needs.build.result == 'skipped' &&
+          needs.recover.result == 'success'))
       }}
     runs-on: ubuntu-latest
     timeout-minutes: 15

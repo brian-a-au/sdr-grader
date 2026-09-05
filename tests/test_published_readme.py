@@ -289,3 +289,46 @@ def test_bounded_client_rejects_hops_oversize_and_classifies_transient_exhaustio
         module.BoundedClient(opener=transient, sleep=lambda _delay: None).fetch(
             "https://github.com/brian-a-au/sdr-grader"
         )
+
+
+def test_pypi_metadata_can_propagate_after_two_minutes(monkeypatch):
+    module = _load_module()
+    now = [0.0]
+    monkeypatch.setattr(module.time, "monotonic", lambda: now[0])
+    url = f"https://pypi.org/pypi/sdr-grader/{VERSION}/json"
+
+    class Propagating:
+        def open(self, request, timeout):
+            if now[0] < 120:
+                raise urllib.error.HTTPError(url, 404, "Not Found", {}, None)
+            return _Response(b"published")
+
+    def sleep(delay):
+        now[0] += delay
+
+    client = module.BoundedClient(opener=Propagating(), sleep=sleep)
+    assert client.fetch(url, retry_not_found=True) == b"published"
+    assert 120 <= now[0] <= 300
+
+
+def test_pypi_metadata_still_stops_at_its_deadline(monkeypatch):
+    module = _load_module()
+    now = [0.0]
+    monkeypatch.setattr(module.time, "monotonic", lambda: now[0])
+    url = f"https://pypi.org/pypi/sdr-grader/{VERSION}/json"
+    requests = []
+
+    class Missing:
+        def open(self, request, timeout):
+            requests.append(now[0])
+            raise urllib.error.HTTPError(url, 404, "Not Found", {}, None)
+
+    def sleep(delay):
+        assert 0 < delay <= 30
+        now[0] += delay
+
+    client = module.BoundedClient(opener=Missing(), sleep=sleep)
+    with pytest.raises(module.TransientExhaustedError):
+        client.fetch(url, retry_not_found=True)
+    assert now[0] == 300
+    assert max(requests) < 300

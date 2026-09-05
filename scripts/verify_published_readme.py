@@ -22,7 +22,9 @@ PROJECT = "sdr-grader"
 REPOSITORY_OWNER = "brian-a-au"
 REPOSITORY_NAME = "sdr-grader"
 MAX_ATTEMPTS = 3
-PYPI_PROPAGATION_ATTEMPTS = 6
+PYPI_PROPAGATION_ATTEMPTS = 16
+PYPI_PROPAGATION_TIMEOUT_SECONDS = 300.0
+MAX_RETRY_DELAY_SECONDS = 30.0
 MAX_REDIRECTS = 5
 REQUEST_TIMEOUT_SECONDS = 15.0
 TOTAL_TIMEOUT_SECONDS = 60.0
@@ -81,7 +83,10 @@ class BoundedClient:
     ) -> bytes:
         if not isinstance(max_bytes, int) or max_bytes <= 0:
             raise PolicyError("response byte bound must be a positive integer")
-        deadline = time.monotonic() + TOTAL_TIMEOUT_SECONDS
+        total_timeout = (
+            PYPI_PROPAGATION_TIMEOUT_SECONDS if retry_not_found else TOTAL_TIMEOUT_SECONDS
+        )
+        deadline = time.monotonic() + total_timeout
         last_error = "unknown transient failure"
         max_attempts = PYPI_PROPAGATION_ATTEMPTS if retry_not_found else MAX_ATTEMPTS
         for attempt in range(max_attempts):
@@ -96,7 +101,9 @@ class BoundedClient:
                 last_error = str(exc)
                 if attempt + 1 == max_attempts:
                     break
-                delay = min(2**attempt, max(0.0, deadline - time.monotonic()))
+                delay = min(
+                    2**attempt, MAX_RETRY_DELAY_SECONDS, max(0.0, deadline - time.monotonic())
+                )
                 if delay <= 0:
                     break
                 self._sleep(delay)
