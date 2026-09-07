@@ -92,6 +92,20 @@ CJA maps only the `dimensions/` and `variables/` namespace equivalence; exact
 exported IDs take precedence. Matching bare suffixes across metric and dimension
 namespaces are not evidence of identity.
 
+CJA calculated-metric and segment inventories accept native/JSON-encoded
+reference lists and exporter tabular comma-separated references (`-` is empty).
+Segments accept both `other_segment_references` and the tabular
+`segment_references` alias. Non-string list members contribute no IDs.
+Typed reference slots in usable definitions retain their complete IDs, including
+nested operands and filter context. A summary abbreviation expands only when
+that same definition supplies exactly one reference of the matching kind with
+that exporter abbreviation; conflicting or otherwise unmatched summary evidence
+is retained as unresolved evidence. No inventory-wide suffix lookup is used.
+Normalized references are deduplicated and sorted. Missing/malformed optional
+definitions still use the empty fallback and do not discard independent summary
+references. This CJA inventory-specific behavior leaves the shared
+`_parse_ref_list` helper and AA's malformed-definition fallback unchanged.
+
 An empty normalized segment `definition` means no usable definition was
 available; duplicate checks must not treat two such values as an observed
 duplicate. Calculated-metric `formula_text` can be an abbreviated export

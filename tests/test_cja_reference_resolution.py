@@ -40,8 +40,8 @@ def test_core_metrics_resolve_without_inventory_rows(check, rule_id):
     implementation = adapt(snapshot(CORE_METRICS))
     assert check(implementation, ctx(rule_id)) == []
     assert implementation.metrics == []  # No fabricated inventory for other rules.
-    assert implementation.calculated_metrics[0].references == CORE_METRICS
-    assert implementation.segments[0].references == CORE_METRICS
+    assert implementation.calculated_metrics[0].references == sorted(CORE_METRICS)
+    assert implementation.segments[0].references == sorted(CORE_METRICS)
 
 
 @pytest.mark.parametrize("stored,referenced", [
