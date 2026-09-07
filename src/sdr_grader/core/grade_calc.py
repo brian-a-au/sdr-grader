@@ -23,6 +23,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
+from math import fsum
 
 from sdr_grader.render import Finding
 from sdr_grader.rules.rubric import Rubric, RuleDefinition
@@ -56,8 +57,6 @@ def compute_grade(
     rules = rubric.rules if rule_inventory is None else rule_inventory
     fired_rule_ids = {f.id for f in findings}
     categories: list[CategoryScore] = []
-    weighted_sum = 0.0
-    weight_total = 0.0
 
     for slug, weight in rubric.category_weights.items():
         if weight <= 0:
@@ -85,9 +84,11 @@ def compute_grade(
                 rules_failed=rules_failed,
             )
         )
-        weighted_sum += pct * weight
-        weight_total += weight
 
+    # Stable sums keep equivalent category mappings on the same side of a
+    # rounding boundary, including after suppression weight normalization.
+    weighted_sum = fsum(category.pct * category.weight for category in categories)
+    weight_total = fsum(category.weight for category in categories)
     overall_pct = 100 if weight_total == 0 else round(weighted_sum / weight_total)
     overall_pct = max(0, min(100, overall_pct))
     overall_grade = score_to_letter(overall_pct, rubric.grade_scale)

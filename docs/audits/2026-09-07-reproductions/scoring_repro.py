@@ -78,6 +78,7 @@ for value in [False, 0, {}, ""]:
     p = root / "bad-suppression.yaml"
     p.write_text(yaml.safe_dump({"suppress": [{"rule": "a-fail", "components": value}]}))
     out = root / "bad-suppression.json"
+    out.unlink(missing_ok=True)
     rc = main(
         [
             str(root / "minimal.json"),
@@ -93,5 +94,8 @@ for value in [False, 0, {}, ""]:
             "A",
         ]
     )
+    if rc != 0 and not out.exists():
+        print("components=", repr(value), "rejected with exit", rc)
+        continue
     report = json.loads(out.read_text())
     print("components=", repr(value), "score", report["overall_pct"], report["grade"], "exit", rc)
