@@ -14,6 +14,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+from itertools import groupby
 from pathlib import Path
 from typing import Any
 
@@ -319,6 +320,16 @@ def _transform_reference_findings(report: dict[str, Any]) -> None:
                 for item in components["items"]
                 if _referenced_id(rule_id, item) not in APPROVED_CJA_REFERENCE_IDS
             ]
+            # PR #63 sorts references inside each CJA consumer. Transform only
+            # baseline expectations: candidate contents, multiplicity, consumer
+            # order, scores and all other findings still compare exactly.
+            components["items"] = [
+                item
+                for _, group in groupby(
+                    components["items"], key=lambda item: item.partition(" -> ")[0]
+                )
+                for item in sorted(group)
+            ]
         count = len(components["items"])
         if not count:
             continue
@@ -371,7 +382,7 @@ def _verify_expected_candidate(candidate: dict[str, Any], baseline: dict[str, An
         raise CompatibilityError(
             "candidate structured scores/findings/categories/exit/trend/schema differ "
             "from v1.2.2 beyond the approved CJA reference-resolution, exact copy, "
-            "and public component-count corrections "
+            "reference ordering, and public component-count corrections "
             "after normalizing only tool_version, " + ", ".join(NORMALIZED_COPY_FIELDS)
         )
 

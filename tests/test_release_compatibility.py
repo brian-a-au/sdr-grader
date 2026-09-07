@@ -461,3 +461,33 @@ def test_component_count_delta_does_not_apply_to_other_inventory_or_identity(
         "tldr_html": "unchanged",
     }
     assert module._expected_candidate_from_baseline(baseline) == baseline
+
+
+@pytest.mark.parametrize("rule_id,separator", [("SCH-002", " -> missing "), ("CALC-002", " -> ")])
+@pytest.mark.parametrize("platform", ["CJA", "AA"])
+def test_reference_order_delta_sorts_only_within_cja_consumer_groups(rule_id, separator, platform):
+    module = _load_module()
+    # Consumer order is intentionally nonalphabetical; repeated items must survive.
+    old_items = [f"cm_z{separator}metrics/z", f"cm_z{separator}metrics/a",
+                 f"cm_a{separator}metrics/z", f"cm_a{separator}metrics/a",
+                 f"cm_a{separator}metrics/a"]
+    sorted_items = [old_items[1], old_items[0], old_items[3], old_items[4], old_items[2]]
+    baseline = {
+        "schema_version": 1, "adapter": {"platform": platform}, "categories": [],
+        "overall_pct": 47, "findings": [_reference_finding(rule_id, old_items)],
+    }
+    expected = module._expected_candidate_from_baseline(baseline)
+    wanted = sorted_items if platform == "CJA" else old_items
+    assert expected["findings"][0]["body"][1]["items"] == wanted
+    assert baseline["findings"][0]["body"][1]["items"] == old_items
+    module._verify_expected_candidate(expected, baseline)
+    for bad_items in (wanted[:-1], wanted + [wanted[0]],
+                      [wanted[0].replace("metrics/", "variables/"), *wanted[1:]],
+                      wanted[2:] + wanted[:2]):
+        candidate = json.loads(json.dumps(expected))
+        candidate["findings"][0]["body"][1]["items"] = bad_items
+        with pytest.raises(module.CompatibilityError):
+            module._verify_expected_candidate(candidate, baseline)
+    expected["overall_pct"] += 1
+    with pytest.raises(module.CompatibilityError):
+        module._verify_expected_candidate(expected, baseline)
