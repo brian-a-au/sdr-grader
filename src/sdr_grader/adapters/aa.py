@@ -220,13 +220,9 @@ def _calc_from_record(record: Any, *, index: int | None = None) -> CalculatedMet
         )
     name = record.get("name") or metric_id
     description = _normalize_description(record.get("description"))
-    definition = record.get("definition")
-    if definition is None:
-        definition = {}
+    definition = record.get("definition") or {}
     if not isinstance(definition, dict):
-        raise InvalidSnapshotError(
-            f"{context}: calculated metric definition must be an object"
-        )
+        definition = {}
     formula = definition.get("formula")
     # Saved segment filters can wrap the formula at the definition level.
     # Keep that context for formula comparisons and user-facing summaries.

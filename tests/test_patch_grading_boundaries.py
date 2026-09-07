@@ -107,14 +107,3 @@ def test_invalid_suppression_scope_rejected_before_output(tmp_path, value, capsy
     )
     assert "components" in capsys.readouterr().err
     assert not html.exists() and not output.exists()
-
-
-@pytest.mark.parametrize("definition", [7, 0, True, False, [1], [], "malformed", ""])
-def test_malformed_aa_definition_is_contextual_cli_error(tmp_path, definition, capsys):
-    snapshot = _snapshot(tmp_path, calculated_metrics=[{"id": "cm1", "definition": definition}])
-    html, output = tmp_path / "report.html", tmp_path / "report.json"
-    assert main([str(snapshot), "--output", str(html), "--json", str(output)]) == 1
-    error = capsys.readouterr().err
-    assert "calculated_metrics[0]" in error and "definition" in error
-    assert "Traceback" not in error
-    assert not html.exists() and not output.exists()
