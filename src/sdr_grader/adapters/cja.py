@@ -312,14 +312,7 @@ def _calc_metric_from_record(
         label=f"calculated metric definition {metric_id!r}",
     )
     formula_text = record.get("formula_summary") or record.get("definition_summary") or ""
-    references = list(
-        dict.fromkeys(
-            [
-                *_parse_ref_list(record.get("metric_references")),
-                *_parse_ref_list(record.get("segment_references")),
-            ]
-        )
-    )
+    references = _inventory_references(formula, record, segment=False)
     complexity = _safe_float(record.get("complexity_score"))
 
     attribution_model, allocation = _extract_attribution(formula)
@@ -350,6 +343,92 @@ def _calc_metric_from_record(
         shared_to_count=_governance_shared_to_count(record),
         platform_specific=platform_specific,
     )
+
+
+def _inventory_references(
+    definition: dict[str, Any], record: dict[str, Any], *, segment: bool
+) -> list[str]:
+    """Retain typed definition IDs and reconcile exporter summary spellings.
+
+    cja_auto_sdr 3.11.7/3.12.0 abbreviates summaries to the final slash (or
+    dot) part. Only a unique typed reference *in this definition and kind*
+    establishes that abbreviation. Inventory suffix matches are not aliases.
+    Independent summary evidence survives absent/partial/unknown definitions.
+    """
+    typed: dict[str, set[str]] = {"metric": set(), "dimension": set(), "segment": set()}
+
+    def add(kind: str, value: Any) -> None:
+        if isinstance(value, str) and value.strip() and value.strip() != "-":
+            typed[kind].add(value.strip())
+
+    def walk(node: Any) -> None:
+        if isinstance(node, dict):
+            func = node.get("func")
+            if func in ("metric", "event"):
+                add("metric", node.get("name"))
+            elif func == "attr":
+                add("dimension", node.get("name"))
+            elif func in ("segment", "segment-ref"):
+                add("segment", node.get("segment_id", node.get("id")))
+            if segment:
+                # CJA segment exporter also accepts these explicit ID slots.
+                for key, kind in (("dimension", "dimension"), ("dim", "dimension"),
+                                  ("metric", "metric"), ("segment", "segment"),
+                                  ("seg", "segment")):
+                    add(kind, node.get(key))
+            for key, value in node.items():
+                # Comparison literals are data, even if shaped like an AST.
+                if key not in {"str", "list", "glob", "description", "name"}:
+                    walk(value)
+        elif isinstance(node, list):
+            for value in node:
+                walk(value)
+
+    walk(definition)
+    fields = {"metric_references": "metric", "segment_references": "segment"}
+    if segment:
+        fields.update(dimension_references="dimension", other_segment_references="segment")
+    refs = set().union(*typed.values())
+    for field, kind in fields.items():
+        abbreviations: dict[str, set[str]] = {}
+        for ref in typed[kind]:
+            short = ref.rsplit("/", 1)[-1] if "/" in ref else ref.rsplit(".", 1)[-1]
+            abbreviations.setdefault(short, set()).add(ref)
+        for ref in _inventory_ref_list(record.get(field)):
+            matches = abbreviations.get(ref, set())
+            if ref in typed[kind] or len(matches) != 1:
+                refs.add(ref)
+            else:
+                refs.update(matches)
+    return sorted(refs)
+
+
+def _inventory_ref_list(value: Any) -> list[str]:
+    """Full inventories use lists; tabular records use comma-separated IDs.
+
+    Do not stringify malformed members into IDs. JSON-looking invalid input
+    retains the optional-field empty fallback; resource limits still apply.
+    This exporter-specific parser does not change the shared list helper.
+    """
+    if isinstance(value, str):
+        value = value.strip()
+        if not value or value == "-":
+            return []
+        if value[0] in '[{"' or value in {"null", "true", "false"}:
+            try:
+                value = json.loads(value)
+            except json.JSONDecodeError:
+                return []
+            except (ValueError, RecursionError) as exc:
+                raise InvalidSnapshotError("reference list JSON exceeds decoder limits") from exc
+            validate_decoded_structure(value, label="reference list")
+            validate_unicode_scalars(value, label="reference list")
+        else:
+            value = value.split(",")
+    if not isinstance(value, list):
+        return []
+    return [item.strip() for item in value
+            if isinstance(item, str) and item.strip() and item.strip() != "-"]
 
 
 def _extract_attribution(formula: dict[str, Any]) -> tuple[str | None, str | None]:
@@ -415,20 +494,13 @@ def _segment_from_record(record: dict[str, Any], *, index: int | None = None) ->
     )
     nesting_depth = _safe_int(record.get("nesting_depth"))
     container_types = _extract_container_types(record.get("container_type"), definition)
-    references = list(
-        dict.fromkeys(
-            [
-                *_parse_ref_list(record.get("dimension_references")),
-                *_parse_ref_list(record.get("metric_references")),
-                *_parse_ref_list(record.get("other_segment_references")),
-            ]
-        )
-    )
+    references = _inventory_references(definition, record, segment=True)
 
     handled = {
         "segment_id", "id", "segment_name", "name", "description",
         "definition_json", "nesting_depth", "container_type",
         "dimension_references", "metric_references", "other_segment_references",
+        "segment_references",
         "created", "modified", "created_at", "modified_at", "owner",
         "approved", "shared_to_count",
     }

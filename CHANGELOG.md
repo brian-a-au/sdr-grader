@@ -3,6 +3,27 @@
 All notable changes follow the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
+## 1.2.9 — 2026-09-07
+
+Patch scope: preserve CJA reference evidence across supported exporter
+representations. Rubric pack `2.0`, JSON schema `1`, thresholds, severities,
+and scoring arithmetic are unchanged. Corrected findings can change scores,
+grades, and threshold-based exit codes for affected CJA exports.
+
+- Preserve canonical references from nested calculated-metric and segment
+  definitions, including full exports and records-only inventories.
+- Reconcile shortened summaries only with a unique same-kind canonical
+  reference in the same definition; keep ambiguous references unresolved.
+- Accept native arrays, JSON array strings, and tabular reference lists without
+  turning malformed values or comparison literals into component references.
+- Sort and deduplicate references for deterministic findings. Update the
+  immutable-baseline compatibility gate to allow only the documented CJA
+  reference ordering change while preserving substantive comparisons.
+- Preserve v1.2.8 category-weight ordering, suppression-scope validation, and
+  malformed optional AA definition behavior.
+- Document the v1.2.8 public-install propagation failure and skipped-verifier
+  retry defect separately; this patch does not change the release workflow.
+
 ## 1.2.8 — 2026-09-07
 
 Patch scope: deterministic CI gates and malformed-input validation. Rubric
