@@ -28,6 +28,9 @@ NORMALIZED_COPY_FIELDS = (
     "methodology.paragraphs",
     "distribution.charts[].label",
 )
+APPROVED_CJA_REFERENCE_IDS = frozenset(
+    {"metrics/occurrences", "metrics/visits", "metrics/visitors"}
+)
 FIXTURE_FAIL_BELOW_A_EXITS = {
     "cja_snapshot_clean.json": 0,
     "cja_snapshot_messy.json": 2,
@@ -215,6 +218,88 @@ def _normalize_report(payload: dict[str, Any]) -> dict[str, Any]:
             if isinstance(chart, dict) and "label" in chart:
                 chart["label"] = "<normalized-copy>"
     return normalized
+
+
+def _expected_candidate_from_baseline(baseline: dict[str, Any]) -> dict[str, Any]:
+    """Apply only the reviewed reference-resolution delta to v1.2.2 output."""
+    expected = copy.deepcopy(baseline)
+    _transform_reports(expected)
+    return expected
+
+
+def _transform_reports(value: Any) -> None:
+    if isinstance(value, dict):
+        if {"schema_version", "findings", "categories"}.issubset(value):
+            _transform_reference_findings(value)
+        for child in value.values():
+            _transform_reports(child)
+    elif isinstance(value, list):
+        for child in value:
+            _transform_reports(child)
+
+
+def _transform_reference_findings(report: dict[str, Any]) -> None:
+    is_cja = report.get("adapter", {}).get("platform") == "CJA"
+    transformed = []
+    for finding in report["findings"]:
+        rule_id = finding.get("id")
+        if rule_id not in {"SCH-002", "CALC-002"}:
+            transformed.append(finding)
+            continue
+        blocks = finding.get("body", [])
+        paragraph = next((block for block in blocks if block.get("kind") == "paragraph"), None)
+        components = next((block for block in blocks if block.get("kind") == "components"), None)
+        if paragraph is None or components is None or not isinstance(components.get("items"), list):
+            raise CompatibilityError(f"unexpected {rule_id} finding shape in v1.2.2 baseline")
+        if is_cja:
+            components["items"] = [
+                item
+                for item in components["items"]
+                if _referenced_id(rule_id, item) not in APPROVED_CJA_REFERENCE_IDS
+            ]
+        count = len(components["items"])
+        if not count:
+            continue
+        if rule_id == "SCH-002":
+            finding["title"] = f"{count} broken reference{'s' if count != 1 else ''}"
+            paragraph["html"] = (
+                f"{count} reference{'s are' if count != 1 else ' is'} broken — "
+                "segments or calculated metrics point at IDs not found in this snapshot. "
+                "This does not prove the live implementation is broken: the export may "
+                "omit components or inventories. Verify the reference in the source "
+                "platform and re-export the relevant inventory before changing it."
+            )
+        else:
+            finding["title"] = (
+                f"{count} broken calculated metric reference{'s' if count != 1 else ''}"
+            )
+            paragraph["html"] = (
+                f"{count} calculated metric reference{'s are' if count != 1 else ' is'} "
+                "broken — the formula points at components, segments, or other "
+                "calculated metrics not found in this snapshot. This does not prove the "
+                "live implementation is broken: the export may omit components or "
+                "inventories. Verify the reference in the source platform and re-export "
+                "the relevant inventory before changing it."
+            )
+        transformed.append(finding)
+    report["findings"] = transformed
+
+
+def _referenced_id(rule_id: str, item: Any) -> str | None:
+    if not isinstance(item, str):
+        return None
+    separator = " -> missing " if rule_id == "SCH-002" else " -> "
+    _, found, reference_id = item.partition(separator)
+    return reference_id if found else None
+
+
+def _verify_expected_candidate(candidate: dict[str, Any], baseline: dict[str, Any]) -> None:
+    if candidate != _expected_candidate_from_baseline(baseline):
+        raise CompatibilityError(
+            "candidate structured scores/findings/categories/exit/trend/schema differ "
+            "from v1.2.2 beyond the approved CJA reference-resolution correction "
+            "after normalizing only tool_version, " + ", ".join(NORMALIZED_COPY_FIELDS)
+        )
 
 
 def _run_grades(
@@ -441,12 +526,7 @@ def verify_compatibility(repo_root: Path = ROOT, *, uv: str = "uv") -> None:
             fixture_root=fixture_root,
             readme_arguments=readme_arguments,
         )
-        if candidate != baseline:
-            raise CompatibilityError(
-                "candidate structured scores/findings/categories/exit/trend/schema differ "
-                "from v1.2.2 after normalizing only tool_version, "
-                + ", ".join(NORMALIZED_COPY_FIELDS)
-            )
+        _verify_expected_candidate(candidate, baseline)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -460,8 +540,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"compatibility verification failed: {exc}", file=sys.stderr)
         return 1
     print(
-        "v1.2.2 compatibility verified: scores, findings, categories, exits, "
-        "trend, and schema are unchanged"
+        "v1.2.2 compatibility verified: approved CJA reference corrections match; "
+        "scores, categories, exits, trend structure, schema, and other findings are unchanged"
     )
     return 0
 

@@ -4,6 +4,8 @@ import importlib.util
 import json
 from pathlib import Path
 
+import pytest
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCRIPT = REPO_ROOT / "scripts" / "verify_release_compatibility.py"
 
@@ -85,6 +87,102 @@ def test_compatibility_fetches_only_the_public_baseline_tag(monkeypatch):
 def test_compatibility_allows_dev_only_lock_drift():
     module = _load_module()
     assert not hasattr(module, "_verify_lock_identity")
+
+
+def _reference_finding(rule_id, items, paragraph="old copy"):
+    noun = "broken references" if rule_id == "SCH-002" else "broken calculated metric references"
+    return {
+        "id": rule_id,
+        "title": f"{len(items)} {noun}",
+        "body": [
+            {"kind": "paragraph", "html": paragraph},
+            {"kind": "components", "items": items},
+        ],
+    }
+
+
+def test_approved_delta_removes_only_exact_cja_core_reference_items():
+    module = _load_module()
+    visits = "calculatedMetrics/cm -> metrics/visits"
+    missing = "calculatedMetrics/cm -> metrics/visits_custom"
+    nested = "calculatedMetrics/cm -> nested/metrics/visits"
+    baseline = {
+        "fixtures": {
+            "cja_snapshot_messy.json": {
+                "report": {
+                    "schema_version": 1,
+                    "adapter": {"platform": "CJA"},
+                    "overall_pct": 47,
+                    "categories": [{"name": "schema", "pct": 71}],
+                    "findings": [_reference_finding("CALC-002", [visits, missing, nested])],
+                }
+            }
+        }
+    }
+
+    expected = module._expected_candidate_from_baseline(baseline)
+    finding = expected["fixtures"]["cja_snapshot_messy.json"]["report"]["findings"][0]
+
+    assert finding["title"] == "2 broken calculated metric references"
+    assert finding["body"][1]["items"] == [missing, nested]
+    assert "does not prove the live implementation is broken" in finding["body"][0]["html"]
+    assert baseline["fixtures"]["cja_snapshot_messy.json"]["report"]["findings"][0]["body"][1][
+        "items"
+    ] == [visits, missing, nested]
+
+
+def test_approved_delta_keeps_non_cja_items_and_normalizes_only_copy():
+    module = _load_module()
+    visits = "calculatedMetrics/cm -> metrics/visits"
+    baseline = {
+        "report": {
+            "schema_version": 1,
+            "adapter": {"platform": "AA"},
+            "overall_pct": 47,
+            "categories": [],
+            "findings": [_reference_finding("CALC-002", [visits])],
+        }
+    }
+
+    expected = module._expected_candidate_from_baseline(baseline)
+    finding = expected["report"]["findings"][0]
+
+    assert finding["title"] == "1 broken calculated metric reference"
+    assert finding["body"][1]["items"] == [visits]
+    assert finding["body"][0]["html"] != "old copy"
+
+
+def test_verifier_rejects_other_payload_drift(tmp_path, monkeypatch):
+    module = _load_module()
+    baseline = {
+        "report": {
+            "schema_version": 1,
+            "adapter": {"platform": "CJA"},
+            "overall_pct": 47,
+            "categories": [{"name": "schema", "pct": 71}],
+            "findings": [_reference_finding("SCH-002", ["segment/s -> missing metrics/deleted"])],
+        }
+    }
+    expected = module._expected_candidate_from_baseline(baseline)
+
+    wrong_item = json.loads(json.dumps(expected))
+    wrong_item["report"]["findings"][0]["body"][1]["items"] = []
+    wrong_count = json.loads(json.dumps(expected))
+    wrong_count["report"]["findings"][0]["title"] = "2 broken references"
+    score_drift = json.loads(json.dumps(expected))
+    score_drift["report"]["overall_pct"] = 48
+
+    monkeypatch.setattr(module, "_verify_uv", lambda *args, **kwargs: None)
+    monkeypatch.setattr(module, "_fetch_and_verify_baseline", lambda *args, **kwargs: None)
+    monkeypatch.setattr(module, "_readme_arguments", lambda *args, **kwargs: ["sdr-grader"])
+    monkeypatch.setattr(module, "_extract_baseline", lambda *args, **kwargs: None)
+    monkeypatch.setattr(module, "_sync_environment", lambda *args, **kwargs: {})
+
+    for candidate in (wrong_item, wrong_count, score_drift):
+        results = iter((candidate, baseline))
+        monkeypatch.setattr(module, "_run_grades", lambda **kwargs: next(results))
+        with pytest.raises(module.CompatibilityError, match="beyond the approved"):
+            module.verify_compatibility(tmp_path)
 
 
 def test_readme_command_contract_replaces_only_argv_zero(tmp_path):
