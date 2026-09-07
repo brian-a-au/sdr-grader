@@ -5,6 +5,22 @@ spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
 ### Upcoming
 
+## 1.2.6 — 2026-09-07
+
+Publishes the CJA reference fixes documented in the 1.2.5 candidate below,
+plus a release-workflow correction. The 1.2.5 tag is retained as an
+unpublished candidate; no 1.2.5 package was uploaded to PyPI.
+
+### Fixed
+
+- Continue publication after successful artifact and plugin checks even
+  when the mutually exclusive build or recovery job is skipped. Every
+  publication step still requires its direct prerequisites to succeed and
+  stops on cancellation.
+- Cover the complete publication dependency chain with a regression test
+  so a successful build cannot silently skip all publication jobs again.
+
+
 ## 1.2.5 — 2026-09-07
 
 CJA reference-resolution patch. Rubric pack `2.0`, JSON schema `1`, rule

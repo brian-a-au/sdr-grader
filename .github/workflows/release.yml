@@ -348,9 +348,12 @@ jobs:
             "${RUNNER_TEMP}/plugin-grade.json" \
             "${RUNNER_TEMP}/plugin-grade-suppressed.json"
 
+  # Build and recovery are mutually exclusive. Override skipped ancestors
+  # while requiring every direct prerequisite to succeed before continuing.
   verify-prepublication:
     name: Verify tagged README before publication
     needs: [install-smoke, plugin-smoke]
+    if: ${{ always() && !cancelled() && needs.install-smoke.result == 'success' && needs.plugin-smoke.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -384,6 +387,7 @@ jobs:
   draft-github:
     name: Create immutable GitHub draft
     needs: verify-prepublication
+    if: ${{ always() && !cancelled() && needs.verify-prepublication.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -450,6 +454,7 @@ jobs:
   publish-pypi:
     name: Publish PyPI and attest
     needs: draft-github
+    if: ${{ always() && !cancelled() && needs.draft-github.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment:
@@ -497,6 +502,7 @@ jobs:
   verify-pypi-publication:
     name: Verify PyPI publication before announcement
     needs: publish-pypi
+    if: ${{ always() && !cancelled() && needs.publish-pypi.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -531,6 +537,7 @@ jobs:
   publish-github:
     name: Publish GitHub release
     needs: verify-pypi-publication
+    if: ${{ always() && !cancelled() && needs.verify-pypi-publication.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:
@@ -554,6 +561,7 @@ jobs:
   verify-public:
     name: Public endpoints / Python ${{ matrix.python-version }}
     needs: publish-github
+    if: ${{ always() && !cancelled() && needs.publish-github.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:

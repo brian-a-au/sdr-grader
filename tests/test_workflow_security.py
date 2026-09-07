@@ -443,3 +443,27 @@ def test_draft_recovery_has_write_access_without_granting_it_to_smoke_jobs():
         for step in job["steps"]:
             if step.get("uses") == "./.github/actions/fetch-release-candidate" and name != "recover":
                 assert step.get("with", {}).get("source", "artifacts") == "artifacts"
+
+
+def test_release_publication_jobs_override_skipped_ancestors_but_require_success():
+    """An unused build/recovery branch must not skip a tested release."""
+    jobs = yaml.safe_load(_workflow_text("release.yml"))["jobs"]
+    expected_dependencies = {
+        "verify-prepublication": ["install-smoke", "plugin-smoke"],
+        "draft-github": ["verify-prepublication"],
+        "publish-pypi": ["draft-github"],
+        "verify-pypi-publication": ["publish-pypi"],
+        "publish-github": ["verify-pypi-publication"],
+        "verify-public": ["publish-github"],
+    }
+    for name, dependencies in expected_dependencies.items():
+        job = jobs[name]
+        assert job["needs"] == (dependencies[0] if len(dependencies) == 1 else dependencies)
+        condition = " ".join(job.get("if", "").split()).removeprefix("${{ ").removesuffix(" }}")
+        # A status function removes GitHub's implicit success() check over
+        # ancestors. Explicit direct-dependency checks still block publication
+        # on failure, cancellation, or an unexpectedly skipped prerequisite.
+        terms = condition.split(" && ")
+        assert terms[:2] == ["always()", "!cancelled()"], name
+        required = [f"needs.{dependency}.result == 'success'" for dependency in dependencies]
+        assert sorted(terms[2:]) == sorted(required), name
