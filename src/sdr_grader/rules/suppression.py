@@ -94,13 +94,17 @@ def _parse(raw: dict[str, Any], *, source: str) -> Suppression:
         if not isinstance(rule_id, str) or not rule_id:
             raise RubricValidationError(f"{source}: suppress entry missing 'rule' string")
         reason = str(entry.get("reason", "")).strip()
-        components = entry.get("components") or []
+        components = entry.get("components", [])
         if not isinstance(components, list):
             raise RubricValidationError(
                 f"{source}: suppress[{rule_id}] 'components' must be a list"
             )
+        if not all(isinstance(component, str) for component in components):
+            raise RubricValidationError(
+                f"{source}: suppress[{rule_id}] 'components' must be a list of strings"
+            )
         suppressed.append(
-            SuppressedRule(rule_id=rule_id, reason=reason, components=[str(c) for c in components])
+            SuppressedRule(rule_id=rule_id, reason=reason, components=list(components))
         )
 
     severity_overrides_raw = raw.get("severity_overrides", {})
@@ -231,7 +235,7 @@ def summarize_suppressed(suppression: Suppression) -> list[SkippedRulesSummary]:
 
 
 def _renormalize(weights: dict[str, float]) -> dict[str, float]:
-    total = sum(w for w in weights.values() if w > 0)
+    total = math.fsum(w for w in weights.values() if w > 0)
     if total <= 0:
         return weights
     return {k: (v / total if v > 0 else 0.0) for k, v in weights.items()}

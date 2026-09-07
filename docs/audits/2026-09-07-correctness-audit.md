@@ -1,6 +1,8 @@
 # SDR grader correctness audit — 2026-09-07
 
-Reviewed the entire current checkout on `main`, commit `366b0834301c69b5a69a493a8bd77328710188bf` (sdr-grader 1.2.7), not merely a diff. **Nine grading defects and one additional malformed-input defect are confirmed.** The audit itself left the checkout unchanged. This draft PR adds only this report and its executable counterexamples; production code remains unchanged. Fixes remain open for later iterations.
+Reviewed the entire current checkout on `main`, commit `366b0834301c69b5a69a493a8bd77328710188bf` (sdr-grader 1.2.7), not merely a diff. **Nine grading defects and one additional malformed-input defect are confirmed.** The audit itself left the checkout unchanged. This PR now addresses findings **5, 6, and 10** with localized production fixes and CLI regression tests. The remaining findings are deferred to separate iterations to keep this patch focused. All actual/expected results below describe the audited baseline, not a claim that these three defects remain in the patched branch.
+
+**Patch validation:** `tests/test_patch_grading_boundaries.py` checks category-order invariance, malformed suppression scopes, and contextual AA errors through the real CLI. The committed `observed-output.txt` is historical baseline evidence; rerunning the scripts on the patched branch is expected to differ for findings 5, 6, and 10.
 
 The main risks are false unresolved-reference findings on normal CJA exporter output, silently discarded reference evidence, and score/CI changes caused by representation or ordering rather than implementation quality. Severity below ranks impact and likelihood: P1 high, P2 moderate, P3 low. No P0 issue was confirmed.
 
@@ -16,7 +18,7 @@ Run all counterexamples from the repository root:
 
 ### 1. P1 — Supported CJA exporter IDs falsely flag a valid calculated metric
 
-**Code:** [adapters/cja.py:315](../../src/sdr_grader/adapters/cja.py#L315), especially reference collection at lines 318–319. The canonical definition is parsed at line 310 but is not used to recover references.
+**Code:** [adapters/cja.py:315](https://github.com/brian-a-au/sdr-grader/blob/366b0834301c69b5a69a493a8bd77328710188bf/src/sdr_grader/adapters/cja.py#L315), especially reference collection at lines 318–319. The canonical definition is parsed at line 310 but is not used to recover references.
 
 **Minimal input:**
 
@@ -49,7 +51,7 @@ Run all counterexamples from the repository root:
 
 ### 2. P2 — Records-only CJA exports discard reference evidence and pass a failing gate
 
-**Code:** [adapters/cja.py:651](../../src/sdr_grader/adapters/cja.py#L651), particularly the JSON parsing failure returning an empty list at line 662. The segment path additionally omits the tabular `segment_references` alias at [cja.py:423](../../src/sdr_grader/adapters/cja.py#L423).
+**Code:** [adapters/cja.py:651](https://github.com/brian-a-au/sdr-grader/blob/366b0834301c69b5a69a493a8bd77328710188bf/src/sdr_grader/adapters/cja.py#L651), particularly the JSON parsing failure returning an empty list at line 662. The segment path additionally omits the tabular `segment_references` alias at [cja.py:423](https://github.com/brian-a-au/sdr-grader/blob/366b0834301c69b5a69a493a8bd77328710188bf/src/sdr_grader/adapters/cja.py#L423).
 
 **Minimal input:** use finding 1's snapshot, set the definition's name to `metrics/deleted`, then compare `"metric_references": ["deleted"]` with `"metric_references": "deleted"`. No matching metric is exported. All other evidence remains identical.
 
@@ -65,7 +67,7 @@ Run all counterexamples from the repository root:
 
 ### 3. P2 — Truthiness converts malformed evidence into both healthy and unhealthy claims
 
-**Code:** [governance.py:289](../../src/sdr_grader/rules/checks/governance.py#L289) and [governance.py:295](../../src/sdr_grader/rules/checks/governance.py#L295); CJA settings repeat the issue at [schema_hygiene.py:375](../../src/sdr_grader/rules/checks/schema_hygiene.py#L375) and [attribution.py:164](../../src/sdr_grader/rules/checks/attribution.py#L164).
+**Code:** [governance.py:289](https://github.com/brian-a-au/sdr-grader/blob/366b0834301c69b5a69a493a8bd77328710188bf/src/sdr_grader/rules/checks/governance.py#L289) and [governance.py:295](https://github.com/brian-a-au/sdr-grader/blob/366b0834301c69b5a69a493a8bd77328710188bf/src/sdr_grader/rules/checks/governance.py#L295); CJA settings repeat the issue at [schema_hygiene.py:375](https://github.com/brian-a-au/sdr-grader/blob/366b0834301c69b5a69a493a8bd77328710188bf/src/sdr_grader/rules/checks/schema_hygiene.py#L375) and [attribution.py:164](https://github.com/brian-a-au/sdr-grader/blob/366b0834301c69b5a69a493a8bd77328710188bf/src/sdr_grader/rules/checks/attribution.py#L164).
 
 **Minimal governance input:**
 
@@ -96,7 +98,7 @@ The inverse failure occurs for CJA settings. With affirmative governance flags, 
 
 ### 4. P2 — Filename timezone offsets reverse chronology, trends, and the latest gate result
 
-**Code:** [input/loader.py:29](../../src/sdr_grader/input/loader.py#L29) and [loader.py:152](../../src/sdr_grader/input/loader.py#L152).
+**Code:** [input/loader.py:29](https://github.com/brian-a-au/sdr-grader/blob/366b0834301c69b5a69a493a8bd77328710188bf/src/sdr_grader/input/loader.py#L29) and [loader.py:152](https://github.com/brian-a-au/sdr-grader/blob/366b0834301c69b5a69a493a8bd77328710188bf/src/sdr_grader/input/loader.py#L152).
 
 **Minimal directory:**
 
@@ -117,7 +119,7 @@ Each contains `{"metadata":{"Data View ID":"dv_x","Generation Timestamp":"<filen
 
 ### 5. P2 — Reordering category weights changes the score, letter grade, and exit code
 
-**Code:** [core/grade_calc.py:88](../../src/sdr_grader/core/grade_calc.py#L88) through line 91; suppression normalization also uses an order-sensitive sum at [suppression.py:234](../../src/sdr_grader/rules/suppression.py#L234).
+**Code:** [core/grade_calc.py:88](https://github.com/brian-a-au/sdr-grader/blob/366b0834301c69b5a69a493a8bd77328710188bf/src/sdr_grader/core/grade_calc.py#L88) through line 91; suppression normalization also uses an order-sensitive sum at [suppression.py:234](https://github.com/brian-a-au/sdr-grader/blob/366b0834301c69b5a69a493a8bd77328710188bf/src/sdr_grader/rules/suppression.py#L234).
 
 **Reproduce:** `.venv/bin/python docs/audits/2026-09-07-reproductions/scoring_repro.py`. This writes a minimal AA snapshot with one undescribed dimension and two five-rule custom packs `/tmp/sdr-audit/abc` and `/tmp/sdr-audit/cba`. All rules use the existing `missing_descriptions` check; no test-only registration or monkeypatch is involved.
 
@@ -147,7 +149,7 @@ Shared severity weights: critical 19, high 9, medium 1, low 1. Category a contai
 
 ### 6. P2 — A malformed component suppression silently becomes a whole-rule suppression
 
-**Code:** [rules/suppression.py:97](../../src/sdr_grader/rules/suppression.py#L97), before the list check at line 98.
+**Code:** [rules/suppression.py:97](https://github.com/brian-a-au/sdr-grader/blob/366b0834301c69b5a69a493a8bd77328710188bf/src/sdr_grader/rules/suppression.py#L97), before the list check at line 98.
 
 **Minimal config:**
 
@@ -167,7 +169,7 @@ Use finding 5's minimal snapshot and abc pack. **Reproduce:** `.venv/bin/python 
 
 ### 7. P2 — ATTR-004 penalizes a description that names the model and explains its purpose
 
-**Code:** [attribution.py:143](../../src/sdr_grader/rules/checks/attribution.py#L143) and [attribution.py:170](../../src/sdr_grader/rules/checks/attribution.py#L170).
+**Code:** [attribution.py:143](https://github.com/brian-a-au/sdr-grader/blob/366b0834301c69b5a69a493a8bd77328710188bf/src/sdr_grader/rules/checks/attribution.py#L143) and [attribution.py:170](https://github.com/brian-a-au/sdr-grader/blob/366b0834301c69b5a69a493a8bd77328710188bf/src/sdr_grader/rules/checks/attribution.py#L170).
 
 **Minimal input:** CJA snapshot with empty dimensions, affirmative governance metadata, and this one metric:
 
@@ -183,13 +185,13 @@ Use finding 5's minimal snapshot and abc pack. **Reproduce:** `.venv/bin/python 
 
 **Actual:** ATTR-004 reports an undocumented override, **90/A−**. Merely inserting the word `attribution` after `Time decay` produces **100/A**.
 
-**Expected:** no documentation finding, **100/A**. The existing [strict remediation](../../src/sdr_grader/rules/packs/strict/attribution.yaml#L48) asks for the model and why it was chosen; this sentence supplies both plus its parameter. Adobe's [CJA attribution documentation](https://experienceleague.adobe.com/en/docs/analytics-platform/using/cja-dataviews/component-settings/attribution), updated June 5, 2026, documents Time Decay and its default seven-day half-life. This finding concerns adherence to the chosen rubric, not whether descriptions should be graded at all.
+**Expected:** no documentation finding, **100/A**. The existing [strict remediation](https://github.com/brian-a-au/sdr-grader/blob/366b0834301c69b5a69a493a8bd77328710188bf/src/sdr_grader/rules/packs/strict/attribution.yaml#L48) asks for the model and why it was chosen; this sentence supplies both plus its parameter. Adobe's [CJA attribution documentation](https://experienceleague.adobe.com/en/docs/analytics-platform/using/cja-dataviews/component-settings/attribution), updated June 5, 2026, documents Time Decay and its default seven-day half-life. This finding concerns adherence to the chosen rubric, not whether descriptions should be graded at all.
 
 **Root cause:** the acknowledgement regex recognizes selected models but omits Time Decay and other official names, including Algorithmic and Same Touch. **Smallest fix:** recognize official model display names/aliases, preferably the configured model specifically, without requiring a magic generic keyword. **Regression:** sufficient descriptions for each supported attribution model, plus genuinely missing explanations. Do not treat a bare generic word such as “model” as independently proving an adequate rationale.
 
 ### 8. P2 — Conflicting duplicate segment IDs make cycle findings depend on row order
 
-**Code:** [rules/checks/segments.py:101](../../src/sdr_grader/rules/checks/segments.py#L101); the adapters admit both records without checking conflicting identity.
+**Code:** [rules/checks/segments.py:101](https://github.com/brian-a-au/sdr-grader/blob/366b0834301c69b5a69a493a8bd77328710188bf/src/sdr_grader/rules/checks/segments.py#L101); the adapters admit both records without checking conflicting identity.
 
 **Minimal input:** AA snapshot with empty metrics/dimensions, both governance flags true, and:
 
@@ -212,7 +214,7 @@ Use finding 5's minimal snapshot and abc pack. **Reproduce:** `.venv/bin/python 
 
 ### 9. P2 — Equivalent ISO timestamps silently disable custom governance checks
 
-**Code:** [rules/checks/governance.py:300](../../src/sdr_grader/rules/checks/governance.py#L300). Applies to registered **custom-pack GOV-002/GOV-006**, not bundled 2.0 checks.
+**Code:** [rules/checks/governance.py:300](https://github.com/brian-a-au/sdr-grader/blob/366b0834301c69b5a69a493a8bd77328710188bf/src/sdr_grader/rules/checks/governance.py#L300). Applies to registered **custom-pack GOV-002/GOV-006**, not bundled 2.0 checks.
 
 **Reproduce:** `.venv/bin/python docs/audits/2026-09-07-reproductions/governance_dates_repro.py`. It constructs one-rule rubrics using real registered checks, high severity, category weight 1, and the bundled grade scale.
 
@@ -228,7 +230,7 @@ For `doc_drift`, put the same timestamp in the sole dimension's `modified_at`, u
 
 **Actual:** the first spelling fires each check, **0/F**; the latter spellings yield no finding and **100/A**. **Expected:** identical instants produce identical findings and grades: **0/F** in all three cases. The checks document ISO date inputs; numeric offsets and fractional seconds are valid [RFC 3339 §5.6](https://www.rfc-editor.org/rfc/rfc3339#section-5.6) timestamp forms.
 
-**Root cause:** the governance-only parser accepts only three `strptime` formats; failed parsing becomes a no-op counted as a pass. The adapters preserve these timestamps and the shared report parser already understands them. [core/timeparse.py:9](../../src/sdr_grader/core/timeparse.py#L9) explicitly acknowledges this deferred mismatch. A documented deferral explains its history but does not make equivalent evidence yield a correct grade.
+**Root cause:** the governance-only parser accepts only three `strptime` formats; failed parsing becomes a no-op counted as a pass. The adapters preserve these timestamps and the shared report parser already understands them. [core/timeparse.py:9](https://github.com/brian-a-au/sdr-grader/blob/366b0834301c69b5a69a493a8bd77328710188bf/src/sdr_grader/core/timeparse.py#L9) explicitly acknowledges this deferred mismatch. A documented deferral explains its history but does not make equivalent evidence yield a correct grade.
 
 **Smallest fix:** reuse `core.timeparse.parse_timestamp`. **Regression:** equivalent Z/offset/fractional timestamps for both checks, including changes across UTC date boundaries, and invalid dates that remain unknown rather than healthy proof.
 
@@ -236,7 +238,7 @@ For `doc_drift`, put the same timestamp in the sole dimension's `modified_at`, u
 
 ### 10. P3 — Malformed AA calculated-metric definition raises an uncaught TypeError
 
-**Code:** [adapters/aa.py:227](../../src/sdr_grader/adapters/aa.py#L227).
+**Code:** [adapters/aa.py:227](https://github.com/brian-a-au/sdr-grader/blob/366b0834301c69b5a69a493a8bd77328710188bf/src/sdr_grader/adapters/aa.py#L227).
 
 ```python
 from sdr_grader.adapters.aa import adapt
@@ -277,4 +279,4 @@ adapt({"report_suite":{"rsid":"rs1"},"metrics":[],"dimensions":[],
 
 Address 1–2 first: use real exporter fixtures and retain canonical reference evidence. Then fix boolean validation (3), timestamp ordering (4), score stability (5), and suppression scope validation (6). Correct the attribution vocabulary (7), duplicate-ID handling (8), and custom governance parser (9). Handle the isolated malformed-AA exception (10) alongside adapter validation.
 
-**The repository can produce demonstrably false grades and CI outcomes today.** Nine grading findings have minimal reproductions and independent validation; the additional test failure is a separate robustness defect. The review is complete within the stated blind spots; production code remains unchanged.
+**The audited baseline produced demonstrably false grades and CI outcomes.** Nine grading findings have minimal reproductions and independent validation; the additional test failure is a separate robustness defect. The audit is complete within the stated blind spots. This patch addresses findings 5, 6, and 10; the other validated issues remain follow-up work.

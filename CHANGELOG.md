@@ -5,6 +5,20 @@ spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
 ### Upcoming
 
+Patch scope: deterministic CI gates and malformed-input validation. Rubric
+pack `2.0`, JSON schema `1`, rule thresholds, severities, and grade bands stay
+unchanged. No release publication is performed by this PR.
+
+- Use stable sums for category weights and overall scores so equivalent YAML
+  mapping orders cannot change a rounded score, letter grade, or CI exit.
+- Reject malformed suppression component scopes instead of silently widening
+  them to whole-rule suppressions; reject non-string component entries.
+- Return a contextual input error for malformed AA calculated-metric
+  definitions instead of an uncaught `TypeError`.
+- Preserve the broader audit as baseline evidence. Findings 5, 6, and 10 are
+  addressed here; reference normalization and other policy-sensitive work
+  remain separate iterations.
+
 ## 1.2.7 — 2026-09-07
 
 Correctness-evidence patch. Rubric pack `2.0`, JSON schema `1`, thresholds,

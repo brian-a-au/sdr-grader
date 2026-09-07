@@ -45,7 +45,9 @@ A list of suppression entries. Each entry must have:
 - `components` *(optional, list of strings)* — currently declared but
   not actively applied: the current finding shape doesn't carry
   per-component identity, so component-level suppressions are passed
-  through and noted in the methodology summary. Whole-rule suppression
+  through and noted in the methodology summary. Present values must be lists
+  of strings: null, booleans, numbers, mappings, and non-string entries are
+  rejected rather than converted to whole-rule suppressions. Whole-rule suppression
   is the only enforcement today. Tracked for a future release.
 
 ### `severity_overrides`
