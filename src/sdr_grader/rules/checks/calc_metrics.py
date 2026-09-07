@@ -61,7 +61,7 @@ def check_calc_formula_broken_refs(impl: Implementation, ctx: RuleContext) -> li
     component_ids = all_component_ids(impl)
     segment_ids = all_segment_ids(impl)
     calc_ids = {cm.id for cm in impl.calculated_metrics}
-    known = component_ids | segment_ids | calc_ids
+    known = component_ids | segment_ids | calc_ids | impl.available_reference_ids
 
     broken: list[tuple[str, str]] = []  # (calc_id, missing_ref)
     for cm in impl.calculated_metrics:
@@ -75,7 +75,10 @@ def check_calc_formula_broken_refs(impl: Implementation, ctx: RuleContext) -> li
     paragraph = (
         f"{len(broken)} calculated metric reference{'s are' if len(broken) != 1 else ' is'} "
         "broken — the formula points at components, segments, or other "
-        "calculated metrics that don't exist in this snapshot."
+        "calculated metrics not found in this snapshot. This does not prove the "
+        "live implementation is broken: the export may omit components or "
+        "inventories. Verify the reference in the source platform and re-export "
+        "the relevant inventory before changing it."
     )
     return [
         make_finding(

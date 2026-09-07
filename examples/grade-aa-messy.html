@@ -666,7 +666,7 @@ pre.code {
       <div class="finding-body">
 
 
-            <p>4 references are broken — segments or calculated metrics point at component IDs that don&#39;t exist in this report suite. Broken references are usually a symptom of components renamed or deleted without updating their consumers.</p>
+            <p>4 references are broken — segments or calculated metrics point at IDs not found in this snapshot. This does not prove the live implementation is broken: the export may omit components or inventories. Verify the reference in the source platform and re-export the relevant inventory before changing it.</p>
 
 
 
@@ -697,7 +697,7 @@ calc_metric cm_revenue_per_visit -&gt; missing metrics/visits
       <div class="finding-body">
 
 
-            <p>4 calculated metric references are broken — the formula points at components, segments, or other calculated metrics that don&#39;t exist in this snapshot.</p>
+            <p>4 calculated metric references are broken — the formula points at components, segments, or other calculated metrics not found in this snapshot. This does not prove the live implementation is broken: the export may omit components or inventories. Verify the reference in the source platform and re-export the relevant inventory before changing it.</p>
 
 
 
