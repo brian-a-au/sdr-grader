@@ -14,13 +14,18 @@ rules:
     remediation: Same as strict.
 
   - id: CALC-002
-    name: Formula references nonexistent components
+    name: Formula references unresolved in the exported inventory
     severity: medium
     platforms: [cja, aa]
     check: calc_formula_broken_refs
     params: {}
-    rationale: Same as strict.
-    remediation: Same as strict.
+    rationale: |
+      Formula references absent from an export require source-platform
+      verification before treating the live implementation as broken.
+    remediation: |
+      Verify each unresolved ID in the source platform and export the relevant
+      inventory for the correct data view or report suite. If the reference is
+      confirmed invalid, restore the component or update its consumers.
 
   - id: CALC-003
     name: Formula complexity score exceeds threshold

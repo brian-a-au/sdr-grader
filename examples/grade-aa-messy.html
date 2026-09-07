@@ -447,7 +447,7 @@ pre.code {
     </div>
     <div class="item">
       <span class="label">Components</span>
-      <span class="value">75 evaluated</span>
+      <span class="value">79 evaluated</span>
     </div>
     <div class="item">
       <span class="label">Adapter</span>
@@ -477,7 +477,7 @@ pre.code {
 
   <section id="tldr">
     <div class="tldr">Summary</div>
-    <p class="tldr-body">This implementation graded <strong>F</strong> (55%). The grader evaluated 75 components in this report suite using the <span class="mono">strict@2.0</span> rubric pack. The largest gap is in <strong>governance posture</strong> (0%); 3 of 3 rules in that category fired.</p>
+    <p class="tldr-body">This implementation graded <strong>F</strong> (55%). The grader evaluated 79 components in this report suite using the <span class="mono">strict@2.0</span> rubric pack. The largest gap is in <strong>governance posture</strong> (0%); 3 of 3 rules in that category fired.</p>
   </section>
 
 
@@ -581,7 +581,7 @@ pre.code {
 
       <li>
         <span class="text">
-          Re-create the missing component, or update the segment / calculated metric to point at the current canonical equivalent.
+          Verify each unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers.
           <span class="ref">SCH-002</span>
         </span>
         <span class="priority-weight">Priority weight 5</span>
@@ -589,7 +589,7 @@ pre.code {
 
       <li>
         <span class="text">
-          Update the formula to reference the current canonical component or retire the calculated metric.
+          Verify each unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers.
           <span class="ref">CALC-002</span>
         </span>
         <span class="priority-weight">Priority weight 3</span>
@@ -662,11 +662,11 @@ pre.code {
         <span class="sev high">High</span>
         <span class="finding-cat">schema hygiene</span>
       </div>
-      <h3 class="finding-title">4 broken references</h3>
+      <h3 class="finding-title">4 unresolved references</h3>
       <div class="finding-body">
 
 
-            <p>4 references are broken — segments or calculated metrics point at IDs not found in this snapshot. This does not prove the live implementation is broken: the export may omit components or inventories. Verify the reference in the source platform and re-export the relevant inventory before changing it.</p>
+            <p>4 references are unresolved — segments or calculated metrics point at IDs not found in this snapshot. This does not prove the live implementation is broken: the export may omit components or inventories. Verify the reference in the source platform and re-export the relevant inventory before changing it.</p>
 
 
 
@@ -680,7 +680,7 @@ calc_metric cm_revenue_per_visit -&gt; missing metrics/visits
 
 
             <div class="finding-section-label">How to remediate</div>
-            <p>Re-create the missing component, or update the segment / calculated metric to point at the current canonical equivalent.</p>
+            <p>Verify each unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers.</p>
 
 
       </div>
@@ -693,11 +693,11 @@ calc_metric cm_revenue_per_visit -&gt; missing metrics/visits
         <span class="sev med">Medium</span>
         <span class="finding-cat">calc metric maint</span>
       </div>
-      <h3 class="finding-title">4 broken calculated metric references</h3>
+      <h3 class="finding-title">4 unresolved calculated metric references</h3>
       <div class="finding-body">
 
 
-            <p>4 calculated metric references are broken — the formula points at components, segments, or other calculated metrics not found in this snapshot. This does not prove the live implementation is broken: the export may omit components or inventories. Verify the reference in the source platform and re-export the relevant inventory before changing it.</p>
+            <p>4 calculated metric references are unresolved — the formula points at components, segments, or other calculated metrics not found in this snapshot. This does not prove the live implementation is broken: the export may omit components or inventories. Verify the reference in the source platform and re-export the relevant inventory before changing it.</p>
 
 
 
@@ -711,7 +711,7 @@ cm_revenue_per_visit -&gt; metrics/visits
 
 
             <div class="finding-section-label">How to remediate</div>
-            <p>Update the formula to reference the current canonical component or retire the calculated metric.</p>
+            <p>Verify each unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers.</p>
 
 
       </div>
@@ -846,12 +846,12 @@ cm_revenue_per_visit -&gt; metrics/visits
 
 
   <div class="provenance">
-    Generated by <a href="https://github.com/brian-a-au/sdr-grader">sdr-grader v1.2.6</a>
+    Generated by <a href="https://github.com/brian-a-au/sdr-grader">sdr-grader v1.2.7</a>
     against snapshot <span class="mono">2026-04-25T09:14:00Z</span>.
     Rubric: <span class="mono">strict@2.0</span>.
     Adapter: <span class="mono">aa_auto_sdr@1.0.0</span>.
     Color pack: default.
-    75 components evaluated; 0 components skipped
+    79 components evaluated; 0 components skipped
     .
     Source: <a href="https://github.com/brian-a-au/sdr-grader">github.com/brian-a-au/sdr-grader</a>.
   </div>

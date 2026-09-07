@@ -186,6 +186,11 @@ def _stringify_formula(formula: dict[str, Any]) -> str:
     func = formula.get("func")
     if not func:
         return ""
+    # The API uses named operands (col1/col2/col), typed metric nodes,
+    # and filters as well as args. Preserve those fields instead of
+    # rendering unrelated formulas as the same empty function call.
+    if set(formula) - {"func", "args"}:
+        return json.dumps(formula, sort_keys=True, ensure_ascii=False)
     args = formula.get("args") or []
     if not isinstance(args, list):
         args = [args]
@@ -217,12 +222,16 @@ def _calc_from_record(record: Any, *, index: int | None = None) -> CalculatedMet
     description = _normalize_description(record.get("description"))
     definition = record.get("definition") or {}
     formula = definition.get("formula") if isinstance(definition, dict) else {}
+    # Saved segment filters can wrap the formula at the definition level.
+    # Keep that context for formula comparisons and user-facing summaries.
+    if isinstance(formula, dict) and set(definition) - {"func", "version", "formula"}:
+        formula = definition
     if isinstance(formula, dict):
         validate_definition_structure(formula, label=f"calculated metric formula {metric_id!r}")
         formula_text = _stringify_formula(formula)
     else:
         formula_text = ""
-    references = _extract_aa_calc_refs(formula)
+    references = _extract_aa_calc_refs(definition)
 
     extra = record.get("extra") if isinstance(record.get("extra"), dict) else {}
     approved, shared_to_count = _aa_governance_signals(extra)
@@ -249,6 +258,32 @@ def _calc_from_record(record: Any, *, index: int | None = None) -> CalculatedMet
 _AA_REF_PREFIXES = ("metrics/", "variables/", "segments/", "calculatedMetrics/")
 
 
+def _aa_node_refs(node: dict[str, Any], *, include_args: bool = True) -> list[str]:
+    """Read reference-bearing AST slots, never predicate literals or labels.
+
+    Adobe's segment definition contract uses attr/name and event/name;
+    calculated metrics use metric/name. segment-ref/id is the API-client
+    representation of a saved segment filter. Keep each ID as supplied.
+    Legacy exported formulas also carry namespaced IDs directly in args.
+    """
+    refs: list[str] = []
+    func = node.get("func")
+    value = None
+    if func in ("attr", "event", "metric"):
+        value = node.get("name")
+    elif func == "segment-ref":
+        value = node.get("id")
+    if isinstance(value, str) and value:
+        refs.append(value)
+    args = node.get("args")
+    if include_args and isinstance(args, list):
+        refs.extend(
+            arg for arg in args
+            if isinstance(arg, str) and arg.startswith(_AA_REF_PREFIXES)
+        )
+    return refs
+
+
 def _extract_aa_calc_refs(formula: Any) -> list[str]:
     """Walk an AA calc-metric formula and collect referenced component IDs.
 
@@ -262,6 +297,12 @@ def _extract_aa_calc_refs(formula: Any) -> list[str]:
 
     def walk(node: Any) -> None:
         if isinstance(node, dict):
+            # Keep legacy args traversal order while recognizing typed
+            # nodes; free strings outside these slots have no ID meaning.
+            for ref in _aa_node_refs(node, include_args=False):
+                if ref not in seen:
+                    seen.add(ref)
+                    refs.append(ref)
             args = node.get("args")
             if isinstance(args, list):
                 for arg in args:
@@ -370,6 +411,10 @@ def _analyze_segment_definition(
         AA and CJA report the same semantic value (spec F6)."""
         max_depth = depth
         if isinstance(node, dict):
+            for ref in _aa_node_refs(node):
+                if ref not in seen_references:
+                    seen_references.add(ref)
+                    references.append(ref)
             is_container = node.get("func") == "container" and node.get("context")
             if is_container:
                 ctx = str(node["context"])
@@ -383,10 +428,6 @@ def _analyze_segment_definition(
         elif isinstance(node, list):
             for item in node:
                 max_depth = max(max_depth, visit(item, depth))
-        elif isinstance(node, str):
-            if node.startswith(_AA_REF_PREFIXES) and node not in seen_references:
-                seen_references.add(node)
-                references.append(node)
         return max_depth
 
     return visit(definition, 0), contexts, references

@@ -31,6 +31,41 @@ NORMALIZED_COPY_FIELDS = (
 APPROVED_CJA_REFERENCE_IDS = frozenset(
     {"metrics/occurrences", "metrics/visits", "metrics/visitors"}
 )
+APPROVED_REFERENCE_REMEDIATION = (
+    "Verify each unresolved ID in the source platform and export the relevant "
+    "inventory for the correct data view or report suite. If the reference is "
+    "confirmed invalid, restore the component or update its consumers."
+)
+BASELINE_REFERENCE_REMEDIATIONS = {
+    "SCH-002": (
+        "Re-create the missing component, or update the segment / calculated "
+        "metric to point at the current canonical equivalent."
+    ),
+    "CALC-002": (
+        "Update the formula to reference the current canonical component or "
+        "retire the calculated metric."
+    ),
+}
+# The public messy fixture's summary is now displayed with its original case.
+# Bind this copy correction to the exact item, including every component ID.
+BASELINE_REPEATED_FORMULA_ITEM = (
+    "'revenue / visits': calculatedMetrics/cm_rev_per_visit_final, "
+    "calculatedMetrics/cm_rev_per_visit_v2, calculatedMetrics/cm_rev_visit_linear, "
+    "calculatedMetrics/cm_revenue_per_visit, calculatedMetrics/cm_revenue_visit_corrected, "
+    "calculatedMetrics/cm_revpv_lasttouch, calculatedMetrics/cm_rpv_marketing"
+)
+APPROVED_REPEATED_FORMULA_ITEM = BASELINE_REPEATED_FORMULA_ITEM.replace(
+    "'revenue / visits'", "'Revenue / Visits'", 1
+)
+APPROVED_COMPONENT_COUNTS = {
+    ("AA", "clean.prod", 19): 32,
+    ("AA", "messy.prod", 75): 79,
+    ("CJA", "dv_clean_prod_web", 40): 53,
+    ("CJA", "dv_messy_prod_web", 487): 542,
+    # The clean trend point adopts the messy fixture's identity, while
+    # retaining the clean fixture's inventories.
+    ("CJA", "dv_messy_prod_web", 40): 53,
+}
 FIXTURE_FAIL_BELOW_A_EXITS = {
     "cja_snapshot_clean.json": 0,
     "cja_snapshot_messy.json": 2,
@@ -221,7 +256,7 @@ def _normalize_report(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def _expected_candidate_from_baseline(baseline: dict[str, Any]) -> dict[str, Any]:
-    """Apply only the reviewed reference-resolution delta to v1.2.2 output."""
+    """Apply only reviewed reference-resolution and exact copy deltas."""
     expected = copy.deepcopy(baseline)
     _transform_reports(expected)
     return expected
@@ -231,6 +266,7 @@ def _transform_reports(value: Any) -> None:
     if isinstance(value, dict):
         if {"schema_version", "findings", "categories"}.issubset(value):
             _transform_reference_findings(value)
+            _transform_component_count(value)
         for child in value.values():
             _transform_reports(child)
     elif isinstance(value, list):
@@ -238,11 +274,37 @@ def _transform_reports(value: Any) -> None:
             _transform_reports(child)
 
 
+def _transform_component_count(report: dict[str, Any]) -> None:
+    """Account for segments/calculated metrics in these exact public cases."""
+    platform = report.get("adapter", {}).get("platform")
+    old_count = report.get("components_evaluated")
+    new_count = APPROVED_COMPONENT_COUNTS.get((platform, report.get("instance_id"), old_count))
+    if new_count is None:
+        return
+    noun = "data view" if platform == "CJA" else "report suite"
+    old_copy = f"The grader evaluated {old_count} components in this {noun} "
+    new_copy = f"The grader evaluated {new_count} components in this {noun} "
+    tldr = report.get("tldr_html")
+    if not isinstance(tldr, str) or tldr.count(old_copy) != 1:
+        raise CompatibilityError("unexpected public component-count copy in v1.2.2 baseline")
+    report["components_evaluated"] = new_count
+    report["tldr_html"] = tldr.replace(old_copy, new_copy, 1)
+
+
 def _transform_reference_findings(report: dict[str, Any]) -> None:
     is_cja = report.get("adapter", {}).get("platform") == "CJA"
     transformed = []
     for finding in report["findings"]:
         rule_id = finding.get("id")
+        if is_cja and rule_id == "CALC-015":
+            for block in finding.get("body", []):
+                if block.get("kind") == "components":
+                    block["items"] = [
+                        APPROVED_REPEATED_FORMULA_ITEM
+                        if item == BASELINE_REPEATED_FORMULA_ITEM
+                        else item
+                        for item in block.get("items", [])
+                    ]
         if rule_id not in {"SCH-002", "CALC-002"}:
             transformed.append(finding)
             continue
@@ -261,9 +323,9 @@ def _transform_reference_findings(report: dict[str, Any]) -> None:
         if not count:
             continue
         if rule_id == "SCH-002":
-            finding["title"] = f"{count} broken reference{'s' if count != 1 else ''}"
+            finding["title"] = f"{count} unresolved reference{'s' if count != 1 else ''}"
             paragraph["html"] = (
-                f"{count} reference{'s are' if count != 1 else ' is'} broken — "
+                f"{count} reference{'s are' if count != 1 else ' is'} unresolved — "
                 "segments or calculated metrics point at IDs not found in this snapshot. "
                 "This does not prove the live implementation is broken: the export may "
                 "omit components or inventories. Verify the reference in the source "
@@ -271,18 +333,29 @@ def _transform_reference_findings(report: dict[str, Any]) -> None:
             )
         else:
             finding["title"] = (
-                f"{count} broken calculated metric reference{'s' if count != 1 else ''}"
+                f"{count} unresolved calculated metric reference{'s' if count != 1 else ''}"
             )
             paragraph["html"] = (
                 f"{count} calculated metric reference{'s are' if count != 1 else ' is'} "
-                "broken — the formula points at components, segments, or other "
+                "unresolved — the formula points at components, segments, or other "
                 "calculated metrics not found in this snapshot. This does not prove the "
                 "live implementation is broken: the export may omit components or "
                 "inventories. Verify the reference in the source platform and re-export "
                 "the relevant inventory before changing it."
             )
+        for block in blocks:
+            if (
+                block.get("kind") == "section"
+                and block.get("label") == "How to remediate"
+                and block.get("body_html") == BASELINE_REFERENCE_REMEDIATIONS[rule_id]
+            ):
+                block["body_html"] = APPROVED_REFERENCE_REMEDIATION
         transformed.append(finding)
     report["findings"] = transformed
+    for remediation in report.get("remediations", []):
+        for rule_id, old_copy in BASELINE_REFERENCE_REMEDIATIONS.items():
+            if remediation.get("refs") == [rule_id] and remediation.get("text") == old_copy:
+                remediation["text"] = APPROVED_REFERENCE_REMEDIATION
 
 
 def _referenced_id(rule_id: str, item: Any) -> str | None:
@@ -297,7 +370,8 @@ def _verify_expected_candidate(candidate: dict[str, Any], baseline: dict[str, An
     if candidate != _expected_candidate_from_baseline(baseline):
         raise CompatibilityError(
             "candidate structured scores/findings/categories/exit/trend/schema differ "
-            "from v1.2.2 beyond the approved CJA reference-resolution correction "
+            "from v1.2.2 beyond the approved CJA reference-resolution, exact copy, "
+            "and public component-count corrections "
             "after normalizing only tool_version, " + ", ".join(NORMALIZED_COPY_FIELDS)
         )
 
@@ -540,7 +614,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"compatibility verification failed: {exc}", file=sys.stderr)
         return 1
     print(
-        "v1.2.2 compatibility verified: approved CJA reference corrections match; "
+        "v1.2.2 compatibility verified: approved reference, exact copy, "
+        "and public component-count corrections match; "
         "scores, categories, exits, trend structure, schema, and other findings are unchanged"
     )
     return 0

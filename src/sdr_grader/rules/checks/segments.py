@@ -97,8 +97,9 @@ def check_circular_segments(
     impl: Implementation, ctx: RuleContext
 ) -> list[Finding]:
     """Detect any segment whose reference graph contains a cycle."""
+    segment_ids = {segment.id for segment in impl.segments}
     graph: dict[str, list[str]] = {
-        s.id: sorted({ref for ref in s.references if ref.startswith("segments/")})
+        s.id: sorted({ref for ref in s.references if ref in segment_ids})
         for s in impl.segments
     }
     groups = cycle_groups(graph)
@@ -166,6 +167,10 @@ def check_duplicate_segments(
     """Group segments by canonical definition signature; fire on collisions."""
     groups: dict[str, list[Segment]] = {}
     for s in impl.segments:
+        # Adapters use {} when the definition was unavailable or undecodable.
+        # Two missing definitions are not evidence of duplicate audiences.
+        if not s.definition:
+            continue
         signature = json.dumps(s.definition, sort_keys=True)
         groups.setdefault(signature, []).append(s)
 

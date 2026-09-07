@@ -5,6 +5,35 @@ spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
 ### Upcoming
 
+## 1.2.7 — 2026-09-07
+
+Correctness-evidence patch. Rubric pack `2.0`, JSON schema `1`, thresholds,
+severities, and scoring arithmetic are unchanged. Corrected findings can
+change scores, grades, and threshold-based exit codes for affected exports.
+
+### Fixed
+
+- Extract AA references from typed definition nodes; literal comparison
+  values no longer become fake component references. Preserve named formula
+  operands and saved-segment filters instead of collapsing formulas to empty
+  function calls.
+- Keep CJA metric and dimension namespaces distinct in derived-field cycle
+  and reference checks, while preserving established dimension aliases.
+  Apply those aliases when identifying deprecated components with consumers.
+- Exclude unavailable segment definitions from duplicate detection. Preserve
+  formula case and require known definitions to agree before grouping equal
+  calculated-metric summaries; ignore empty and dash-only formula text.
+- Describe unresolved references as export evidence in titles, explanations,
+  and remediation for both packs. Verify the source platform before changing
+  components; omitted inventories do not prove a broken live implementation.
+- Include segments and calculated metrics in the evaluated-component count
+  in JSON, the HTML footer, and the report summary.
+- Detect saved-segment cycles using exported IDs, including IDs without a
+  `segments/` prefix, while keeping valid chains and external references clear.
+- Add synthetic positive/negative reproductions and HTML/JSON/exit-code
+  regression coverage. See `docs/CORRECTNESS_AUDIT_1.2.7.md` for evidence and
+  remaining limitations.
+
 ## 1.2.6 — 2026-09-07
 
 Publishes the CJA reference fixes documented in the 1.2.5 candidate below,
