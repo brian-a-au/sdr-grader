@@ -155,7 +155,7 @@ def check_broken_references(
     component_ids = all_component_ids(impl)
     segment_ids = all_segment_ids(impl)
     calc_ids = {cm.id for cm in impl.calculated_metrics}
-    known = component_ids | segment_ids | calc_ids
+    known = component_ids | segment_ids | calc_ids | impl.available_reference_ids
 
     broken: list[tuple[str, str, str]] = []  # (referrer_type, referrer_id, missing_ref)
     for seg in impl.segments:
@@ -177,10 +177,10 @@ def check_broken_references(
     ]
     paragraph = (
         f"{total} reference{'s are' if total != 1 else ' is'} broken — "
-        "segments or calculated metrics point at component IDs that don't "
-        f"exist in this {platform_noun(impl.platform)}. Broken references "
-        "are usually a symptom of components renamed or deleted without "
-        "updating their consumers."
+        "segments or calculated metrics point at IDs not found in this snapshot. "
+        "This does not prove the live implementation is broken: the export may "
+        "omit components or inventories. Verify the reference in the source "
+        "platform and re-export the relevant inventory before changing it."
     )
     return [
         make_finding(
@@ -528,7 +528,7 @@ def check_derived_field_broken_refs(
     broken: list[tuple[str, str]] = []  # (referrer_id, missing_ref)
     for df in impl.derived_fields:
         for ref in _derived_field_refs(df):
-            if _CJA_PLATFORM_BUILTIN_RE.match(ref):
+            if ref in impl.available_reference_ids or _CJA_PLATFORM_BUILTIN_RE.match(ref):
                 continue
             if _bare_id(ref) in bare_known:
                 continue

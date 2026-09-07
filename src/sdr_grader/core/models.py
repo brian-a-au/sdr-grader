@@ -102,3 +102,6 @@ class Implementation:
     # platform + instance. None means the input mode could not establish
     # either presence or absence.
     history_present: bool | None = None
+    # Adapter-supplied IDs that resolve without an inventory row (built-ins
+    # and aliases). Kept separate so they do not inflate component counts.
+    available_reference_ids: set[str] = field(default_factory=set)

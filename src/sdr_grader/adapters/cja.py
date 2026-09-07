@@ -132,7 +132,27 @@ def adapt(snapshot: dict[str, Any], *, source: str = "<unknown>") -> Implementat
         calculated_metrics=calculated_metrics,
         derived_fields=derived_fields,
         raw=snapshot,
+        available_reference_ids=_available_reference_ids([*dimensions, *derived_fields]),
     )
+
+
+def _available_reference_ids(dimensions: list[Component]) -> set[str]:
+    """CJA API IDs remain legacy-named even when the UI uses new labels.
+
+    These core metrics exist independently of the exported inventory. Keep
+    aliases namespace-specific: a metric must not resolve a dimension ID.
+    https://developer.adobe.com/cja-apis/docs/endpoints/metrics/
+    """
+    available = {
+        "metrics/occurrences",  # Events
+        "metrics/visits",       # Sessions
+        "metrics/visitors",     # People
+    }
+    for component in dimensions:
+        namespace, separator, name = component.id.partition("/")
+        if separator and namespace in {"dimensions", "variables"}:
+            available.update({f"dimensions/{name}", f"variables/{name}"})
+    return available
 
 
 # ---------------------------------------------------------------------------

@@ -5,6 +5,33 @@ spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
 ### Upcoming
 
+## 1.2.5 — 2026-09-07
+
+CJA reference-resolution patch. Rubric pack `2.0`, JSON schema `1`, rule
+thresholds, and severities are unchanged. Corrected findings can change
+scores, grades, and threshold-based exit codes for affected snapshots.
+
+### Fixed
+
+- Recognize the built-in Events, Sessions, and People metrics even when
+  the CJA export omits their inventory rows. Preserve Adobe's legacy API
+  IDs (`metrics/occurrences`, `metrics/visits`, and `metrics/visitors`)
+  while removing their false broken-reference entries from reports.
+- Resolve CJA dimension references across `dimensions/` and `variables/`
+  aliases without treating metrics as dimension aliases or adding
+  fabricated components to inventory counts.
+- Clarify that segment and calculated-metric references absent from an
+  export are not proof of a broken live implementation; verify the source
+  platform and exported inventory before changing components.
+
+### Changed
+
+- Refresh release-pinned documentation, plugin metadata, and generated
+  report examples for 1.2.5.
+- Allow the reviewed reference corrections in the pinned v1.2.2 compatibility
+  check while retaining exact comparison of other findings, scores, schema,
+  categories, exits, and trend data.
+
 ## 1.2.4 — 2026-09-04
 
 Maintenance and performance patch. Grading rules, rubric `2.0`, JSON schema `1`,
