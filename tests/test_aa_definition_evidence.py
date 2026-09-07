@@ -99,6 +99,22 @@ def _formula(numerator):
     }
 
 
+@pytest.mark.parametrize(
+    "definition",
+    [42, 1.5, "invalid", [1], [[1]], [{"func": "metric", "name": "metrics/revenue"}]],
+)
+def test_malformed_calculated_metric_definition_keeps_empty_formula_fallback(definition):
+    normalized = adapt(
+        _snapshot(
+            calculated_metrics=[{"id": "cm_synthetic", "definition": definition}],
+        )
+    )
+    metric = normalized.calculated_metrics[0]
+    assert metric.formula == {}
+    assert metric.formula_text == ""
+    assert metric.references == []
+
+
 @pytest.mark.parametrize("present", [True, False])
 def test_calculated_metric_named_operands_resolve_or_report_missing(present):
     formula = _formula("metrics/revenue")
