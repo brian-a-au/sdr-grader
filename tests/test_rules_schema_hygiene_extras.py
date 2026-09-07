@@ -135,7 +135,7 @@ def test_duplicate_names_normalizes_case_and_whitespace():
 
 
 # ---------------------------------------------------------------------------
-# SCH-002 broken references
+# SCH-002 unresolved references
 # ---------------------------------------------------------------------------
 
 
@@ -157,7 +157,7 @@ def test_broken_references_fires_on_missing_target():
         _ctx("SCH-002", severity="high"),
     )
     assert len(findings) == 1
-    assert "2 broken references" in findings[0].title
+    assert "2 unresolved references" in findings[0].title
 
 
 def test_broken_references_preserves_complete_evidence():
@@ -165,7 +165,7 @@ def test_broken_references_preserves_complete_evidence():
     findings = check_broken_references(
         _impl(calc=calc), _ctx("SCH-002", severity="high", show_top=5)
     )
-    assert findings[0].title == "15 broken references"
+    assert findings[0].title == "15 unresolved references"
     assert len(findings[0].body[1].items) == 15
 
 
@@ -490,7 +490,9 @@ def test_derived_field_cycles_normalizes_namespace_prefix():
         _derived("variables/a", refs=["dimensions/b"]),
         _derived("variables/b", refs=["variables/a"]),
     ]
-    findings = check_derived_field_cycles(_impl(derived=derived), _ctx("SCH-008"))
+    implementation = _impl(derived=derived)
+    implementation.reference_aliases = {"dimensions/b": "variables/b"}
+    findings = check_derived_field_cycles(implementation, _ctx("SCH-008"))
     assert len(findings) == 1
 
 
@@ -511,7 +513,7 @@ def test_derived_field_broken_refs_fires_on_missing_target():
     findings = check_derived_field_broken_refs(_impl(derived=derived), _ctx("SCH-009"))
     assert len(findings) == 1
     assert findings[0].id == "SCH-009"
-    assert "1 broken derived-field reference" in findings[0].title
+    assert "1 unresolved derived-field reference" in findings[0].title
 
 
 def test_derived_field_broken_refs_filters_platform_builtins():
@@ -542,6 +544,9 @@ def test_derived_field_broken_refs_normalizes_namespace_prefix():
     ]
     derived = [_derived("variables/df_a", refs=["dimensions/sd_ajo_messageProfileId"])]
     impl = _impl(dimensions=dimensions, derived=derived)
+    impl.reference_aliases = {
+        "dimensions/sd_ajo_messageProfileId": "variables/sd_ajo_messageProfileId"
+    }
     assert check_derived_field_broken_refs(impl, _ctx("SCH-009")) == []
 
 
@@ -569,7 +574,7 @@ def test_derived_field_broken_refs_preserves_complete_evidence():
         _impl(derived=derived),
         _ctx("SCH-009", show_top=5),
     )
-    assert findings[0].title == "15 broken derived-field references"
+    assert findings[0].title == "15 unresolved derived-field references"
     assert len(findings[0].body[1].items) == 15
 
 

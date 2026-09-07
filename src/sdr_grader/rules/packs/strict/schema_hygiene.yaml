@@ -21,18 +21,18 @@ rules:
       name.
 
   - id: SCH-002
-    name: Components referenced but not defined
+    name: References unresolved in the exported inventory
     severity: high
     platforms: [cja, aa]
     check: broken_references
     params: {}
     rationale: |
-      Broken references are usually a symptom of components renamed or
-      deleted without updating their consumers. They produce silent zeros
-      or runtime errors depending on the consumer.
+      References absent from an export can indicate a deleted component or
+      an omitted inventory. The snapshot alone cannot establish live validity.
     remediation: |
-      Re-create the missing component, or update the segment / calculated
-      metric to point at the current canonical equivalent.
+      Verify each unresolved ID in the source platform and export the relevant
+      inventory for the correct data view or report suite. If the reference is
+      confirmed invalid, restore the component or update its consumers.
 
   - id: SCH-003
     name: Components lacking descriptions
@@ -120,20 +120,16 @@ rules:
       description so the next editor doesn't reintroduce the cycle.
 
   - id: SCH-009
-    name: Derived field references components that do not exist
+    name: Derived field references unresolved in the exported inventory
     severity: high
     platforms: [cja]
     check: derived_field_broken_refs
     params: {}
     rationale: |
-      A derived field referencing a deleted or renamed base component
-      silently produces NULLs in reports. The check filters CJA platform
-      built-ins (date ranges, time-parts, Adobe-provisioned metrics) and
-      normalizes `dimensions/X` ↔ `variables/X` namespace differences
-      before flagging, so only genuine missing components surface.
+      Derived-field references absent from an export require source-platform
+      verification. Established dimension aliases and recognized built-ins
+      are resolved without equating metric and dimension namespaces.
     remediation: |
-      Either restore the missing component, or update the derived field
-      to point at the current canonical equivalent. If the reference is
-      legitimately stale (e.g. migrated to a new XDM field), update the
-      derived field's `definition_json` and verify the resolved field
-      type still matches the derived field's output type.
+      Verify each unresolved ID in the source platform and export the relevant
+      inventory for the correct data view or report suite. If the reference is
+      confirmed invalid, restore the component or update its consumers.

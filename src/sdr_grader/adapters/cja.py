@@ -118,6 +118,7 @@ def adapt(snapshot: dict[str, Any], *, source: str = "<unknown>") -> Implementat
     ]
     calculated_metrics = _adapt_calculated_metrics(snapshot.get("calculated_metrics"))
     segments = _adapt_segments(snapshot.get("segments"))
+    reference_aliases = _reference_aliases([*dimensions, *derived_fields])
 
     return Implementation(
         platform="cja",
@@ -133,6 +134,7 @@ def adapt(snapshot: dict[str, Any], *, source: str = "<unknown>") -> Implementat
         derived_fields=derived_fields,
         raw=snapshot,
         available_reference_ids=_available_reference_ids([*dimensions, *derived_fields]),
+        reference_aliases=reference_aliases,
     )
 
 
@@ -148,11 +150,26 @@ def _available_reference_ids(dimensions: list[Component]) -> set[str]:
         "metrics/visits",       # Sessions
         "metrics/visitors",     # People
     }
+    available.update(_reference_aliases(dimensions))
+    return available
+
+
+def _reference_aliases(dimensions: list[Component]) -> dict[str, str]:
+    """Map only the established dimension/variable namespace equivalence.
+
+    An exact exported ID takes precedence over an alias. Neither bare suffixes
+    nor metrics with matching suffixes establish additional aliases.
+    """
+    known = {component.id for component in dimensions}
+    aliases = {}
     for component in dimensions:
         namespace, separator, name = component.id.partition("/")
         if separator and namespace in {"dimensions", "variables"}:
-            available.update({f"dimensions/{name}", f"variables/{name}"})
-    return available
+            alternate = "variables" if namespace == "dimensions" else "dimensions"
+            alias = f"{alternate}/{name}"
+            if alias not in known:
+                aliases[alias] = component.id
+    return aliases
 
 
 # ---------------------------------------------------------------------------

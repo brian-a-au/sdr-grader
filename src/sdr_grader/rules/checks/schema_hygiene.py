@@ -151,7 +151,7 @@ def check_duplicate_component_names(
 def check_broken_references(
     impl: Implementation, ctx: RuleContext
 ) -> list[Finding]:
-    """Fire when segments or calc metrics reference IDs that don't exist."""
+    """Report references unresolved by the exported inventory and known aliases."""
     component_ids = all_component_ids(impl)
     segment_ids = all_segment_ids(impl)
     calc_ids = {cm.id for cm in impl.calculated_metrics}
@@ -176,7 +176,7 @@ def check_broken_references(
         for ref_type, referrer, missing in broken
     ]
     paragraph = (
-        f"{total} reference{'s are' if total != 1 else ' is'} broken — "
+        f"{total} reference{'s are' if total != 1 else ' is'} unresolved — "
         "segments or calculated metrics point at IDs not found in this snapshot. "
         "This does not prove the live implementation is broken: the export may "
         "omit components or inventories. Verify the reference in the source "
@@ -185,7 +185,7 @@ def check_broken_references(
     return [
         make_finding(
             ctx,
-            title=f"{total} broken reference{'s' if total != 1 else ''}",
+            title=f"{total} unresolved reference{'s' if total != 1 else ''}",
             paragraph=paragraph,
             extra_blocks=[FindingBlock(kind="components", items=items)],
         )
@@ -434,16 +434,11 @@ def check_derived_field_cycles(
     if not df_ids:
         return []
 
-    # Bare-ID index built in list order — no set iteration anywhere on
-    # this path, so the graph (and therefore the report) is byte-stable.
-    bare_index: dict[str, list[str]] = {}
-    for df in impl.derived_fields:
-        bare_index.setdefault(_bare_id(df.id), []).append(df.id)
-
     graph: dict[str, list[str]] = {df.id: [] for df in impl.derived_fields}
     for df in impl.derived_fields:
         for ref in _derived_field_refs(df):
-            for target in bare_index.get(_bare_id(ref), []):
+            target = impl.reference_aliases.get(ref, ref)
+            if target in df_ids:
                 graph[df.id].append(target)
 
     groups = cycle_groups(graph)
@@ -505,32 +500,26 @@ _CJA_PLATFORM_BUILTIN_RE = re.compile(
 def check_derived_field_broken_refs(
     impl: Implementation, ctx: RuleContext
 ) -> list[Finding]:
-    """Fire when a derived field's references resolve to nothing.
+    """Report unresolved derived-field component IDs, preserving namespaces.
 
-    Resolution order:
-      1. Strip namespace prefix (`dimensions/`, `variables/`, `metrics/`,
-         `calculatedMetrics/`) and compare bare IDs.
-      2. Filter out CJA platform built-ins (regex-defined: see
-         _CJA_PLATFORM_BUILTIN_RE).
-      3. Anything left is a genuine broken reference.
+    The adapter supplies established aliases. An absent ID is evidence about
+    this export, not proof that the live data view has a broken dependency.
     """
     if impl.platform != "cja":
         return []
     if not impl.derived_fields:
         return []
 
-    bare_known: set[str] = set()
-    for cid in all_component_ids(impl):
-        bare_known.add(_bare_id(cid))
-    bare_known |= {_bare_id(s.id) for s in impl.segments}
-    bare_known |= {_bare_id(cm.id) for cm in impl.calculated_metrics}
+    known = all_component_ids(impl)
+    known |= {s.id for s in impl.segments}
+    known |= {cm.id for cm in impl.calculated_metrics}
 
     broken: list[tuple[str, str]] = []  # (referrer_id, missing_ref)
     for df in impl.derived_fields:
         for ref in _derived_field_refs(df):
             if ref in impl.available_reference_ids or _CJA_PLATFORM_BUILTIN_RE.match(ref):
                 continue
-            if _bare_id(ref) in bare_known:
+            if impl.reference_aliases.get(ref, ref) in known:
                 continue
             broken.append((df.id, ref))
 
@@ -539,17 +528,17 @@ def check_derived_field_broken_refs(
     items = [f"{df_id} -> missing {ref}" for df_id, ref in broken]
     paragraph = (
         f"{len(broken)} derived-field reference{'s point' if len(broken) != 1 else ' points'} "
-        "at a component that does not exist in this data view. Broken references "
-        "are usually a symptom of a base field renamed or removed without updating "
-        "the derived field's formula, and produce silent NULLs in reports. The "
-        "check filters CJA platform built-ins (date ranges, time-parts, "
-        "Adobe-provisioned metrics) and normalizes `dimensions/X` ↔ `variables/X` "
-        "namespace differences before flagging."
+        "at IDs not resolved by this snapshot. This does not prove the live "
+        "implementation is broken: components or inventories may be omitted, "
+        "or the reference may belong to another data view. Verify the reference "
+        "in the source platform and re-export the relevant inventory before "
+        "changing it. Established dimension aliases and recognized platform "
+        "built-ins are excluded; metric and dimension namespaces remain distinct."
     )
     return [
         make_finding(
             ctx,
-            title=f"{len(broken)} broken derived-field reference{'s' if len(broken) != 1 else ''}",
+            title=f"{len(broken)} unresolved derived-field reference{'s' if len(broken) != 1 else ''}",
             paragraph=paragraph,
             extra_blocks=[FindingBlock(kind="components", items=items)],
         )
@@ -574,18 +563,6 @@ def _derived_field_refs(df) -> list[str]:
     if isinstance(value, list):
         return [str(r) for r in value if r]
     return []
-
-
-def _bare_id(component_id: str) -> str:
-    """Strip CJA namespace prefix for cross-namespace comparison.
-
-    CJA snapshots store dimensions under the `variables/` namespace but
-    derived-field references frequently use `dimensions/`. Comparing
-    bare IDs lets the resolver match across that convention.
-    """
-    if "/" in component_id:
-        return component_id.rsplit("/", 1)[-1]
-    return component_id
 
 
 def _human_target(target: str) -> str:

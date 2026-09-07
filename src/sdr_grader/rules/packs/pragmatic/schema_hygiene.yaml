@@ -14,13 +14,18 @@ rules:
     remediation: Same as strict.
 
   - id: SCH-002
-    name: Components referenced but not defined
+    name: References unresolved in the exported inventory
     severity: high
     platforms: [cja, aa]
     check: broken_references
     params: {}
-    rationale: Same as strict.
-    remediation: Same as strict.
+    rationale: |
+      References absent from an export can indicate a deleted component or
+      an omitted inventory. The snapshot alone cannot establish live validity.
+    remediation: |
+      Verify each unresolved ID in the source platform and export the relevant
+      inventory for the correct data view or report suite. If the reference is
+      confirmed invalid, restore the component or update its consumers.
 
   - id: SCH-003
     name: Components lacking descriptions
@@ -74,10 +79,16 @@ rules:
     remediation: Same as strict.
 
   - id: SCH-009
-    name: Derived field references components that do not exist
+    name: Derived field references unresolved in the exported inventory
     severity: medium             # demoted from strict's high
     platforms: [cja]
     check: derived_field_broken_refs
     params: {}
-    rationale: Same as strict.
-    remediation: Same as strict.
+    rationale: |
+      Derived-field references absent from an export require source-platform
+      verification. Established dimension aliases and recognized built-ins
+      are resolved without equating metric and dimension namespaces.
+    remediation: |
+      Verify each unresolved ID in the source platform and export the relevant
+      inventory for the correct data view or report suite. If the reference is
+      confirmed invalid, restore the component or update its consumers.

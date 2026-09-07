@@ -84,6 +84,21 @@ The adapter must:
 
 ## Rule input boundary
 
+Reference resolution also uses two adapter-owned `Implementation` fields:
+`available_reference_ids` lists established built-ins and aliases that resolve
+without inventory rows; `reference_aliases` maps an established alias to its
+exported canonical ID for graph traversal. Neither adds components to counts.
+CJA maps only the `dimensions/` and `variables/` namespace equivalence; exact
+exported IDs take precedence. Matching bare suffixes across metric and dimension
+namespaces are not evidence of identity.
+
+An empty normalized segment `definition` means no usable definition was
+available; duplicate checks must not treat two such values as an observed
+duplicate. Calculated-metric `formula_text` can be an abbreviated export
+summary. When definitions are available, differing definitions override equal
+summary text as duplicate evidence. AA named operands and outer filter context
+are retained rather than collapsed into an empty function call.
+
 | Source | Rule contract | Guidance |
 |---|---|---|
 | Normalized model fields | Yes | Preferred cross-platform contract; add or populate an explicit field in `core/models.py` and the adapters. |

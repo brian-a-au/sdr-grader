@@ -26,17 +26,18 @@ rules:
       use it, and which attribution / allocation choices were made.
 
   - id: CALC-002
-    name: Formula references nonexistent components
+    name: Formula references unresolved in the exported inventory
     severity: medium
     platforms: [cja, aa]
     check: calc_formula_broken_refs
     params: {}
     rationale: |
-      A formula pointing at deleted or renamed components produces silent
-      zeros or runtime errors depending on the consumer.
+      Formula references absent from an export require source-platform
+      verification before treating the live implementation as broken.
     remediation: |
-      Update the formula to reference the current canonical component or
-      retire the calculated metric.
+      Verify each unresolved ID in the source platform and export the relevant
+      inventory for the correct data view or report suite. If the reference is
+      confirmed invalid, restore the component or update its consumers.
 
   - id: CALC-003
     name: Formula complexity score exceeds threshold

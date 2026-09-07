@@ -54,6 +54,8 @@ def collect_referenced_ids(impl: Implementation) -> set[str]:
         referenced.update(seg.references)
     for cm in impl.calculated_metrics:
         referenced.update(cm.references)
+    referenced.update(impl.reference_aliases[ref] for ref in list(referenced)
+                      if ref in impl.reference_aliases)
     return referenced
 
 

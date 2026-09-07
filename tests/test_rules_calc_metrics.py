@@ -50,7 +50,7 @@ def test_calc_formula_broken_refs_fires():
         ctx("CALC-002", category="calc_metric_maint"),
     )
     assert len(findings) == 1
-    assert "1 broken" in findings[0].title
+    assert "1 unresolved" in findings[0].title
 
 
 def test_calc_formula_broken_refs_quiet_when_resolved():

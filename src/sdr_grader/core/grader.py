@@ -78,9 +78,7 @@ def grade(
     result = compute_grade(rubric, findings, rule_inventory=rule_inventory)
 
     generated_at = _resolve_generated_at(impl.snapshot_taken_at)
-    components_evaluated = (
-        len(impl.metrics) + len(impl.dimensions) + len(impl.derived_fields)
-    )
+    components_evaluated = _component_count(impl)
     rules_by_id = {r.id: r for r in rule_inventory}
 
     return Report(
@@ -181,9 +179,7 @@ def _build_tldr(
         rubric.pack,
         rubric.version,
     )
-    components = (
-        len(impl.metrics) + len(impl.dimensions) + len(impl.derived_fields)
-    )
+    components = _component_count(impl)
     parts = [
         Markup(
             "This implementation graded <strong>{}</strong> "
@@ -264,6 +260,14 @@ def _build_methodology(
 # ---------------------------------------------------------------------------
 # Formatting helpers
 # ---------------------------------------------------------------------------
+
+
+def _component_count(impl: Implementation) -> int:
+    """Count every supplied normalized inventory considered by the grader."""
+    return sum(len(items) for items in (
+        impl.metrics, impl.dimensions, impl.derived_fields,
+        impl.segments, impl.calculated_metrics,
+    ))
 
 
 def _human_category(slug: str) -> str:

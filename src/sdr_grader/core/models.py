@@ -105,3 +105,6 @@ class Implementation:
     # Adapter-supplied IDs that resolve without an inventory row (built-ins
     # and aliases). Kept separate so they do not inflate component counts.
     available_reference_ids: set[str] = field(default_factory=set)
+    # Adapter-proven aliases -> exported canonical IDs. Resolution must keep
+    # namespaces distinct unless the adapter explicitly establishes an alias.
+    reference_aliases: dict[str, str] = field(default_factory=dict)

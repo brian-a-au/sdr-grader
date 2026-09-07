@@ -41,7 +41,7 @@ or the human-readable `instance_name`, as the stable implementation identity.
 | `instance_id` | `string` | yes | Stable data view or report suite identity |
 | `grade` | `string` | yes | Overall letter grade |
 | `overall_pct` | `integer` | yes | Overall score from 0 through 100 |
-| `components_evaluated` | `integer` | yes | Count of components evaluated |
+| `components_evaluated` | `integer` | yes | Count of supplied normalized metrics, dimensions, derived fields, segments, and calculated metrics considered for evaluation; aliases/built-ins without inventory rows do not add to this count |
 | `components_skipped` | `integer` | yes | Count of components skipped |
 | `components_skipped_reason` | `string or null` | yes | Explanation when components were skipped |
 | `adapter` | `object` | yes | Snapshot adapter identity |

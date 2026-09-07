@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from collections import defaultdict
 from collections.abc import Iterator
 from typing import TYPE_CHECKING
@@ -74,7 +75,7 @@ def check_calc_formula_broken_refs(impl: Implementation, ctx: RuleContext) -> li
     items = [f"{cm_id} -> {missing}" for cm_id, missing in broken]
     paragraph = (
         f"{len(broken)} calculated metric reference{'s are' if len(broken) != 1 else ' is'} "
-        "broken — the formula points at components, segments, or other "
+        "unresolved — the formula points at components, segments, or other "
         "calculated metrics not found in this snapshot. This does not prove the "
         "live implementation is broken: the export may omit components or "
         "inventories. Verify the reference in the source platform and re-export "
@@ -83,7 +84,7 @@ def check_calc_formula_broken_refs(impl: Implementation, ctx: RuleContext) -> li
     return [
         make_finding(
             ctx,
-            title=f"{len(broken)} broken calculated metric reference{'s' if len(broken) != 1 else ''}",
+            title=f"{len(broken)} unresolved calculated metric reference{'s' if len(broken) != 1 else ''}",
             paragraph=paragraph,
             extra_blocks=[FindingBlock(kind="components", items=items)],
         )
@@ -212,27 +213,33 @@ def check_calc_near_duplicates(impl: Implementation, ctx: RuleContext) -> list[F
 
 @register_check("calc_identical_formula_text")
 def check_calc_identical_formula_text(impl: Implementation, ctx: RuleContext) -> list[Finding]:
-    groups: dict[str, list[str]] = defaultdict(list)
+    groups: dict[tuple[str, str], list[str]] = defaultdict(list)
     for cm in impl.calculated_metrics:
-        if not cm.formula_text:
+        text = cm.formula_text.strip()
+        if not text or text == "-":
             continue
-        groups[cm.formula_text.strip().lower()].append(cm.id)
+        # Exporter summaries can be abbreviated or describe only the outer
+        # operation. Known differing definitions must not be called duplicates.
+        # Preserve case: IDs and literal values are not case-insensitive text.
+        signature = json.dumps(cm.formula, sort_keys=True)
+        groups[(text, signature)].append(cm.id)
     duplicates = {text: ids for text, ids in groups.items() if len(ids) > 1}
     if not duplicates:
         return []
+    text_count = len({text for text, _signature in duplicates})
     items = [
         f"{text!r}: {', '.join(sorted(ids))}"
-        for text, ids in sorted(duplicates.items())
+        for (text, _signature), ids in sorted(duplicates.items())
     ]
     paragraph = (
-        f"{len(duplicates)} formula text{'s appear' if len(duplicates) != 1 else ' appears'} "
+        f"{text_count} formula text{'s appear' if text_count != 1 else ' appears'} "
         "verbatim on more than one calculated metric. Identical formulas are a "
         "red flag for accidental copy-paste rather than intentional duplication."
     )
     return [
         make_finding(
             ctx,
-            title=f"{len(duplicates)} repeated formula text{'s' if len(duplicates) != 1 else ''}",
+            title=f"{text_count} repeated formula text{'s' if text_count != 1 else ''}",
             paragraph=paragraph,
             extra_blocks=[FindingBlock(kind="components", items=items)],
         )

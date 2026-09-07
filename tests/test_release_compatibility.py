@@ -123,7 +123,7 @@ def test_approved_delta_removes_only_exact_cja_core_reference_items():
     expected = module._expected_candidate_from_baseline(baseline)
     finding = expected["fixtures"]["cja_snapshot_messy.json"]["report"]["findings"][0]
 
-    assert finding["title"] == "2 broken calculated metric references"
+    assert finding["title"] == "2 unresolved calculated metric references"
     assert finding["body"][1]["items"] == [missing, nested]
     assert "does not prove the live implementation is broken" in finding["body"][0]["html"]
     assert baseline["fixtures"]["cja_snapshot_messy.json"]["report"]["findings"][0]["body"][1][
@@ -147,7 +147,7 @@ def test_approved_delta_keeps_non_cja_items_and_normalizes_only_copy():
     expected = module._expected_candidate_from_baseline(baseline)
     finding = expected["report"]["findings"][0]
 
-    assert finding["title"] == "1 broken calculated metric reference"
+    assert finding["title"] == "1 unresolved calculated metric reference"
     assert finding["body"][1]["items"] == [visits]
     assert finding["body"][0]["html"] != "old copy"
 
@@ -294,3 +294,170 @@ def test_grade_matrix_exercises_every_fixture_and_threshold_exit(tmp_path, monke
     ]
     assert len(fixture_commands) == 8
     assert sum("--fail-below" in command for command in fixture_commands) == 4
+
+
+@pytest.mark.parametrize("rule_id", ["SCH-002", "CALC-002"])
+def test_exact_verify_first_copy_applies_to_finding_and_top_remediation(rule_id):
+    module = _load_module()
+    old_copy = module.BASELINE_REFERENCE_REMEDIATIONS[rule_id]
+    item = (
+        "segment/s -> missing metrics/deleted" if rule_id == "SCH-002" else "cm -> metrics/deleted"
+    )
+    finding = _reference_finding(rule_id, [item])
+    finding["severity"] = "high"
+    finding["body"].append({"kind": "section", "label": "How to remediate", "body_html": old_copy})
+    baseline = {
+        "report": {
+            "schema_version": 1,
+            "adapter": {"platform": "CJA"},
+            "overall_pct": 47,
+            "categories": [{"name": "schema", "pct": 71}],
+            "findings": [finding],
+            "remediations": [
+                {"text": old_copy, "refs": [rule_id], "priority_weight": 5, "impact_pts": 5}
+            ],
+        }
+    }
+    expected = module._expected_candidate_from_baseline(baseline)
+    report = expected["report"]
+    assert report["findings"][0]["body"][-1]["body_html"] == module.APPROVED_REFERENCE_REMEDIATION
+    assert report["remediations"][0]["text"] == module.APPROVED_REFERENCE_REMEDIATION
+    module._verify_expected_candidate(expected, baseline)
+
+    for target, key, wrong_value in [
+        (report, "overall_pct", 48),
+        (report["categories"][0], "pct", 72),
+        (report["findings"][0], "severity", "low"),
+        (report["findings"][0], "title", "2 unresolved references"),
+        (report["findings"][0]["body"][-1], "body_html", "Delete it immediately."),
+        (report["remediations"][0], "text", "Delete it immediately."),
+        (report["remediations"][0], "priority_weight", 1),
+    ]:
+        original = target[key]
+        target[key] = wrong_value
+        with pytest.raises(module.CompatibilityError, match="beyond the approved"):
+            module._verify_expected_candidate(expected, baseline)
+        target[key] = original
+
+
+def test_remediation_copy_does_not_rewrite_other_fields_rules_or_unreviewed_text():
+    module = _load_module()
+    old_copy = module.BASELINE_REFERENCE_REMEDIATIONS["SCH-002"]
+    finding = _reference_finding("SCH-002", ["segment/s -> missing metrics/deleted"])
+    finding["body"].extend(
+        [
+            {"kind": "section", "label": "How to remediate", "body_html": "unreviewed copy"},
+            {"kind": "section", "label": "Other label", "body_html": old_copy},
+        ]
+    )
+    baseline = {
+        "schema_version": 1,
+        "categories": [],
+        "findings": [finding],
+        "remediations": [
+            {"refs": ["SCH-002"], "text": "unreviewed copy"},
+            {"refs": ["SCH-001"], "text": old_copy},
+            {"refs": ["SCH-002", "SCH-001"], "text": old_copy},
+        ],
+    }
+    expected = module._expected_candidate_from_baseline(baseline)
+    assert expected["findings"][0]["body"][-2:] == finding["body"][-2:]
+    assert expected["remediations"] == baseline["remediations"]
+
+
+def test_repeated_formula_copy_delta_is_bound_to_exact_cja_item():
+    module = _load_module()
+    baseline_item = module.BASELINE_REPEATED_FORMULA_ITEM
+    other_item = baseline_item.replace("cm_rpv_marketing", "cm_other")
+    for platform in ("CJA", "AA"):
+        baseline = {
+            "schema_version": 1,
+            "adapter": {"platform": platform},
+            "categories": [],
+            "findings": [
+                {
+                    "id": "CALC-015",
+                    "body": [{"kind": "components", "items": [baseline_item, other_item]}],
+                },
+                {"id": "CALC-014", "body": [{"kind": "components", "items": [baseline_item]}]},
+            ],
+        }
+        expected = module._expected_candidate_from_baseline(baseline)
+        assert expected["findings"][0]["body"][0]["items"] == [
+            module.APPROVED_REPEATED_FORMULA_ITEM if platform == "CJA" else baseline_item,
+            other_item,
+        ]
+        assert expected["findings"][1] == baseline["findings"][1]
+        expected["findings"][0]["body"][0]["items"][0] = "'Revenue / Visits': cm_wrong"
+        with pytest.raises(module.CompatibilityError):
+            module._verify_expected_candidate(expected, baseline)
+
+
+@pytest.mark.parametrize(
+    ("platform", "instance_id", "old_count", "new_count"),
+    [
+        ("AA", "clean.prod", 19, 32),
+        ("AA", "messy.prod", 75, 79),
+        ("CJA", "dv_clean_prod_web", 40, 53),
+        ("CJA", "dv_messy_prod_web", 487, 542),
+        ("CJA", "dv_messy_prod_web", 40, 53),
+    ],
+)
+def test_exact_public_component_counts_and_summary_are_corrected(
+    platform, instance_id, old_count, new_count
+):
+    module = _load_module()
+    noun = "data view" if platform == "CJA" else "report suite"
+    baseline = {
+        "report": {
+            "schema_version": 1,
+            "findings": [],
+            "categories": [],
+            "overall_pct": 47,
+            "adapter": {"platform": platform},
+            "instance_id": instance_id,
+            "components_evaluated": old_count,
+            "tldr_html": f"Preserve prefix. The grader evaluated {old_count} components in this {noun} using the rubric. Preserve suffix.",
+        }
+    }
+    expected = module._expected_candidate_from_baseline(baseline)
+    report = expected["report"]
+    assert report["components_evaluated"] == new_count
+    assert report["tldr_html"] == baseline["report"]["tldr_html"].replace(
+        f"evaluated {old_count} components", f"evaluated {new_count} components"
+    )
+    module._verify_expected_candidate(expected, baseline)
+    for key, value in [
+        ("components_evaluated", new_count + 1),
+        ("tldr_html", "unapproved summary"),
+        ("overall_pct", 48),
+    ]:
+        original = report[key]
+        report[key] = value
+        with pytest.raises(module.CompatibilityError):
+            module._verify_expected_candidate(expected, baseline)
+        report[key] = original
+
+
+@pytest.mark.parametrize(
+    ("platform", "instance_id", "count"),
+    [
+        ("AA", "other.prod", 19),
+        ("CJA", "clean.prod", 19),
+        ("AA", "clean.prod", 20),
+    ],
+)
+def test_component_count_delta_does_not_apply_to_other_inventory_or_identity(
+    platform, instance_id, count
+):
+    module = _load_module()
+    baseline = {
+        "schema_version": 1,
+        "findings": [],
+        "categories": [],
+        "adapter": {"platform": platform},
+        "instance_id": instance_id,
+        "components_evaluated": count,
+        "tldr_html": "unchanged",
+    }
+    assert module._expected_candidate_from_baseline(baseline) == baseline
