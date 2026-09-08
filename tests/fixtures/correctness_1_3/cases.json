@@ -1,0 +1,1974 @@
+[
+  {
+    "name": "cja-clean-strict",
+    "fixture": "cja_snapshot_clean.json",
+    "pack": "strict"
+  },
+  {
+    "name": "cja-messy-strict",
+    "fixture": "cja_snapshot_messy.json",
+    "pack": "strict"
+  },
+  {
+    "name": "boolean-cja-false-strict",
+    "files": {
+      "input.json": {
+        "metadata": {
+          "Data View ID": "correctness",
+          "history_present": true,
+          "sdr_doc_present": false
+        },
+        "dimensions": [],
+        "metrics": []
+      }
+    },
+    "pack": "strict"
+  },
+  {
+    "name": "boolean-cja-text-false-strict",
+    "files": {
+      "input.json": {
+        "metadata": {
+          "Data View ID": "correctness",
+          "history_present": true,
+          "sdr_doc_present": " false "
+        },
+        "dimensions": [],
+        "metrics": []
+      }
+    },
+    "pack": "strict"
+  },
+  {
+    "name": "boolean-cja-invalid-strict",
+    "files": {
+      "input.json": {
+        "metadata": {
+          "Data View ID": "correctness",
+          "history_present": true,
+          "sdr_doc_present": {
+            "unsupported": true
+          }
+        },
+        "dimensions": [],
+        "metrics": []
+      }
+    },
+    "pack": "strict"
+  },
+  {
+    "name": "history-cja-false-strict",
+    "files": {
+      "input.json": {
+        "metadata": {
+          "Data View ID": "correctness",
+          "history_present": false,
+          "sdr_doc_present": true
+        },
+        "dimensions": [],
+        "metrics": []
+      }
+    },
+    "pack": "strict"
+  },
+  {
+    "name": "history-cja-text-false-strict",
+    "files": {
+      "input.json": {
+        "metadata": {
+          "Data View ID": "correctness",
+          "history_present": " false ",
+          "sdr_doc_present": true
+        },
+        "dimensions": [],
+        "metrics": []
+      }
+    },
+    "pack": "strict"
+  },
+  {
+    "name": "history-cja-invalid-strict",
+    "files": {
+      "input.json": {
+        "metadata": {
+          "Data View ID": "correctness",
+          "history_present": {
+            "unsupported": true
+          },
+          "sdr_doc_present": true
+        },
+        "dimensions": [],
+        "metrics": []
+      }
+    },
+    "pack": "strict"
+  },
+  {
+    "name": "duplicates-cja-False-strict",
+    "files": {
+      "input.json": {
+        "metadata": {
+          "Data View ID": "correctness",
+          "history_present": true,
+          "sdr_doc_present": true
+        },
+        "dimensions": [],
+        "metrics": [],
+        "segments": [
+          {
+            "id": "a",
+            "name": "Segment",
+            "description": "Purpose",
+            "definition_json": {}
+          },
+          {
+            "id": "a",
+            "name": "Segment",
+            "description": "Purpose",
+            "definition_json": {
+              "func": "segment",
+              "id": "b"
+            }
+          }
+        ]
+      }
+    },
+    "pack": "strict"
+  },
+  {
+    "name": "duplicates-cja-True-strict",
+    "files": {
+      "input.json": {
+        "metadata": {
+          "Data View ID": "correctness",
+          "history_present": true,
+          "sdr_doc_present": true
+        },
+        "dimensions": [],
+        "metrics": [],
+        "segments": [
+          {
+            "id": "a",
+            "name": "Segment",
+            "description": "Purpose",
+            "definition_json": {
+              "func": "segment",
+              "id": "b"
+            }
+          },
+          {
+            "id": "a",
+            "name": "Segment",
+            "description": "Purpose",
+            "definition_json": {}
+          }
+        ]
+      }
+    },
+    "pack": "strict"
+  },
+  {
+    "name": "aa-clean-strict",
+    "fixture": "aa_snapshot_clean.json",
+    "pack": "strict"
+  },
+  {
+    "name": "aa-messy-strict",
+    "fixture": "aa_snapshot_messy.json",
+    "pack": "strict"
+  },
+  {
+    "name": "boolean-aa-false-strict",
+    "files": {
+      "input.json": {
+        "report_suite": {
+          "rsid": "correctness"
+        },
+        "metadata": {
+          "history_present": true,
+          "sdr_doc_present": false
+        },
+        "dimensions": [],
+        "metrics": []
+      }
+    },
+    "pack": "strict"
+  },
+  {
+    "name": "boolean-aa-text-false-strict",
+    "files": {
+      "input.json": {
+        "report_suite": {
+          "rsid": "correctness"
+        },
+        "metadata": {
+          "history_present": true,
+          "sdr_doc_present": " false "
+        },
+        "dimensions": [],
+        "metrics": []
+      }
+    },
+    "pack": "strict"
+  },
+  {
+    "name": "boolean-aa-invalid-strict",
+    "files": {
+      "input.json": {
+        "report_suite": {
+          "rsid": "correctness"
+        },
+        "metadata": {
+          "history_present": true,
+          "sdr_doc_present": {
+            "unsupported": true
+          }
+        },
+        "dimensions": [],
+        "metrics": []
+      }
+    },
+    "pack": "strict"
+  },
+  {
+    "name": "history-aa-false-strict",
+    "files": {
+      "input.json": {
+        "report_suite": {
+          "rsid": "correctness"
+        },
+        "metadata": {
+          "history_present": false,
+          "sdr_doc_present": true
+        },
+        "dimensions": [],
+        "metrics": []
+      }
+    },
+    "pack": "strict"
+  },
+  {
+    "name": "history-aa-text-false-strict",
+    "files": {
+      "input.json": {
+        "report_suite": {
+          "rsid": "correctness"
+        },
+        "metadata": {
+          "history_present": " false ",
+          "sdr_doc_present": true
+        },
+        "dimensions": [],
+        "metrics": []
+      }
+    },
+    "pack": "strict"
+  },
+  {
+    "name": "history-aa-invalid-strict",
+    "files": {
+      "input.json": {
+        "report_suite": {
+          "rsid": "correctness"
+        },
+        "metadata": {
+          "history_present": {
+            "unsupported": true
+          },
+          "sdr_doc_present": true
+        },
+        "dimensions": [],
+        "metrics": []
+      }
+    },
+    "pack": "strict"
+  },
+  {
+    "name": "duplicates-aa-False-strict",
+    "files": {
+      "input.json": {
+        "report_suite": {
+          "rsid": "correctness"
+        },
+        "metadata": {
+          "history_present": true,
+          "sdr_doc_present": true
+        },
+        "dimensions": [],
+        "metrics": [],
+        "segments": [
+          {
+            "id": "a",
+            "name": "Segment",
+            "description": "Purpose",
+            "definition": {}
+          },
+          {
+            "id": "a",
+            "name": "Segment",
+            "description": "Purpose",
+            "definition": {
+              "func": "segment",
+              "id": "b"
+            }
+          }
+        ]
+      }
+    },
+    "pack": "strict"
+  },
+  {
+    "name": "duplicates-aa-True-strict",
+    "files": {
+      "input.json": {
+        "report_suite": {
+          "rsid": "correctness"
+        },
+        "metadata": {
+          "history_present": true,
+          "sdr_doc_present": true
+        },
+        "dimensions": [],
+        "metrics": [],
+        "segments": [
+          {
+            "id": "a",
+            "name": "Segment",
+            "description": "Purpose",
+            "definition": {
+              "func": "segment",
+              "id": "b"
+            }
+          },
+          {
+            "id": "a",
+            "name": "Segment",
+            "description": "Purpose",
+            "definition": {}
+          }
+        ]
+      }
+    },
+    "pack": "strict"
+  },
+  {
+    "name": "attribution-decay-strict",
+    "files": {
+      "input.json": {
+        "metadata": {
+          "Data View ID": "correctness",
+          "history_present": true,
+          "sdr_doc_present": true
+        },
+        "dimensions": [],
+        "metrics": [
+          {
+            "id": "metrics/revenue",
+            "name": "Revenue",
+            "description": "Time decay with a 7-day half-life, chosen to favor recent touchpoints.",
+            "tags": [
+              "business"
+            ],
+            "attributionSetting": {
+              "enabled": true,
+              "attributionModel": {
+                "func": "allocation-timeDecay"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "pack": "strict"
+  },
+  {
+    "name": "attribution-explicit-strict",
+    "files": {
+      "input.json": {
+        "metadata": {
+          "Data View ID": "correctness",
+          "history_present": true,
+          "sdr_doc_present": true
+        },
+        "dimensions": [],
+        "metrics": [
+          {
+            "id": "metrics/revenue",
+            "name": "Revenue",
+            "description": "Time decay attribution with a 7-day half-life, chosen to favor recent touchpoints.",
+            "tags": [
+              "business"
+            ],
+            "attributionSetting": {
+              "enabled": true,
+              "attributionModel": {
+                "func": "allocation-timeDecay"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "pack": "strict"
+  },
+  {
+    "name": "attribution-unrelated-strict",
+    "files": {
+      "input.json": {
+        "metadata": {
+          "Data View ID": "correctness",
+          "history_present": true,
+          "sdr_doc_present": true
+        },
+        "dimensions": [],
+        "metrics": [
+          {
+            "id": "metrics/revenue",
+            "name": "Revenue",
+            "description": "Orders by day",
+            "tags": [
+              "business"
+            ],
+            "attributionSetting": {
+              "enabled": true,
+              "attributionModel": {
+                "func": "allocation-timeDecay"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "pack": "strict"
+  },
+  {
+    "name": "enabled-false-strict",
+    "files": {
+      "input.json": {
+        "metadata": {
+          "Data View ID": "correctness",
+          "history_present": true,
+          "sdr_doc_present": true
+        },
+        "dimensions": [],
+        "metrics": [
+          {
+            "id": "metrics/revenue",
+            "name": "Revenue",
+            "description": "Orders by day",
+            "tags": [
+              "business"
+            ],
+            "attributionSetting": {
+              "enabled": false,
+              "attributionModel": {
+                "func": "allocation-timeDecay"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "pack": "strict"
+  },
+  {
+    "name": "enabled-text-false-strict",
+    "files": {
+      "input.json": {
+        "metadata": {
+          "Data View ID": "correctness",
+          "history_present": true,
+          "sdr_doc_present": true
+        },
+        "dimensions": [],
+        "metrics": [
+          {
+            "id": "metrics/revenue",
+            "name": "Revenue",
+            "description": "Orders by day",
+            "tags": [
+              "business"
+            ],
+            "attributionSetting": {
+              "enabled": "false",
+              "attributionModel": {
+                "func": "allocation-timeDecay"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "pack": "strict"
+  },
+  {
+    "name": "enabled-invalid-strict",
+    "files": {
+      "input.json": {
+        "metadata": {
+          "Data View ID": "correctness",
+          "history_present": true,
+          "sdr_doc_present": true
+        },
+        "dimensions": [],
+        "metrics": [
+          {
+            "id": "metrics/revenue",
+            "name": "Revenue",
+            "description": "Orders by day",
+            "tags": [
+              "business"
+            ],
+            "attributionSetting": {
+              "enabled": {
+                "unsupported": true
+              },
+              "attributionModel": {
+                "func": "allocation-timeDecay"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "pack": "strict"
+  },
+  {
+    "name": "chronology-latest-strict",
+    "files": {
+      "snapshots/snapshot_2026-04-25T09:00:00+09:00.json": {
+        "metadata": {
+          "Data View ID": "correctness",
+          "history_present": true,
+          "sdr_doc_present": false,
+          "Generation Timestamp": "2026-04-25T09:00:00+09:00"
+        },
+        "dimensions": [],
+        "metrics": []
+      },
+      "snapshots/snapshot_2026-04-25T01:00:00Z.json": {
+        "metadata": {
+          "Data View ID": "correctness",
+          "history_present": true,
+          "sdr_doc_present": true,
+          "Generation Timestamp": "2026-04-25T01:00:00Z"
+        },
+        "dimensions": [],
+        "metrics": []
+      }
+    },
+    "pack": "strict",
+    "input": "snapshots",
+    "mode": "latest"
+  },
+  {
+    "name": "chronology-trend-strict",
+    "files": {
+      "snapshots/snapshot_2026-04-25T09:00:00+09:00.json": {
+        "metadata": {
+          "Data View ID": "correctness",
+          "history_present": true,
+          "sdr_doc_present": false,
+          "Generation Timestamp": "2026-04-25T09:00:00+09:00"
+        },
+        "dimensions": [],
+        "metrics": []
+      },
+      "snapshots/snapshot_2026-04-25T01:00:00Z.json": {
+        "metadata": {
+          "Data View ID": "correctness",
+          "history_present": true,
+          "sdr_doc_present": true,
+          "Generation Timestamp": "2026-04-25T01:00:00Z"
+        },
+        "dimensions": [],
+        "metrics": []
+      }
+    },
+    "pack": "strict",
+    "input": "snapshots",
+    "mode": "trend"
+  },
+  {
+    "name": "chronology-at-strict",
+    "files": {
+      "snapshots/snapshot_2026-04-25T09:00:00+09:00.json": {
+        "metadata": {
+          "Data View ID": "correctness",
+          "history_present": true,
+          "sdr_doc_present": false,
+          "Generation Timestamp": "2026-04-25T09:00:00+09:00"
+        },
+        "dimensions": [],
+        "metrics": []
+      },
+      "snapshots/snapshot_2026-04-25T01:00:00Z.json": {
+        "metadata": {
+          "Data View ID": "correctness",
+          "history_present": true,
+          "sdr_doc_present": true,
+          "Generation Timestamp": "2026-04-25T01:00:00Z"
+        },
+        "dimensions": [],
+        "metrics": []
+      }
+    },
+    "pack": "strict",
+    "input": "snapshots",
+    "mode": "at"
+  },
+  {
+    "name": "cja-clean-pragmatic",
+    "fixture": "cja_snapshot_clean.json",
+    "pack": "pragmatic"
+  },
+  {
+    "name": "cja-messy-pragmatic",
+    "fixture": "cja_snapshot_messy.json",
+    "pack": "pragmatic"
+  },
+  {
+    "name": "boolean-cja-false-pragmatic",
+    "files": {
+      "input.json": {
+        "metadata": {
+          "Data View ID": "correctness",
+          "history_present": true,
+          "sdr_doc_present": false
+        },
+        "dimensions": [],
+        "metrics": []
+      }
+    },
+    "pack": "pragmatic"
+  },
+  {
+    "name": "boolean-cja-text-false-pragmatic",
+    "files": {
+      "input.json": {
+        "metadata": {
+          "Data View ID": "correctness",
+          "history_present": true,
+          "sdr_doc_present": " false "
+        },
+        "dimensions": [],
+        "metrics": []
+      }
+    },
+    "pack": "pragmatic"
+  },
+  {
+    "name": "boolean-cja-invalid-pragmatic",
+    "files": {
+      "input.json": {
+        "metadata": {
+          "Data View ID": "correctness",
+          "history_present": true,
+          "sdr_doc_present": {
+            "unsupported": true
+          }
+        },
+        "dimensions": [],
+        "metrics": []
+      }
+    },
+    "pack": "pragmatic"
+  },
+  {
+    "name": "history-cja-false-pragmatic",
+    "files": {
+      "input.json": {
+        "metadata": {
+          "Data View ID": "correctness",
+          "history_present": false,
+          "sdr_doc_present": true
+        },
+        "dimensions": [],
+        "metrics": []
+      }
+    },
+    "pack": "pragmatic"
+  },
+  {
+    "name": "history-cja-text-false-pragmatic",
+    "files": {
+      "input.json": {
+        "metadata": {
+          "Data View ID": "correctness",
+          "history_present": " false ",
+          "sdr_doc_present": true
+        },
+        "dimensions": [],
+        "metrics": []
+      }
+    },
+    "pack": "pragmatic"
+  },
+  {
+    "name": "history-cja-invalid-pragmatic",
+    "files": {
+      "input.json": {
+        "metadata": {
+          "Data View ID": "correctness",
+          "history_present": {
+            "unsupported": true
+          },
+          "sdr_doc_present": true
+        },
+        "dimensions": [],
+        "metrics": []
+      }
+    },
+    "pack": "pragmatic"
+  },
+  {
+    "name": "duplicates-cja-False-pragmatic",
+    "files": {
+      "input.json": {
+        "metadata": {
+          "Data View ID": "correctness",
+          "history_present": true,
+          "sdr_doc_present": true
+        },
+        "dimensions": [],
+        "metrics": [],
+        "segments": [
+          {
+            "id": "a",
+            "name": "Segment",
+            "description": "Purpose",
+            "definition_json": {}
+          },
+          {
+            "id": "a",
+            "name": "Segment",
+            "description": "Purpose",
+            "definition_json": {
+              "func": "segment",
+              "id": "b"
+            }
+          }
+        ]
+      }
+    },
+    "pack": "pragmatic"
+  },
+  {
+    "name": "duplicates-cja-True-pragmatic",
+    "files": {
+      "input.json": {
+        "metadata": {
+          "Data View ID": "correctness",
+          "history_present": true,
+          "sdr_doc_present": true
+        },
+        "dimensions": [],
+        "metrics": [],
+        "segments": [
+          {
+            "id": "a",
+            "name": "Segment",
+            "description": "Purpose",
+            "definition_json": {
+              "func": "segment",
+              "id": "b"
+            }
+          },
+          {
+            "id": "a",
+            "name": "Segment",
+            "description": "Purpose",
+            "definition_json": {}
+          }
+        ]
+      }
+    },
+    "pack": "pragmatic"
+  },
+  {
+    "name": "aa-clean-pragmatic",
+    "fixture": "aa_snapshot_clean.json",
+    "pack": "pragmatic"
+  },
+  {
+    "name": "aa-messy-pragmatic",
+    "fixture": "aa_snapshot_messy.json",
+    "pack": "pragmatic"
+  },
+  {
+    "name": "boolean-aa-false-pragmatic",
+    "files": {
+      "input.json": {
+        "report_suite": {
+          "rsid": "correctness"
+        },
+        "metadata": {
+          "history_present": true,
+          "sdr_doc_present": false
+        },
+        "dimensions": [],
+        "metrics": []
+      }
+    },
+    "pack": "pragmatic"
+  },
+  {
+    "name": "boolean-aa-text-false-pragmatic",
+    "files": {
+      "input.json": {
+        "report_suite": {
+          "rsid": "correctness"
+        },
+        "metadata": {
+          "history_present": true,
+          "sdr_doc_present": " false "
+        },
+        "dimensions": [],
+        "metrics": []
+      }
+    },
+    "pack": "pragmatic"
+  },
+  {
+    "name": "boolean-aa-invalid-pragmatic",
+    "files": {
+      "input.json": {
+        "report_suite": {
+          "rsid": "correctness"
+        },
+        "metadata": {
+          "history_present": true,
+          "sdr_doc_present": {
+            "unsupported": true
+          }
+        },
+        "dimensions": [],
+        "metrics": []
+      }
+    },
+    "pack": "pragmatic"
+  },
+  {
+    "name": "history-aa-false-pragmatic",
+    "files": {
+      "input.json": {
+        "report_suite": {
+          "rsid": "correctness"
+        },
+        "metadata": {
+          "history_present": false,
+          "sdr_doc_present": true
+        },
+        "dimensions": [],
+        "metrics": []
+      }
+    },
+    "pack": "pragmatic"
+  },
+  {
+    "name": "history-aa-text-false-pragmatic",
+    "files": {
+      "input.json": {
+        "report_suite": {
+          "rsid": "correctness"
+        },
+        "metadata": {
+          "history_present": " false ",
+          "sdr_doc_present": true
+        },
+        "dimensions": [],
+        "metrics": []
+      }
+    },
+    "pack": "pragmatic"
+  },
+  {
+    "name": "history-aa-invalid-pragmatic",
+    "files": {
+      "input.json": {
+        "report_suite": {
+          "rsid": "correctness"
+        },
+        "metadata": {
+          "history_present": {
+            "unsupported": true
+          },
+          "sdr_doc_present": true
+        },
+        "dimensions": [],
+        "metrics": []
+      }
+    },
+    "pack": "pragmatic"
+  },
+  {
+    "name": "duplicates-aa-False-pragmatic",
+    "files": {
+      "input.json": {
+        "report_suite": {
+          "rsid": "correctness"
+        },
+        "metadata": {
+          "history_present": true,
+          "sdr_doc_present": true
+        },
+        "dimensions": [],
+        "metrics": [],
+        "segments": [
+          {
+            "id": "a",
+            "name": "Segment",
+            "description": "Purpose",
+            "definition": {}
+          },
+          {
+            "id": "a",
+            "name": "Segment",
+            "description": "Purpose",
+            "definition": {
+              "func": "segment",
+              "id": "b"
+            }
+          }
+        ]
+      }
+    },
+    "pack": "pragmatic"
+  },
+  {
+    "name": "duplicates-aa-True-pragmatic",
+    "files": {
+      "input.json": {
+        "report_suite": {
+          "rsid": "correctness"
+        },
+        "metadata": {
+          "history_present": true,
+          "sdr_doc_present": true
+        },
+        "dimensions": [],
+        "metrics": [],
+        "segments": [
+          {
+            "id": "a",
+            "name": "Segment",
+            "description": "Purpose",
+            "definition": {
+              "func": "segment",
+              "id": "b"
+            }
+          },
+          {
+            "id": "a",
+            "name": "Segment",
+            "description": "Purpose",
+            "definition": {}
+          }
+        ]
+      }
+    },
+    "pack": "pragmatic"
+  },
+  {
+    "name": "attribution-decay-pragmatic",
+    "files": {
+      "input.json": {
+        "metadata": {
+          "Data View ID": "correctness",
+          "history_present": true,
+          "sdr_doc_present": true
+        },
+        "dimensions": [],
+        "metrics": [
+          {
+            "id": "metrics/revenue",
+            "name": "Revenue",
+            "description": "Time decay with a 7-day half-life, chosen to favor recent touchpoints.",
+            "tags": [
+              "business"
+            ],
+            "attributionSetting": {
+              "enabled": true,
+              "attributionModel": {
+                "func": "allocation-timeDecay"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "pack": "pragmatic"
+  },
+  {
+    "name": "attribution-explicit-pragmatic",
+    "files": {
+      "input.json": {
+        "metadata": {
+          "Data View ID": "correctness",
+          "history_present": true,
+          "sdr_doc_present": true
+        },
+        "dimensions": [],
+        "metrics": [
+          {
+            "id": "metrics/revenue",
+            "name": "Revenue",
+            "description": "Time decay attribution with a 7-day half-life, chosen to favor recent touchpoints.",
+            "tags": [
+              "business"
+            ],
+            "attributionSetting": {
+              "enabled": true,
+              "attributionModel": {
+                "func": "allocation-timeDecay"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "pack": "pragmatic"
+  },
+  {
+    "name": "attribution-unrelated-pragmatic",
+    "files": {
+      "input.json": {
+        "metadata": {
+          "Data View ID": "correctness",
+          "history_present": true,
+          "sdr_doc_present": true
+        },
+        "dimensions": [],
+        "metrics": [
+          {
+            "id": "metrics/revenue",
+            "name": "Revenue",
+            "description": "Orders by day",
+            "tags": [
+              "business"
+            ],
+            "attributionSetting": {
+              "enabled": true,
+              "attributionModel": {
+                "func": "allocation-timeDecay"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "pack": "pragmatic"
+  },
+  {
+    "name": "enabled-false-pragmatic",
+    "files": {
+      "input.json": {
+        "metadata": {
+          "Data View ID": "correctness",
+          "history_present": true,
+          "sdr_doc_present": true
+        },
+        "dimensions": [],
+        "metrics": [
+          {
+            "id": "metrics/revenue",
+            "name": "Revenue",
+            "description": "Orders by day",
+            "tags": [
+              "business"
+            ],
+            "attributionSetting": {
+              "enabled": false,
+              "attributionModel": {
+                "func": "allocation-timeDecay"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "pack": "pragmatic"
+  },
+  {
+    "name": "enabled-text-false-pragmatic",
+    "files": {
+      "input.json": {
+        "metadata": {
+          "Data View ID": "correctness",
+          "history_present": true,
+          "sdr_doc_present": true
+        },
+        "dimensions": [],
+        "metrics": [
+          {
+            "id": "metrics/revenue",
+            "name": "Revenue",
+            "description": "Orders by day",
+            "tags": [
+              "business"
+            ],
+            "attributionSetting": {
+              "enabled": "false",
+              "attributionModel": {
+                "func": "allocation-timeDecay"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "pack": "pragmatic"
+  },
+  {
+    "name": "enabled-invalid-pragmatic",
+    "files": {
+      "input.json": {
+        "metadata": {
+          "Data View ID": "correctness",
+          "history_present": true,
+          "sdr_doc_present": true
+        },
+        "dimensions": [],
+        "metrics": [
+          {
+            "id": "metrics/revenue",
+            "name": "Revenue",
+            "description": "Orders by day",
+            "tags": [
+              "business"
+            ],
+            "attributionSetting": {
+              "enabled": {
+                "unsupported": true
+              },
+              "attributionModel": {
+                "func": "allocation-timeDecay"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "pack": "pragmatic"
+  },
+  {
+    "name": "chronology-latest-pragmatic",
+    "files": {
+      "snapshots/snapshot_2026-04-25T09:00:00+09:00.json": {
+        "metadata": {
+          "Data View ID": "correctness",
+          "history_present": true,
+          "sdr_doc_present": false,
+          "Generation Timestamp": "2026-04-25T09:00:00+09:00"
+        },
+        "dimensions": [],
+        "metrics": []
+      },
+      "snapshots/snapshot_2026-04-25T01:00:00Z.json": {
+        "metadata": {
+          "Data View ID": "correctness",
+          "history_present": true,
+          "sdr_doc_present": true,
+          "Generation Timestamp": "2026-04-25T01:00:00Z"
+        },
+        "dimensions": [],
+        "metrics": []
+      }
+    },
+    "pack": "pragmatic",
+    "input": "snapshots",
+    "mode": "latest"
+  },
+  {
+    "name": "chronology-trend-pragmatic",
+    "files": {
+      "snapshots/snapshot_2026-04-25T09:00:00+09:00.json": {
+        "metadata": {
+          "Data View ID": "correctness",
+          "history_present": true,
+          "sdr_doc_present": false,
+          "Generation Timestamp": "2026-04-25T09:00:00+09:00"
+        },
+        "dimensions": [],
+        "metrics": []
+      },
+      "snapshots/snapshot_2026-04-25T01:00:00Z.json": {
+        "metadata": {
+          "Data View ID": "correctness",
+          "history_present": true,
+          "sdr_doc_present": true,
+          "Generation Timestamp": "2026-04-25T01:00:00Z"
+        },
+        "dimensions": [],
+        "metrics": []
+      }
+    },
+    "pack": "pragmatic",
+    "input": "snapshots",
+    "mode": "trend"
+  },
+  {
+    "name": "chronology-at-pragmatic",
+    "files": {
+      "snapshots/snapshot_2026-04-25T09:00:00+09:00.json": {
+        "metadata": {
+          "Data View ID": "correctness",
+          "history_present": true,
+          "sdr_doc_present": false,
+          "Generation Timestamp": "2026-04-25T09:00:00+09:00"
+        },
+        "dimensions": [],
+        "metrics": []
+      },
+      "snapshots/snapshot_2026-04-25T01:00:00Z.json": {
+        "metadata": {
+          "Data View ID": "correctness",
+          "history_present": true,
+          "sdr_doc_present": true,
+          "Generation Timestamp": "2026-04-25T01:00:00Z"
+        },
+        "dimensions": [],
+        "metrics": []
+      }
+    },
+    "pack": "pragmatic",
+    "input": "snapshots",
+    "mode": "at"
+  },
+  {
+    "name": "custom-GOV-002-0",
+    "files": {
+      "input.json": {
+        "metadata": {
+          "Data View ID": "correctness",
+          "history_present": true,
+          "sdr_doc_present": true,
+          "Generation Timestamp": "2026-01-01T00:00:00Z"
+        },
+        "dimensions": [
+          {
+            "id": "d",
+            "name": "Dimension",
+            "modified_at": "2026-01-01T00:00:00Z"
+          }
+        ],
+        "metrics": []
+      }
+    },
+    "rubric": {
+      "_meta.yaml": {
+        "pack": "strict",
+        "version": "2.0",
+        "description": "Strict rubric encoding the opinions of an Adobe Master / CJA Developer about\nwhat a high-quality CJA or AA implementation looks like. All six categories\nare active; weights match the SPEC \u00a76 reference distribution.\n",
+        "category_weights": {
+          "governance_posture": 1.0
+        },
+        "severity_weights": {
+          "critical": 4,
+          "high": 3,
+          "medium": 2,
+          "low": 1
+        },
+        "grade_scale": [
+          {
+            "min": 93,
+            "grade": "A"
+          },
+          {
+            "min": 90,
+            "grade": "A\u2212"
+          },
+          {
+            "min": 87,
+            "grade": "B+"
+          },
+          {
+            "min": 83,
+            "grade": "B"
+          },
+          {
+            "min": 80,
+            "grade": "B\u2212"
+          },
+          {
+            "min": 77,
+            "grade": "C+"
+          },
+          {
+            "min": 73,
+            "grade": "C"
+          },
+          {
+            "min": 70,
+            "grade": "C\u2212"
+          },
+          {
+            "min": 67,
+            "grade": "D+"
+          },
+          {
+            "min": 63,
+            "grade": "D"
+          },
+          {
+            "min": 60,
+            "grade": "D\u2212"
+          },
+          {
+            "min": 0,
+            "grade": "F"
+          }
+        ]
+      },
+      "governance.yaml": {
+        "category": "governance_posture",
+        "rules": [
+          {
+            "id": "GOV-002",
+            "name": "GOV-002",
+            "severity": "high",
+            "platforms": [
+              "cja"
+            ],
+            "check": "snapshot_age",
+            "params": {
+              "reference_date": "2026-04-25T00:00:00Z",
+              "max_age_days": 90
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "custom-GOV-002-1",
+    "files": {
+      "input.json": {
+        "metadata": {
+          "Data View ID": "correctness",
+          "history_present": true,
+          "sdr_doc_present": true,
+          "Generation Timestamp": "2026-01-01T00:00:00+00:00"
+        },
+        "dimensions": [
+          {
+            "id": "d",
+            "name": "Dimension",
+            "modified_at": "2026-01-01T00:00:00+00:00"
+          }
+        ],
+        "metrics": []
+      }
+    },
+    "rubric": {
+      "_meta.yaml": {
+        "pack": "strict",
+        "version": "2.0",
+        "description": "Strict rubric encoding the opinions of an Adobe Master / CJA Developer about\nwhat a high-quality CJA or AA implementation looks like. All six categories\nare active; weights match the SPEC \u00a76 reference distribution.\n",
+        "category_weights": {
+          "governance_posture": 1.0
+        },
+        "severity_weights": {
+          "critical": 4,
+          "high": 3,
+          "medium": 2,
+          "low": 1
+        },
+        "grade_scale": [
+          {
+            "min": 93,
+            "grade": "A"
+          },
+          {
+            "min": 90,
+            "grade": "A\u2212"
+          },
+          {
+            "min": 87,
+            "grade": "B+"
+          },
+          {
+            "min": 83,
+            "grade": "B"
+          },
+          {
+            "min": 80,
+            "grade": "B\u2212"
+          },
+          {
+            "min": 77,
+            "grade": "C+"
+          },
+          {
+            "min": 73,
+            "grade": "C"
+          },
+          {
+            "min": 70,
+            "grade": "C\u2212"
+          },
+          {
+            "min": 67,
+            "grade": "D+"
+          },
+          {
+            "min": 63,
+            "grade": "D"
+          },
+          {
+            "min": 60,
+            "grade": "D\u2212"
+          },
+          {
+            "min": 0,
+            "grade": "F"
+          }
+        ]
+      },
+      "governance.yaml": {
+        "category": "governance_posture",
+        "rules": [
+          {
+            "id": "GOV-002",
+            "name": "GOV-002",
+            "severity": "high",
+            "platforms": [
+              "cja"
+            ],
+            "check": "snapshot_age",
+            "params": {
+              "reference_date": "2026-04-25T00:00:00Z",
+              "max_age_days": 90
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "custom-GOV-002-2",
+    "files": {
+      "input.json": {
+        "metadata": {
+          "Data View ID": "correctness",
+          "history_present": true,
+          "sdr_doc_present": true,
+          "Generation Timestamp": "2026-01-01T00:00:00.000Z"
+        },
+        "dimensions": [
+          {
+            "id": "d",
+            "name": "Dimension",
+            "modified_at": "2026-01-01T00:00:00.000Z"
+          }
+        ],
+        "metrics": []
+      }
+    },
+    "rubric": {
+      "_meta.yaml": {
+        "pack": "strict",
+        "version": "2.0",
+        "description": "Strict rubric encoding the opinions of an Adobe Master / CJA Developer about\nwhat a high-quality CJA or AA implementation looks like. All six categories\nare active; weights match the SPEC \u00a76 reference distribution.\n",
+        "category_weights": {
+          "governance_posture": 1.0
+        },
+        "severity_weights": {
+          "critical": 4,
+          "high": 3,
+          "medium": 2,
+          "low": 1
+        },
+        "grade_scale": [
+          {
+            "min": 93,
+            "grade": "A"
+          },
+          {
+            "min": 90,
+            "grade": "A\u2212"
+          },
+          {
+            "min": 87,
+            "grade": "B+"
+          },
+          {
+            "min": 83,
+            "grade": "B"
+          },
+          {
+            "min": 80,
+            "grade": "B\u2212"
+          },
+          {
+            "min": 77,
+            "grade": "C+"
+          },
+          {
+            "min": 73,
+            "grade": "C"
+          },
+          {
+            "min": 70,
+            "grade": "C\u2212"
+          },
+          {
+            "min": 67,
+            "grade": "D+"
+          },
+          {
+            "min": 63,
+            "grade": "D"
+          },
+          {
+            "min": 60,
+            "grade": "D\u2212"
+          },
+          {
+            "min": 0,
+            "grade": "F"
+          }
+        ]
+      },
+      "governance.yaml": {
+        "category": "governance_posture",
+        "rules": [
+          {
+            "id": "GOV-002",
+            "name": "GOV-002",
+            "severity": "high",
+            "platforms": [
+              "cja"
+            ],
+            "check": "snapshot_age",
+            "params": {
+              "reference_date": "2026-04-25T00:00:00Z",
+              "max_age_days": 90
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "custom-GOV-006-0",
+    "files": {
+      "input.json": {
+        "metadata": {
+          "Data View ID": "correctness",
+          "history_present": true,
+          "sdr_doc_present": true,
+          "Generation Timestamp": "2026-01-01T00:00:00Z"
+        },
+        "dimensions": [
+          {
+            "id": "d",
+            "name": "Dimension",
+            "modified_at": "2026-01-01T00:00:00Z"
+          }
+        ],
+        "metrics": []
+      }
+    },
+    "rubric": {
+      "_meta.yaml": {
+        "pack": "strict",
+        "version": "2.0",
+        "description": "Strict rubric encoding the opinions of an Adobe Master / CJA Developer about\nwhat a high-quality CJA or AA implementation looks like. All six categories\nare active; weights match the SPEC \u00a76 reference distribution.\n",
+        "category_weights": {
+          "governance_posture": 1.0
+        },
+        "severity_weights": {
+          "critical": 4,
+          "high": 3,
+          "medium": 2,
+          "low": 1
+        },
+        "grade_scale": [
+          {
+            "min": 93,
+            "grade": "A"
+          },
+          {
+            "min": 90,
+            "grade": "A\u2212"
+          },
+          {
+            "min": 87,
+            "grade": "B+"
+          },
+          {
+            "min": 83,
+            "grade": "B"
+          },
+          {
+            "min": 80,
+            "grade": "B\u2212"
+          },
+          {
+            "min": 77,
+            "grade": "C+"
+          },
+          {
+            "min": 73,
+            "grade": "C"
+          },
+          {
+            "min": 70,
+            "grade": "C\u2212"
+          },
+          {
+            "min": 67,
+            "grade": "D+"
+          },
+          {
+            "min": 63,
+            "grade": "D"
+          },
+          {
+            "min": 60,
+            "grade": "D\u2212"
+          },
+          {
+            "min": 0,
+            "grade": "F"
+          }
+        ]
+      },
+      "governance.yaml": {
+        "category": "governance_posture",
+        "rules": [
+          {
+            "id": "GOV-006",
+            "name": "GOV-006",
+            "severity": "high",
+            "platforms": [
+              "cja"
+            ],
+            "check": "doc_drift",
+            "params": {
+              "last_sdr_update_at": "2025-01-01T00:00:00Z",
+              "threshold": 0.2
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "custom-GOV-006-1",
+    "files": {
+      "input.json": {
+        "metadata": {
+          "Data View ID": "correctness",
+          "history_present": true,
+          "sdr_doc_present": true,
+          "Generation Timestamp": "2026-01-01T00:00:00+00:00"
+        },
+        "dimensions": [
+          {
+            "id": "d",
+            "name": "Dimension",
+            "modified_at": "2026-01-01T00:00:00+00:00"
+          }
+        ],
+        "metrics": []
+      }
+    },
+    "rubric": {
+      "_meta.yaml": {
+        "pack": "strict",
+        "version": "2.0",
+        "description": "Strict rubric encoding the opinions of an Adobe Master / CJA Developer about\nwhat a high-quality CJA or AA implementation looks like. All six categories\nare active; weights match the SPEC \u00a76 reference distribution.\n",
+        "category_weights": {
+          "governance_posture": 1.0
+        },
+        "severity_weights": {
+          "critical": 4,
+          "high": 3,
+          "medium": 2,
+          "low": 1
+        },
+        "grade_scale": [
+          {
+            "min": 93,
+            "grade": "A"
+          },
+          {
+            "min": 90,
+            "grade": "A\u2212"
+          },
+          {
+            "min": 87,
+            "grade": "B+"
+          },
+          {
+            "min": 83,
+            "grade": "B"
+          },
+          {
+            "min": 80,
+            "grade": "B\u2212"
+          },
+          {
+            "min": 77,
+            "grade": "C+"
+          },
+          {
+            "min": 73,
+            "grade": "C"
+          },
+          {
+            "min": 70,
+            "grade": "C\u2212"
+          },
+          {
+            "min": 67,
+            "grade": "D+"
+          },
+          {
+            "min": 63,
+            "grade": "D"
+          },
+          {
+            "min": 60,
+            "grade": "D\u2212"
+          },
+          {
+            "min": 0,
+            "grade": "F"
+          }
+        ]
+      },
+      "governance.yaml": {
+        "category": "governance_posture",
+        "rules": [
+          {
+            "id": "GOV-006",
+            "name": "GOV-006",
+            "severity": "high",
+            "platforms": [
+              "cja"
+            ],
+            "check": "doc_drift",
+            "params": {
+              "last_sdr_update_at": "2025-01-01T00:00:00Z",
+              "threshold": 0.2
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "custom-GOV-006-2",
+    "files": {
+      "input.json": {
+        "metadata": {
+          "Data View ID": "correctness",
+          "history_present": true,
+          "sdr_doc_present": true,
+          "Generation Timestamp": "2026-01-01T00:00:00.000Z"
+        },
+        "dimensions": [
+          {
+            "id": "d",
+            "name": "Dimension",
+            "modified_at": "2026-01-01T00:00:00.000Z"
+          }
+        ],
+        "metrics": []
+      }
+    },
+    "rubric": {
+      "_meta.yaml": {
+        "pack": "strict",
+        "version": "2.0",
+        "description": "Strict rubric encoding the opinions of an Adobe Master / CJA Developer about\nwhat a high-quality CJA or AA implementation looks like. All six categories\nare active; weights match the SPEC \u00a76 reference distribution.\n",
+        "category_weights": {
+          "governance_posture": 1.0
+        },
+        "severity_weights": {
+          "critical": 4,
+          "high": 3,
+          "medium": 2,
+          "low": 1
+        },
+        "grade_scale": [
+          {
+            "min": 93,
+            "grade": "A"
+          },
+          {
+            "min": 90,
+            "grade": "A\u2212"
+          },
+          {
+            "min": 87,
+            "grade": "B+"
+          },
+          {
+            "min": 83,
+            "grade": "B"
+          },
+          {
+            "min": 80,
+            "grade": "B\u2212"
+          },
+          {
+            "min": 77,
+            "grade": "C+"
+          },
+          {
+            "min": 73,
+            "grade": "C"
+          },
+          {
+            "min": 70,
+            "grade": "C\u2212"
+          },
+          {
+            "min": 67,
+            "grade": "D+"
+          },
+          {
+            "min": 63,
+            "grade": "D"
+          },
+          {
+            "min": 60,
+            "grade": "D\u2212"
+          },
+          {
+            "min": 0,
+            "grade": "F"
+          }
+        ]
+      },
+      "governance.yaml": {
+        "category": "governance_posture",
+        "rules": [
+          {
+            "id": "GOV-006",
+            "name": "GOV-006",
+            "severity": "high",
+            "platforms": [
+              "cja"
+            ],
+            "check": "doc_drift",
+            "params": {
+              "last_sdr_update_at": "2025-01-01T00:00:00Z",
+              "threshold": 0.2
+            }
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "custom-GOV-001-0",
+    "files": {
+      "input.json": {
+        "metadata": {
+          "Data View ID": "correctness",
+          "history_present": true,
+          "sdr_doc_present": true,
+          "Generation Timestamp": "2026-01-01"
+        },
+        "dimensions": [
+          {
+            "id": "d",
+            "name": "Dimension",
+            "modified_at": "2026-01-01"
+          }
+        ],
+        "metrics": []
+      }
+    },
+    "rubric": {
+      "_meta.yaml": {
+        "pack": "strict",
+        "version": "2.0",
+        "description": "Strict rubric encoding the opinions of an Adobe Master / CJA Developer about\nwhat a high-quality CJA or AA implementation looks like. All six categories\nare active; weights match the SPEC \u00a76 reference distribution.\n",
+        "category_weights": {
+          "governance_posture": 1.0
+        },
+        "severity_weights": {
+          "critical": 4,
+          "high": 3,
+          "medium": 2,
+          "low": 1
+        },
+        "grade_scale": [
+          {
+            "min": 93,
+            "grade": "A"
+          },
+          {
+            "min": 90,
+            "grade": "A\u2212"
+          },
+          {
+            "min": 87,
+            "grade": "B+"
+          },
+          {
+            "min": 83,
+            "grade": "B"
+          },
+          {
+            "min": 80,
+            "grade": "B\u2212"
+          },
+          {
+            "min": 77,
+            "grade": "C+"
+          },
+          {
+            "min": 73,
+            "grade": "C"
+          },
+          {
+            "min": 70,
+            "grade": "C\u2212"
+          },
+          {
+            "min": 67,
+            "grade": "D+"
+          },
+          {
+            "min": 63,
+            "grade": "D"
+          },
+          {
+            "min": 60,
+            "grade": "D\u2212"
+          },
+          {
+            "min": 0,
+            "grade": "F"
+          }
+        ]
+      },
+      "governance.yaml": {
+        "category": "governance_posture",
+        "rules": [
+          {
+            "id": "GOV-001",
+            "name": "GOV-001",
+            "severity": "high",
+            "platforms": [
+              "cja"
+            ],
+            "check": "sdr_doc_absent",
+            "params": {
+              "sdr_doc_present": {
+                "invalid": true
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+]

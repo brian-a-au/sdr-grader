@@ -491,3 +491,161 @@ def test_reference_order_delta_sorts_only_within_cja_consumer_groups(rule_id, se
     expected["overall_pct"] += 1
     with pytest.raises(module.CompatibilityError):
         module._verify_expected_candidate(expected, baseline)
+
+
+def test_correctness_baseline_is_separate_and_immutable():
+    module = _load_module()
+    assert module.CORRECTNESS_BASELINE_TAG == 'v1.2.9'
+    assert module.CORRECTNESS_BASELINE_COMMIT == '9687fcc66622d454cc121cd49daa319c0c01a939'
+    assert module.BASELINE_TAG == 'v1.2.2'
+
+
+@pytest.mark.parametrize('field,value', [('exit', 2), ('overall_pct', 99), ('findings', [])])
+def test_correctness_comparator_rejects_unexpected_drift(field, value):
+    module = _load_module()
+    baseline = {'exit': 0, 'overall_pct': 100, 'findings': [{'id': 'GOV-001'}]}
+    candidate = {'exit': 0, 'overall_pct': 100, 'findings': [{'id': 'GOV-003'}]}
+    contract = {'baseline': baseline, 'candidate': candidate,
+                'deltas': module._exact_deltas(baseline, candidate)}
+    module._verify_correctness_case('proof', baseline, candidate, contract)
+    changed = json.loads(json.dumps(candidate))
+    changed[field] = value
+    with pytest.raises(module.CompatibilityError, match='proof'):
+        module._verify_correctness_case('proof', baseline, changed, contract)
+    with pytest.raises(module.CompatibilityError, match='baseline'):
+        module._verify_correctness_case('proof', changed, candidate, contract)
+
+
+def test_correctness_normalizes_only_package_version():
+    module = _load_module()
+    payload = {'tool_version': '1.3.0', 'methodology': {'paragraphs': ['keep']},
+               'findings': [{'body': ['keep']}], 'overall_pct': 100}
+    normalized = module._correctness_payload(payload)
+    assert normalized == {**payload, 'tool_version': '<package-version>'}
+    assert payload['tool_version'] == '1.3.0'
+
+
+def test_correctness_fetch_rejects_moved_baseline(monkeypatch):
+    module = _load_module()
+    commands = []
+    def run(command, **kwargs):
+        commands.append(command)
+        return module.subprocess.CompletedProcess(command, 0, 'wrong-sha\n', '')
+    monkeypatch.setattr(module, '_run', run)
+    with pytest.raises(module.CompatibilityError, match='v1.2.9 peeled'):
+        module._fetch_and_verify_baseline(REPO_ROOT, {}, tag=module.CORRECTNESS_BASELINE_TAG,
+                                          commit=module.CORRECTNESS_BASELINE_COMMIT)
+    assert commands[0][-1] == '+refs/tags/v1.2.9:refs/tags/v1.2.9'
+
+
+@pytest.mark.parametrize('exit_code,diagnostic', [(1, 'error: metadata.sdr_doc_present: invalid'),
+                                                 (3, 'rubric error: GOV-001.params: invalid')])
+def test_correctness_errors_are_typed_and_publish_no_reports(tmp_path, monkeypatch, exit_code, diagnostic):
+    module = _load_module()
+    def run(command, **kwargs):
+        return module.subprocess.CompletedProcess(command, exit_code, '', diagnostic)
+    monkeypatch.setattr(module, '_run', run)
+    args = dict(console=Path('sdr-grader'), python=Path('python'), environment={},
+                fixture_root=tmp_path, case={'name':'invalid','files':{'input.json':{}}})
+    result = module._run_correctness_case(case_root=tmp_path/'ok', **args)
+    assert result['kind'] == ('invalid-input' if exit_code == 1 else 'rubric-error')
+    assert result['diagnostic'] == diagnostic
+    assert not result['html_present'] and not result['json_present']
+    def leaked_report(command, **kwargs):
+        (kwargs['cwd']/'grade.html').write_text('bad success')
+        return run(command, **kwargs)
+    monkeypatch.setattr(module, '_run', leaked_report)
+    with pytest.raises(module.CompatibilityError, match='error published success artifacts'):
+        module._run_correctness_case(case_root=tmp_path/'bad', **args)
+
+
+def test_correctness_rejects_traceback_as_input_failure(tmp_path, monkeypatch):
+    module = _load_module()
+    monkeypatch.setattr(module, '_run', lambda *a, **k:
+        module.subprocess.CompletedProcess(a[0], 1, '', 'Traceback: crashed'))
+    with pytest.raises(module.CompatibilityError, match='untyped failure'):
+        module._run_correctness_case(console=Path('sdr-grader'), python=Path('python'),
+            environment={}, case_root=tmp_path/'case', fixture_root=tmp_path,
+            case={'name':'crash','files':{'input.json':{}}})
+
+
+def test_reviewed_correctness_matrix_has_complete_exact_contract():
+    module = _load_module()
+    root = REPO_ROOT / 'tests/fixtures/correctness_1_3'
+    cases = json.loads((root/'cases.json').read_text())
+    expected = json.loads((root/'expectations.json').read_text())
+    assert expected['baseline_commit'] == module.CORRECTNESS_BASELINE_COMMIT
+    assert expected['normalization'] == 'tool_version only'
+    assert len({case['name'] for case in cases}) == len(cases)
+    assert {case['name'] for case in cases} == expected['cases'].keys()
+    for name, contract in expected['cases'].items():
+        module._verify_correctness_case(name, contract['baseline'], contract['candidate'], contract)
+    for pack in ('strict', 'pragmatic'):
+        for platform in ('cja', 'aa'):
+            for quality in ('clean', 'messy'):
+                assert expected['cases'][f'{platform}-{quality}-{pack}']['deltas'] == []
+        assert expected['cases'][f'attribution-decay-{pack}']['candidate']['report']['overall_pct'] == 100
+        assert expected['cases'][f'chronology-at-{pack}']['baseline']['exit'] == 1
+    assert {c['candidate']['kind'] for c in expected['cases'].values()} == {
+        'report', 'invalid-input', 'rubric-error'}
+
+
+def test_correctness_rejects_repeated_html_drift(tmp_path, monkeypatch):
+    module = _load_module()
+    calls = iter(['first HTML', 'different HTML'])
+    def run(command, **kwargs):
+        cwd = kwargs['cwd']
+        (cwd/'grade.html').write_text(next(calls))
+        (cwd/'grade.json').write_text(json.dumps({'schema_version':1,'overall_pct':100,
+                                                 'findings':[],'categories':[]}))
+        return module.subprocess.CompletedProcess(command, 0, '', '')
+    monkeypatch.setattr(module, '_run', run)
+    with pytest.raises(module.CompatibilityError, match='not deterministic'):
+        module._run_correctness_case(console=Path('sdr-grader'), python=Path('python'),
+            environment={}, case_root=tmp_path/'case', fixture_root=tmp_path,
+            case={'name':'unstable','files':{'input.json':{}}})
+
+
+@pytest.mark.parametrize('side', ['baseline', 'candidate'])
+@pytest.mark.parametrize('path,value', [
+    (('report', 'schema_version'), True),
+    (('report', 'schema_version'), 1.0),
+    (('exit',), False),
+    (('html_present',), 1),
+    (('json_present',), 1),
+])
+def test_real_correctness_oracle_rejects_json_type_substitution(side, path, value):
+    module = _load_module()
+    oracle = json.loads((REPO_ROOT / 'tests/fixtures/correctness_1_3/expectations.json').read_text())
+    contract = oracle['cases']['cja-clean-strict']
+    outcomes = json.loads(json.dumps(contract))
+    target = outcomes[side]
+    for key in path[:-1]:
+        target = target[key]
+    original = target[path[-1]]
+    assert original == value and type(original) is not type(value)
+    target[path[-1]] = value
+    with pytest.raises(module.CompatibilityError, match='baseline' if side == 'baseline' else 'candidate'):
+        module._verify_correctness_case('cja-clean-strict', outcomes['baseline'],
+                                        outcomes['candidate'], contract)
+
+
+@pytest.mark.parametrize('before,after', [(1, True), (0, False), (True, 1), (False, 0), (1, 1.0)])
+def test_exact_deltas_retain_json_type_changes(before, after):
+    module = _load_module()
+    delta = module._exact_deltas({'nested': [before]}, {'nested': [after]})
+    assert len(delta) == 1
+    assert delta[0]['path'] == '/nested/0'
+    assert type(delta[0]['before']) is type(before)
+    assert type(delta[0]['after']) is type(after)
+
+
+def test_real_correctness_oracle_rejects_type_drift_inside_recorded_deltas():
+    module = _load_module()
+    oracle = json.loads((REPO_ROOT / 'tests/fixtures/correctness_1_3/expectations.json').read_text())
+    contract = oracle['cases']['boolean-cja-invalid-strict']
+    assert contract['deltas'][0]['before']['exit'] == 0
+    contract['deltas'][0]['before']['exit'] = False
+    with pytest.raises(module.CompatibilityError, match='recorded exact deltas'):
+        module._verify_correctness_case('boolean-cja-invalid-strict', contract['baseline'],
+                                        contract['candidate'], contract)

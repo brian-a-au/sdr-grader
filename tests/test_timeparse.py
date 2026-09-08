@@ -11,6 +11,14 @@ import pytest
 from sdr_grader.core.timeparse import parse_timestamp, to_utc
 
 
+@pytest.mark.parametrize("value", [
+    "0001-01-01T00:00:00+01:00", "9999-12-31T23:59:59-01:00",
+    "9999-12-31T23:59:59 PST",
+])
+def test_timestamp_outside_representable_utc_range_is_unavailable(value):
+    assert parse_timestamp(value) is None
+
+
 def test_parses_utc_offset():
     assert parse_timestamp("2026-05-20T14:00:00+00:00") == datetime(
         2026, 5, 20, 14, 0, 0, tzinfo=UTC

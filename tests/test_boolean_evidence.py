@@ -237,3 +237,13 @@ def test_persistence_unrecognized_expiration_shape_remains_noop():
         "allocationModel": {"expiration": []},
     }
     assert check_persistence_lookback_cap(impl(dimensions=[c]), ctx("TEST")) == []
+
+
+@pytest.mark.parametrize("include_model", [True, False])
+def test_enabled_setting_with_unavailable_model_has_no_fabricated_override(include_model):
+    c = component(1)
+    setting = {"enabled": True}
+    if include_model:
+        setting["attributionModel"] = None
+    c.platform_specific["attributionSetting"] = setting
+    assert check_attribution_setting_undocumented(impl(metrics=[c]), ctx("TEST")) == []

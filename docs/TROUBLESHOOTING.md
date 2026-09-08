@@ -1,9 +1,32 @@
 # Troubleshooting installed `sdr-grader`
 
 This guide covers the public, installed-user failure modes for `sdr-grader`
-1.2.9. Run `sdr-grader --version` first so the diagnostic is tied to a known
+1.3.0. Run `sdr-grader --version` first so the diagnostic is tied to a known
 release. File, directory, and stdin grading are local; only `--dataview` and
 `--rsid` invoke child generators that call Adobe APIs.
+
+## Correctness upgrade input errors
+
+An `expected boolean` error identifies the consumed structural field. Supply
+`true` or `false` (or trimmed case-insensitive strings), not 0/1, an empty
+string, a list, or an object. Null means unavailable. Resolve disagreeing
+aliases within that source. Snapshot evidence returns exit 1; invalid consumed
+custom-rule overrides return exit 3. Valid higher-priority overrides still win
+over lower-priority metadata.
+
+A `malformed filename timestamp` error requires fixing the complete timestamp,
+including the offset/fraction suffix. Renaming a malformed token to an undated
+name changes directory selection to mtime and excludes it from trends; prefer
+preserving the intended valid instant.
+
+A `same normalized segment ID` conflict requires reconciling the two source
+records. Reordering rows cannot select a preferred definition. Equal normalized
+duplicates remain accepted and counted. These errors preserve existing output
+reports and do not publish new successful ones.
+
+Changed gates after upgrading may reflect corrected evidence. Inspect the
+[before/after contract](CORRECTNESS_AUDIT_1.3.0.md), then compare snapshots using
+one pinned package/pack before accepting a new baseline.
 
 ## Missing generator
 

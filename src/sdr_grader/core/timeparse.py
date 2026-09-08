@@ -50,15 +50,15 @@ def parse_timestamp(value: str) -> datetime | None:
             return None
         try:
             local = datetime.fromisoformat(abbreviation_match.group("local"))
-        except ValueError:
+            if local.tzinfo is not None:
+                return None
+            return local.replace(
+                tzinfo=timezone(timedelta(hours=offset_hours))
+            ).astimezone(UTC)
+        except (ValueError, OverflowError):
             return None
-        if local.tzinfo is not None:
-            return None
-        return local.replace(
-            tzinfo=timezone(timedelta(hours=offset_hours))
-        ).astimezone(UTC)
     try:
         parsed = datetime.fromisoformat(candidate)
-    except ValueError:
+        return to_utc(parsed)
+    except (ValueError, OverflowError):
         return None
-    return to_utc(parsed)

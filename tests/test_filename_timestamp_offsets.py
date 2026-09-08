@@ -87,6 +87,12 @@ def test_timestamp_search_does_not_read_parent_directory(tmp_path):
     assert _extract_timestamp(Path("snapshot_2026-04-25.json")) == datetime(2026, 4, 25, tzinfo=UTC)
 
 
+@pytest.mark.parametrize("token", ["0001-01-01T00:00:00+01:00", "9999-12-31T23:59:59-01:00"])
+def test_unrepresentable_filename_instant_is_contextual_input_error(token):
+    with pytest.raises(InvalidSnapshotError, match="filename timestamp"):
+        _extract_timestamp(Path(f"snapshot_{token}.json"))
+
+
 def test_offset_chronology_corrects_trend_and_latest_gate(tmp_path):
     for token, documented in [
         ("2026-04-25T09:00:00+09:00", False),

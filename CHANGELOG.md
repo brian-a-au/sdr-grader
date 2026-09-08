@@ -3,6 +3,56 @@
 All notable changes follow the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
+## 1.3.0 — 2026-09-07
+
+One correctness release for boolean evidence, filename chronology, attribution
+documentation, segment identities, and custom governance dates. Rubric pack
+`2.0`, JSON schema `1`, thresholds, severities, category weights, grade bands,
+and scoring arithmetic remain unchanged. Package version identifies corrected
+behavior; rubric version alone does not imply identical findings across releases.
+
+- Interpret governance flags and CJA setting `enabled` fields as booleans or
+  trimmed, case-insensitive `true`/`false` strings. Null falls through; false
+  stops fallback. Validate only the selected precedence source and reject
+  conflicting aliases. Textual false may restore GOV-001/GOV-003 findings
+  and lower grades, or remove spurious ATTR-004/SCH-007 findings for disabled
+  settings. Unsupported flags produce snapshot exit 1 or consumed custom-rule
+  override exit 3; malformed selected nested model objects produce exit 1.
+- Preserve filename UTC offsets and fractional seconds in latest selection,
+  `--at`, and trends. Malformed timestamp tokens now produce exit 1 instead of
+  partial parsing or mtime fallback. Undated directory fallback and trend
+  skipping remain. Correct chronology can change the selected grade, trend
+  delta, and latest-point threshold exit.
+- Recognize explicit `time decay` and `time-decay` descriptions in ATTR-004,
+  without requiring the word `attribution`. Unrelated descriptions still fire.
+  Removing the false positive can raise a grade and change a failing gate to
+  a pass.
+- Reject conflicting normalized segment IDs in both adapters and direct
+  grading before scoring (exit 1, no new report). Equal normalized duplicates
+  retain their counts; canonical reference comparison does not mutate records.
+  Unique IDs, valid chains/cycles, and cross-kind ID reuse remain supported.
+- Use the shared UTC parser in opt-in custom GOV-002/GOV-006. Offset/fractional
+  ISO equivalents and the fixed shared timezone abbreviation allowlist now
+  provide date evidence. Missing/invalid dates still do nothing; explicit
+  reference dates and strict day/rate comparisons remain. Newly recognized
+  dates can restore findings and change threshold exits from 0 to 2.
+- Preserve prior reference-evidence, optional AA definition, stable score
+  summation, suppression validation, and component-count corrections. Keep
+  the immutable v1.2.2 comparison and add a separate pinned v1.2.9 comparison
+  with exact expected corrections and reportless errors.
+
+Upgrade: replace malformed flags with explicit booleans, resolve conflicting
+segment records at their source, and fix malformed filename timestamps. Rerun
+stored snapshots with one pinned package/pack combination before rebaselining
+CI gates. Successful grading still exits 0, threshold failure exits 2, invalid
+snapshot input exits 1, and invalid rubric input exits 3. Input errors preserve
+existing reports. See `docs/CORRECTNESS_AUDIT_1.3.0.md` for evidence and limits.
+
+Release verification is a separate prerequisite: immutable artifact identity
+and every required public-install matrix entry must explicitly succeed; skipped
+verification cannot count as release completion. No intermediate grading
+release is published for these units.
+
 ## 1.2.9 — 2026-09-07
 
 Patch scope: preserve CJA reference evidence across supported exporter
