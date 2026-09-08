@@ -73,3 +73,7 @@ coverage.xml
 # Real customer data; never committed. See the calibration plan in
 # `docs/superpowers/plans/` for the loader contract.
 /tests/fixtures/private/
+
+# Local audit evidence and isolated workspaces.
+/docs/audits/
+/.worktrees/
