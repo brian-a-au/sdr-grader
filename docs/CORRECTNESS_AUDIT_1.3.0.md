@@ -1,7 +1,7 @@
 # Grading evidence correctness — package 1.3.0
 
 This disposition addresses findings 3, 4, 7, 8, and 9 from the
-[2026-09-07 audit](audits/2026-09-07-correctness-audit.md). The historical audit,
+2026-09-07 audit (retained locally). The historical audit,
 reproduction scripts, and recorded outputs remain unchanged. The reviewed
 baseline is v1.2.9, commit `9687fcc66622d454cc121cd49daa319c0c01a939`.
 
@@ -21,7 +21,7 @@ compatibility matrix covers strict and pragmatic packs separately.
 |---|---|---|
 | 3: boolean governance evidence | Textual `false` could hide GOV-001/GOV-003: 100/A instead of 78/C+, A gate exit 0 instead of 2. Truthy objects could also pass. | Boolean/textual false yield equal findings, scores, and gates. Unsupported flags fail as input errors. |
 | 3: CJA enabled settings | Textual `false` could activate ATTR-004 or SCH-007; the persistence example scored 98 instead of 100. | Disabled settings remain disabled. Malformed consumed enabled flags and selected nested models fail contextually. |
-| 4: filename instants | `09:00:00+09:00` was treated as later than `01:00:00Z`: scores `[100, 89]`, delta -11, latest A gate exit 2. | Complete UTC instants produce `[89, 100]`, delta +11, latest100/A, exit 0. Fractions and cutoff boundaries are retained. |
+| 4: filename instants | `09:00:00+09:00` was treated as later than `01:00:00Z`: scores `[100, 89]`, delta -11, latest A gate exit 2. | Complete UTC instants produce `[89, 100]`, delta +11, latest 100/A, exit 0. Fractions and cutoff boundaries are retained. |
 | 7: time-decay description | Explicit time-decay prose without `attribution` fired ATTR-004: 90/A−, A gate exit 2. | `time decay`/`time-decay`, including case variants, acknowledge the override: 100/A, exit 0. Unrelated text still fires. |
 | 8: conflicting segment IDs | Row order could hide a cycle: score 100 or 97. | Both orders fail before scoring with a contextual invalid-input error; no score or new report. |
 | 9: custom governance timestamps | Offset/fractional dates could suppress GOV-002/GOV-006 while equivalent `Z` dates fired. Isolated custom packs scored 100/A rather than 0/F. | Equivalent supported instants produce equal decisions, scores, and exits (in that example, 0/F and A gate exit 2). |
