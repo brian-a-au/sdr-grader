@@ -161,6 +161,7 @@ def test_fixture_validators_check_actual_bytes_and_record_endpoints(tmp_path, mo
 
 
 @pytest.mark.parametrize('scenario,expected_attempts,expected_outcome', [
+    ('success', 1, 'success'),
     ('discovery', 2, 'success'), ('exhausted', 6, 'exhausted'), ('mismatch', 0, 'validation-failed'),
 ])
 def test_index_transport_preserves_installer_budget_and_validation(
@@ -194,6 +195,21 @@ def test_index_transport_preserves_installer_budget_and_validation(
                           f'sdr-grader=={existing.VERSION}, we can conclude that your requirements are unsatisfiable.')
             return subprocess.CompletedProcess(command, 1, '', diagnostic)
         assert _wheel.name in body
+        for url, content_type in (
+            (index + '/sdr-grader/', 'text/html'),
+            (index.removesuffix('/simple') + '/files/' + _wheel.name, 'application/octet-stream'),
+        ):
+            with urllib.request.urlopen(url, timeout=2) as response:
+                get_body = response.read()
+                get_headers = response.headers
+            request = urllib.request.Request(url, method='HEAD')
+            with urllib.request.urlopen(request, timeout=2) as response:
+                assert response.status == 200
+                assert response.headers['Content-Type'] == get_headers['Content-Type'] == content_type
+                assert response.headers['Content-Length'] == get_headers['Content-Length'] == str(len(get_body))
+                assert response.read() == b''
+            if content_type == 'application/octet-stream':
+                assert get_body == _wheel.read_bytes()
         return subprocess.CompletedProcess(command, 0, '', '')
 
     actual_install = module.install_public_release

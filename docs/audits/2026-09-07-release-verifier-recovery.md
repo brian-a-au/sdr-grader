@@ -61,3 +61,21 @@ record does not claim prerequisite clearance. The release executor must append
 run/job URLs, per-attempt outcomes, and immutable hash comparisons after executing
 the harness, including explicit negative outcomes. Public v1.3.0 verification must
 then succeed independently against actual GitHub and PyPI endpoints.
+
+## Initial hosted fixture defect (preserved evidence)
+
+Source `30d809be12ba2b49f06d4a13edf6d86b6d777b12` exposed missing HTTP
+HEAD support in the fixture server. Real uv failed with HTTP 501; this remained
+a fatal installer error and every terminal assertion correctly failed.
+The real discovery case classified exact-version absence on attempt one, then
+failed on HEAD during attempt two. These runs do not establish clearance:
+
+- [Initial](https://github.com/brian-a-au/sdr-grader/actions/runs/34178138388)
+- [One-time failure](https://github.com/brian-a-au/sdr-grader/actions/runs/34178234043)
+- [Discovery](https://github.com/brian-a-au/sdr-grader/actions/runs/34178238011)
+
+The focused fix shares response metadata between GET and HEAD and omits the
+HEAD body. A real localhost HTTP regression failed before the fix and passed
+afterward. Production endpoints and retry classification are unchanged.
+New dispatches must prove the corrected source; rerunning an old frozen run
+cannot load this fix. All original artifacts and failed evidence are retained.

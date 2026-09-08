@@ -105,6 +105,12 @@ def install_fixture(transport, *, python, scenario, output):
 
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self):
+            self._respond(send_body=True)
+
+        def do_HEAD(self):
+            self._respond(send_body=False)
+
+        def _respond(self, *, send_body):
             path = unquote(urlparse(self.path).path)
             state['requests'].append(path)
             if path == '/simple/sdr-grader/':
@@ -136,7 +142,8 @@ def install_fixture(transport, *, python, scenario, output):
             self.send_header('Content-Type', 'text/html' if path.startswith('/simple/') else 'application/octet-stream')
             self.send_header('Content-Length', str(len(body)))
             self.end_headers()
-            self.wfile.write(body)
+            if send_body:
+                self.wfile.write(body)
 
         def log_message(self, *_args):
             pass
