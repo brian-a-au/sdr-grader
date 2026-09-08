@@ -6,6 +6,8 @@ import re
 from collections import defaultdict
 from typing import TYPE_CHECKING
 
+from sdr_grader.core.booleans import parse_boolean
+from sdr_grader.core.exceptions import InvalidSnapshotError
 from sdr_grader.render import Finding, FindingBlock
 from sdr_grader.rules.checks._helpers import (
     make_finding,
@@ -157,13 +159,18 @@ def check_attribution_setting_undocumented(
     if impl.platform != "cja":
         return []
     offenders: list[tuple[str, str, str]] = []
-    for m in impl.metrics:
+    for index, m in enumerate(impl.metrics):
         setting = parse_platform_setting(
             m.platform_specific.get("attributionSetting")
         )
-        if not setting or not setting.get("enabled"):
+        path = f"metrics[{index}].attributionSetting"
+        if not setting or not parse_boolean(setting.get("enabled"), path=f"{path}.enabled"):
             continue
-        am = setting.get("attributionModel") or {}
+        am = setting.get("attributionModel")
+        if am is None:
+            am = {}
+        if not isinstance(am, dict):
+            raise InvalidSnapshotError(f"{path}.attributionModel: expected object or null")
         func = str(am.get("func") or "").strip()
         if not func:
             continue

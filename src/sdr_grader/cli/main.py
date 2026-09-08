@@ -133,6 +133,9 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         report = grade(impl, rubric, suppression=suppression)
+    except InvalidSnapshotError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return RUNTIME_ERROR
     except RubricValidationError as exc:
         print(f"rubric error: {exc}", file=sys.stderr)
         return RUBRIC_VALIDATION_FAILURE
