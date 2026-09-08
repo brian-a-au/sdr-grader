@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from _rule_test_helpers import calc, ctx, impl
 from sdr_grader.core.models import Component
 from sdr_grader.rules.checks.attribution import (
@@ -210,3 +212,23 @@ def test_attr004_skips_enabled_setting_without_model_function():
         ctx("ATTR-004", category="attribution_coverage"),
     )
     assert findings == []
+
+
+@pytest.mark.parametrize("description,documented", [
+    ("Time decay with a 7-day half-life, chosen to favor recent touchpoints.", True),
+    ("TIME-DECAY with a 7-day half-life.", True),
+    ("time Decay weighting", True),
+    ("linear", True), ("participation", True), ("first-touch", True),
+    ("allocation", True), ("model", True), ("instance", True),
+    ("Orders by day", False), ("Time to purchase", False),
+    ("Decay of inventory", False), ("time decaying", False), ("", False),
+])
+@pytest.mark.parametrize("enabled", [True, False])
+def test_attr004_bounded_time_decay_vocabulary(description, documented, enabled):
+    metric = _metric_with_attribution(1, {
+        "enabled": enabled, "attributionModel": {"func": "allocation-timeDecay"},
+    }, description=description)
+    findings = check_attribution_setting_undocumented(
+        impl(metrics=[metric]), ctx("ATTR-004", category="attribution_coverage"),
+    )
+    assert bool(findings) is (enabled and not documented)
