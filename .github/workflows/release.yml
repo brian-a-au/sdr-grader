@@ -4,13 +4,29 @@ on:
   push:
     tags:
       - "v*.*.*"
+  # Dispatch has no publication mode: every dispatch is a nonpublishing harness.
+  workflow_dispatch:
+    inputs:
+      scenario:
+        type: choice
+        default: success
+        options: [success, fail-once, fail-later, skip, cancel, discovery, exhausted, mismatch, source-mismatch]
+      version:
+        description: Exact checked-out package version for nonpublishing verification
+        type: string
+        required: true
 
 permissions:
   contents: read
 
 concurrency:
-  group: release-${{ github.ref }}
+  group: release-${{ github.ref }}-${{ github.event_name }}-${{ inputs.scenario || 'production' }}
   cancel-in-progress: false
+
+env:
+  RELEASE_VERSION: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
+  HARNESS_MODE: ${{ github.event_name == 'workflow_dispatch' }}
+  HARNESS_SCENARIO: ${{ inputs.scenario || 'success' }}
 
 jobs:
   candidate:
@@ -19,11 +35,18 @@ jobs:
     timeout-minutes: 30
     permissions:
       contents: read
+      actions: read
+      attestations: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-          ref: ${{ github.ref }}
+          ref: ${{ github.sha }}
+
+      - name: Enforce caller mode and frozen identity
+        env:
+          CALLER_WORKFLOW: ${{ github.workflow_ref }}
+        run: python3 scripts/release_verifier_fixture.py guard
 
       - name: Install uv
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
@@ -36,17 +59,20 @@ jobs:
         run: uv python install 3.12
 
       - name: Sync dependencies
+        if: ${{ github.event_name != 'workflow_dispatch' }}
         run: uv sync --locked --all-extras --dev
 
       - name: Verify immutable candidate identity
         run: |
           test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
-          python3 scripts/check_version_sync.py --tag "${GITHUB_REF_NAME}"
+          python3 scripts/check_version_sync.py --tag "v${RELEASE_VERSION#v}"
 
       - name: Lint
+        if: ${{ github.event_name != 'workflow_dispatch' }}
         run: uv run ruff check
 
       - name: Test
+        if: ${{ github.event_name != 'workflow_dispatch' }}
         run: uv run pytest --cov=src/sdr_grader --cov-report=term
 
   build:
@@ -59,13 +85,14 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
+      actions: read
       id-token: write
       attestations: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-          ref: ${{ github.ref }}
+          ref: ${{ github.sha }}
 
       - name: Install uv
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
@@ -78,7 +105,7 @@ jobs:
       - name: Verify immutable candidate identity
         run: |
           test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
-          python3 scripts/check_version_sync.py --tag "${GITHUB_REF_NAME}"
+          python3 scripts/check_version_sync.py --tag "v${RELEASE_VERSION#v}"
 
       - name: Build wheel from sdist
         run: uv build --no-sources --clear --no-create-gitignore
@@ -98,7 +125,7 @@ jobs:
           mkdir -p release-evidence
           .release-validation/bin/python scripts/verify_release_artifacts.py \
             --dist-dir dist \
-            --expected-version "${GITHUB_REF_NAME#v}" \
+            --expected-version "${RELEASE_VERSION#v}" \
             --source-sha "${GITHUB_SHA}" \
             --output release-evidence/release-artifacts.json
 
@@ -106,6 +133,39 @@ jobs:
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: "dist/*"
+
+      # Full reruns can delete run artifacts. This separate immutable store is
+      # harness-only; production recovery uses the frozen release assets.
+      - name: Prepare immutable harness backup
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: |
+          set -euo pipefail
+          mkdir .harness-candidate-backup
+          cp dist/*.whl dist/*.tar.gz release-evidence/release-artifacts.json .harness-candidate-backup/
+
+      - name: Save immutable harness backup
+        id: save-harness-backup
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ github.workspace }}/.harness-candidate-backup
+          key: harness-candidate-${{ github.repository_id }}-${{ github.run_id }}-${{ github.sha }}
+
+      - name: Check immutable harness backup exists
+        id: check-harness-backup
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ github.workspace }}/.harness-candidate-backup
+          key: harness-candidate-${{ github.repository_id }}-${{ github.run_id }}-${{ github.sha }}
+          lookup-only: true
+          fail-on-cache-miss: true
+
+      - name: Require saved harness backup
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        env:
+          CACHE_HIT: ${{ steps.check-harness-backup.outputs.cache-hit }}
+        run: test "${CACHE_HIT}" = true
 
       - name: Upload immutable distributions
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -124,7 +184,7 @@ jobs:
           retention-days: 30
 
   recover:
-    name: Recover immutable draft artifacts
+    name: Recover immutable artifacts
     needs: candidate
     if: github.run_attempt > 1
     runs-on: ubuntu-latest
@@ -133,63 +193,50 @@ jobs:
     # permission to recovery; never install or execute the recovered package here.
     permissions:
       contents: write
+      actions: read
       attestations: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-          ref: ${{ github.ref }}
+          ref: ${{ github.sha }}
 
       - name: Recover and verify frozen release candidate
         uses: ./.github/actions/fetch-release-candidate
         with:
-          source: release
+          source: ${{ github.event_name == 'workflow_dispatch' && 'artifacts' || 'auto' }}
           token: ${{ github.token }}
-
-      - name: Verify exact retained draft inventory
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release view "${GITHUB_REF_NAME}" --repo "${GITHUB_REPOSITORY}" \
-            --json assets,isDraft,tagName > release-metadata.json
-          python3 scripts/verify_github_release_assets.py \
-            --release-metadata release-metadata.json \
-            --evidence release-evidence/release-artifacts.json \
-            --dist-dir dist --expected-tag "${GITHUB_REF_NAME}"
+          version: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
+          harness: ${{ github.event_name == 'workflow_dispatch' }}
 
       - name: Retain recovered distributions for read-only consumers
+        if: ${{ github.event_name != 'workflow_dispatch' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: candidate-dist-${{ github.sha }}
+          name: candidate-dist-${{ github.sha }}-recovery-${{ github.run_attempt }}
           path: dist/
           if-no-files-found: error
           retention-days: 7
-          overwrite: true
 
       - name: Retain recovered evidence for read-only consumers
+        if: ${{ github.event_name != 'workflow_dispatch' }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: candidate-evidence-${{ github.sha }}
+          name: candidate-evidence-${{ github.sha }}-recovery-${{ github.run_attempt }}
           path: release-evidence/release-artifacts.json
           if-no-files-found: error
           retention-days: 30
-          overwrite: true
 
   install-smoke:
     name: Artifact smoke / Python ${{ matrix.python-version }}
     needs: [candidate, build, recover]
-    if: >-
-      ${{
-        always() &&
-        needs.candidate.result == 'success' &&
-        ((github.run_attempt == 1 && needs.build.result == 'success') ||
-         (github.run_attempt > 1 && needs.build.result == 'skipped' &&
-          needs.recover.result == 'success'))
-      }}
+    if: ${{ always() && !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
       contents: read
+      actions: read
+      attestations: read
     strategy:
       fail-fast: false
       matrix:
@@ -198,7 +245,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-          ref: ${{ github.ref }}
+          ref: ${{ github.sha }}
 
       - name: Install uv
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
@@ -209,6 +256,8 @@ jobs:
         uses: ./.github/actions/fetch-release-candidate
         with:
           token: ${{ github.token }}
+          version: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
+          harness: ${{ github.event_name == 'workflow_dispatch' }}
 
       - name: Install wheel and sdist outside checkout and compare behavior
         shell: bash
@@ -253,20 +302,20 @@ jobs:
     if: >-
       ${{
         always() &&
-        needs.candidate.result == 'success' &&
-        ((github.run_attempt == 1 && needs.build.result == 'success') ||
-         (github.run_attempt > 1 && needs.build.result == 'skipped' &&
-          needs.recover.result == 'success'))
+        !cancelled() &&
+        !(github.event_name == 'workflow_dispatch' && inputs.scenario == 'skip')
       }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: read
+      actions: read
+      attestations: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-          ref: ${{ github.ref }}
+          ref: ${{ github.sha }}
 
       - name: Install uv
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
@@ -280,6 +329,8 @@ jobs:
         uses: ./.github/actions/fetch-release-candidate
         with:
           token: ${{ github.token }}
+          version: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
+          harness: ${{ github.event_name == 'workflow_dispatch' }}
 
       - name: Install frozen wheel and materialize its plugin
         shell: bash
@@ -348,21 +399,23 @@ jobs:
             "${RUNNER_TEMP}/plugin-grade.json" \
             "${RUNNER_TEMP}/plugin-grade-suppressed.json"
 
-  # Build and recovery are mutually exclusive. Override skipped ancestors
-  # while requiring every direct prerequisite to succeed before continuing.
+  # Read-only verifiers remain eligible after scheduler-created ancestor skips
+  # on partial reruns. Publication jobs enforce every success prerequisite.
   verify-prepublication:
     name: Verify tagged README before publication
     needs: [install-smoke, plugin-smoke]
-    if: ${{ always() && !cancelled() && needs.install-smoke.result == 'success' && needs.plugin-smoke.result == 'success' }}
+    if: ${{ always() && !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: read
+      actions: read
+      attestations: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-          ref: ${{ github.ref }}
+          ref: ${{ github.sha }}
 
       - name: Install uv
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
@@ -376,34 +429,50 @@ jobs:
         uses: ./.github/actions/fetch-release-candidate
         with:
           token: ${{ github.token }}
+          version: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
+          harness: ${{ github.event_name == 'workflow_dispatch' }}
 
       - name: Verify candidate description and bounded live tag links
+        if: ${{ github.event_name != 'workflow_dispatch' }}
         run: |
           python3 scripts/verify_published_readme.py prepublication \
             --dist-dir dist \
             --evidence release-evidence/release-artifacts.json \
-            --version "${GITHUB_REF_NAME#v}"
+            --version "${RELEASE_VERSION#v}"
+
+      - name: Verify fixture prepublication with production validators
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: python3 scripts/release_verifier_fixture.py prepublication --dist-dir dist
 
   draft-github:
     name: Create immutable GitHub draft
-    needs: verify-prepublication
-    if: ${{ always() && !cancelled() && needs.verify-prepublication.result == 'success' }}
+    needs: [candidate, build, recover, install-smoke, plugin-smoke, verify-prepublication]
+    if: >-
+      ${{ always() && !cancelled() && needs.candidate.result == 'success' &&
+          (needs.build.result == 'success' || needs.recover.result == 'success') &&
+          needs.install-smoke.result == 'success' && needs.plugin-smoke.result == 'success' &&
+          needs.verify-prepublication.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: write
+      actions: read
+      attestations: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-          ref: ${{ github.ref }}
+          ref: ${{ github.sha }}
 
       - name: Fetch frozen release candidate
         uses: ./.github/actions/fetch-release-candidate
         with:
           token: ${{ github.token }}
+          version: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
+          harness: ${{ github.event_name == 'workflow_dispatch' }}
 
       - name: Inspect existing GitHub release
+        if: ${{ github.event_name != 'workflow_dispatch' }}
         id: release-state
         env:
           GH_TOKEN: ${{ github.token }}
@@ -429,7 +498,7 @@ jobs:
           fi
 
       - name: Verify existing GitHub release assets
-        if: steps.release-state.outputs.exists == 'true'
+        if: ${{ github.event_name != 'workflow_dispatch' && steps.release-state.outputs.exists == 'true' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -437,10 +506,10 @@ jobs:
             --release-metadata release-metadata.json \
             --evidence release-evidence/release-artifacts.json \
             --dist-dir dist \
-            --expected-tag "${GITHUB_REF_NAME}"
+            --expected-tag "${GITHUB_REF_NAME}" --release-state either
 
       - name: Create draft from tested bytes
-        if: steps.release-state.outputs.exists != 'true'
+        if: ${{ github.event_name != 'workflow_dispatch' && steps.release-state.outputs.exists != 'true' }}
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3
         with:
           draft: true
@@ -458,36 +527,40 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment:
-      name: pypi
+      name: ${{ github.event_name == 'workflow_dispatch' && 'release-verifier-harness' || 'pypi' }}
       url: https://pypi.org/p/sdr-grader
     permissions:
       contents: read
+      actions: read
       id-token: write
       attestations: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-          ref: ${{ github.ref }}
+          ref: ${{ github.sha }}
 
       - name: Fetch frozen release candidate
         uses: ./.github/actions/fetch-release-candidate
         with:
           token: ${{ github.token }}
+          version: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
+          harness: ${{ github.event_name == 'workflow_dispatch' }}
 
       - name: Verify recoverable PyPI state
+        if: ${{ github.event_name != 'workflow_dispatch' }}
         id: pypi-state
         run: |
           STATE="$(
             python3 scripts/check_pypi_release_state.py \
               --dist-dir dist \
               --project sdr-grader \
-              --version "${GITHUB_REF_NAME#v}"
+              --version "${RELEASE_VERSION#v}"
           )"
           printf 'state=%s\n' "${STATE}" >> "${GITHUB_OUTPUT}"
 
       - name: Publish exact candidate to PyPI
-        if: steps.pypi-state.outputs.state != 'matching'
+        if: ${{ github.event_name != 'workflow_dispatch' && steps.pypi-state.outputs.state != 'matching' }}
         uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release/v1
         with:
           packages-dir: dist/
@@ -495,6 +568,7 @@ jobs:
           skip-existing: true
 
       - name: Attest published distributions
+        if: ${{ github.event_name != 'workflow_dispatch' }}
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: "dist/*"
@@ -502,16 +576,18 @@ jobs:
   verify-pypi-publication:
     name: Verify PyPI publication before announcement
     needs: publish-pypi
-    if: ${{ always() && !cancelled() && needs.publish-pypi.result == 'success' }}
+    if: ${{ always() && !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: read
+      actions: read
+      attestations: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-          ref: ${{ github.ref }}
+          ref: ${{ github.sha }}
 
       - name: Install uv
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
@@ -525,33 +601,43 @@ jobs:
         uses: ./.github/actions/fetch-release-candidate
         with:
           token: ${{ github.token }}
+          version: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
+          harness: ${{ github.event_name == 'workflow_dispatch' }}
           dist_dir: candidate-dist
 
       - name: Verify PyPI description, bytes, and bounded links
+        if: ${{ github.event_name != 'workflow_dispatch' }}
         run: |
           python3 scripts/verify_published_readme.py postpublication \
             --dist-dir candidate-dist \
             --evidence release-evidence/release-artifacts.json \
-            --version "${GITHUB_REF_NAME#v}"
+            --version "${RELEASE_VERSION#v}"
+
+      - name: Verify fixture postpublication with production validators
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: python3 scripts/release_verifier_fixture.py postpublication --dist-dir candidate-dist
 
   publish-github:
     name: Publish GitHub release
-    needs: verify-pypi-publication
-    if: ${{ always() && !cancelled() && needs.verify-pypi-publication.result == 'success' }}
+    needs: [publish-pypi, verify-pypi-publication]
+    if: ${{ always() && !cancelled() && needs.publish-pypi.result == 'success' && needs.verify-pypi-publication.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:
-      name: github-release
+      name: ${{ github.event_name == 'workflow_dispatch' && 'release-verifier-harness' || 'github-release' }}
       url: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}
     permissions:
       contents: write
+      actions: read
+      attestations: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-          ref: ${{ github.ref }}
+          ref: ${{ github.sha }}
 
       - name: Publish the existing draft
+        if: ${{ github.event_name != 'workflow_dispatch' }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -561,11 +647,13 @@ jobs:
   verify-public:
     name: Public endpoints / Python ${{ matrix.python-version }}
     needs: publish-github
-    if: ${{ always() && !cancelled() && needs.publish-github.result == 'success' }}
+    if: ${{ always() && !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
       contents: read
+      actions: read
+      attestations: read
     strategy:
       fail-fast: false
       matrix:
@@ -574,7 +662,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-          ref: ${{ github.ref }}
+          ref: ${{ github.sha }}
 
       - name: Install uv
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
@@ -585,50 +673,32 @@ jobs:
         uses: ./.github/actions/fetch-release-candidate
         with:
           token: ${{ github.token }}
+          version: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
+          harness: ${{ github.event_name == 'workflow_dispatch' }}
           dist_dir: candidate-dist
+          source: ${{ github.event_name == 'workflow_dispatch' && 'artifacts' || 'public' }}
 
-      - name: Verify GitHub release bytes
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Verify matching public metadata and bytes before installation
+        if: ${{ github.event_name != 'workflow_dispatch' }}
         run: |
-          mkdir -p github-dist
-          gh release download "${GITHUB_REF_NAME}" \
-            --pattern "*.whl" --pattern "*.tar.gz" --dir github-dist
-          python3 - <<'PY'
-          import hashlib
-          import json
-          from pathlib import Path
+          python3 scripts/verify_published_readme.py postpublication \
+            --dist-dir candidate-dist \
+            --evidence release-evidence/release-artifacts.json \
+            --version "${RELEASE_VERSION#v}"
 
-          evidence = json.loads(
-              Path("release-evidence/release-artifacts.json").read_text()
-          )
-          expected = {
-              item["filename"]: item for item in evidence["artifacts"]
-          }
+      - name: Verify fixture postpublication with production validators
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: python3 scripts/release_verifier_fixture.py postpublication --dist-dir candidate-dist
 
-          def digest(path):
-              return hashlib.sha256(path.read_bytes()).hexdigest()
-
-          for root in (Path("candidate-dist"), Path("github-dist")):
-              for filename, record in expected.items():
-                  path = root / filename
-                  assert path.stat().st_size == record["size"]
-                  assert digest(path) == record["sha256"]
-          PY
-
-      - name: Verify build provenance attestation
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          for ARTIFACT in candidate-dist/*; do
-            gh attestation verify "${ARTIFACT}" --repo "${GITHUB_REPOSITORY}"
-          done
+      - name: Controlled public verifier fault
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: python3 scripts/release_verifier_fixture.py fault --python-version "${{ matrix.python-version }}"
 
       - name: Compare fresh public install with candidate
         shell: bash
         run: |
           set -euo pipefail
-          VERSION="${GITHUB_REF_NAME#v}"
+          VERSION="${RELEASE_VERSION#v}"
           PUBLIC_ENV="${RUNNER_TEMP}/public-venv"
           CANDIDATE_ENV="${RUNNER_TEMP}/candidate-venv"
           PUBLIC_OUT="${RUNNER_TEMP}/public-output"
@@ -636,7 +706,16 @@ jobs:
           mkdir -p "${PUBLIC_OUT}" "${CANDIDATE_OUT}"
           uv venv --python "${{ matrix.python-version }}" "${PUBLIC_ENV}"
           uv venv --python "${{ matrix.python-version }}" "${CANDIDATE_ENV}"
-          uv pip install --python "${PUBLIC_ENV}/bin/python" "sdr-grader==${VERSION}"
+          if [ "${HARNESS_MODE}" = true ]; then
+            python3 scripts/release_verifier_fixture.py install \
+              --python "${PUBLIC_ENV}/bin/python" --dist-dir candidate-dist \
+              --python-version "${{ matrix.python-version }}"
+          else
+            python3 scripts/install_public_release.py \
+              --python "${PUBLIC_ENV}/bin/python" --version "${VERSION}" \
+              --dist-dir candidate-dist --evidence release-evidence/release-artifacts.json \
+              --output "${RUNNER_TEMP}/public-install-evidence.json"
+          fi
           uv pip install --python "${CANDIDATE_ENV}/bin/python" candidate-dist/*.whl
           for TARGET in public candidate; do
             if [ "${TARGET}" = "public" ]; then
@@ -662,3 +741,54 @@ jobs:
           done
           "${PUBLIC_ENV}/bin/python" -c \
             'from importlib.resources import files; root=files("sdr_grader"); required=("plugin/.claude-plugin/plugin.json","plugin/.claude-plugin/marketplace.json","plugin/skills/sdr-grader/SKILL.md","rules/packs/strict/_meta.yaml","render/templates/report.html.j2","render/static/report.css","data/distribution.json"); missing=[p for p in required if not root.joinpath(p).is_file()]; assert not missing, missing'
+
+      - name: Retain public installation diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: public-install-${{ matrix.python-version }}-${{ github.sha }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/public-install-evidence.json
+            ${{ runner.temp }}/fixture-endpoint-evidence.json
+          if-no-files-found: warn
+          retention-days: 90
+
+  verify-completion:
+    name: Require complete release verification
+    needs: [candidate, build, recover, install-smoke, plugin-smoke, verify-prepublication, draft-github, publish-pypi, verify-pypi-publication, publish-github, verify-public]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+      attestations: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - name: Recover published identity read-only
+        uses: ./.github/actions/fetch-release-candidate
+        with:
+          source: ${{ github.event_name == 'workflow_dispatch' && 'artifacts' || 'public' }}
+          token: ${{ github.token }}
+          version: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
+          harness: ${{ github.event_name == 'workflow_dispatch' }}
+      - name: Assert actual hosted matrix completion
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 scripts/verify_release_completion.py \
+            --repository "${GITHUB_REPOSITORY}" --run-id "${GITHUB_RUN_ID}" \
+            --attempt "${GITHUB_RUN_ATTEMPT}" --source-sha "${GITHUB_SHA}" \
+            --source-ref "${GITHUB_REF}" --evidence release-evidence/release-artifacts.json \
+            --output release-completion.json
+      - name: Retain completion evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: release-completion-${{ github.sha }}-${{ github.run_attempt }}
+          path: release-completion.json
+          if-no-files-found: error
+          retention-days: 90

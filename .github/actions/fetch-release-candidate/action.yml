@@ -1,9 +1,15 @@
 name: Fetch frozen release candidate
-description: Read verified run artifacts; only the privileged recovery job reads a retained release.
+description: Read immutable run artifacts or strictly verified frozen release assets.
 
 inputs:
+  version:
+    description: Frozen package version supplied by the release workflow.
+    required: true
+  harness:
+    description: Fixture recovery allowed only for the non-tag dispatch caller.
+    default: 'false'
   source:
-    description: artifacts for consumers; release only for the isolated recovery job.
+    description: artifacts for consumers, auto for isolated recovery, public for published read-only recovery.
     required: false
     default: artifacts
   token:
@@ -21,22 +27,101 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Download current-attempt distributions
-      if: inputs.source == 'artifacts'
+    - name: Enforce immutable recovery mode
+      shell: bash
+      env:
+        HARNESS_MODE: ${{ inputs.harness }}
+        CALLER_WORKFLOW: ${{ github.workflow_ref }}
+      run: python3 scripts/release_verifier_fixture.py guard
+
+    - name: Select immutable retained artifact pair
+      id: retained
+      if: inputs.source == 'artifacts' || inputs.source == 'auto'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        REQUESTED_SOURCE: ${{ inputs.source }}
+        RETENTION_HARNESS: ${{ inputs.harness }}
+      run: |
+        set -euo pipefail
+        gh api --paginate --slurp "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts?per_page=100" > retained-artifacts.json
+        python3 - <<'PYTHON'
+        import json, os, re
+        pages = json.load(open("retained-artifacts.json"))
+        records = [a for page in pages for a in page["artifacts"] if not a["expired"]]
+        sha = os.environ["GITHUB_SHA"]
+        # Prefer the immutable original pair, then the newest complete recovery
+        # pair. Failed-only reruns can retain recovery from an earlier attempt.
+        recovery_attempts = set()
+        for artifact in records:
+            match = re.fullmatch(
+                rf"candidate-(?:dist|evidence)-{re.escape(sha)}-recovery-([1-9]\d*)",
+                artifact["name"],
+            )
+            if match and int(match[1]) <= int(os.environ["GITHUB_RUN_ATTEMPT"]):
+                recovery_attempts.add(int(match[1]))
+        suffixes = [sha, *(f"{sha}-recovery-{number}"
+                          for number in sorted(recovery_attempts, reverse=True))]
+        pair = None
+        for suffix in suffixes:
+            names = [f"candidate-dist-{suffix}", f"candidate-evidence-{suffix}"]
+            matches = [[a for a in records if a["name"] == name] for name in names]
+            if any(len(items) > 1 for items in matches):
+                raise SystemExit("ambiguous retained artifact identity")
+            if all(len(items) == 1 for items in matches):
+                pair = [items[0]["id"] for items in matches]
+                break
+        harness_backup = (os.environ["RETENTION_HARNESS"] == "true"
+                          and os.environ["GITHUB_EVENT_NAME"] == "workflow_dispatch")
+        if pair is None and os.environ["REQUESTED_SOURCE"] != "auto" and not harness_backup:
+            raise SystemExit("immutable artifacts unavailable; reruns must never rebuild")
+        with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+            output.write(f"available={'true' if pair else 'false'}\n")
+            if pair:
+                output.write(f"dist_id={pair[0]}\nevidence_id={pair[1]}\n")
+        PYTHON
+
+    - name: Download retained distributions
+      if: steps.retained.outputs.available == 'true'
       uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
       with:
-        name: candidate-dist-${{ github.sha }}
+        artifact-ids: ${{ steps.retained.outputs.dist_id }}
+        merge-multiple: true
         path: ${{ inputs.dist_dir }}/
 
-    - name: Download current-attempt evidence
-      if: inputs.source == 'artifacts'
+    - name: Download retained evidence
+      if: steps.retained.outputs.available == 'true'
       uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
       with:
-        name: candidate-evidence-${{ github.sha }}
+        artifact-ids: ${{ steps.retained.outputs.evidence_id }}
+        merge-multiple: true
         path: ${{ inputs.evidence_dir }}/
 
+    - name: Restore immutable harness backup
+      id: restore-harness-backup
+      if: inputs.harness == 'true' && github.event_name == 'workflow_dispatch' && steps.retained.outputs.available == 'false'
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ github.workspace }}/.harness-candidate-backup
+        key: harness-candidate-${{ github.repository_id }}-${{ github.run_id }}-${{ github.sha }}
+        fail-on-cache-miss: true
+
+    - name: Materialize exact harness backup
+      if: inputs.harness == 'true' && github.event_name == 'workflow_dispatch' && steps.retained.outputs.available == 'false'
+      shell: bash
+      env:
+        CACHE_HIT: ${{ steps.restore-harness-backup.outputs.cache-hit }}
+        DIST_DIR: ${{ inputs.dist_dir }}
+        EVIDENCE_DIR: ${{ inputs.evidence_dir }}
+      run: |
+        set -euo pipefail
+        test "${CACHE_HIT}" = true
+        mkdir -p "${DIST_DIR}" "${EVIDENCE_DIR}"
+        cp .harness-candidate-backup/*.whl .harness-candidate-backup/*.tar.gz "${DIST_DIR}/"
+        cp .harness-candidate-backup/release-artifacts.json "${EVIDENCE_DIR}/"
+
     - name: Recover distributions and evidence from the existing release
-      if: inputs.source == 'release'
+      if: inputs.harness != 'true' && (inputs.source == 'release' || inputs.source == 'public' || (inputs.source == 'auto' && steps.retained.outputs.available != 'true'))
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.token }}
@@ -56,7 +141,6 @@ runs:
           --dir "${EVIDENCE_DIR}"
 
     - name: Verify recovered distribution provenance
-      if: inputs.source == 'release'
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.token }}
@@ -77,9 +161,36 @@ runs:
       env:
         DIST_DIR: ${{ inputs.dist_dir }}
         EVIDENCE_DIR: ${{ inputs.evidence_dir }}
+        RELEASE_VERSION: ${{ inputs.version }}
       run: |
         python3 scripts/verify_published_readme.py candidate \
           --dist-dir "${DIST_DIR}" \
           --evidence "${EVIDENCE_DIR}/release-artifacts.json" \
-          --version "${GITHUB_REF_NAME#v}" \
+          --version "${RELEASE_VERSION#v}" \
           --source-sha "${GITHUB_SHA}"
+
+    - name: Verify exact release inventory and publication state
+      if: inputs.harness != 'true' && (inputs.source == 'release' || inputs.source == 'public' || (inputs.source == 'auto' && steps.retained.outputs.available != 'true'))
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        DIST_DIR: ${{ inputs.dist_dir }}
+        EVIDENCE_DIR: ${{ inputs.evidence_dir }}
+        RECOVERY_SOURCE: ${{ inputs.source }}
+      run: |
+        set -euo pipefail
+        gh release view "${GITHUB_REF_NAME}" --repo "${GITHUB_REPOSITORY}" \
+          --json assets,isDraft,tagName > release-metadata.json
+        python3 scripts/verify_github_release_assets.py \
+          --release-metadata release-metadata.json \
+          --evidence "${EVIDENCE_DIR}/release-artifacts.json" \
+          --dist-dir "${DIST_DIR}" --expected-tag "${GITHUB_REF_NAME}" \
+          --release-state "$(if [ "${RECOVERY_SOURCE}" = public ]; then echo published; else echo either; fi)"
+
+    - name: Validate harness inventory against retained bytes
+      if: inputs.harness == 'true'
+      shell: bash
+      env:
+        HARNESS_MODE: ${{ inputs.harness }}
+        RELEASE_VERSION: ${{ inputs.version }}
+      run: python3 scripts/release_verifier_fixture.py inventory --dist-dir "${{ inputs.dist_dir }}" --evidence "${{ inputs.evidence_dir }}/release-artifacts.json"

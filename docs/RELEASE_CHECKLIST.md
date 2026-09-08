@@ -155,18 +155,28 @@ guidance when the defect affects privacy or security.
 | No candidate files on PyPI; GitHub release is still a draft with the exact candidate assets | Rerun the complete release workflow. Recovery verifies the distributions' tag-bound provenance and retained SHA-bound evidence before the normal publication path uploads them. |
 | Some candidate files exist on PyPI, every existing digest matches, and the exact GitHub draft exists | Rerun the complete release workflow. Recovery verifies the draft distributions' provenance and evidence; the digest gate permits only the missing candidate file to upload, then publication continues. |
 | All candidate files exist on PyPI, every digest matches, and the exact GitHub draft exists | Rerun the complete release workflow. Recovery verifies the draft distributions' provenance and evidence; upload is skipped and publication continues against the same bytes. |
-| The failed run has no exact GitHub draft to recover | Stop. GitHub removes run artifacts when rerunning, and rebuilding is forbidden. Choose a new version after review. |
+| The failed run has no exact GitHub release to recover | Reuse the original retained candidate and evidence artifacts only after identity and provenance checks. If neither retained artifacts nor an exact frozen release is available, stop; rebuilding is forbidden. |
 | Any PyPI filename or digest differs from the frozen candidate | Stop. Do not upload, publish the draft, move the tag, or reuse the version. Classify the incident and choose a new version only after review. |
-| GitHub release is public but endpoint verification fails | Do not rebuild. Compare PyPI, GitHub, and evidence digests, then fix forward or yank following the security classification. |
+| GitHub release is public but endpoint verification fails | Rerun the failed public verifier using read-only published-artifact recovery. Compare PyPI, GitHub, and evidence digests; never rebuild or replace assets. Fix forward or yank if the security classification requires it. |
 
-On reruns, only `Recover immutable draft artifacts` receives `contents: write`
-(the workflow token permission needed to see a draft) and `attestations: read`.
-It verifies tag/commit-bound provenance, candidate evidence, and the exact draft
-inventory before retaining the same bytes as run artifacts. Smoke and validation
-jobs consume those artifacts with read-only repository access. Recovery must
-succeed before they run; it never installs the recovered package or rebuilds it.
-Do not grant repository write access to the smoke jobs to work around draft
-visibility. A missing, public, or mismatched retained draft fails closed.
+On reruns, `Recover immutable artifacts` alone receives repository write access
+for draft visibility. It selects the original retained candidate/evidence pair
+first, or verifies frozen release assets when those artifacts are unavailable.
+Recovery copies use attempt-qualified names and never overwrite the originals.
+GitHub removes run artifacts during a full rerun; their prior presence does not
+guarantee availability. Production must recover the exact frozen release assets
+when no retained pair remains, or fail without rebuilding.
+Every consumer validates manifest identity and provenance bound to repository,
+source ref/SHA, and `release.yml` before executing package code. Smoke jobs use
+read-only access. Public verifiers independently recover published assets with
+read-only access, even when a publication dependency was skipped.
+
+The terminal `Require complete release verification` job requires explicit success
+for both artifact Python versions, frozen plugin smoke, prepublication README,
+PyPI publication verification, and both public-install Python versions. It
+checks every attempt of the same run and frozen SHA. A newer failed, skipped,
+cancelled, or incomplete job supersedes an older success. Missing, ambiguous,
+or unavailable API evidence fails closed; workflow color alone is not proof.
 
 After a successful PyPI upload, version-specific metadata may take time to
 propagate. The postpublication verifier allows up to five minutes for that
@@ -174,6 +184,26 @@ endpoint, with at most 16 attempts and backoff capped at 30 seconds. Ordinary
 missing links remain immediate failures; digest or content mismatches are never
 retried as propagation failures. Keep the GitHub release in draft if this bound
 is exhausted and classify the observed PyPI state before recovery.
+
+After matching public bytes and provenance are established, exact-version
+installation discovery gets at most six attempts, five ten-second delays, and
+a 120-second process timeout per attempt. Only the pinned uv diagnostic for the
+requested version being absent permits retry, with refreshed index metadata.
+Other resolver errors, wrong installed versions, and identity mismatches fail
+immediately. Ordered installation diagnostics remain in attempt-qualified
+artifacts. These recovery changes do not alter grading behavior.
+
+A dispatch of `release.yml` is always a nonpublishing harness; only tag pushes
+can publish. Use the checked-out version and a named scenario, for example
+`gh workflow run release.yml --ref main -f version=1.2.9 -f scenario=success`.
+Run all-jobs, failed-only, and individual-job reruns against the original run;
+preserve job IDs, attempts, immutable hashes, and explicit negative outcomes.
+The harness also saves its initial distributions and manifest under an exact
+repository/run/source-SHA cache key and checks that the save succeeded. Full
+reruns restore that same entry without prefix fallback, then validate provenance
+and manifest identity before execution. A missing cache fails closed. This
+backup is harness-only; production uses frozen release assets.
+Harness fixture endpoint evidence does not substitute for public v1.3.0 checks.
 
 Release workflow revisions are frozen into each tag. A fix merged after a tag
 cannot change that tag's historical workflow run or make it load a new local
