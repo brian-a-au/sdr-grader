@@ -8,11 +8,11 @@ can still declare the intent without producing noisy false positives.
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from sdr_grader.core.booleans import boolean_aliases, parse_boolean
 from sdr_grader.core.exceptions import RubricValidationError
+from sdr_grader.core.timeparse import parse_timestamp
 from sdr_grader.render import Finding, FindingBlock
 from sdr_grader.rules.checks._helpers import (
     all_components,
@@ -78,8 +78,8 @@ def check_snapshot_age(
     snapshot_iso = impl.snapshot_taken_at
     if not reference_iso or not snapshot_iso:
         return []
-    snapshot_dt = _parse_iso(snapshot_iso)
-    reference_dt = _parse_iso(str(reference_iso))
+    snapshot_dt = parse_timestamp(snapshot_iso)
+    reference_dt = parse_timestamp(str(reference_iso))
     if snapshot_dt is None or reference_dt is None:
         return []
     age_days = (reference_dt - snapshot_dt).days
@@ -227,7 +227,7 @@ def check_doc_drift(
     )
     if not last_doc_iso:
         return []
-    last_doc = _parse_iso(str(last_doc_iso))
+    last_doc = parse_timestamp(str(last_doc_iso))
     if last_doc is None:
         return []
     components = all_components(impl)
@@ -237,7 +237,7 @@ def check_doc_drift(
     for c in components:
         if not c.modified_at:
             continue
-        modified = _parse_iso(c.modified_at)
+        modified = parse_timestamp(c.modified_at)
         if modified is None:
             continue
         if modified > last_doc:
@@ -300,12 +300,3 @@ def _signal_present(impl: Implementation, ctx: RuleContext, *keys: str) -> bool:
             return selected
     return False
 
-
-def _parse_iso(value: str) -> datetime | None:
-    candidate = value.strip().rstrip("Z")
-    for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d"):
-        try:
-            return datetime.strptime(candidate, fmt).replace(tzinfo=UTC)
-        except ValueError:
-            continue
-    return None
