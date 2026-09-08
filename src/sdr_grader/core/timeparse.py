@@ -5,9 +5,6 @@ ISO-8601 with optional fractional seconds, trailing 'Z', numeric UTC
 offsets, space or 'T' separators, and bare dates. Returns UTC-aware
 datetimes so downstream formatting never depends on the machine's
 timezone; naive input is treated as UTC.
-
-governance.py keeps its own stricter parser until the minor release
-(spec F18) — replacing it changes grades.
 """
 
 from __future__ import annotations

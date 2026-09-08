@@ -86,6 +86,18 @@ produce a rubric error (CLI exit 3) without publishing a new report. Validation
 occurs when the check consumes the parameter, so disabled rules do not validate
 unused overrides.
 
+Opt-in custom `snapshot_age` (GOV-002) and `doc_drift` (GOV-006) checks use
+the shared UTC timestamp parser. ISO numeric offsets and fractional seconds
+now carry the same evidence as equivalent `Z` timestamps; naive/date-only
+inputs still mean UTC. The shared fixed GMT/UTC/PST/PDT abbreviation allowlist
+also applies. Invalid or unavailable dates remain no-ops. Snapshot age still
+uses whole elapsed days and a strict `age_days > max_age_days` comparison;
+document drift still requires a modification strictly after the update and
+a rate strictly above its threshold. References remain explicitly supplied,
+with no wall-clock fallback. These checks remain absent from bundled packs.
+Expanded date recognition can restore findings, lower scores, and change a
+passing threshold exit to 2 in custom packs.
+
 Each non-meta YAML file declares one category and a list of rules.
 
 ```yaml
