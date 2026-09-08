@@ -32,6 +32,40 @@ def cja_snapshot(**sections):
     }
 
 
+@pytest.mark.parametrize("pack", ["strict", "pragmatic"])
+def test_time_decay_documentation_matches_explicit_attribution_in_cli(tmp_path, pack):
+    snapshot = cja_snapshot()
+    snapshot["metadata"].update(history_present=True, sdr_doc_present=True)
+    source, output, html_path = [tmp_path / name for name in ("input.json", "grade.json", "grade.html")]
+    reports = []
+    for description in (
+        "Time decay with a 7-day half-life, chosen to favor recent touchpoints.",
+        "Time decay attribution with a 7-day half-life, chosen to favor recent touchpoints.",
+        "Orders by day",
+    ):
+        snapshot["metrics"] = [{
+            "id": "metrics/revenue", "name": "Revenue", "description": description,
+            "tags": ["business"], "attributionSetting": {
+                "enabled": True, "attributionModel": {"func": "allocation-timeDecay"},
+            },
+        }]
+        source.write_text(json.dumps(snapshot))
+        arguments = [str(source), "--pack", pack, "--output", str(html_path),
+                     "--json", str(output), "--quiet", "--fail-below", "A"]
+        exit_code = main(arguments)
+        payload, html = json.loads(output.read_text()), html_path.read_text()
+        reports.append((exit_code, payload, html))
+        assert main(arguments) == exit_code
+        assert html_path.read_text() == html
+        assert json.loads(output.read_text()) == payload
+    assert reports[0] == reports[1]
+    assert reports[0][0] == 0
+    assert reports[0][1]["overall_pct"] == 100
+    assert not reports[0][1]["findings"]
+    assert "ATTR-004" in {f["id"] for f in reports[2][1]["findings"]}
+    assert reports[2][0] == 2
+
+
 @pytest.mark.parametrize("platform", ["cja", "aa"])
 @pytest.mark.parametrize("definition", [None, {}, "", "not JSON", []])
 def test_unavailable_segment_definitions_are_not_duplicate_evidence(platform, definition):

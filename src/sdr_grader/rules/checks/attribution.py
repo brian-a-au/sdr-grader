@@ -144,7 +144,7 @@ def check_attribution_inconsistency(
 # non-default attribution setting must be mentioned in the description.
 _ATTR_DESC_MENTION_RE = re.compile(
     r"\b(attribution|allocation|last[\s-]?touch|first[\s-]?touch|"
-    r"linear|participation|instance|model)\b",
+    r"linear|participation|instance|model|time[\s-]decay)\b",
     re.IGNORECASE,
 )
 
@@ -154,7 +154,8 @@ def check_attribution_setting_undocumented(
     impl: Implementation, ctx: RuleContext
 ) -> list[Finding]:
     """CJA-only. Fire when a metric carries a non-default attributionSetting
-    that the description does not acknowledge.
+    that the description does not acknowledge. Explicit time-decay prose
+    acknowledges the override without requiring the word attribution.
     """
     if impl.platform != "cja":
         return []
