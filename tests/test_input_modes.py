@@ -227,7 +227,7 @@ def test_mtime_cutoff_selection_is_timezone_independent(tmp_path):
     assert selected == ["before", "before", "before"]
 
 
-def test_directory_invalid_filename_timestamp_falls_back_to_mtime(tmp_path):
+def test_directory_invalid_filename_timestamp_is_rejected(tmp_path):
     import os
 
     valid = tmp_path / "snapshot_2000-01-01.json"
@@ -236,10 +236,9 @@ def test_directory_invalid_filename_timestamp_falls_back_to_mtime(tmp_path):
     invalid.write_text('{"which": "mtime fallback"}', encoding="utf-8")
     os.utime(valid, (946684800, 946684800))
 
-    snapshot, source = load_snapshot(str(tmp_path))
-
-    assert snapshot == {"which": "mtime fallback"}
-    assert source == str(invalid)
+    with pytest.raises(InvalidSnapshotError, match="filename timestamp") as exc:
+        load_snapshot(str(tmp_path))
+    assert str(invalid) in str(exc.value)
 
 
 # ---------------------------------------------------------------------------

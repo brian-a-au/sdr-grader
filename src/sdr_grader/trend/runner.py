@@ -34,8 +34,8 @@ def build_trend_report(
 ) -> TrendReport:
     """Walk a snapshot directory and produce a chronological TrendReport.
 
-    Snapshots without a parseable filename timestamp are skipped (the trend
-    needs a stable ordering). Mixing snapshots from different instances or
+    Snapshots without a filename timestamp are skipped; malformed timestamp
+    tokens raise InvalidSnapshotError. Mixing snapshots from different instances or
     different platforms in the same directory raises InvalidSnapshotError.
     """
     directory = Path(directory)

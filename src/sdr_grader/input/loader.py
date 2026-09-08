@@ -24,11 +24,17 @@ from sdr_grader.core.timeparse import parse_timestamp
 
 STDIN_TOKEN = "-"
 
-# Filename timestamp pattern: snapshot_2026-04-25T09-14-00.json or similar.
+# Extract only the filename token; normalize its separators after capture.
+# Range checks here prevent fromisoformat from normalizing invalid offset minutes.
 _TIMESTAMP_RE = re.compile(
-    r"(?P<year>\d{4})[-_](?P<month>\d{2})[-_](?P<day>\d{2})"
-    r"(?:[T_-](?P<hour>\d{2})[-_:](?P<minute>\d{2})(?:[-_:](?P<second>\d{2}))?)?"
+    r"(?P<date>\d{4}[-_]\d{2}[-_]\d{2})"
+    r"(?:[T_-](?P<clock>\d{2}[-_:]\d{2}(?:[-_:]\d{2})?)"
+    r"(?P<fraction>\.\d+)?"
+    r"(?P<zone>Z|[+-](?:[01]\d|2[0-3])(?:[-_:]?[0-5]\d)?)?)?"
 )
+# A continuation that looks like timestamp syntax must not be discarded as a
+# filename label. Underscore/hyphen labels (e.g. _export) stay outside it.
+_TIMESTAMP_CONTINUATION_RE = re.compile(r"[A-Za-z\d+:.]|[-_](?:[\d+:.\-_]|$)")
 
 
 def load_snapshot(
@@ -138,20 +144,27 @@ def _candidate_timestamp(path: Path) -> datetime:
 
 
 def _extract_timestamp(path: Path) -> datetime | None:
+    """Read a complete filename instant; reject malformed timestamp evidence.
+
+    Date-only and naive timestamps mean UTC. Colon, hyphen, and underscore
+    clock separators are supported, as are fractional seconds and UTC offsets.
+    No token returns None (directory mtime fallback; trend skips that file).
+    """
     match = _TIMESTAMP_RE.search(path.stem)
     if not match:
         return None
     parts = match.groupdict()
-    try:
-        year = int(parts["year"])
-        month = int(parts["month"])
-        day = int(parts["day"])
-        hour = int(parts["hour"] or 0)
-        minute = int(parts["minute"] or 0)
-        second = int(parts["second"] or 0)
-        return datetime(year, month, day, hour, minute, second, tzinfo=UTC)
-    except (TypeError, ValueError):
-        return None
+    token = parts["date"].replace("_", "-")
+    if parts["clock"] is not None:
+        clock = parts["clock"].replace("-", ":").replace("_", ":")
+        zone = parts["zone"] or ""
+        # Preserve the offset sign while normalizing filename-safe separators.
+        zone = zone[:1] + zone[1:].replace("-", ":").replace("_", ":")
+        token += "T" + clock + (parts["fraction"] or "") + zone
+    timestamp = parse_timestamp(token)
+    if timestamp is None or _TIMESTAMP_CONTINUATION_RE.match(path.stem[match.end():]):
+        raise InvalidSnapshotError(f"{path}: malformed filename timestamp")
+    return timestamp
 
 
 def _parse_iso_timestamp(value: str) -> datetime | None:
