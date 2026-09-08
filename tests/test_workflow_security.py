@@ -198,8 +198,7 @@ def test_release_workflow_pins_validation_and_builds_candidate_only_once():
         )
 
     recovery_condition = (
-        "github.run_attempt > 1 && needs.build.result == 'skipped' && "
-        "needs.recover.result == 'success'"
+        "needs.build.result == 'success' || needs.recover.result == 'success'"
     )
     for job_name in ("install-smoke", "plugin-smoke"):
         job = text.split(f"\n  {job_name}:", 1)[1]
@@ -215,10 +214,10 @@ def test_release_workflow_pins_validation_and_builds_candidate_only_once():
 def test_release_candidate_fetch_is_rerun_safe_and_commit_bound():
     action = _action_text("fetch-release-candidate")
 
-    assert "if: inputs.source == 'artifacts'" in action
+    assert "inputs.source == 'artifacts'" in action
     assert "if: inputs.source == 'release'" in action
-    assert "candidate-dist-${{ github.sha }}" in action
-    assert "candidate-evidence-${{ github.sha }}" in action
+    assert 'f"candidate-dist-{suffix}"' in action
+    assert 'f"candidate-evidence-{suffix}"' in action
     assert 'gh release download "${GITHUB_REF_NAME}"' in action
     assert '--pattern "*.whl"' in action
     assert '--pattern "*.tar.gz"' in action
@@ -424,16 +423,17 @@ def test_draft_recovery_has_write_access_without_granting_it_to_smoke_jobs():
     workflow = yaml.safe_load(_workflow_text("release.yml"))
     jobs = workflow["jobs"]
     recovery = jobs["recover"]
-    assert recovery["permissions"] == {"contents": "write", "attestations": "read"}
+    assert recovery["permissions"] == {"contents": "write", "actions": "read", "attestations": "read"}
     assert recovery["needs"] == "candidate"
     assert recovery["if"] == "github.run_attempt > 1"
     steps = recovery["steps"]
     fetch = next(s for s in steps if s.get("uses") == "./.github/actions/fetch-release-candidate")
-    assert fetch["with"]["source"] == "release"
+    assert fetch["with"]["source"] == "auto"
     assert not any("uv pip install" in s.get("run", "") for s in steps)
     uploads = [s for s in steps if s.get("uses", "").startswith("actions/upload-artifact@")]
     assert len(uploads) == 2
-    assert all(s["with"]["overwrite"] is True for s in uploads)
+    assert all("overwrite" not in s["with"] for s in uploads)
+    assert all("-recovery-${{ github.run_attempt }}" in s["with"]["name"] for s in uploads)
     for name in ("install-smoke", "plugin-smoke"):
         job = jobs[name]
         assert "recover" in job["needs"]
@@ -441,7 +441,7 @@ def test_draft_recovery_has_write_access_without_granting_it_to_smoke_jobs():
         assert job.get("permissions", workflow["permissions"])["contents"] == "read"
     for name, job in jobs.items():
         for step in job["steps"]:
-            if step.get("uses") == "./.github/actions/fetch-release-candidate" and name != "recover":
+            if step.get("uses") == "./.github/actions/fetch-release-candidate" and name not in {"recover", "verify-public", "verify-completion"}:
                 assert step.get("with", {}).get("source", "artifacts") == "artifacts"
 
 
@@ -454,7 +454,6 @@ def test_release_publication_jobs_override_skipped_ancestors_but_require_success
         "publish-pypi": ["draft-github"],
         "verify-pypi-publication": ["publish-pypi"],
         "publish-github": ["verify-pypi-publication"],
-        "verify-public": ["publish-github"],
     }
     for name, dependencies in expected_dependencies.items():
         job = jobs[name]
@@ -467,3 +466,27 @@ def test_release_publication_jobs_override_skipped_ancestors_but_require_success
         assert terms[:2] == ["always()", "!cancelled()"], name
         required = [f"needs.{dependency}.result == 'success'" for dependency in dependencies]
         assert sorted(terms[2:]) == sorted(required), name
+
+
+def test_public_recovery_runs_even_after_skipped_publisher_and_is_read_only():
+    jobs = yaml.safe_load(_workflow_text("release.yml"))["jobs"]
+    public = jobs["verify-public"]
+    assert public["if"] == "${{ always() && !cancelled() }}"
+    assert set(public["permissions"].values()) == {"read"}
+    steps = public["steps"]
+    fetch = next(s for s in steps if s.get("uses") == "./.github/actions/fetch-release-candidate")
+    assert fetch["with"]["source"] == "public"
+    assert next(i for i,s in enumerate(steps) if "postpublication" in s.get("run", "")) < next(
+        i for i,s in enumerate(steps) if "uv pip install" in s.get("run", ""))
+    terminal = jobs["verify-completion"]
+    assert terminal["if"] == "${{ always() }}"
+    assert set(terminal["needs"]) == set(jobs) - {"verify-completion"}
+    assert "scripts/verify_release_completion.py" in str(terminal)
+
+
+def test_retained_success_permits_smoke_on_failed_only_rerun():
+    jobs = yaml.safe_load(_workflow_text("release.yml"))["jobs"]
+    for name in ("install-smoke", "plugin-smoke"):
+        condition = " ".join(jobs[name]["if"].split())
+        assert "github.run_attempt" not in condition
+        assert "needs.build.result == 'success' || needs.recover.result == 'success'" in condition

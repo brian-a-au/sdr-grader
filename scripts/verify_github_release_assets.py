@@ -28,6 +28,7 @@ def verify_release_assets(
     evidence_path: Path,
     dist_dir: Path,
     expected_tag: str,
+    release_state: str = "draft",
 ) -> None:
     """Fail unless the existing draft exactly matches the retained candidate."""
     try:
@@ -37,8 +38,12 @@ def verify_release_assets(
 
     if release.get("tagName") != expected_tag:
         raise ReleaseAssetError("existing release has the wrong tag")
-    if release.get("isDraft") is not True:
-        raise ReleaseAssetError("existing release is not a draft")
+    if release_state not in {"draft", "published", "either"}:
+        raise ReleaseAssetError("invalid required release state")
+    if type(release.get("isDraft")) is not bool or (
+        release_state != "either" and release["isDraft"] != (release_state == "draft")
+    ):
+        raise ReleaseAssetError(f"existing release is not {'a draft' if release_state == 'draft' else release_state}")
 
     records = evidence.get("artifacts")
     assets_payload = release.get("assets")
@@ -91,6 +96,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--evidence", type=Path, required=True)
     parser.add_argument("--dist-dir", type=Path, required=True)
     parser.add_argument("--expected-tag", required=True)
+    parser.add_argument("--release-state", choices=("draft", "published", "either"), default="draft")
     args = parser.parse_args(argv)
     try:
         release = json.loads(args.release_metadata.read_text(encoding="utf-8"))
@@ -101,6 +107,7 @@ def main(argv: list[str] | None = None) -> int:
             evidence_path=args.evidence,
             dist_dir=args.dist_dir,
             expected_tag=args.expected_tag,
+            release_state=args.release_state,
         )
     except (OSError, UnicodeDecodeError, json.JSONDecodeError, ReleaseAssetError) as exc:
         print(f"GitHub release asset check failed: {exc}", file=sys.stderr)

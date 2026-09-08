@@ -141,3 +141,23 @@ def test_main_fails_closed_on_invalid_release_json(tmp_path, capsys):
         == 1
     )
     assert "asset check failed" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("state,is_draft,accepted", [
+    ("draft", False, False), ("published", True, False),
+    ("published", False, True), ("either", True, True), ("either", False, True),
+])
+def test_recovery_state_is_explicit_without_weakening_inventory(tmp_path, state, is_draft, accepted):
+    dist, evidence, release = _fixture(tmp_path)
+    release["isDraft"] = is_draft
+    kwargs = dict(release=release, evidence_path=evidence, dist_dir=dist,
+                  expected_tag="v1.2.4", release_state=state)
+    kwargs["expected_tag"] = release["tagName"]
+    if not accepted:
+        with pytest.raises(release_assets.ReleaseAssetError):
+            release_assets.verify_release_assets(**kwargs)
+        return
+    release_assets.verify_release_assets(**kwargs)
+    release["assets"][0]["digest"] = "sha256:" + "0" * 64
+    with pytest.raises(release_assets.ReleaseAssetError, match="asset mismatch"):
+        release_assets.verify_release_assets(**kwargs)

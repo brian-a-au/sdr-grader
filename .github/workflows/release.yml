@@ -19,6 +19,8 @@ jobs:
     timeout-minutes: 30
     permissions:
       contents: read
+      actions: read
+      attestations: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -59,6 +61,7 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
+      actions: read
       id-token: write
       attestations: write
     steps:
@@ -124,7 +127,7 @@ jobs:
           retention-days: 30
 
   recover:
-    name: Recover immutable draft artifacts
+    name: Recover immutable artifacts
     needs: candidate
     if: github.run_attempt > 1
     runs-on: ubuntu-latest
@@ -133,6 +136,7 @@ jobs:
     # permission to recovery; never install or execute the recovered package here.
     permissions:
       contents: write
+      actions: read
       attestations: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -143,37 +147,24 @@ jobs:
       - name: Recover and verify frozen release candidate
         uses: ./.github/actions/fetch-release-candidate
         with:
-          source: release
+          source: auto
           token: ${{ github.token }}
-
-      - name: Verify exact retained draft inventory
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release view "${GITHUB_REF_NAME}" --repo "${GITHUB_REPOSITORY}" \
-            --json assets,isDraft,tagName > release-metadata.json
-          python3 scripts/verify_github_release_assets.py \
-            --release-metadata release-metadata.json \
-            --evidence release-evidence/release-artifacts.json \
-            --dist-dir dist --expected-tag "${GITHUB_REF_NAME}"
 
       - name: Retain recovered distributions for read-only consumers
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: candidate-dist-${{ github.sha }}
+          name: candidate-dist-${{ github.sha }}-recovery-${{ github.run_attempt }}
           path: dist/
           if-no-files-found: error
           retention-days: 7
-          overwrite: true
 
       - name: Retain recovered evidence for read-only consumers
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: candidate-evidence-${{ github.sha }}
+          name: candidate-evidence-${{ github.sha }}-recovery-${{ github.run_attempt }}
           path: release-evidence/release-artifacts.json
           if-no-files-found: error
           retention-days: 30
-          overwrite: true
 
   install-smoke:
     name: Artifact smoke / Python ${{ matrix.python-version }}
@@ -182,14 +173,14 @@ jobs:
       ${{
         always() &&
         needs.candidate.result == 'success' &&
-        ((github.run_attempt == 1 && needs.build.result == 'success') ||
-         (github.run_attempt > 1 && needs.build.result == 'skipped' &&
-          needs.recover.result == 'success'))
+        (needs.build.result == 'success' || needs.recover.result == 'success')
       }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
       contents: read
+      actions: read
+      attestations: read
     strategy:
       fail-fast: false
       matrix:
@@ -254,14 +245,14 @@ jobs:
       ${{
         always() &&
         needs.candidate.result == 'success' &&
-        ((github.run_attempt == 1 && needs.build.result == 'success') ||
-         (github.run_attempt > 1 && needs.build.result == 'skipped' &&
-          needs.recover.result == 'success'))
+        (needs.build.result == 'success' || needs.recover.result == 'success')
       }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: read
+      actions: read
+      attestations: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -358,6 +349,8 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
+      actions: read
+      attestations: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -392,6 +385,8 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: write
+      actions: read
+      attestations: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -437,7 +432,7 @@ jobs:
             --release-metadata release-metadata.json \
             --evidence release-evidence/release-artifacts.json \
             --dist-dir dist \
-            --expected-tag "${GITHUB_REF_NAME}"
+            --expected-tag "${GITHUB_REF_NAME}" --release-state either
 
       - name: Create draft from tested bytes
         if: steps.release-state.outputs.exists != 'true'
@@ -462,6 +457,7 @@ jobs:
       url: https://pypi.org/p/sdr-grader
     permissions:
       contents: read
+      actions: read
       id-token: write
       attestations: write
     steps:
@@ -507,6 +503,8 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
+      actions: read
+      attestations: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -545,6 +543,8 @@ jobs:
       url: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}
     permissions:
       contents: write
+      actions: read
+      attestations: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -561,11 +561,13 @@ jobs:
   verify-public:
     name: Public endpoints / Python ${{ matrix.python-version }}
     needs: publish-github
-    if: ${{ always() && !cancelled() && needs.publish-github.result == 'success' }}
+    if: ${{ always() && !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
       contents: read
+      actions: read
+      attestations: read
     strategy:
       fail-fast: false
       matrix:
@@ -586,43 +588,14 @@ jobs:
         with:
           token: ${{ github.token }}
           dist_dir: candidate-dist
+          source: public
 
-      - name: Verify GitHub release bytes
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Verify matching public metadata and bytes before installation
         run: |
-          mkdir -p github-dist
-          gh release download "${GITHUB_REF_NAME}" \
-            --pattern "*.whl" --pattern "*.tar.gz" --dir github-dist
-          python3 - <<'PY'
-          import hashlib
-          import json
-          from pathlib import Path
-
-          evidence = json.loads(
-              Path("release-evidence/release-artifacts.json").read_text()
-          )
-          expected = {
-              item["filename"]: item for item in evidence["artifacts"]
-          }
-
-          def digest(path):
-              return hashlib.sha256(path.read_bytes()).hexdigest()
-
-          for root in (Path("candidate-dist"), Path("github-dist")):
-              for filename, record in expected.items():
-                  path = root / filename
-                  assert path.stat().st_size == record["size"]
-                  assert digest(path) == record["sha256"]
-          PY
-
-      - name: Verify build provenance attestation
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          for ARTIFACT in candidate-dist/*; do
-            gh attestation verify "${ARTIFACT}" --repo "${GITHUB_REPOSITORY}"
-          done
+          python3 scripts/verify_published_readme.py postpublication \
+            --dist-dir candidate-dist \
+            --evidence release-evidence/release-artifacts.json \
+            --version "${GITHUB_REF_NAME#v}"
 
       - name: Compare fresh public install with candidate
         shell: bash
@@ -662,3 +635,41 @@ jobs:
           done
           "${PUBLIC_ENV}/bin/python" -c \
             'from importlib.resources import files; root=files("sdr_grader"); required=("plugin/.claude-plugin/plugin.json","plugin/.claude-plugin/marketplace.json","plugin/skills/sdr-grader/SKILL.md","rules/packs/strict/_meta.yaml","render/templates/report.html.j2","render/static/report.css","data/distribution.json"); missing=[p for p in required if not root.joinpath(p).is_file()]; assert not missing, missing'
+
+  verify-completion:
+    name: Require complete release verification
+    needs: [candidate, build, recover, install-smoke, plugin-smoke, verify-prepublication, draft-github, publish-pypi, verify-pypi-publication, publish-github, verify-public]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+      attestations: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          ref: ${{ github.ref }}
+      - name: Recover published identity read-only
+        uses: ./.github/actions/fetch-release-candidate
+        with:
+          source: public
+          token: ${{ github.token }}
+      - name: Assert actual hosted matrix completion
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 scripts/verify_release_completion.py \
+            --repository "${GITHUB_REPOSITORY}" --run-id "${GITHUB_RUN_ID}" \
+            --attempt "${GITHUB_RUN_ATTEMPT}" --source-sha "${GITHUB_SHA}" \
+            --source-ref "${GITHUB_REF}" --evidence release-evidence/release-artifacts.json \
+            --output release-completion.json
+      - name: Retain completion evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: release-completion-${{ github.sha }}-${{ github.run_attempt }}
+          path: release-completion.json
+          if-no-files-found: error
+          retention-days: 90
