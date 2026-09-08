@@ -166,9 +166,7 @@ Also complete the CLI-choice, label, and rule-applicability rows above. Without
 them, `--platform your_platform` is rejected, report vocabulary falls back to
 generic labels, or every bundled rule is filtered out.
 
-## Supplementary inputs
-
-### Boolean evidence
+## Boolean evidence
 
 Governance `history_present` / `History Present` and `sdr_doc_present` /
 `SDR Doc Present`, plus CJA attribution and persistence `enabled` fields,
@@ -186,6 +184,22 @@ retain metadata so a valid override can replace lower-priority evidence.
 Textual false can now restore governance findings and lower a score, or keep
 CJA settings disabled and remove a spurious finding. Rebaseline gates with
 the same package version and rubric pack.
+
+## Segment identity consistency
+
+Within an AA or CJA segment inventory, each normalized ID must identify one
+consistent complete normalized Segment record. Conflicting duplicate records
+raise a contextual invalid-input error before scoring (CLI exit 1, no new
+report). Repeated equal records remain accepted and retain their inventory
+counts. Reference order and repeated graph edges are ignored only for this
+equality comparison; the records themselves are preserved. Other component
+kinds can legitimately reuse the same ID.
+
+Both adapters and the public `grade(Implementation, ...)` boundary enforce this
+invariant. Invalid history siblings cannot establish history; an invalid selected
+snapshot or timestamped trend input fails instead of producing a score.
+
+## Supplementary inputs
 
 Some rules need data the snapshot itself doesn't carry. Rather than
 building a dedicated adapter for each side input, the CLI accepts

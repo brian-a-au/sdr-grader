@@ -18,6 +18,7 @@ from sdr_grader.core.models import (
     Implementation,
     Segment,
 )
+from sdr_grader.core.segment_identity import validate_segment_identities
 from sdr_grader.core.structure_limits import (
     validate_decoded_structure,
     validate_definition_structure,
@@ -90,7 +91,7 @@ def adapt(snapshot: dict[str, Any], *, source: str = "<unknown>") -> Implementat
         for index, record in enumerate(_optional_list(snapshot, "segments"))
     ]
 
-    return Implementation(
+    impl = Implementation(
         platform="aa",
         instance_id=str(instance_id),
         instance_name=str(instance_name),
@@ -104,6 +105,8 @@ def adapt(snapshot: dict[str, Any], *, source: str = "<unknown>") -> Implementat
         derived_fields=[],  # CJA-only concept
         raw=snapshot,
     )
+    validate_segment_identities(impl)
+    return impl
 
 
 # ---------------------------------------------------------------------------
