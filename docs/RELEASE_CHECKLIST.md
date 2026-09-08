@@ -163,6 +163,9 @@ On reruns, `Recover immutable artifacts` alone receives repository write access
 for draft visibility. It selects the original retained candidate/evidence pair
 first, or verifies frozen release assets when those artifacts are unavailable.
 Recovery copies use attempt-qualified names and never overwrite the originals.
+GitHub removes run artifacts during a full rerun; their prior presence does not
+guarantee availability. Production must recover the exact frozen release assets
+when no retained pair remains, or fail without rebuilding.
 Every consumer validates manifest identity and provenance bound to repository,
 source ref/SHA, and `release.yml` before executing package code. Smoke jobs use
 read-only access. Public verifiers independently recover published assets with
@@ -195,6 +198,11 @@ can publish. Use the checked-out version and a named scenario, for example
 `gh workflow run release.yml --ref main -f version=1.2.9 -f scenario=success`.
 Run all-jobs, failed-only, and individual-job reruns against the original run;
 preserve job IDs, attempts, immutable hashes, and explicit negative outcomes.
+The harness also saves its initial distributions and manifest under an exact
+repository/run/source-SHA cache key and checks that the save succeeded. Full
+reruns restore that same entry without prefix fallback, then validate provenance
+and manifest identity before execution. A missing cache fails closed. This
+backup is harness-only; production uses frozen release assets.
 Harness fixture endpoint evidence does not substitute for public v1.3.0 checks.
 
 Release workflow revisions are frozen into each tag. A fix merged after a tag

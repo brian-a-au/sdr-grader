@@ -134,6 +134,39 @@ jobs:
         with:
           subject-path: "dist/*"
 
+      # Full reruns can delete run artifacts. This separate immutable store is
+      # harness-only; production recovery uses the frozen release assets.
+      - name: Prepare immutable harness backup
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: |
+          set -euo pipefail
+          mkdir .harness-candidate-backup
+          cp dist/*.whl dist/*.tar.gz release-evidence/release-artifacts.json .harness-candidate-backup/
+
+      - name: Save immutable harness backup
+        id: save-harness-backup
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ github.workspace }}/.harness-candidate-backup
+          key: harness-candidate-${{ github.repository_id }}-${{ github.run_id }}-${{ github.sha }}
+
+      - name: Check immutable harness backup exists
+        id: check-harness-backup
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ github.workspace }}/.harness-candidate-backup
+          key: harness-candidate-${{ github.repository_id }}-${{ github.run_id }}-${{ github.sha }}
+          lookup-only: true
+          fail-on-cache-miss: true
+
+      - name: Require saved harness backup
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        env:
+          CACHE_HIT: ${{ steps.check-harness-backup.outputs.cache-hit }}
+        run: test "${CACHE_HIT}" = true
+
       - name: Upload immutable distributions
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
@@ -197,12 +230,7 @@ jobs:
   install-smoke:
     name: Artifact smoke / Python ${{ matrix.python-version }}
     needs: [candidate, build, recover]
-    if: >-
-      ${{
-        always() &&
-        needs.candidate.result == 'success' &&
-        (needs.build.result == 'success' || needs.recover.result == 'success')
-      }}
+    if: ${{ always() && !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -274,9 +302,8 @@ jobs:
     if: >-
       ${{
         always() &&
-        needs.candidate.result == 'success' &&
-        !(github.event_name == 'workflow_dispatch' && inputs.scenario == 'skip') &&
-        (needs.build.result == 'success' || needs.recover.result == 'success')
+        !cancelled() &&
+        !(github.event_name == 'workflow_dispatch' && inputs.scenario == 'skip')
       }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -372,12 +399,12 @@ jobs:
             "${RUNNER_TEMP}/plugin-grade.json" \
             "${RUNNER_TEMP}/plugin-grade-suppressed.json"
 
-  # Build and recovery are mutually exclusive. Override skipped ancestors
-  # while requiring every direct prerequisite to succeed before continuing.
+  # Read-only verifiers remain eligible after scheduler-created ancestor skips
+  # on partial reruns. Publication jobs enforce every success prerequisite.
   verify-prepublication:
     name: Verify tagged README before publication
     needs: [install-smoke, plugin-smoke]
-    if: ${{ always() && !cancelled() && needs.install-smoke.result == 'success' && needs.plugin-smoke.result == 'success' }}
+    if: ${{ always() && !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -419,8 +446,12 @@ jobs:
 
   draft-github:
     name: Create immutable GitHub draft
-    needs: verify-prepublication
-    if: ${{ always() && !cancelled() && needs.verify-prepublication.result == 'success' }}
+    needs: [candidate, build, recover, install-smoke, plugin-smoke, verify-prepublication]
+    if: >-
+      ${{ always() && !cancelled() && needs.candidate.result == 'success' &&
+          (needs.build.result == 'success' || needs.recover.result == 'success') &&
+          needs.install-smoke.result == 'success' && needs.plugin-smoke.result == 'success' &&
+          needs.verify-prepublication.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -545,7 +576,7 @@ jobs:
   verify-pypi-publication:
     name: Verify PyPI publication before announcement
     needs: publish-pypi
-    if: ${{ always() && !cancelled() && needs.publish-pypi.result == 'success' }}
+    if: ${{ always() && !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -588,8 +619,8 @@ jobs:
 
   publish-github:
     name: Publish GitHub release
-    needs: verify-pypi-publication
-    if: ${{ always() && !cancelled() && needs.verify-pypi-publication.result == 'success' }}
+    needs: [publish-pypi, verify-pypi-publication]
+    if: ${{ always() && !cancelled() && needs.publish-pypi.result == 'success' && needs.verify-pypi-publication.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:

@@ -148,7 +148,7 @@ def test_release_workflow_builds_before_isolated_frozen_wheel_plugin_smoke():
     assert "plugin compare smoke" in plugin_smoke
     assert "--suppress-config" in plugin_smoke
     assert '"${RUNNER_TEMP}/plugin-grade-suppressed.json"' in plugin_smoke
-    assert "needs: verify-prepublication" in draft
+    assert "needs: [candidate, build, recover, install-smoke, plugin-smoke, verify-prepublication]" in draft
 
 
 def test_release_workflow_digest_gates_idempotent_pypi_recovery():
@@ -197,9 +197,6 @@ def test_release_workflow_pins_validation_and_builds_candidate_only_once():
             "./.github/actions/fetch-release-candidate"
         )
 
-    recovery_condition = (
-        "needs.build.result == 'success' || needs.recover.result == 'success'"
-    )
     for job_name in ("install-smoke", "plugin-smoke"):
         job = text.split(f"\n  {job_name}:", 1)[1]
         next_job = re.search(r"\n  [a-z][a-z0-9-]+:", job)
@@ -207,15 +204,18 @@ def test_release_workflow_pins_validation_and_builds_candidate_only_once():
             job = job[: next_job.start()]
         assert "always()" in job
         assert "needs: [candidate, build, recover]" in job
-        assert "needs.candidate.result == 'success'" in job
-        assert recovery_condition in " ".join(job.split())
+        assert "!cancelled()" in job
+        assert "needs.candidate.result" not in job
+        assert "needs.build.result" not in job
+        assert "needs.recover.result" not in job
 
 
 def test_release_candidate_fetch_is_rerun_safe_and_commit_bound():
     action = _action_text("fetch-release-candidate")
 
     assert "inputs.source == 'artifacts'" in action
-    assert "if: inputs.source == 'release'" in action
+    assert "inputs.source == 'release'" in action
+    assert "if: inputs.harness != 'true' && (inputs.source == 'release'" in action
     assert 'f"candidate-dist-{suffix}"' in action
     assert 'f"candidate-evidence-{suffix}"' in action
     assert 'gh release download "${GITHUB_REF_NAME}"' in action
@@ -268,11 +268,11 @@ def test_release_workflow_runs_bounded_readme_checks_before_and_after_publicatio
     assert "needs: [install-smoke, plugin-smoke]" in pre
     assert "scripts/verify_published_readme.py prepublication" in pre
     assert "--evidence release-evidence/release-artifacts.json" in pre
-    assert "needs: verify-prepublication" in draft
+    assert "needs: [candidate, build, recover, install-smoke, plugin-smoke, verify-prepublication]" in draft
     assert "needs: publish-pypi" in post
     assert "scripts/verify_published_readme.py postpublication" in post
     assert "--evidence release-evidence/release-artifacts.json" in post
-    assert "needs: verify-pypi-publication" in github_release
+    assert "needs: [publish-pypi, verify-pypi-publication]" in github_release
     assert (
         text.index("\n  publish-pypi:")
         < text.index("\n  verify-pypi-publication:")
@@ -437,7 +437,7 @@ def test_draft_recovery_has_write_access_without_granting_it_to_smoke_jobs():
     for name in ("install-smoke", "plugin-smoke"):
         job = jobs[name]
         assert "recover" in job["needs"]
-        assert "needs.recover.result == 'success'" in job["if"]
+        assert "!cancelled()" in job["if"]
         assert job.get("permissions", workflow["permissions"])["contents"] == "read"
     for name, job in jobs.items():
         for step in job["steps"]:
@@ -449,11 +449,9 @@ def test_release_publication_jobs_override_skipped_ancestors_but_require_success
     """An unused build/recovery branch must not skip a tested release."""
     jobs = yaml.safe_load(_workflow_text("release.yml"))["jobs"]
     expected_dependencies = {
-        "verify-prepublication": ["install-smoke", "plugin-smoke"],
-        "draft-github": ["verify-prepublication"],
+        "draft-github": ["candidate", "build", "recover", "install-smoke", "plugin-smoke", "verify-prepublication"],
         "publish-pypi": ["draft-github"],
-        "verify-pypi-publication": ["publish-pypi"],
-        "publish-github": ["verify-pypi-publication"],
+        "publish-github": ["publish-pypi", "verify-pypi-publication"],
     }
     for name, dependencies in expected_dependencies.items():
         job = jobs[name]
@@ -464,8 +462,30 @@ def test_release_publication_jobs_override_skipped_ancestors_but_require_success
         # on failure, cancellation, or an unexpectedly skipped prerequisite.
         terms = condition.split(" && ")
         assert terms[:2] == ["always()", "!cancelled()"], name
-        required = [f"needs.{dependency}.result == 'success'" for dependency in dependencies]
+        required = [f"needs.{dependency}.result == 'success'" for dependency in dependencies
+                    if dependency not in {"build", "recover"}]
+        if name == "draft-github":
+            required.append("(needs.build.result == 'success' || needs.recover.result == 'success')")
         assert sorted(terms[2:]) == sorted(required), name
+
+
+def test_read_only_verifiers_run_after_partial_rerun_ancestor_skips():
+    jobs = yaml.safe_load(_workflow_text("release.yml"))["jobs"]
+    for name, dependencies in (
+        ("verify-prepublication", ["install-smoke", "plugin-smoke"]),
+        ("verify-pypi-publication", "publish-pypi"),
+    ):
+        job = jobs[name]
+        assert job['needs'] == dependencies
+        assert job['if'] == '${{ always() && !cancelled() }}'
+        assert set(job['permissions'].values()) == {'read'}
+        steps = job['steps']
+        fetch = next(i for i, step in enumerate(steps)
+                     if step.get('uses') == './.github/actions/fetch-release-candidate')
+        validations = [i for i, step in enumerate(steps)
+                       if 'publication' in step.get('run', '')]
+        assert validations and all(fetch < index for index in validations)
+        assert not any(step.get('continue-on-error') for step in steps)
 
 
 def test_public_recovery_runs_even_after_skipped_publisher_and_is_read_only():
@@ -484,9 +504,12 @@ def test_public_recovery_runs_even_after_skipped_publisher_and_is_read_only():
     assert "scripts/verify_release_completion.py" in str(terminal)
 
 
-def test_retained_success_permits_smoke_on_failed_only_rerun():
+def test_smoke_checks_remain_eligible_on_partial_reruns_without_hiding_intentional_skip():
     jobs = yaml.safe_load(_workflow_text("release.yml"))["jobs"]
     for name in ("install-smoke", "plugin-smoke"):
         condition = " ".join(jobs[name]["if"].split())
         assert "github.run_attempt" not in condition
-        assert "needs.build.result == 'success' || needs.recover.result == 'success'" in condition
+        assert "needs." not in condition
+        assert "always() && !cancelled()" in condition
+    assert jobs["install-smoke"]["if"] == "${{ always() && !cancelled() }}"
+    assert "!(github.event_name == 'workflow_dispatch' && inputs.scenario == 'skip')" in jobs["plugin-smoke"]["if"]
