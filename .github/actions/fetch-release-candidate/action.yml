@@ -2,6 +2,12 @@ name: Fetch frozen release candidate
 description: Read immutable run artifacts or strictly verified frozen release assets.
 
 inputs:
+  version:
+    description: Frozen package version supplied by the release workflow.
+    required: true
+  harness:
+    description: Fixture recovery allowed only for the non-tag dispatch caller.
+    default: 'false'
   source:
     description: artifacts for consumers, auto for isolated recovery, public for published read-only recovery.
     required: false
@@ -21,6 +27,13 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Enforce immutable recovery mode
+      shell: bash
+      env:
+        HARNESS_MODE: ${{ inputs.harness }}
+        CALLER_WORKFLOW: ${{ github.workflow_ref }}
+      run: python3 scripts/release_verifier_fixture.py guard
+
     - name: Select immutable retained artifact pair
       id: retained
       if: inputs.source == 'artifacts' || inputs.source == 'auto'
@@ -32,14 +45,24 @@ runs:
         set -euo pipefail
         gh api --paginate --slurp "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts?per_page=100" > retained-artifacts.json
         python3 - <<'PYTHON'
-        import json, os
+        import json, os, re
         pages = json.load(open("retained-artifacts.json"))
         records = [a for page in pages for a in page["artifacts"] if not a["expired"]]
         sha = os.environ["GITHUB_SHA"]
-        # Original names are immutable. Attempt-qualified recovery copies never
-        # replace them and are used only when the original pair has expired.
+        # Prefer the immutable original pair, then the newest complete recovery
+        # pair. Failed-only reruns can retain recovery from an earlier attempt.
+        recovery_attempts = set()
+        for artifact in records:
+            match = re.fullmatch(
+                rf"candidate-(?:dist|evidence)-{re.escape(sha)}-recovery-([1-9]\d*)",
+                artifact["name"],
+            )
+            if match and int(match[1]) <= int(os.environ["GITHUB_RUN_ATTEMPT"]):
+                recovery_attempts.add(int(match[1]))
+        suffixes = [sha, *(f"{sha}-recovery-{number}"
+                          for number in sorted(recovery_attempts, reverse=True))]
         pair = None
-        for suffix in [sha, f"{sha}-recovery-{os.environ['GITHUB_RUN_ATTEMPT']}"]:
+        for suffix in suffixes:
             names = [f"candidate-dist-{suffix}", f"candidate-evidence-{suffix}"]
             matches = [[a for a in records if a["name"] == name] for name in names]
             if any(len(items) > 1 for items in matches):
@@ -112,11 +135,12 @@ runs:
       env:
         DIST_DIR: ${{ inputs.dist_dir }}
         EVIDENCE_DIR: ${{ inputs.evidence_dir }}
+        RELEASE_VERSION: ${{ inputs.version }}
       run: |
         python3 scripts/verify_published_readme.py candidate \
           --dist-dir "${DIST_DIR}" \
           --evidence "${EVIDENCE_DIR}/release-artifacts.json" \
-          --version "${GITHUB_REF_NAME#v}" \
+          --version "${RELEASE_VERSION#v}" \
           --source-sha "${GITHUB_SHA}"
 
     - name: Verify exact release inventory and publication state
@@ -136,3 +160,11 @@ runs:
           --evidence "${EVIDENCE_DIR}/release-artifacts.json" \
           --dist-dir "${DIST_DIR}" --expected-tag "${GITHUB_REF_NAME}" \
           --release-state "$(if [ "${RECOVERY_SOURCE}" = public ]; then echo published; else echo either; fi)"
+
+    - name: Validate harness inventory against retained bytes
+      if: inputs.harness == 'true'
+      shell: bash
+      env:
+        HARNESS_MODE: ${{ inputs.harness }}
+        RELEASE_VERSION: ${{ inputs.version }}
+      run: python3 scripts/release_verifier_fixture.py inventory --dist-dir "${{ inputs.dist_dir }}" --evidence "${{ inputs.evidence_dir }}/release-artifacts.json"

@@ -90,8 +90,8 @@ def test_release_workflow_is_tag_only_build_once_and_authority_isolated():
     assert "uv build --no-sources --clear --no-create-gitignore" in text
     assert "scripts/verify_release_artifacts.py" in text
     assert "draft: true" in text
-    assert "environment:\n      name: pypi" in text
-    assert "environment:\n      name: github-release" in text
+    assert "name: ${{ github.event_name == 'workflow_dispatch' && 'release-verifier-harness' || 'pypi' }}" in text
+    assert "name: ${{ github.event_name == 'workflow_dispatch' && 'release-verifier-harness' || 'github-release' }}" in text
     assert "--draft=false" in text
     assert "verify-public:" in text
 
@@ -155,7 +155,7 @@ def test_release_workflow_digest_gates_idempotent_pypi_recovery():
     text = _workflow_text("release.yml")
 
     assert "scripts/check_pypi_release_state.py" in text
-    assert "if: steps.pypi-state.outputs.state != 'matching'" in text
+    assert "if: ${{ github.event_name != 'workflow_dispatch' && steps.pypi-state.outputs.state != 'matching' }}" in text
     assert "skip-existing: true" in text
     assert text.index("Verify recoverable PyPI state") < text.index(
         "Publish exact candidate to PyPI"
@@ -428,7 +428,7 @@ def test_draft_recovery_has_write_access_without_granting_it_to_smoke_jobs():
     assert recovery["if"] == "github.run_attempt > 1"
     steps = recovery["steps"]
     fetch = next(s for s in steps if s.get("uses") == "./.github/actions/fetch-release-candidate")
-    assert fetch["with"]["source"] == "auto"
+    assert fetch["with"]["source"] == "${{ github.event_name == 'workflow_dispatch' && 'artifacts' || 'auto' }}"
     assert not any("uv pip install" in s.get("run", "") for s in steps)
     uploads = [s for s in steps if s.get("uses", "").startswith("actions/upload-artifact@")]
     assert len(uploads) == 2
@@ -475,7 +475,7 @@ def test_public_recovery_runs_even_after_skipped_publisher_and_is_read_only():
     assert set(public["permissions"].values()) == {"read"}
     steps = public["steps"]
     fetch = next(s for s in steps if s.get("uses") == "./.github/actions/fetch-release-candidate")
-    assert fetch["with"]["source"] == "public"
+    assert fetch["with"]["source"] == "${{ github.event_name == 'workflow_dispatch' && 'artifacts' || 'public' }}"
     assert next(i for i,s in enumerate(steps) if "postpublication" in s.get("run", "")) < next(
         i for i,s in enumerate(steps) if "uv pip install" in s.get("run", ""))
     terminal = jobs["verify-completion"]
