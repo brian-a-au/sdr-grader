@@ -77,6 +77,15 @@ are rejected rather than coerced.
 
 ## Category file
 
+Governance boolean parameters (`history_present` / `History Present` and
+`sdr_doc_present` / `SDR Doc Present`) accept booleans and trimmed,
+case-insensitive `true` / `false` strings. Null falls through to runtime or
+metadata evidence; false stops fallback. Aliases within a selected source
+must agree. Unsupported consumed parameter values or conflicting aliases
+produce a rubric error (CLI exit 3) without publishing a new report. Validation
+occurs when the check consumes the parameter, so disabled rules do not validate
+unused overrides.
+
 Each non-meta YAML file declares one category and a list of rules.
 
 ```yaml

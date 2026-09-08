@@ -15,6 +15,8 @@ from typing import TYPE_CHECKING
 
 from markupsafe import Markup
 
+from sdr_grader.core.booleans import parse_boolean
+from sdr_grader.core.exceptions import InvalidSnapshotError
 from sdr_grader.render import Finding, FindingBlock
 from sdr_grader.rules.checks._helpers import (
     all_component_ids,
@@ -370,11 +372,16 @@ def check_persistence_lookback_cap(
         return []
     cap_days = int(ctx.params.get("cap_days", 90))
     violations: list[tuple[str, str, int]] = []
-    for d in impl.dimensions:
+    for index, d in enumerate(impl.dimensions):
         ps = parse_platform_setting(d.platform_specific.get("persistenceSetting"))
-        if not ps or not ps.get("enabled"):
+        path = f"dimensions[{index}].persistenceSetting"
+        if not ps or not parse_boolean(ps.get("enabled"), path=f"{path}.enabled"):
             continue
-        am = ps.get("allocationModel") or {}
+        am = ps.get("allocationModel")
+        if am is None:
+            am = {}
+        if not isinstance(am, dict):
+            raise InvalidSnapshotError(f"{path}.allocationModel: expected object or null")
         days = (
             _lookback_days(am.get("expiration"))
             or _lookback_days(ps.get("lookback"))

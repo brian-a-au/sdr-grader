@@ -11,6 +11,8 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
+from sdr_grader.core.booleans import boolean_aliases, parse_boolean
+from sdr_grader.core.exceptions import RubricValidationError
 from sdr_grader.render import Finding, FindingBlock
 from sdr_grader.rules.checks._helpers import (
     all_components,
@@ -279,21 +281,23 @@ def _supplementary_value(impl: Implementation, *keys: str):
 
 
 def _signal_present(impl: Implementation, ctx: RuleContext, *keys: str) -> bool:
-    """True when any of the named flags resolves to truthy.
+    """Consume only the selected source: params > runtime history > metadata.
 
-    Param overrides win first (so packs can pin behavior). Then fall back to
-    the snapshot's own metadata, which the loader / CI can populate.
+    Null falls through; explicit false stops fallback. Adapters retain raw
+    metadata so a valid override can replace malformed lower-priority evidence.
     """
-    for key in keys:
-        if key in ctx.params:
-            return bool(ctx.params[key])
-    if "history_present" in keys and impl.history_present is not None:
-        return impl.history_present
+    override = boolean_aliases(ctx.params, keys, path="params", error=RubricValidationError)
+    if override is not None:
+        return override
+    if "history_present" in keys:
+        runtime = parse_boolean(impl.history_present, path="history_present")
+        if runtime is not None:
+            return runtime
     metadata = impl.raw.get("metadata") if isinstance(impl.raw, dict) else None
     if isinstance(metadata, dict):
-        for key in keys:
-            if metadata.get(key):
-                return True
+        selected = boolean_aliases(metadata, keys, path="metadata")
+        if selected is not None:
+            return selected
     return False
 
 

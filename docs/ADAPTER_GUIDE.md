@@ -168,6 +168,25 @@ generic labels, or every bundled rule is filtered out.
 
 ## Supplementary inputs
 
+### Boolean evidence
+
+Governance `history_present` / `History Present` and `sdr_doc_present` /
+`SDR Doc Present`, plus CJA attribution and persistence `enabled` fields,
+accept booleans or trimmed, case-insensitive `true` / `false` strings.
+Missing or null evidence is unavailable; explicit false remains false.
+Numbers (including 0/1), other strings, lists, and objects are invalid flag
+values. Consumed malformed snapshot evidence returns CLI exit 1 without
+replacing an existing report. Enabled settings require object-or-null nested
+attribution/allocation models.
+
+Governance checks consume custom parameters first, then runtime same-instance
+history when applicable, then metadata. Only the selected source is validated;
+agreeing aliases are accepted and conflicting aliases are invalid. Adapters
+retain metadata so a valid override can replace lower-priority evidence.
+Textual false can now restore governance findings and lower a score, or keep
+CJA settings disabled and remove a spurious finding. Rebaseline gates with
+the same package version and rubric pack.
+
 Some rules need data the snapshot itself doesn't carry. Rather than
 building a dedicated adapter for each side input, the CLI accepts
 arbitrary JSON files attached at run time:
