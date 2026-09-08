@@ -3,6 +3,19 @@
 All notable changes follow the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
+## 1.3.1 — 2026-09-08
+
+- Resolve CJA calculated-metric segment references stored in exporter-supported
+  object/list wrappers. Preserve the full target ID before reconciling its
+  abbreviated summary, removing false SCH-002/CALC-002 findings and their
+  existing penalties when the exact segment is present in the snapshot.
+- Retain findings for genuinely missing targets and missing dependencies inside
+  resolved segments. Do not infer project-only availability or project bindings.
+- Preserve offline, deterministic grading, AA behavior, global inventory counts,
+  rubric pack `2.0`, JSON schema `1`, and scoring arithmetic. Corrected findings
+  can change grades and threshold exits; compare snapshots with the same grader
+  version and evidence coverage.
+
 ## 1.3.0 — 2026-09-07
 
 One correctness release for boolean evidence, filename chronology, attribution

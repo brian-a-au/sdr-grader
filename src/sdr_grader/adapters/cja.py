@@ -372,7 +372,10 @@ def _inventory_references(
             elif func == "attr":
                 add("dimension", node.get("name"))
             elif func in ("segment", "segment-ref"):
-                add("segment", node.get("segment_id", node.get("id")))
+                value = node.get("segment_id", node.get("id"))
+                if not segment and func == "segment" and isinstance(value, (dict, list)):
+                    value = _calc_segment_reference_id(value)
+                add("segment", value)
             if segment:
                 # CJA segment exporter also accepts these explicit ID slots.
                 for key, kind in (("dimension", "dimension"), ("dim", "dimension"),
@@ -404,6 +407,25 @@ def _inventory_references(
             else:
                 refs.update(matches)
     return sorted(refs)
+
+
+def _calc_segment_reference_id(value: Any) -> str:
+    """Unwrap the exporter's typed segment slot without shortening its ID.
+
+    cja_auto_sdr 3.12.0 _normalize_reference_value selects the first usable
+    list entry or mapping slot in this order. Only this reference-bearing
+    slot establishes identity; arbitrary nested objects do not.
+    """
+    if isinstance(value, str):
+        return value.strip() if value.strip().lower() not in {"", "nan", "none", "null"} else ""
+    if isinstance(value, dict):
+        value = [value[key] for key in ("segment_id", "id", "name", "metric", "value", "val")
+                 if key in value]
+    if isinstance(value, list):
+        for item in value:
+            if reference := _calc_segment_reference_id(item):
+                return reference
+    return ""
 
 
 def _inventory_ref_list(value: Any) -> list[str]:

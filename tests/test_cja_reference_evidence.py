@@ -228,6 +228,90 @@ def test_dot_shortening_and_unknown_nodes_do_not_erase_evidence():
     assert adapt(data).calculated_metrics[0].references == ["metrics/unknown", "x"]
 
 
+@pytest.mark.parametrize("pack", ["strict", "pragmatic"])
+@pytest.mark.parametrize("present", [True, False])
+@pytest.mark.parametrize("wrapped", [
+    {"id": "segments/s_saved"},
+    {"segment_id": "segments/s_saved", "name": "Label, not an ID"},
+    [None, "", {"id": "segments/s_saved"}],
+])
+def test_calculated_metric_wrapped_segment_id_resolves_exact_target(pack, present, wrapped):
+    # Source: cja_auto_sdr 3.12.0, dcafcf10435a9218ec9632f82dca246581224269,
+    # inventory/calculated_metrics.py::_normalize_reference_value and _parse_formula.
+    # The exporter retains the wrapper in definition_json but shortens its summary.
+    # Synthetic identities characterize that exporter contract, not a customer capture.
+    data = snapshot()
+    record = data["calculated_metrics"]["metrics"][0]
+    record["segment_references"] = ["s_saved"]
+    record["definition_json"] = {
+        "func": "calc-metric",
+        "formula": {
+            "func": "segment", "segment_id": wrapped,
+            "metric": {"func": "metric", "name": "metrics/visits"},
+        },
+    }
+    data["segments"] = [{"segment_id": "segments/s_saved"}] if present else []
+    normalized = adapt(data)
+    assert normalized.calculated_metrics[0].references == ["metrics/visits", "segments/s_saved"]
+    report = grade(normalized, load_rubric(BUNDLED_PACKS_DIR / pack))
+    findings = [f for f in report.findings if f.id in {"SCH-002", "CALC-002"}]
+    assert {f.id for f in findings} == (set() if present else {"SCH-002", "CALC-002"})
+    for finding in findings:
+        assert [item for block in finding.body for item in (block.items or [])] == [
+            "calc_metric cm1 -> missing segments/s_saved" if finding.id == "SCH-002"
+            else "cm1 -> segments/s_saved"
+        ]
+
+
+def test_unknown_segment_wrapper_cannot_resolve_summary_by_inventory_suffix():
+    data = snapshot()
+    record = data["calculated_metrics"]["metrics"][0]
+    record["segment_references"] = ["s_saved"]
+    record["definition_json"] = {
+        "func": "segment", "segment_id": {"unrelated": "segments/s_saved"},
+    }
+    data["segments"] = [{"segment_id": "segments/s_saved"}]
+    assert adapt(data).calculated_metrics[0].references == ["s_saved", "visits"]
+
+
+@pytest.mark.parametrize("pack", ["strict", "pragmatic"])
+def test_wrapped_segment_reference_matches_canonical_cli_and_python_reports(tmp_path, pack):
+    from sdr_grader.render.json_output import report_to_dict
+
+    reports, htmls, exits = [], [], []
+    for value in ("segments/s_saved", {"id": "segments/s_saved"}):
+        data = snapshot()
+        record = data["calculated_metrics"]["metrics"][0]
+        record["segment_references"] = ["s_saved"]
+        record["definition_json"] = json.dumps({
+            "func": "segment", "segment_id": value,
+            "metric": {"func": "metric", "name": "metrics/visits"},
+        })
+        # Resolving the target must not conceal its missing outgoing dependency.
+        data["segments"] = [{
+            "segment_id": "segments/s_saved", "metric_references": ["metrics/missing"],
+        }]
+        path = tmp_path / "snapshot.json"
+        path.write_text(json.dumps(data))
+        out, machine = tmp_path / "report.html", tmp_path / "report.json"
+        for _ in range(2):
+            exits.append(main([
+                str(path), "--rubric", str(BUNDLED_PACKS_DIR / pack),
+                "--output", str(out), "--json", str(machine), "--quiet",
+            ]))
+            reports.append(json.loads(machine.read_text()))
+            htmls.append(out.read_bytes())
+        direct = grade(adapt(data, source=str(path)), load_rubric(BUNDLED_PACKS_DIR / pack))
+        assert reports[-1] == report_to_dict(direct)
+        references = [f for f in direct.findings if f.id in {"SCH-002", "CALC-002"}]
+        assert [f.id for f in references] == ["SCH-002"]
+        assert [item for block in references[0].body for item in (block.items or [])] == [
+            "segment segments/s_saved -> missing metrics/missing"
+        ]
+    assert all(report == reports[0] for report in reports)
+    assert len(set(htmls)) == len(set(exits)) == 1
+
+
 @pytest.mark.parametrize("literal_key", ["str", "list", "glob"])
 @pytest.mark.parametrize("as_list", [False, True])
 def test_ast_shaped_comparison_literals_are_not_reference_evidence(literal_key, as_list):

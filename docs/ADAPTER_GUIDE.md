@@ -101,6 +101,10 @@ nested operands and filter context. A summary abbreviation expands only when
 that same definition supplies exactly one reference of the matching kind with
 that exporter abbreviation; conflicting or otherwise unmatched summary evidence
 is retained as unresolved evidence. No inventory-wide suffix lookup is used.
+For calculated metrics, CJA also unwraps exporter-supported object/list values
+inside a typed `segment` reference slot, preserving the full segment ID before
+reconciling its abbreviated summary. Missing targets remain unresolved; this
+does not establish project-only availability or infer a project binding.
 Normalized references are deduplicated and sorted. Missing/malformed optional
 definitions still use the empty fallback and do not discard independent summary
 references. This CJA inventory-specific behavior leaves the shared
