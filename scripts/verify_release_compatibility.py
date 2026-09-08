@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compare the candidate package with the immutable v1.2.2 behavior baseline."""
+"""Compare the candidate against immutable v1.2.2 and v1.2.9 behavior contracts."""
 
 from __future__ import annotations
 
@@ -133,7 +133,8 @@ def _verify_uv(uv: str, *, repo_root: Path, environment: dict[str, str]) -> None
         raise CompatibilityError(f"uv {UV_VERSION} is required, got {output!r}")
 
 
-def _fetch_and_verify_baseline(repo_root: Path, environment: dict[str, str]) -> None:
+def _fetch_and_verify_baseline(repo_root: Path, environment: dict[str, str], *,
+                               tag: str = BASELINE_TAG, commit: str = BASELINE_COMMIT) -> None:
     fetch = [
         "git",
         "-c",
@@ -144,25 +145,26 @@ def _fetch_and_verify_baseline(repo_root: Path, environment: dict[str, str]) -> 
         "--no-tags",
         "--force",
         PUBLIC_REMOTE,
-        f"+refs/tags/{BASELINE_TAG}:refs/tags/{BASELINE_TAG}",
+        f"+refs/tags/{tag}:refs/tags/{tag}",
     ]
     result = _run(fetch, cwd=repo_root, env=environment, capture=True)
     if result.returncode != 0:
         detail = (result.stderr or result.stdout or "").strip()
         raise CompatibilityError(f"credential-free baseline tag fetch failed: {detail}")
     peeled = _checked_output(
-        ["git", "rev-parse", f"refs/tags/{BASELINE_TAG}^{{}}"],
+        ["git", "rev-parse", f"refs/tags/{tag}^{{}}"],
         cwd=repo_root,
         env=environment,
     )
-    if peeled != BASELINE_COMMIT:
-        raise CompatibilityError(f"{BASELINE_TAG} peeled to {peeled}, expected {BASELINE_COMMIT}")
+    if peeled != commit:
+        raise CompatibilityError(f"{tag} peeled to {peeled}, expected {commit}")
 
 
-def _extract_baseline(repo_root: Path, destination: Path, environment: dict[str, str]) -> None:
+def _extract_baseline(repo_root: Path, destination: Path, environment: dict[str, str], *,
+                      commit: str = BASELINE_COMMIT) -> None:
     archive_path = destination.parent / "baseline.tar"
     result = _run(
-        ["git", "archive", "--format=tar", "-o", str(archive_path), BASELINE_COMMIT],
+        ["git", "archive", "--format=tar", "-o", str(archive_path), commit],
         cwd=repo_root,
         env=environment,
         capture=True,
@@ -614,6 +616,180 @@ def verify_compatibility(repo_root: Path = ROOT, *, uv: str = "uv") -> None:
         _verify_expected_candidate(candidate, baseline)
 
 
+# This gate is deliberately separate from the historical v1.2.2 transforms.
+CORRECTNESS_BASELINE_TAG = "v1.2.9"
+CORRECTNESS_BASELINE_COMMIT = "9687fcc66622d454cc121cd49daa319c0c01a939"
+
+
+def _correctness_payload(value: Any) -> Any:
+    """Only package identity differs unconditionally; retain every other field."""
+    if isinstance(value, dict):
+        return {k: "<package-version>" if k == "tool_version" else _correctness_payload(v)
+                for k, v in value.items()}
+    if isinstance(value, list):
+        return [_correctness_payload(v) for v in value]
+    return value
+
+
+def _exact_json_equal(before: Any, after: Any) -> bool:
+    """Compare decoded JSON without equating booleans, integers, and floats."""
+    if type(before) is not type(after):
+        return False
+    if isinstance(before, dict):
+        return before.keys() == after.keys() and all(
+            _exact_json_equal(value, after[key]) for key, value in before.items()
+        )
+    if isinstance(before, list):
+        return len(before) == len(after) and all(
+            _exact_json_equal(a, b) for a, b in zip(before, after, strict=True)
+        )
+    return before == after
+
+
+def _exact_deltas(before: Any, after: Any, path: str = "") -> list[dict[str, Any]]:
+    if _exact_json_equal(before, after):
+        return []
+    if isinstance(before, dict) and isinstance(after, dict) and before.keys() == after.keys():
+        return [delta for key in sorted(before) for delta in _exact_deltas(
+            before[key], after[key], path + "/" + key.replace("~", "~0").replace("/", "~1"))]
+    if isinstance(before, list) and isinstance(after, list) and len(before) == len(after):
+        return [delta for i, (a, b) in enumerate(zip(before, after, strict=True))
+                for delta in _exact_deltas(a, b, path + f"/{i}")]
+    return [{"path": path, "before": before, "after": after}]
+
+
+def _verify_correctness_case(name, baseline, candidate, contract):
+    if not _exact_json_equal(baseline, contract["baseline"]):
+        raise CompatibilityError(f"{name}: reviewed v1.2.9 baseline outcome drifted")
+    if not _exact_json_equal(candidate, contract["candidate"]):
+        raise CompatibilityError(f"{name}: candidate differs beyond exact approved deltas")
+    if not _exact_json_equal(_exact_deltas(baseline, candidate), contract["deltas"]):
+        raise CompatibilityError(f"{name}: recorded exact deltas do not match outcomes")
+
+
+_TREND_PROBE = '''import json,sys
+from sdr_grader.cli.main import BUNDLED_PACKS_DIR
+from sdr_grader.rules.rubric import load_rubric
+from sdr_grader.trend.runner import build_trend_report
+from sdr_grader.render.json_output import report_to_dict
+trend=build_trend_report('snapshots',load_rubric(BUNDLED_PACKS_DIR/sys.argv[1]))
+print(json.dumps({'instance_id':trend.instance_id,'platform':trend.platform,'points':[
+ {'timestamp':p.timestamp.isoformat(),'source':p.source,'report':report_to_dict(p.report)} for p in trend.points]},sort_keys=True))
+'''
+
+
+def _run_correctness_case(*, console, python, environment, case_root, fixture_root, case):
+    """Run twice, preserving complete report or typed contextual error outcomes."""
+    case_root.mkdir(parents=True)
+    for filename, data in case.get("files", {}).items():
+        path = case_root / filename
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(data, sort_keys=True), encoding="utf-8")
+    if "fixture" in case:
+        shutil.copyfile(fixture_root / case["fixture"], case_root / "input.json")
+    rubric_args = ["--pack", case.get("pack", "strict")]
+    if "rubric" in case:
+        # YAML is a superset of JSON; avoid importing candidate dependencies here.
+        (case_root / "pack").mkdir()
+        for filename, data in case["rubric"].items():
+            (case_root / "pack" / filename).write_text(json.dumps(data), encoding="utf-8")
+        rubric_args = ["--rubric", "pack"]
+    trend = case.get("mode") == "trend"
+    args = [str(console), case.get("input", "input.json"), *rubric_args,
+            "--output", "grade.html", "--quiet", "--fail-below", "A"]
+    args += ["--trend"] if trend else ["--json", "grade.json"]
+    if case.get("mode") == "at":
+        args += ["--at", "2026-04-25T00:00:00Z"]
+    previous = None
+    for _ in range(2):
+        for filename in ("grade.html", "grade.json"):
+            (case_root / filename).unlink(missing_ok=True)
+        result = _run(args, cwd=case_root, env=environment, capture=True)
+        files = {name: (case_root / name).read_bytes() for name in ("grade.html", "grade.json")
+                 if (case_root / name).exists()}
+        if result.returncode in (1, 3):
+            if files:
+                raise CompatibilityError(f"{case['name']}: error published success artifacts")
+            prefix = "rubric error:" if result.returncode == 3 else "error:"
+            diagnostic = result.stderr.strip()
+            if not diagnostic.startswith(prefix) or "Traceback" in diagnostic:
+                raise CompatibilityError(f"{case['name']}: untyped failure: {diagnostic}")
+            outcome = {"kind": "rubric-error" if result.returncode == 3 else "invalid-input",
+                       "exit": result.returncode, "diagnostic": diagnostic,
+                       "html_present": False, "json_present": False}
+        elif result.returncode in (0, 2):
+            if "grade.html" not in files or (not trend and "grade.json" not in files):
+                raise CompatibilityError(f"{case['name']}: success missing reports")
+            if trend:
+                probe = _run([str(python), "-c", _TREND_PROBE, case['pack']],
+                             cwd=case_root, env=environment, capture=True)
+                if probe.returncode:
+                    raise CompatibilityError(f"{case['name']}: trend structure probe failed")
+                payload = json.loads(probe.stdout)
+            else:
+                payload = json.loads(files["grade.json"])
+                if not {"schema_version", "overall_pct", "findings", "categories"} <= payload.keys():
+                    raise CompatibilityError(f"{case['name']}: missing report contract")
+            outcome = {"kind": "report", "exit": result.returncode,
+                       "report": _correctness_payload(payload), "html_present": True,
+                       "json_present": not trend}
+        else:
+            raise CompatibilityError(f"{case['name']}: unexpected CLI exit {result.returncode}")
+        observed = (outcome, files)
+        if previous is not None and observed != previous:
+            raise CompatibilityError(f"{case['name']}: repeated outputs are not deterministic")
+        previous = observed
+    return outcome
+
+
+def _run_correctness_matrix(*, environment_root, environment, work_root, fixture_root):
+    console, python = _environment_paths(environment_root)
+    cases = json.loads((fixture_root / "correctness_1_3/cases.json").read_text())
+    return {case["name"]: _run_correctness_case(
+        console=console, python=python, environment=environment,
+        case_root=work_root / case["name"], fixture_root=fixture_root, case=case)
+        for case in cases}
+
+
+def verify_correctness_compatibility(repo_root: Path = ROOT, *, uv: str = "uv") -> None:
+    repo_root = Path(repo_root).resolve()
+    environment = _clean_environment()
+    _verify_uv(uv, repo_root=repo_root, environment=environment)
+    _fetch_and_verify_baseline(repo_root, environment, tag=CORRECTNESS_BASELINE_TAG,
+                               commit=CORRECTNESS_BASELINE_COMMIT)
+    fixtures = repo_root / "tests/fixtures"
+    expected = json.loads((fixtures / "correctness_1_3/expectations.json").read_text())
+    if expected["baseline_commit"] != CORRECTNESS_BASELINE_COMMIT:
+        raise CompatibilityError("correctness expectation baseline identity differs")
+    with tempfile.TemporaryDirectory(prefix="sdr-grader-correctness-") as temporary:
+        temp = Path(temporary).resolve()
+        if temp.is_relative_to(repo_root):
+            raise CompatibilityError("correctness workspace must be outside the checkout")
+        baseline_source = temp / "baseline-source"
+        _extract_baseline(repo_root, baseline_source, environment, commit=CORRECTNESS_BASELINE_COMMIT)
+        outcomes = []
+        for label, source in [("baseline", baseline_source), ("candidate", repo_root)]:
+            env_root = temp / f"{label}-env"
+            env = _sync_environment(uv, source_root=source, environment_root=env_root,
+                                    base_environment=environment)
+            _, python = _environment_paths(env_root)
+            origin = _checked_output(
+                [str(python), "-c", "import sdr_grader; print(sdr_grader.__file__)"],
+                cwd=temp, env=env)
+            if not Path(origin).resolve().is_relative_to(env_root.resolve()):
+                raise CompatibilityError(f"{label}: correctness import escaped installed environment")
+            outcomes.append(_run_correctness_matrix(environment_root=env_root, environment=env,
+                             work_root=temp / label, fixture_root=fixtures))
+        baseline, candidate = outcomes
+        if baseline.keys() != expected["cases"].keys() or candidate.keys() != baseline.keys():
+            raise CompatibilityError("correctness case matrix differs from reviewed contract")
+        for name in baseline:
+            _verify_correctness_case(name, baseline[name], candidate[name], expected["cases"][name])
+    print(f"v1.2.9 correctness compatibility verified: {len(baseline)} exact outcomes; "
+          "all five corrections, both platforms/packs, custom packs, typed errors, "
+          "threshold exits and repeated report determinism")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo-root", type=Path, default=ROOT)
@@ -621,6 +797,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         verify_compatibility(args.repo_root, uv=args.uv)
+        verify_correctness_compatibility(args.repo_root, uv=args.uv)
     except (CompatibilityError, OSError, json.JSONDecodeError) as exc:
         print(f"compatibility verification failed: {exc}", file=sys.stderr)
         return 1

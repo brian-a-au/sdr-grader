@@ -5,6 +5,13 @@ packs. `strict` and `pragmatic` contain the same 27 rule IDs in the same six
 categories; their parameters and severities may differ. The YAML and registered
 check functions are the runtime authorities when this narrative drifts.
 
+Package v1.3.0 corrects how evidence reaches these unchanged checks: semantic
+booleans, complete filename instants, explicit time-decay descriptions,
+consistent segment identities, and shared custom governance date parsing.
+These are implementation corrections, not rubric recalibration. See
+[the current correctness disposition](CORRECTNESS_AUDIT_1.3.0.md); historical
+audits remain evidence of their recorded package versions.
+
 The May 2026 private-cohort work cited below was compatibility evidence, not an
 admitted grading-calibration cohort. The 108 snapshots (100 CJA, 8 AA) helped
 exercise adapters and premises, but zero entries met the later calibration
