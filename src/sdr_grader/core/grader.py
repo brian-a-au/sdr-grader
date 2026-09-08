@@ -22,6 +22,7 @@ from markupsafe import Markup
 
 from sdr_grader.core.grade_calc import GradeResult, compute_grade
 from sdr_grader.core.models import Implementation
+from sdr_grader.core.segment_identity import validate_segment_identities
 from sdr_grader.core.timeparse import parse_timestamp
 from sdr_grader.render import (
     Adapter,
@@ -62,6 +63,7 @@ def grade(
     suppression: Suppression | None = None,
 ) -> Report:
     """Run the rubric over an Implementation and return a render-ready Report."""
+    validate_segment_identities(impl)
     if suppression is not None:
         rubric = apply_to_rubric(rubric, suppression)
     rule_inventory = resolve_effective_rules(
