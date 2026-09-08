@@ -6,7 +6,8 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def retained_pair(tmp_path, monkeypatch, records, *, attempt=3, source='artifacts'):
+def retained_pair(tmp_path, monkeypatch, records, *, attempt=3, source='artifacts',
+                  harness='false', event='push'):
     """Execute the production selector, so tests cannot drift to a copied loop."""
     import json
 
@@ -17,6 +18,7 @@ def retained_pair(tmp_path, monkeypatch, records, *, attempt=3, source='artifact
     (tmp_path / 'retained-artifacts.json').write_text(json.dumps([{'artifacts': records}]))
     output = tmp_path / 'outputs'
     for key, value in {'GITHUB_SHA': 'a' * 40, 'GITHUB_RUN_ATTEMPT': str(attempt),
+                       'RETENTION_HARNESS': harness, 'GITHUB_EVENT_NAME': event,
                        'REQUESTED_SOURCE': source, 'GITHUB_OUTPUT': str(output)}.items():
         monkeypatch.setenv(key, value)
     exec(compile(script, '<production-retained-selector>', 'exec'), {})
@@ -62,6 +64,101 @@ def test_retained_ambiguous_pair_fails_closed(tmp_path, monkeypatch):
 
 def test_retained_auto_allows_verified_release_recovery_when_no_pair(tmp_path, monkeypatch):
     assert retained_pair(tmp_path, monkeypatch, [], source='auto') == {'available': 'false'}
+
+
+def test_harness_can_restore_backup_when_full_rerun_deleted_artifacts(tmp_path, monkeypatch):
+    assert retained_pair(tmp_path, monkeypatch, [], harness='true', event='workflow_dispatch') == {
+        'available': 'false'}
+
+
+@pytest.mark.parametrize('harness,event', [('true', 'push'), ('false', 'workflow_dispatch')])
+def test_production_cannot_select_harness_backup(tmp_path, monkeypatch, harness, event):
+    with pytest.raises(SystemExit, match='immutable artifacts unavailable'):
+        retained_pair(tmp_path, monkeypatch, [], harness=harness, event=event)
+
+
+def test_harness_backup_is_exact_immutable_and_validated_before_consumption():
+    build = workflow()['jobs']['build']
+    assert build['if'] == 'github.run_attempt == 1'
+    build_steps = build['steps']
+    action_steps = yaml.safe_load(
+        (ROOT / '.github/actions/fetch-release-candidate/action.yml').read_text())['runs']['steps']
+    pin = '55cc8345863c7cc4c66a329aec7e433d2d1c52a9'
+    key = 'harness-candidate-${{ github.repository_id }}-${{ github.run_id }}-${{ github.sha }}'
+    save = next(step for step in build_steps if step.get('id') == 'save-harness-backup')
+    lookup = next(step for step in build_steps if step.get('id') == 'check-harness-backup')
+    restore = next(step for step in action_steps if step.get('id') == 'restore-harness-backup')
+    assert save['uses'] == f'actions/cache/save@{pin}'
+    for step in (save, lookup, restore):
+        assert "github.event_name == 'workflow_dispatch'" in step['if']
+        assert step['with']['key'] == key
+        assert step['with']['path'] == '${{ github.workspace }}/.harness-candidate-backup'
+        assert 'restore-keys' not in step['with']
+    for step in (lookup, restore):
+        assert step['uses'] == f'actions/cache/restore@{pin}'
+        assert step['with']['fail-on-cache-miss'] is True
+    assert lookup['with']['lookup-only'] is True
+    assert "inputs.harness == 'true'" in restore['if']
+    assert "steps.retained.outputs.available == 'false'" in restore['if']
+    save_gate = next(step for step in build_steps if step.get('name') == 'Require saved harness backup')
+    assert "steps.check-harness-backup.outputs.cache-hit" in str(save_gate['env'])
+    assert 'test "${CACHE_HIT}" = true' in save_gate['run']
+    restore_gate = next(step for step in action_steps if step.get('name') == 'Materialize exact harness backup')
+    assert "steps.restore-harness-backup.outputs.cache-hit" in str(restore_gate['env'])
+    assert 'test "${CACHE_HIT}" = true' in restore_gate['run']
+    names = [step.get('name') for step in action_steps]
+    assert names.index('Materialize exact harness backup') < names.index('Verify recovered distribution provenance')
+    assert names.index('Verify recovered distribution provenance') < names.index('Verify fetched candidate identity')
+    for name in ('Recover distributions and evidence from the existing release',
+                 'Verify exact release inventory and publication state'):
+        step = next(step for step in action_steps if step.get('name') == name)
+        assert "inputs.harness != 'true'" in step['if']
+
+
+@pytest.mark.parametrize('cache_hit', ['true', 'false', ''])
+def test_harness_backup_materializes_identical_bytes_only_on_exact_hit(tmp_path, cache_hit):
+    import importlib.util
+    import os
+    import shutil
+    import subprocess
+
+    spec = importlib.util.spec_from_file_location('readme_tests', ROOT / 'tests/test_published_readme.py')
+    existing = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(existing)
+    dist, wheel, evidence = existing._artifacts(tmp_path, '# Frozen harness candidate\n')
+    evidence_dir = tmp_path / 'release-evidence'
+    evidence_dir.mkdir()
+    evidence.rename(evidence_dir / evidence.name)
+    originals = {path.name: path.read_bytes() for directory in (dist, evidence_dir)
+                 for path in directory.iterdir()}
+    prepare = next(step for step in workflow()['jobs']['build']['steps']
+                   if step.get('name') == 'Prepare immutable harness backup')
+    subprocess.run(['bash', '-c', prepare['run']], cwd=tmp_path, check=True)
+    backup = tmp_path / '.harness-candidate-backup'
+    assert {path.name: path.read_bytes() for path in backup.iterdir()} == originals
+    shutil.rmtree(dist)
+    shutil.rmtree(evidence_dir)
+    action_steps = yaml.safe_load(
+        (ROOT / '.github/actions/fetch-release-candidate/action.yml').read_text())['runs']['steps']
+    materialize = next(step for step in action_steps if step.get('name') == 'Materialize exact harness backup')
+    result = subprocess.run(['bash', '-c', materialize['run']], cwd=tmp_path,
+                            env={**os.environ, 'CACHE_HIT': cache_hit, 'DIST_DIR': str(dist),
+                                 'EVIDENCE_DIR': str(evidence_dir)}, capture_output=True, text=True)
+    if cache_hit != 'true':
+        assert result.returncode != 0
+        assert not dist.exists() and not evidence_dir.exists()
+        return
+    assert result.returncode == 0, result.stderr
+    assert {path.name: path.read_bytes() for directory in (dist, evidence_dir)
+            for path in directory.iterdir()} == originals
+    module = fixture_module()
+    evidence = evidence_dir / 'release-artifacts.json'
+    module.verify_candidate(dist, evidence, version=existing.VERSION, source_sha=existing.SOURCE_SHA)
+    with pytest.raises(Exception, match='source commit differs'):
+        module.verify_candidate(dist, evidence, version=existing.VERSION, source_sha='0' * 40)
+    wheel.write_bytes(b'tampered restored bytes')
+    with pytest.raises(Exception):
+        module.verify_candidate(dist, evidence, version=existing.VERSION, source_sha=existing.SOURCE_SHA)
 
 
 def workflow():
