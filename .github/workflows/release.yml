@@ -609,7 +609,10 @@ jobs:
           mkdir -p "${PUBLIC_OUT}" "${CANDIDATE_OUT}"
           uv venv --python "${{ matrix.python-version }}" "${PUBLIC_ENV}"
           uv venv --python "${{ matrix.python-version }}" "${CANDIDATE_ENV}"
-          uv pip install --python "${PUBLIC_ENV}/bin/python" "sdr-grader==${VERSION}"
+          python3 scripts/install_public_release.py \
+            --python "${PUBLIC_ENV}/bin/python" --version "${VERSION}" \
+            --dist-dir candidate-dist --evidence release-evidence/release-artifacts.json \
+            --output "${RUNNER_TEMP}/public-install-evidence.json"
           uv pip install --python "${CANDIDATE_ENV}/bin/python" candidate-dist/*.whl
           for TARGET in public candidate; do
             if [ "${TARGET}" = "public" ]; then
