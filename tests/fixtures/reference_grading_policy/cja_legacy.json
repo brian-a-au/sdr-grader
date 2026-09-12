@@ -1,0 +1,20 @@
+{
+  "metrics": [],
+  "dimensions": [],
+  "segments": [],
+  "calculated_metrics": {
+    "metrics": [
+      {
+        "id": "cm_policy",
+        "name": "Policy metric",
+        "description": "Synthetic policy evidence",
+        "segment_references": [
+          "segments/missing"
+        ]
+      }
+    ]
+  },
+  "metadata": {
+    "Data View ID": "policy_fixture"
+  }
+}

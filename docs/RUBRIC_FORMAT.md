@@ -177,3 +177,23 @@ custom pack as a gate, verify that it contains at least one unsuppressed rule
 for every platform you grade.
 
 To extend with a new check function, see [CHECK_FUNCTION_GUIDE.md](CHECK_FUNCTION_GUIDE.md).
+
+## Reference grading policy parameter
+
+For `broken_references` and `calc_formula_broken_refs`, policy 2.1 sets:
+
+```yaml
+params:
+  exclude_unresolved_calculated_metric_segments: true
+```
+
+The value must be a YAML boolean. Omitted or `false` preserves prior scoring,
+including in custom packs. This is check-name based and works with custom rule
+IDs. The flag excludes only unresolved, unambiguously typed calculated-metric
+segment references; other checks and mixed penalties stay active. Excluded-only
+rules leave the severity denominator and are disclosed as not assessed.
+
+Both bundled packs are 2.1 and require grader 1.4.0 or later. An older grader
+ignores this parameter and must not be used with a policy-2.1 pack. Version text
+alone does not enable policy behavior. See
+[Reference grading policy](REFERENCE_GRADING_POLICY.md).

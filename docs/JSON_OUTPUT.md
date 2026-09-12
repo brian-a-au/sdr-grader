@@ -148,3 +148,20 @@ JSON output is uncapped even when the HTML renderer shortens very large finding
 item lists. Review the complete artifact before sharing it. The authoritative
 comparison of local HTML, uncapped JSON, CI logs, GitHub Actions artifacts, and
 Claude conversation context is the [report-sharing privacy matrix](../SECURITY.md#report-sharing-privacy-matrix).
+
+## Unverified reference diagnostics
+
+Policy 2.1 uses existing `methodology.paragraphs` for non-scoring, unverified
+calculated-metric-to-segment relationships. A paragraph identifies the canonical
+consumer/target pair once and lists sorted participating rule IDs. These are
+human-readable diagnostics, not a new structured reference API. The paragraphs
+are uncapped in JSON and HTML; the HTML finding-component cap of 50 does not
+apply. Dynamic IDs are escaped in the reviewed markup.
+
+`methodology.skipped` includes one entry per excluded-only rule, describing it
+as not assessed. Partial exclusions do not mark a rule skipped. Empty categories
+retain the numeric default 100, with explicit unassessed disclosure in summary
+and methodology; neither this number nor an exclusion verifies a reference.
+Diagnostics never enter findings, remediations, finding churn, or threshold
+inputs. Schema 1 keys and types remain unchanged. See
+[Reference grading policy](REFERENCE_GRADING_POLICY.md).

@@ -1,0 +1,27 @@
+{
+  "metrics": [],
+  "dimensions": [],
+  "segments": [],
+  "calculated_metrics": [
+    {
+      "id": "cm_policy",
+      "name": "Policy metric",
+      "description": "Synthetic policy evidence",
+      "definition": {
+        "func": "calc-metric",
+        "formula": {
+          "func": "add",
+          "args": [
+            {
+              "func": "segment-ref",
+              "id": "segments/missing"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "report_suite": {
+    "rsid": "policy_fixture"
+  }
+}

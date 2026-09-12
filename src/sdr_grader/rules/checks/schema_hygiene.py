@@ -17,11 +17,11 @@ from markupsafe import Markup
 
 from sdr_grader.core.booleans import parse_boolean
 from sdr_grader.core.exceptions import InvalidSnapshotError
+from sdr_grader.core.reference_policy import assess_references
 from sdr_grader.render import Finding, FindingBlock
 from sdr_grader.rules.checks._helpers import (
     all_component_ids,
     all_components,
-    all_segment_ids,
     collect_referenced_ids,
     cycle_groups,
     join_with_and,
@@ -154,20 +154,8 @@ def check_broken_references(
     impl: Implementation, ctx: RuleContext
 ) -> list[Finding]:
     """Report references unresolved by the exported inventory and known aliases."""
-    component_ids = all_component_ids(impl)
-    segment_ids = all_segment_ids(impl)
-    calc_ids = {cm.id for cm in impl.calculated_metrics}
-    known = component_ids | segment_ids | calc_ids | impl.available_reference_ids
-
-    broken: list[tuple[str, str, str]] = []  # (referrer_type, referrer_id, missing_ref)
-    for seg in impl.segments:
-        for ref in seg.references:
-            if ref not in known:
-                broken.append(("segment", seg.id, ref))
-    for cm in impl.calculated_metrics:
-        for ref in cm.references:
-            if ref not in known:
-                broken.append(("calc_metric", cm.id, ref))
+    assessment = assess_references(impl, check_name="broken_references", params=ctx.params)
+    broken = assessment.unresolved_scoring
 
     if not broken:
         return []

@@ -286,3 +286,18 @@ at least:
 Use a small, deterministic builder script under `scripts/` and check
 both the messy and clean fixtures into `tests/fixtures/` so downstream
 rule tests can assert specific counts against them.
+
+## Reference classification for grading
+
+`CalculatedMetric.reference_classifications` is optional normalized companion
+metadata. Each canonical ID maps to `ReferenceClassification(kinds, blockers)`;
+both fields are frozensets. Missing metadata means unknown. AA classifies the
+full accepted definition before formula narrowing; CJA classifies decoded
+`definition_json`. Supported structured positions and ambiguity rules are
+specified in [Reference grading policy](REFERENCE_GRADING_POLICY.md).
+
+Keep `references`, order, formula, inventories, available IDs, and aliases
+unchanged. Only exactly segment typing with no blocker can qualify after
+inventory resolution fails. Summaries, ID prefixes, and inventory absence
+cannot grant eligibility. This field is internal adapter metadata, not a new
+snapshot field or a target-availability assertion.

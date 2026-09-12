@@ -613,7 +613,12 @@ def verify_compatibility(repo_root: Path = ROOT, *, uv: str = "uv") -> None:
             fixture_root=fixture_root,
             readme_arguments=readme_arguments,
         )
-        _verify_expected_candidate(candidate, baseline)
+        policy = _load_policy_contract(fixture_root)
+        expected_candidate = _apply_policy_deltas(
+            _expected_candidate_from_baseline(baseline), policy["public_deltas"]
+        )
+        if not _exact_json_equal(candidate, expected_candidate):
+            raise CompatibilityError("public matrix differs beyond exact reference-policy deltas")
 
 
 # This gate is deliberately separate from the historical v1.2.2 transforms.
@@ -742,6 +747,51 @@ def _run_correctness_case(*, console, python, environment, case_root, fixture_ro
     return outcome
 
 
+def _load_policy_contract(fixtures: Path) -> dict[str, Any]:
+    contract = json.loads((fixtures / "reference_grading_policy/compatibility.json").read_text())
+    if (contract["package_version"], contract["rubric_version"], contract["schema_version"]) != (
+        "1.4.0", "2.1", 1
+    ):
+        raise CompatibilityError("reference-policy expectation identity differs")
+    return contract
+
+
+def _apply_policy_deltas(original: Any, deltas: list[dict[str, Any]]) -> Any:
+    """Apply exact reviewed pointer changes without normalizing candidate behavior."""
+    expected = copy.deepcopy(original)
+    for delta in deltas:
+        path = delta["path"]
+        if path == "":
+            if not _exact_json_equal(expected, delta["before"]):
+                raise CompatibilityError("policy root before value differs")
+            expected = copy.deepcopy(delta["after"])
+            continue
+        if not isinstance(path, str) or not path.startswith("/"):
+            raise CompatibilityError("policy delta has an invalid JSON pointer")
+        tokens = [token.replace("~1", "/").replace("~0", "~") for token in path[1:].split("/")]
+        parent = expected
+        try:
+            for token in tokens[:-1]:
+                parent = parent[int(token)] if isinstance(parent, list) else parent[token]
+            key = int(tokens[-1]) if isinstance(parent, list) else tokens[-1]
+            if not _exact_json_equal(parent[key], delta["before"]):
+                raise CompatibilityError(f"policy before value differs at {path}")
+            parent[key] = copy.deepcopy(delta["after"])
+        except (KeyError, IndexError, TypeError, ValueError) as exc:
+            raise CompatibilityError(f"policy pointer does not identify an existing value: {path}") from exc
+    if not _exact_json_equal(_exact_deltas(original, expected), deltas):
+        raise CompatibilityError("policy deltas are not the exact canonical change list")
+    return expected
+
+
+def _verify_policy_correctness_case(name, baseline, candidate, legacy_contract, policy_deltas):
+    # Verify the immutable historical contract before applying the separate policy layer.
+    _verify_correctness_case(name, baseline, legacy_contract["candidate"], legacy_contract)
+    expected = _apply_policy_deltas(legacy_contract["candidate"], policy_deltas)
+    if not _exact_json_equal(candidate, expected):
+        raise CompatibilityError(f"{name}: candidate differs beyond exact reference-policy deltas")
+
+
 def _run_correctness_matrix(*, environment_root, environment, work_root, fixture_root):
     console, python = _environment_paths(environment_root)
     cases = json.loads((fixture_root / "correctness_1_3/cases.json").read_text())
@@ -759,6 +809,7 @@ def verify_correctness_compatibility(repo_root: Path = ROOT, *, uv: str = "uv") 
                                commit=CORRECTNESS_BASELINE_COMMIT)
     fixtures = repo_root / "tests/fixtures"
     expected = json.loads((fixtures / "correctness_1_3/expectations.json").read_text())
+    policy = _load_policy_contract(fixtures)
     if expected["baseline_commit"] != CORRECTNESS_BASELINE_COMMIT:
         raise CompatibilityError("correctness expectation baseline identity differs")
     with tempfile.TemporaryDirectory(prefix="sdr-grader-correctness-") as temporary:
@@ -783,8 +834,13 @@ def verify_correctness_compatibility(repo_root: Path = ROOT, *, uv: str = "uv") 
         baseline, candidate = outcomes
         if baseline.keys() != expected["cases"].keys() or candidate.keys() != baseline.keys():
             raise CompatibilityError("correctness case matrix differs from reviewed contract")
+        if policy["correctness_cases"].keys() != baseline.keys():
+            raise CompatibilityError("reference-policy case matrix differs")
         for name in baseline:
-            _verify_correctness_case(name, baseline[name], candidate[name], expected["cases"][name])
+            _verify_policy_correctness_case(
+                name, baseline[name], candidate[name], expected["cases"][name],
+                policy["correctness_cases"][name]
+            )
     print(f"v1.2.9 correctness compatibility verified: {len(baseline)} exact outcomes; "
           "all five corrections, both platforms/packs, custom packs, typed errors, "
           "threshold exits and repeated report determinism")

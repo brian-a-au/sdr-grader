@@ -3,6 +3,24 @@
 All notable changes follow the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
+## 1.4.0 — 2026-09-12
+
+- Bundled rubric policy `2.1` excludes explicitly typed, unresolved calculated-
+  metric-to-segment references from SCH-002 and CALC-002 on AA and CJA, in both
+  strict and pragmatic. They remain unresolved and unverified; genuinely invalid
+  references in this category are also unscored.
+- Preserve canonical references and all other checks. Mixed findings keep the
+  full per-rule penalty. Excluded-only rules leave the scoring denominator and
+  are disclosed as not assessed. Methodology retains all excluded relationships
+  as non-scoring diagnostics, including when both checks cover the same pair.
+- Preserve snapshot formats and report JSON schema `1`. Existing snapshots need
+  no re-export. Custom packs without the new boolean parameter retain the old
+  policy; policy `2.1` requires grader `1.4.0` or later.
+- Regrading can change historical scores, grades, and threshold exits. Removing
+  some entries does not necessarily improve a score: the six-pair CJA comparison
+  stayed at 38 strict / 53 pragmatic because other references kept both rules
+  failing. Compare reports using the same package and rubric policy.
+
 ## 1.3.1 — 2026-09-08
 
 - Resolve CJA calculated-metric segment references stored in exporter-supported

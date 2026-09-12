@@ -93,7 +93,7 @@ def test_demo_report_uses_current_default_cja_rule_inventory():
     }
 
     assert report.rubric.pack == rubric.pack == "strict"
-    assert report.rubric.version == rubric.version == "2.0"
+    assert report.rubric.version == rubric.version == "2.1"
     assert report.tool_version == __version__
     assert len(default_cja_ids) == 27
     assert finding_ids == {
@@ -128,7 +128,7 @@ def test_demo_report_copy_uses_real_audit_path_and_safe_actions():
     assert "repository" in methodology
     assert "source YAML is linked" not in methodology
     assert "source YAML is linked" not in methodology.replace("&rsquo;", "'")
-    assert "strict@2.0" in methodology
+    assert "strict@2.1" in methodology
     assert "73 rules" not in methodology
     assert "self-graded" not in str(report.tldr_html)
     assert "publicly graded" not in str(report.tldr_html)

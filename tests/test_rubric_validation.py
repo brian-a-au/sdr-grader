@@ -413,7 +413,7 @@ def test_rubric_audit_inventory_matches_both_shipped_pack_2_0_definitions():
     inventories: list[dict[str, set[str]]] = []
     for pack_name in ("strict", "pragmatic"):
         rubric = load_rubric(REPO_ROOT / "src" / "sdr_grader" / "rules" / "packs" / pack_name)
-        assert rubric.version == "2.0"
+        assert rubric.version == "2.1"
         by_category: dict[str, set[str]] = {}
         for rule in rubric.rules:
             by_category.setdefault(rule.category, set()).add(rule.id)
@@ -431,3 +431,26 @@ def test_rubric_audit_inventory_matches_both_shipped_pack_2_0_definitions():
         assert int(match.group(1)) == len(expected_ids)
         table_ids = set(re.findall(r"^\|\s*([A-Z]+-\d+)\s*\|", match.group(2), re.MULTILINE))
         assert table_ids == expected_ids
+
+
+@pytest.mark.parametrize("check", ["broken_references", "calc_formula_broken_refs"])
+@pytest.mark.parametrize("value", ["true", "false", 1, 0, None, [], {}])
+def test_reference_policy_flag_requires_a_literal_boolean(tmp_path, check, value):
+    flag = "exclude_unresolved_calculated_metric_segments"
+    pack = _write_structured_pack(tmp_path, category_content={
+        "category": "naming_conventions",
+        "rules": [_valid_rule(id="CUSTOM-REFERENCE", check=check, params={flag: value})],
+    })
+    with pytest.raises(RubricValidationError, match=f"CUSTOM-REFERENCE.*{flag}.*boolean"):
+        load_rubric(pack)
+
+
+@pytest.mark.parametrize("check", ["broken_references", "calc_formula_broken_refs"])
+@pytest.mark.parametrize("params", [{}, {"exclude_unresolved_calculated_metric_segments": False},
+                                    {"exclude_unresolved_calculated_metric_segments": True}])
+def test_reference_policy_flag_accepts_opt_in_opt_out_and_legacy(tmp_path, check, params):
+    pack = _write_structured_pack(tmp_path, category_content={
+        "category": "naming_conventions",
+        "rules": [_valid_rule(id="CUSTOM-REFERENCE", check=check, params=params)],
+    })
+    assert load_rubric(pack).rules[0].params == params

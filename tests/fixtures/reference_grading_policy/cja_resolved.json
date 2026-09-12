@@ -1,0 +1,35 @@
+{
+  "metrics": [],
+  "dimensions": [],
+  "segments": [
+    {
+      "id": "segments/missing",
+      "name": "Present segment",
+      "description": "Synthetic segment"
+    }
+  ],
+  "calculated_metrics": {
+    "metrics": [
+      {
+        "id": "cm_policy",
+        "name": "Policy metric",
+        "description": "Synthetic policy evidence",
+        "definition_json": {
+          "func": "calc-metric",
+          "formula": {
+            "func": "add",
+            "args": [
+              {
+                "func": "segment-ref",
+                "id": "segments/missing"
+              }
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "metadata": {
+    "Data View ID": "policy_fixture"
+  }
+}

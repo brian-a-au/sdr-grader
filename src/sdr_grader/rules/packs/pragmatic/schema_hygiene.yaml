@@ -14,16 +14,20 @@ rules:
     remediation: Same as strict.
 
   - id: SCH-002
-    name: References unresolved in the exported inventory
+    name: Scored references unresolved in the exported inventory
     severity: high
     platforms: [cja, aa]
     check: broken_references
-    params: {}
+    params:
+      exclude_unresolved_calculated_metric_segments: true
     rationale: |
       References absent from an export can indicate a deleted component or
       an omitted inventory. The snapshot alone cannot establish live validity.
+      Explicitly typed calculated-metric-to-segment references remain unverified
+      and unscored when unresolved; invalid references in that category are also
+      unscored. Other unresolved references retain their existing penalties.
     remediation: |
-      Verify each unresolved ID in the source platform and export the relevant
+      Verify each scored unresolved ID in the source platform and export the relevant
       inventory for the correct data view or report suite. If the reference is
       confirmed invalid, restore the component or update its consumers.
 

@@ -72,3 +72,13 @@ duration of a trend you intend to act on.
 
 Pack `2.0` is a comparison boundary. Regenerate a series entirely with
 pack `2.0`; do not append its points to stored pack `1.0` results.
+
+## Reference-policy comparison boundary
+
+Package 1.4.0 and rubric policy 2.1 intentionally change reference eligibility
+and sometimes the effective-rule denominator. Regrade every point with the
+same package and pack. Do not splice stored old-policy reports into a new-policy
+series. Unverified methodology diagnostics do not enter finding churn; remaining
+mixed findings can keep scores unchanged. Excluded-only denominator changes can
+increase the share of other failures. See
+[Reference grading policy](REFERENCE_GRADING_POLICY.md).

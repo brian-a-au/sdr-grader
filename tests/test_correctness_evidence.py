@@ -209,7 +209,8 @@ def test_partial_inventory_reports_evidence_consistently_through_cli(tmp_path, p
         assert "unresolved" in finding["title"]
         assert escape(finding["title"]) in html
         assert "does not prove the live implementation is broken" in finding["body"][0]["html"]
-        assert "Verify each unresolved ID in the source platform" in finding["body"][-1]["body_html"]
+        qualifier = "scored " if rule_id in {"SCH-002", "CALC-002"} else ""
+        assert f"Verify each {qualifier}unresolved ID in the source platform" in finding["body"][-1]["body_html"]
     assert main(arguments) == expected_exit
     assert json_path.read_text() == json.dumps(payload, indent=2, ensure_ascii=False) + "\n"
     assert html_path.read_text() == html

@@ -12,6 +12,11 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from sdr_grader.core.models import Implementation
+from sdr_grader.core.reference_policy import (
+    REFERENCE_CHECKS,
+    ReferenceAssessment,
+    assess_references,
+)
 from sdr_grader.render import Finding
 from sdr_grader.rules.registry import get_check
 from sdr_grader.rules.rubric import Rubric, RuleDefinition
@@ -34,6 +39,39 @@ class RuleContext:
 RuleInventory = tuple[RuleDefinition, ...]
 
 
+@dataclass(frozen=True)
+class RuleResolution:
+    configured_rules: RuleInventory
+    effective_rules: RuleInventory
+    reference_assessments: dict[str, ReferenceAssessment]
+
+
+def resolve_rule_inventory(
+    impl: Implementation,
+    rubric: Rubric,
+    *,
+    excluded_rule_ids: Collection[str] = (),
+) -> RuleResolution:
+    """Resolve applicability once, retaining excluded references for diagnostics."""
+    excluded = set(excluded_rule_ids)
+    configured = tuple(
+        rule
+        for rule in rubric.rules
+        if rule.id not in excluded and _applies_to_platform(rule, impl)
+    )
+    assessments = {
+        rule.id: assess_references(impl, check_name=rule.check, params=rule.params)
+        for rule in configured
+        if rule.check in REFERENCE_CHECKS
+    }
+    effective = tuple(
+        rule
+        for rule in configured
+        if rule.id not in assessments or not assessments[rule.id].not_assessed
+    )
+    return RuleResolution(configured, effective, assessments)
+
+
 def resolve_effective_rules(
     impl: Implementation,
     rubric: Rubric,
@@ -41,12 +79,7 @@ def resolve_effective_rules(
     excluded_rule_ids: Collection[str] = (),
 ) -> RuleInventory:
     """Return the ordered rules that can affect this implementation."""
-    excluded = set(excluded_rule_ids)
-    return tuple(
-        rule
-        for rule in rubric.rules
-        if rule.id not in excluded and _applies_to_platform(rule, impl)
-    )
+    return resolve_rule_inventory(impl, rubric, excluded_rule_ids=excluded_rule_ids).effective_rules
 
 
 def run_rules(
@@ -56,11 +89,7 @@ def run_rules(
     rule_inventory: Sequence[RuleDefinition] | None = None,
 ) -> list[Finding]:
     """Execute one resolved rule inventory for the implementation."""
-    rules = (
-        resolve_effective_rules(impl, rubric)
-        if rule_inventory is None
-        else rule_inventory
-    )
+    rules = resolve_effective_rules(impl, rubric) if rule_inventory is None else rule_inventory
     findings: list[Finding] = []
     for rule in rules:
         ctx = _build_context(rule)

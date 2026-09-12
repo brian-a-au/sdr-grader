@@ -78,3 +78,11 @@ Re-aggregate whenever a non-trivial number of implementations are
 graded or the rubric pack version changes. Distributions become
 misleading once mixed across rubric versions — track them per-pack-
 version if you regrade old snapshots with a new pack.
+
+## Reference-policy comparison boundary
+
+Group results by grader package and rubric pack/version. Policy 2.1 changes
+reference eligibility and can change score denominators; regrade the complete
+comparison population under one policy before ranking it. Unverified references
+are not verified available or valid, and fewer reported items do not guarantee
+higher scores. See [Reference grading policy](REFERENCE_GRADING_POLICY.md).

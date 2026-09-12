@@ -1,0 +1,1078 @@
+{
+  "package_version": "1.4.0",
+  "rubric_version": "2.1",
+  "schema_version": 1,
+  "prior_package_version": "1.3.1",
+  "normalization": "Existing historical normalization only; exact additional JSON-pointer before/after deltas.",
+  "correctness_cases": {
+    "cja-clean-strict": [
+      {
+        "path": "/report/methodology/paragraphs/0",
+        "before": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">strict@2.0</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.",
+        "after": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">strict@2.1</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack."
+      },
+      {
+        "path": "/report/rubric/version",
+        "before": "2.0",
+        "after": "2.1"
+      },
+      {
+        "path": "/report/tldr_html",
+        "before": "This implementation graded <strong>A</strong> (100%). The grader evaluated 53 components in this data view using the <span class=\"mono\">strict@2.0</span> rubric pack.",
+        "after": "This implementation graded <strong>A</strong> (100%). The grader evaluated 53 components in this data view using the <span class=\"mono\">strict@2.1</span> rubric pack."
+      }
+    ],
+    "cja-messy-strict": [
+      {
+        "path": "/report/findings/3/body/2/body_html",
+        "before": "Verify each unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers.",
+        "after": "Verify each scored unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers."
+      },
+      {
+        "path": "/report/findings/4/body/2/body_html",
+        "before": "Verify each unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers.",
+        "after": "Verify each scored unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers."
+      },
+      {
+        "path": "/report/methodology/paragraphs/0",
+        "before": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">strict@2.0</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 11 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.",
+        "after": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">strict@2.1</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 11 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack."
+      },
+      {
+        "path": "/report/remediations/3/text",
+        "before": "Verify each unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers.",
+        "after": "Verify each scored unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers."
+      },
+      {
+        "path": "/report/remediations/4/text",
+        "before": "Verify each unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers.",
+        "after": "Verify each scored unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers."
+      },
+      {
+        "path": "/report/rubric/version",
+        "before": "2.0",
+        "after": "2.1"
+      },
+      {
+        "path": "/report/tldr_html",
+        "before": "This implementation graded <strong>F</strong> (47%). The grader evaluated 542 components in this data view using the <span class=\"mono\">strict@2.0</span> rubric pack. The largest gap is in <strong>governance posture</strong> (0%); 3 of 3 rules in that category fired.",
+        "after": "This implementation graded <strong>F</strong> (47%). The grader evaluated 542 components in this data view using the <span class=\"mono\">strict@2.1</span> rubric pack. The largest gap is in <strong>governance posture</strong> (0%); 3 of 3 rules in that category fired."
+      }
+    ],
+    "boolean-cja-false-strict": [
+      {
+        "path": "/report/methodology/paragraphs/0",
+        "before": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">strict@2.0</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 1 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.",
+        "after": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">strict@2.1</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 1 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack."
+      },
+      {
+        "path": "/report/rubric/version",
+        "before": "2.0",
+        "after": "2.1"
+      },
+      {
+        "path": "/report/tldr_html",
+        "before": "This implementation graded <strong>B+</strong> (89%). The grader evaluated 0 components in this data view using the <span class=\"mono\">strict@2.0</span> rubric pack. The largest gap is in <strong>governance posture</strong> (57%); 1 of 3 rules in that category fired.",
+        "after": "This implementation graded <strong>B+</strong> (89%). The grader evaluated 0 components in this data view using the <span class=\"mono\">strict@2.1</span> rubric pack. The largest gap is in <strong>governance posture</strong> (57%); 1 of 3 rules in that category fired."
+      }
+    ],
+    "boolean-cja-text-false-strict": [
+      {
+        "path": "/report/methodology/paragraphs/0",
+        "before": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">strict@2.0</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 1 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.",
+        "after": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">strict@2.1</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 1 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack."
+      },
+      {
+        "path": "/report/rubric/version",
+        "before": "2.0",
+        "after": "2.1"
+      },
+      {
+        "path": "/report/tldr_html",
+        "before": "This implementation graded <strong>B+</strong> (89%). The grader evaluated 0 components in this data view using the <span class=\"mono\">strict@2.0</span> rubric pack. The largest gap is in <strong>governance posture</strong> (57%); 1 of 3 rules in that category fired.",
+        "after": "This implementation graded <strong>B+</strong> (89%). The grader evaluated 0 components in this data view using the <span class=\"mono\">strict@2.1</span> rubric pack. The largest gap is in <strong>governance posture</strong> (57%); 1 of 3 rules in that category fired."
+      }
+    ],
+    "boolean-cja-invalid-strict": [],
+    "history-cja-false-strict": [
+      {
+        "path": "/report/methodology/paragraphs/0",
+        "before": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">strict@2.0</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 1 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.",
+        "after": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">strict@2.1</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 1 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack."
+      },
+      {
+        "path": "/report/rubric/version",
+        "before": "2.0",
+        "after": "2.1"
+      },
+      {
+        "path": "/report/tldr_html",
+        "before": "This implementation graded <strong>B+</strong> (89%). The grader evaluated 0 components in this data view using the <span class=\"mono\">strict@2.0</span> rubric pack. The largest gap is in <strong>governance posture</strong> (57%); 1 of 3 rules in that category fired.",
+        "after": "This implementation graded <strong>B+</strong> (89%). The grader evaluated 0 components in this data view using the <span class=\"mono\">strict@2.1</span> rubric pack. The largest gap is in <strong>governance posture</strong> (57%); 1 of 3 rules in that category fired."
+      }
+    ],
+    "history-cja-text-false-strict": [
+      {
+        "path": "/report/methodology/paragraphs/0",
+        "before": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">strict@2.0</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 1 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.",
+        "after": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">strict@2.1</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 1 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack."
+      },
+      {
+        "path": "/report/rubric/version",
+        "before": "2.0",
+        "after": "2.1"
+      },
+      {
+        "path": "/report/tldr_html",
+        "before": "This implementation graded <strong>B+</strong> (89%). The grader evaluated 0 components in this data view using the <span class=\"mono\">strict@2.0</span> rubric pack. The largest gap is in <strong>governance posture</strong> (57%); 1 of 3 rules in that category fired.",
+        "after": "This implementation graded <strong>B+</strong> (89%). The grader evaluated 0 components in this data view using the <span class=\"mono\">strict@2.1</span> rubric pack. The largest gap is in <strong>governance posture</strong> (57%); 1 of 3 rules in that category fired."
+      }
+    ],
+    "history-cja-invalid-strict": [],
+    "duplicates-cja-False-strict": [],
+    "duplicates-cja-True-strict": [],
+    "aa-clean-strict": [
+      {
+        "path": "/report/methodology/paragraphs/0",
+        "before": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">strict@2.0</span> rubric pack. The rubric encodes 23 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.",
+        "after": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">strict@2.1</span> rubric pack. The rubric encodes 23 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack."
+      },
+      {
+        "path": "/report/rubric/version",
+        "before": "2.0",
+        "after": "2.1"
+      },
+      {
+        "path": "/report/tldr_html",
+        "before": "This implementation graded <strong>A</strong> (100%). The grader evaluated 32 components in this report suite using the <span class=\"mono\">strict@2.0</span> rubric pack.",
+        "after": "This implementation graded <strong>A</strong> (100%). The grader evaluated 32 components in this report suite using the <span class=\"mono\">strict@2.1</span> rubric pack."
+      }
+    ],
+    "aa-messy-strict": [
+      {
+        "path": "/report/findings/2/body/2/body_html",
+        "before": "Verify each unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers.",
+        "after": "Verify each scored unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers."
+      },
+      {
+        "path": "/report/findings/3/body/2/body_html",
+        "before": "Verify each unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers.",
+        "after": "Verify each scored unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers."
+      },
+      {
+        "path": "/report/methodology/paragraphs/0",
+        "before": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">strict@2.0</span> rubric pack. The rubric encodes 23 rules across 6 active categories; 8 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.",
+        "after": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">strict@2.1</span> rubric pack. The rubric encodes 23 rules across 6 active categories; 8 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack."
+      },
+      {
+        "path": "/report/remediations/2/text",
+        "before": "Verify each unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers.",
+        "after": "Verify each scored unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers."
+      },
+      {
+        "path": "/report/remediations/3/text",
+        "before": "Verify each unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers.",
+        "after": "Verify each scored unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers."
+      },
+      {
+        "path": "/report/rubric/version",
+        "before": "2.0",
+        "after": "2.1"
+      },
+      {
+        "path": "/report/tldr_html",
+        "before": "This implementation graded <strong>F</strong> (55%). The grader evaluated 79 components in this report suite using the <span class=\"mono\">strict@2.0</span> rubric pack. The largest gap is in <strong>governance posture</strong> (0%); 3 of 3 rules in that category fired.",
+        "after": "This implementation graded <strong>F</strong> (55%). The grader evaluated 79 components in this report suite using the <span class=\"mono\">strict@2.1</span> rubric pack. The largest gap is in <strong>governance posture</strong> (0%); 3 of 3 rules in that category fired."
+      }
+    ],
+    "boolean-aa-false-strict": [
+      {
+        "path": "/report/methodology/paragraphs/0",
+        "before": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">strict@2.0</span> rubric pack. The rubric encodes 23 rules across 6 active categories; 1 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.",
+        "after": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">strict@2.1</span> rubric pack. The rubric encodes 23 rules across 6 active categories; 1 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack."
+      },
+      {
+        "path": "/report/rubric/version",
+        "before": "2.0",
+        "after": "2.1"
+      },
+      {
+        "path": "/report/tldr_html",
+        "before": "This implementation graded <strong>B+</strong> (89%). The grader evaluated 0 components in this report suite using the <span class=\"mono\">strict@2.0</span> rubric pack. The largest gap is in <strong>governance posture</strong> (57%); 1 of 3 rules in that category fired.",
+        "after": "This implementation graded <strong>B+</strong> (89%). The grader evaluated 0 components in this report suite using the <span class=\"mono\">strict@2.1</span> rubric pack. The largest gap is in <strong>governance posture</strong> (57%); 1 of 3 rules in that category fired."
+      }
+    ],
+    "boolean-aa-text-false-strict": [
+      {
+        "path": "/report/methodology/paragraphs/0",
+        "before": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">strict@2.0</span> rubric pack. The rubric encodes 23 rules across 6 active categories; 1 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.",
+        "after": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">strict@2.1</span> rubric pack. The rubric encodes 23 rules across 6 active categories; 1 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack."
+      },
+      {
+        "path": "/report/rubric/version",
+        "before": "2.0",
+        "after": "2.1"
+      },
+      {
+        "path": "/report/tldr_html",
+        "before": "This implementation graded <strong>B+</strong> (89%). The grader evaluated 0 components in this report suite using the <span class=\"mono\">strict@2.0</span> rubric pack. The largest gap is in <strong>governance posture</strong> (57%); 1 of 3 rules in that category fired.",
+        "after": "This implementation graded <strong>B+</strong> (89%). The grader evaluated 0 components in this report suite using the <span class=\"mono\">strict@2.1</span> rubric pack. The largest gap is in <strong>governance posture</strong> (57%); 1 of 3 rules in that category fired."
+      }
+    ],
+    "boolean-aa-invalid-strict": [],
+    "history-aa-false-strict": [
+      {
+        "path": "/report/methodology/paragraphs/0",
+        "before": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">strict@2.0</span> rubric pack. The rubric encodes 23 rules across 6 active categories; 1 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.",
+        "after": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">strict@2.1</span> rubric pack. The rubric encodes 23 rules across 6 active categories; 1 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack."
+      },
+      {
+        "path": "/report/rubric/version",
+        "before": "2.0",
+        "after": "2.1"
+      },
+      {
+        "path": "/report/tldr_html",
+        "before": "This implementation graded <strong>B+</strong> (89%). The grader evaluated 0 components in this report suite using the <span class=\"mono\">strict@2.0</span> rubric pack. The largest gap is in <strong>governance posture</strong> (57%); 1 of 3 rules in that category fired.",
+        "after": "This implementation graded <strong>B+</strong> (89%). The grader evaluated 0 components in this report suite using the <span class=\"mono\">strict@2.1</span> rubric pack. The largest gap is in <strong>governance posture</strong> (57%); 1 of 3 rules in that category fired."
+      }
+    ],
+    "history-aa-text-false-strict": [
+      {
+        "path": "/report/methodology/paragraphs/0",
+        "before": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">strict@2.0</span> rubric pack. The rubric encodes 23 rules across 6 active categories; 1 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.",
+        "after": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">strict@2.1</span> rubric pack. The rubric encodes 23 rules across 6 active categories; 1 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack."
+      },
+      {
+        "path": "/report/rubric/version",
+        "before": "2.0",
+        "after": "2.1"
+      },
+      {
+        "path": "/report/tldr_html",
+        "before": "This implementation graded <strong>B+</strong> (89%). The grader evaluated 0 components in this report suite using the <span class=\"mono\">strict@2.0</span> rubric pack. The largest gap is in <strong>governance posture</strong> (57%); 1 of 3 rules in that category fired.",
+        "after": "This implementation graded <strong>B+</strong> (89%). The grader evaluated 0 components in this report suite using the <span class=\"mono\">strict@2.1</span> rubric pack. The largest gap is in <strong>governance posture</strong> (57%); 1 of 3 rules in that category fired."
+      }
+    ],
+    "history-aa-invalid-strict": [],
+    "duplicates-aa-False-strict": [],
+    "duplicates-aa-True-strict": [],
+    "attribution-decay-strict": [
+      {
+        "path": "/report/methodology/paragraphs/0",
+        "before": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">strict@2.0</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.",
+        "after": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">strict@2.1</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack."
+      },
+      {
+        "path": "/report/rubric/version",
+        "before": "2.0",
+        "after": "2.1"
+      },
+      {
+        "path": "/report/tldr_html",
+        "before": "This implementation graded <strong>A</strong> (100%). The grader evaluated 1 components in this data view using the <span class=\"mono\">strict@2.0</span> rubric pack.",
+        "after": "This implementation graded <strong>A</strong> (100%). The grader evaluated 1 components in this data view using the <span class=\"mono\">strict@2.1</span> rubric pack."
+      }
+    ],
+    "attribution-explicit-strict": [
+      {
+        "path": "/report/methodology/paragraphs/0",
+        "before": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">strict@2.0</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.",
+        "after": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">strict@2.1</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack."
+      },
+      {
+        "path": "/report/rubric/version",
+        "before": "2.0",
+        "after": "2.1"
+      },
+      {
+        "path": "/report/tldr_html",
+        "before": "This implementation graded <strong>A</strong> (100%). The grader evaluated 1 components in this data view using the <span class=\"mono\">strict@2.0</span> rubric pack.",
+        "after": "This implementation graded <strong>A</strong> (100%). The grader evaluated 1 components in this data view using the <span class=\"mono\">strict@2.1</span> rubric pack."
+      }
+    ],
+    "attribution-unrelated-strict": [
+      {
+        "path": "/report/methodology/paragraphs/0",
+        "before": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">strict@2.0</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 1 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.",
+        "after": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">strict@2.1</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 1 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack."
+      },
+      {
+        "path": "/report/rubric/version",
+        "before": "2.0",
+        "after": "2.1"
+      },
+      {
+        "path": "/report/tldr_html",
+        "before": "This implementation graded <strong>A−</strong> (90%). The grader evaluated 1 components in this data view using the <span class=\"mono\">strict@2.0</span> rubric pack. The largest gap is in <strong>attribution coverage</strong> (33%); 1 of 2 rules in that category fired.",
+        "after": "This implementation graded <strong>A−</strong> (90%). The grader evaluated 1 components in this data view using the <span class=\"mono\">strict@2.1</span> rubric pack. The largest gap is in <strong>attribution coverage</strong> (33%); 1 of 2 rules in that category fired."
+      }
+    ],
+    "enabled-false-strict": [
+      {
+        "path": "/report/methodology/paragraphs/0",
+        "before": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">strict@2.0</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.",
+        "after": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">strict@2.1</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack."
+      },
+      {
+        "path": "/report/rubric/version",
+        "before": "2.0",
+        "after": "2.1"
+      },
+      {
+        "path": "/report/tldr_html",
+        "before": "This implementation graded <strong>A</strong> (100%). The grader evaluated 1 components in this data view using the <span class=\"mono\">strict@2.0</span> rubric pack.",
+        "after": "This implementation graded <strong>A</strong> (100%). The grader evaluated 1 components in this data view using the <span class=\"mono\">strict@2.1</span> rubric pack."
+      }
+    ],
+    "enabled-text-false-strict": [
+      {
+        "path": "/report/methodology/paragraphs/0",
+        "before": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">strict@2.0</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.",
+        "after": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">strict@2.1</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack."
+      },
+      {
+        "path": "/report/rubric/version",
+        "before": "2.0",
+        "after": "2.1"
+      },
+      {
+        "path": "/report/tldr_html",
+        "before": "This implementation graded <strong>A</strong> (100%). The grader evaluated 1 components in this data view using the <span class=\"mono\">strict@2.0</span> rubric pack.",
+        "after": "This implementation graded <strong>A</strong> (100%). The grader evaluated 1 components in this data view using the <span class=\"mono\">strict@2.1</span> rubric pack."
+      }
+    ],
+    "enabled-invalid-strict": [],
+    "chronology-latest-strict": [
+      {
+        "path": "/report/methodology/paragraphs/0",
+        "before": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">strict@2.0</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.",
+        "after": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">strict@2.1</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack."
+      },
+      {
+        "path": "/report/rubric/version",
+        "before": "2.0",
+        "after": "2.1"
+      },
+      {
+        "path": "/report/tldr_html",
+        "before": "This implementation graded <strong>A</strong> (100%). The grader evaluated 0 components in this data view using the <span class=\"mono\">strict@2.0</span> rubric pack.",
+        "after": "This implementation graded <strong>A</strong> (100%). The grader evaluated 0 components in this data view using the <span class=\"mono\">strict@2.1</span> rubric pack."
+      }
+    ],
+    "chronology-trend-strict": [
+      {
+        "path": "/report/points/0/report/methodology/paragraphs/0",
+        "before": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">strict@2.0</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 1 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.",
+        "after": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">strict@2.1</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 1 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack."
+      },
+      {
+        "path": "/report/points/0/report/rubric/version",
+        "before": "2.0",
+        "after": "2.1"
+      },
+      {
+        "path": "/report/points/0/report/tldr_html",
+        "before": "This implementation graded <strong>B+</strong> (89%). The grader evaluated 0 components in this data view using the <span class=\"mono\">strict@2.0</span> rubric pack. The largest gap is in <strong>governance posture</strong> (57%); 1 of 3 rules in that category fired.",
+        "after": "This implementation graded <strong>B+</strong> (89%). The grader evaluated 0 components in this data view using the <span class=\"mono\">strict@2.1</span> rubric pack. The largest gap is in <strong>governance posture</strong> (57%); 1 of 3 rules in that category fired."
+      },
+      {
+        "path": "/report/points/1/report/methodology/paragraphs/0",
+        "before": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">strict@2.0</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.",
+        "after": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">strict@2.1</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack."
+      },
+      {
+        "path": "/report/points/1/report/rubric/version",
+        "before": "2.0",
+        "after": "2.1"
+      },
+      {
+        "path": "/report/points/1/report/tldr_html",
+        "before": "This implementation graded <strong>A</strong> (100%). The grader evaluated 0 components in this data view using the <span class=\"mono\">strict@2.0</span> rubric pack.",
+        "after": "This implementation graded <strong>A</strong> (100%). The grader evaluated 0 components in this data view using the <span class=\"mono\">strict@2.1</span> rubric pack."
+      }
+    ],
+    "chronology-at-strict": [
+      {
+        "path": "/report/methodology/paragraphs/0",
+        "before": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">strict@2.0</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 1 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.",
+        "after": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">strict@2.1</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 1 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack."
+      },
+      {
+        "path": "/report/rubric/version",
+        "before": "2.0",
+        "after": "2.1"
+      },
+      {
+        "path": "/report/tldr_html",
+        "before": "This implementation graded <strong>B+</strong> (89%). The grader evaluated 0 components in this data view using the <span class=\"mono\">strict@2.0</span> rubric pack. The largest gap is in <strong>governance posture</strong> (57%); 1 of 3 rules in that category fired.",
+        "after": "This implementation graded <strong>B+</strong> (89%). The grader evaluated 0 components in this data view using the <span class=\"mono\">strict@2.1</span> rubric pack. The largest gap is in <strong>governance posture</strong> (57%); 1 of 3 rules in that category fired."
+      }
+    ],
+    "cja-clean-pragmatic": [
+      {
+        "path": "/report/methodology/paragraphs/0",
+        "before": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">pragmatic@2.0</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.",
+        "after": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">pragmatic@2.1</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack."
+      },
+      {
+        "path": "/report/rubric/version",
+        "before": "2.0",
+        "after": "2.1"
+      },
+      {
+        "path": "/report/tldr_html",
+        "before": "This implementation graded <strong>A</strong> (100%). The grader evaluated 53 components in this data view using the <span class=\"mono\">pragmatic@2.0</span> rubric pack.",
+        "after": "This implementation graded <strong>A</strong> (100%). The grader evaluated 53 components in this data view using the <span class=\"mono\">pragmatic@2.1</span> rubric pack."
+      }
+    ],
+    "cja-messy-pragmatic": [
+      {
+        "path": "/report/findings/0/body/2/body_html",
+        "before": "Verify each unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers.",
+        "after": "Verify each scored unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers."
+      },
+      {
+        "path": "/report/findings/1/body/2/body_html",
+        "before": "Verify each unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers.",
+        "after": "Verify each scored unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers."
+      },
+      {
+        "path": "/report/methodology/paragraphs/0",
+        "before": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">pragmatic@2.0</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 9 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.",
+        "after": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">pragmatic@2.1</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 9 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack."
+      },
+      {
+        "path": "/report/remediations/0/text",
+        "before": "Verify each unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers.",
+        "after": "Verify each scored unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers."
+      },
+      {
+        "path": "/report/remediations/1/text",
+        "before": "Verify each unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers.",
+        "after": "Verify each scored unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers."
+      },
+      {
+        "path": "/report/rubric/version",
+        "before": "2.0",
+        "after": "2.1"
+      },
+      {
+        "path": "/report/tldr_html",
+        "before": "This implementation graded <strong>D−</strong> (60%). The grader evaluated 542 components in this data view using the <span class=\"mono\">pragmatic@2.0</span> rubric pack. The largest gap is in <strong>calc metric maint</strong> (14%); 4 of 5 rules in that category fired.",
+        "after": "This implementation graded <strong>D−</strong> (60%). The grader evaluated 542 components in this data view using the <span class=\"mono\">pragmatic@2.1</span> rubric pack. The largest gap is in <strong>calc metric maint</strong> (14%); 4 of 5 rules in that category fired."
+      }
+    ],
+    "boolean-cja-false-pragmatic": [
+      {
+        "path": "/report/methodology/paragraphs/0",
+        "before": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">pragmatic@2.0</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.",
+        "after": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">pragmatic@2.1</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack."
+      },
+      {
+        "path": "/report/rubric/version",
+        "before": "2.0",
+        "after": "2.1"
+      },
+      {
+        "path": "/report/tldr_html",
+        "before": "This implementation graded <strong>A</strong> (100%). The grader evaluated 0 components in this data view using the <span class=\"mono\">pragmatic@2.0</span> rubric pack.",
+        "after": "This implementation graded <strong>A</strong> (100%). The grader evaluated 0 components in this data view using the <span class=\"mono\">pragmatic@2.1</span> rubric pack."
+      }
+    ],
+    "boolean-cja-text-false-pragmatic": [
+      {
+        "path": "/report/methodology/paragraphs/0",
+        "before": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">pragmatic@2.0</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.",
+        "after": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">pragmatic@2.1</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack."
+      },
+      {
+        "path": "/report/rubric/version",
+        "before": "2.0",
+        "after": "2.1"
+      },
+      {
+        "path": "/report/tldr_html",
+        "before": "This implementation graded <strong>A</strong> (100%). The grader evaluated 0 components in this data view using the <span class=\"mono\">pragmatic@2.0</span> rubric pack.",
+        "after": "This implementation graded <strong>A</strong> (100%). The grader evaluated 0 components in this data view using the <span class=\"mono\">pragmatic@2.1</span> rubric pack."
+      }
+    ],
+    "boolean-cja-invalid-pragmatic": [
+      {
+        "path": "/report/methodology/paragraphs/0",
+        "before": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">pragmatic@2.0</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.",
+        "after": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">pragmatic@2.1</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack."
+      },
+      {
+        "path": "/report/rubric/version",
+        "before": "2.0",
+        "after": "2.1"
+      },
+      {
+        "path": "/report/tldr_html",
+        "before": "This implementation graded <strong>A</strong> (100%). The grader evaluated 0 components in this data view using the <span class=\"mono\">pragmatic@2.0</span> rubric pack.",
+        "after": "This implementation graded <strong>A</strong> (100%). The grader evaluated 0 components in this data view using the <span class=\"mono\">pragmatic@2.1</span> rubric pack."
+      }
+    ],
+    "history-cja-false-pragmatic": [
+      {
+        "path": "/report/methodology/paragraphs/0",
+        "before": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">pragmatic@2.0</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 1 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.",
+        "after": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">pragmatic@2.1</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 1 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack."
+      },
+      {
+        "path": "/report/rubric/version",
+        "before": "2.0",
+        "after": "2.1"
+      },
+      {
+        "path": "/report/tldr_html",
+        "before": "This implementation graded <strong>A−</strong> (90%). The grader evaluated 0 components in this data view using the <span class=\"mono\">pragmatic@2.0</span> rubric pack. The largest gap is in <strong>governance posture</strong> (60%); 1 of 3 rules in that category fired.",
+        "after": "This implementation graded <strong>A−</strong> (90%). The grader evaluated 0 components in this data view using the <span class=\"mono\">pragmatic@2.1</span> rubric pack. The largest gap is in <strong>governance posture</strong> (60%); 1 of 3 rules in that category fired."
+      }
+    ],
+    "history-cja-text-false-pragmatic": [
+      {
+        "path": "/report/methodology/paragraphs/0",
+        "before": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">pragmatic@2.0</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 1 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.",
+        "after": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">pragmatic@2.1</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 1 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack."
+      },
+      {
+        "path": "/report/rubric/version",
+        "before": "2.0",
+        "after": "2.1"
+      },
+      {
+        "path": "/report/tldr_html",
+        "before": "This implementation graded <strong>A−</strong> (90%). The grader evaluated 0 components in this data view using the <span class=\"mono\">pragmatic@2.0</span> rubric pack. The largest gap is in <strong>governance posture</strong> (60%); 1 of 3 rules in that category fired.",
+        "after": "This implementation graded <strong>A−</strong> (90%). The grader evaluated 0 components in this data view using the <span class=\"mono\">pragmatic@2.1</span> rubric pack. The largest gap is in <strong>governance posture</strong> (60%); 1 of 3 rules in that category fired."
+      }
+    ],
+    "history-cja-invalid-pragmatic": [],
+    "duplicates-cja-False-pragmatic": [],
+    "duplicates-cja-True-pragmatic": [],
+    "aa-clean-pragmatic": [
+      {
+        "path": "/report/methodology/paragraphs/0",
+        "before": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">pragmatic@2.0</span> rubric pack. The rubric encodes 23 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.",
+        "after": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">pragmatic@2.1</span> rubric pack. The rubric encodes 23 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack."
+      },
+      {
+        "path": "/report/rubric/version",
+        "before": "2.0",
+        "after": "2.1"
+      },
+      {
+        "path": "/report/tldr_html",
+        "before": "This implementation graded <strong>A</strong> (100%). The grader evaluated 32 components in this report suite using the <span class=\"mono\">pragmatic@2.0</span> rubric pack.",
+        "after": "This implementation graded <strong>A</strong> (100%). The grader evaluated 32 components in this report suite using the <span class=\"mono\">pragmatic@2.1</span> rubric pack."
+      }
+    ],
+    "aa-messy-pragmatic": [
+      {
+        "path": "/report/findings/0/body/2/body_html",
+        "before": "Verify each unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers.",
+        "after": "Verify each scored unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers."
+      },
+      {
+        "path": "/report/findings/1/body/2/body_html",
+        "before": "Verify each unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers.",
+        "after": "Verify each scored unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers."
+      },
+      {
+        "path": "/report/methodology/paragraphs/0",
+        "before": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">pragmatic@2.0</span> rubric pack. The rubric encodes 23 rules across 6 active categories; 6 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.",
+        "after": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">pragmatic@2.1</span> rubric pack. The rubric encodes 23 rules across 6 active categories; 6 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack."
+      },
+      {
+        "path": "/report/remediations/0/text",
+        "before": "Verify each unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers.",
+        "after": "Verify each scored unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers."
+      },
+      {
+        "path": "/report/remediations/1/text",
+        "before": "Verify each unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers.",
+        "after": "Verify each scored unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers."
+      },
+      {
+        "path": "/report/rubric/version",
+        "before": "2.0",
+        "after": "2.1"
+      },
+      {
+        "path": "/report/tldr_html",
+        "before": "This implementation graded <strong>D+</strong> (69%). The grader evaluated 79 components in this report suite using the <span class=\"mono\">pragmatic@2.0</span> rubric pack. The largest gap is in <strong>governance posture</strong> (40%); 2 of 3 rules in that category fired.",
+        "after": "This implementation graded <strong>D+</strong> (69%). The grader evaluated 79 components in this report suite using the <span class=\"mono\">pragmatic@2.1</span> rubric pack. The largest gap is in <strong>governance posture</strong> (40%); 2 of 3 rules in that category fired."
+      }
+    ],
+    "boolean-aa-false-pragmatic": [
+      {
+        "path": "/report/methodology/paragraphs/0",
+        "before": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">pragmatic@2.0</span> rubric pack. The rubric encodes 23 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.",
+        "after": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">pragmatic@2.1</span> rubric pack. The rubric encodes 23 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack."
+      },
+      {
+        "path": "/report/rubric/version",
+        "before": "2.0",
+        "after": "2.1"
+      },
+      {
+        "path": "/report/tldr_html",
+        "before": "This implementation graded <strong>A</strong> (100%). The grader evaluated 0 components in this report suite using the <span class=\"mono\">pragmatic@2.0</span> rubric pack.",
+        "after": "This implementation graded <strong>A</strong> (100%). The grader evaluated 0 components in this report suite using the <span class=\"mono\">pragmatic@2.1</span> rubric pack."
+      }
+    ],
+    "boolean-aa-text-false-pragmatic": [
+      {
+        "path": "/report/methodology/paragraphs/0",
+        "before": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">pragmatic@2.0</span> rubric pack. The rubric encodes 23 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.",
+        "after": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">pragmatic@2.1</span> rubric pack. The rubric encodes 23 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack."
+      },
+      {
+        "path": "/report/rubric/version",
+        "before": "2.0",
+        "after": "2.1"
+      },
+      {
+        "path": "/report/tldr_html",
+        "before": "This implementation graded <strong>A</strong> (100%). The grader evaluated 0 components in this report suite using the <span class=\"mono\">pragmatic@2.0</span> rubric pack.",
+        "after": "This implementation graded <strong>A</strong> (100%). The grader evaluated 0 components in this report suite using the <span class=\"mono\">pragmatic@2.1</span> rubric pack."
+      }
+    ],
+    "boolean-aa-invalid-pragmatic": [
+      {
+        "path": "/report/methodology/paragraphs/0",
+        "before": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">pragmatic@2.0</span> rubric pack. The rubric encodes 23 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.",
+        "after": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">pragmatic@2.1</span> rubric pack. The rubric encodes 23 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack."
+      },
+      {
+        "path": "/report/rubric/version",
+        "before": "2.0",
+        "after": "2.1"
+      },
+      {
+        "path": "/report/tldr_html",
+        "before": "This implementation graded <strong>A</strong> (100%). The grader evaluated 0 components in this report suite using the <span class=\"mono\">pragmatic@2.0</span> rubric pack.",
+        "after": "This implementation graded <strong>A</strong> (100%). The grader evaluated 0 components in this report suite using the <span class=\"mono\">pragmatic@2.1</span> rubric pack."
+      }
+    ],
+    "history-aa-false-pragmatic": [
+      {
+        "path": "/report/methodology/paragraphs/0",
+        "before": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">pragmatic@2.0</span> rubric pack. The rubric encodes 23 rules across 6 active categories; 1 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.",
+        "after": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">pragmatic@2.1</span> rubric pack. The rubric encodes 23 rules across 6 active categories; 1 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack."
+      },
+      {
+        "path": "/report/rubric/version",
+        "before": "2.0",
+        "after": "2.1"
+      },
+      {
+        "path": "/report/tldr_html",
+        "before": "This implementation graded <strong>A−</strong> (90%). The grader evaluated 0 components in this report suite using the <span class=\"mono\">pragmatic@2.0</span> rubric pack. The largest gap is in <strong>governance posture</strong> (60%); 1 of 3 rules in that category fired.",
+        "after": "This implementation graded <strong>A−</strong> (90%). The grader evaluated 0 components in this report suite using the <span class=\"mono\">pragmatic@2.1</span> rubric pack. The largest gap is in <strong>governance posture</strong> (60%); 1 of 3 rules in that category fired."
+      }
+    ],
+    "history-aa-text-false-pragmatic": [
+      {
+        "path": "/report/methodology/paragraphs/0",
+        "before": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">pragmatic@2.0</span> rubric pack. The rubric encodes 23 rules across 6 active categories; 1 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.",
+        "after": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">pragmatic@2.1</span> rubric pack. The rubric encodes 23 rules across 6 active categories; 1 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack."
+      },
+      {
+        "path": "/report/rubric/version",
+        "before": "2.0",
+        "after": "2.1"
+      },
+      {
+        "path": "/report/tldr_html",
+        "before": "This implementation graded <strong>A−</strong> (90%). The grader evaluated 0 components in this report suite using the <span class=\"mono\">pragmatic@2.0</span> rubric pack. The largest gap is in <strong>governance posture</strong> (60%); 1 of 3 rules in that category fired.",
+        "after": "This implementation graded <strong>A−</strong> (90%). The grader evaluated 0 components in this report suite using the <span class=\"mono\">pragmatic@2.1</span> rubric pack. The largest gap is in <strong>governance posture</strong> (60%); 1 of 3 rules in that category fired."
+      }
+    ],
+    "history-aa-invalid-pragmatic": [],
+    "duplicates-aa-False-pragmatic": [],
+    "duplicates-aa-True-pragmatic": [],
+    "attribution-decay-pragmatic": [
+      {
+        "path": "/report/methodology/paragraphs/0",
+        "before": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">pragmatic@2.0</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.",
+        "after": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">pragmatic@2.1</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack."
+      },
+      {
+        "path": "/report/rubric/version",
+        "before": "2.0",
+        "after": "2.1"
+      },
+      {
+        "path": "/report/tldr_html",
+        "before": "This implementation graded <strong>A</strong> (100%). The grader evaluated 1 components in this data view using the <span class=\"mono\">pragmatic@2.0</span> rubric pack.",
+        "after": "This implementation graded <strong>A</strong> (100%). The grader evaluated 1 components in this data view using the <span class=\"mono\">pragmatic@2.1</span> rubric pack."
+      }
+    ],
+    "attribution-explicit-pragmatic": [
+      {
+        "path": "/report/methodology/paragraphs/0",
+        "before": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">pragmatic@2.0</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.",
+        "after": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">pragmatic@2.1</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack."
+      },
+      {
+        "path": "/report/rubric/version",
+        "before": "2.0",
+        "after": "2.1"
+      },
+      {
+        "path": "/report/tldr_html",
+        "before": "This implementation graded <strong>A</strong> (100%). The grader evaluated 1 components in this data view using the <span class=\"mono\">pragmatic@2.0</span> rubric pack.",
+        "after": "This implementation graded <strong>A</strong> (100%). The grader evaluated 1 components in this data view using the <span class=\"mono\">pragmatic@2.1</span> rubric pack."
+      }
+    ],
+    "attribution-unrelated-pragmatic": [
+      {
+        "path": "/report/methodology/paragraphs/0",
+        "before": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">pragmatic@2.0</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 1 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.",
+        "after": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">pragmatic@2.1</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 1 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack."
+      },
+      {
+        "path": "/report/rubric/version",
+        "before": "2.0",
+        "after": "2.1"
+      },
+      {
+        "path": "/report/tldr_html",
+        "before": "This implementation graded <strong>A−</strong> (92%). The grader evaluated 1 components in this data view using the <span class=\"mono\">pragmatic@2.0</span> rubric pack. The largest gap is in <strong>attribution coverage</strong> (50%); 1 of 2 rules in that category fired.",
+        "after": "This implementation graded <strong>A−</strong> (92%). The grader evaluated 1 components in this data view using the <span class=\"mono\">pragmatic@2.1</span> rubric pack. The largest gap is in <strong>attribution coverage</strong> (50%); 1 of 2 rules in that category fired."
+      }
+    ],
+    "enabled-false-pragmatic": [
+      {
+        "path": "/report/methodology/paragraphs/0",
+        "before": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">pragmatic@2.0</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.",
+        "after": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">pragmatic@2.1</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack."
+      },
+      {
+        "path": "/report/rubric/version",
+        "before": "2.0",
+        "after": "2.1"
+      },
+      {
+        "path": "/report/tldr_html",
+        "before": "This implementation graded <strong>A</strong> (100%). The grader evaluated 1 components in this data view using the <span class=\"mono\">pragmatic@2.0</span> rubric pack.",
+        "after": "This implementation graded <strong>A</strong> (100%). The grader evaluated 1 components in this data view using the <span class=\"mono\">pragmatic@2.1</span> rubric pack."
+      }
+    ],
+    "enabled-text-false-pragmatic": [
+      {
+        "path": "/report/methodology/paragraphs/0",
+        "before": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">pragmatic@2.0</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.",
+        "after": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">pragmatic@2.1</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack."
+      },
+      {
+        "path": "/report/rubric/version",
+        "before": "2.0",
+        "after": "2.1"
+      },
+      {
+        "path": "/report/tldr_html",
+        "before": "This implementation graded <strong>A</strong> (100%). The grader evaluated 1 components in this data view using the <span class=\"mono\">pragmatic@2.0</span> rubric pack.",
+        "after": "This implementation graded <strong>A</strong> (100%). The grader evaluated 1 components in this data view using the <span class=\"mono\">pragmatic@2.1</span> rubric pack."
+      }
+    ],
+    "enabled-invalid-pragmatic": [],
+    "chronology-latest-pragmatic": [
+      {
+        "path": "/report/methodology/paragraphs/0",
+        "before": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">pragmatic@2.0</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.",
+        "after": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">pragmatic@2.1</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack."
+      },
+      {
+        "path": "/report/rubric/version",
+        "before": "2.0",
+        "after": "2.1"
+      },
+      {
+        "path": "/report/tldr_html",
+        "before": "This implementation graded <strong>A</strong> (100%). The grader evaluated 0 components in this data view using the <span class=\"mono\">pragmatic@2.0</span> rubric pack.",
+        "after": "This implementation graded <strong>A</strong> (100%). The grader evaluated 0 components in this data view using the <span class=\"mono\">pragmatic@2.1</span> rubric pack."
+      }
+    ],
+    "chronology-trend-pragmatic": [
+      {
+        "path": "/report/points/0/report/methodology/paragraphs/0",
+        "before": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">pragmatic@2.0</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.",
+        "after": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">pragmatic@2.1</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack."
+      },
+      {
+        "path": "/report/points/0/report/rubric/version",
+        "before": "2.0",
+        "after": "2.1"
+      },
+      {
+        "path": "/report/points/0/report/tldr_html",
+        "before": "This implementation graded <strong>A</strong> (100%). The grader evaluated 0 components in this data view using the <span class=\"mono\">pragmatic@2.0</span> rubric pack.",
+        "after": "This implementation graded <strong>A</strong> (100%). The grader evaluated 0 components in this data view using the <span class=\"mono\">pragmatic@2.1</span> rubric pack."
+      },
+      {
+        "path": "/report/points/1/report/methodology/paragraphs/0",
+        "before": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">pragmatic@2.0</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.",
+        "after": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">pragmatic@2.1</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack."
+      },
+      {
+        "path": "/report/points/1/report/rubric/version",
+        "before": "2.0",
+        "after": "2.1"
+      },
+      {
+        "path": "/report/points/1/report/tldr_html",
+        "before": "This implementation graded <strong>A</strong> (100%). The grader evaluated 0 components in this data view using the <span class=\"mono\">pragmatic@2.0</span> rubric pack.",
+        "after": "This implementation graded <strong>A</strong> (100%). The grader evaluated 0 components in this data view using the <span class=\"mono\">pragmatic@2.1</span> rubric pack."
+      }
+    ],
+    "chronology-at-pragmatic": [
+      {
+        "path": "/report/methodology/paragraphs/0",
+        "before": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">pragmatic@2.0</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.",
+        "after": "This grade was produced by <span class=\"mono\">sdr-grader</span> using the <span class=\"mono\">pragmatic@2.1</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 0 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack."
+      },
+      {
+        "path": "/report/rubric/version",
+        "before": "2.0",
+        "after": "2.1"
+      },
+      {
+        "path": "/report/tldr_html",
+        "before": "This implementation graded <strong>A</strong> (100%). The grader evaluated 0 components in this data view using the <span class=\"mono\">pragmatic@2.0</span> rubric pack.",
+        "after": "This implementation graded <strong>A</strong> (100%). The grader evaluated 0 components in this data view using the <span class=\"mono\">pragmatic@2.1</span> rubric pack."
+      }
+    ],
+    "custom-GOV-002-0": [],
+    "custom-GOV-002-1": [],
+    "custom-GOV-002-2": [],
+    "custom-GOV-006-0": [],
+    "custom-GOV-006-1": [],
+    "custom-GOV-006-2": [],
+    "custom-GOV-001-0": []
+  },
+  "public_deltas": [
+    {
+      "path": "/bundled/report/rubric/version",
+      "before": "2.0",
+      "after": "2.1"
+    },
+    {
+      "path": "/bundled/report/tldr_html",
+      "before": "This implementation graded <strong>A</strong> (100%). The grader evaluated 53 components in this data view using the <span class=\"mono\">strict@2.0</span> rubric pack.",
+      "after": "This implementation graded <strong>A</strong> (100%). The grader evaluated 53 components in this data view using the <span class=\"mono\">strict@2.1</span> rubric pack."
+    },
+    {
+      "path": "/fixtures/aa_snapshot_clean.json/fail_below_a_report/rubric/version",
+      "before": "2.0",
+      "after": "2.1"
+    },
+    {
+      "path": "/fixtures/aa_snapshot_clean.json/fail_below_a_report/tldr_html",
+      "before": "This implementation graded <strong>A</strong> (100%). The grader evaluated 32 components in this report suite using the <span class=\"mono\">strict@2.0</span> rubric pack.",
+      "after": "This implementation graded <strong>A</strong> (100%). The grader evaluated 32 components in this report suite using the <span class=\"mono\">strict@2.1</span> rubric pack."
+    },
+    {
+      "path": "/fixtures/aa_snapshot_clean.json/report/rubric/version",
+      "before": "2.0",
+      "after": "2.1"
+    },
+    {
+      "path": "/fixtures/aa_snapshot_clean.json/report/tldr_html",
+      "before": "This implementation graded <strong>A</strong> (100%). The grader evaluated 32 components in this report suite using the <span class=\"mono\">strict@2.0</span> rubric pack.",
+      "after": "This implementation graded <strong>A</strong> (100%). The grader evaluated 32 components in this report suite using the <span class=\"mono\">strict@2.1</span> rubric pack."
+    },
+    {
+      "path": "/fixtures/aa_snapshot_messy.json/fail_below_a_report/findings/2/body/2/body_html",
+      "before": "Verify each unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers.",
+      "after": "Verify each scored unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers."
+    },
+    {
+      "path": "/fixtures/aa_snapshot_messy.json/fail_below_a_report/findings/3/body/2/body_html",
+      "before": "Verify each unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers.",
+      "after": "Verify each scored unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers."
+    },
+    {
+      "path": "/fixtures/aa_snapshot_messy.json/fail_below_a_report/remediations/2/text",
+      "before": "Verify each unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers.",
+      "after": "Verify each scored unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers."
+    },
+    {
+      "path": "/fixtures/aa_snapshot_messy.json/fail_below_a_report/remediations/3/text",
+      "before": "Verify each unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers.",
+      "after": "Verify each scored unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers."
+    },
+    {
+      "path": "/fixtures/aa_snapshot_messy.json/fail_below_a_report/rubric/version",
+      "before": "2.0",
+      "after": "2.1"
+    },
+    {
+      "path": "/fixtures/aa_snapshot_messy.json/fail_below_a_report/tldr_html",
+      "before": "This implementation graded <strong>F</strong> (55%). The grader evaluated 79 components in this report suite using the <span class=\"mono\">strict@2.0</span> rubric pack. The largest gap is in <strong>governance posture</strong> (0%); 3 of 3 rules in that category fired.",
+      "after": "This implementation graded <strong>F</strong> (55%). The grader evaluated 79 components in this report suite using the <span class=\"mono\">strict@2.1</span> rubric pack. The largest gap is in <strong>governance posture</strong> (0%); 3 of 3 rules in that category fired."
+    },
+    {
+      "path": "/fixtures/aa_snapshot_messy.json/report/findings/2/body/2/body_html",
+      "before": "Verify each unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers.",
+      "after": "Verify each scored unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers."
+    },
+    {
+      "path": "/fixtures/aa_snapshot_messy.json/report/findings/3/body/2/body_html",
+      "before": "Verify each unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers.",
+      "after": "Verify each scored unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers."
+    },
+    {
+      "path": "/fixtures/aa_snapshot_messy.json/report/remediations/2/text",
+      "before": "Verify each unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers.",
+      "after": "Verify each scored unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers."
+    },
+    {
+      "path": "/fixtures/aa_snapshot_messy.json/report/remediations/3/text",
+      "before": "Verify each unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers.",
+      "after": "Verify each scored unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers."
+    },
+    {
+      "path": "/fixtures/aa_snapshot_messy.json/report/rubric/version",
+      "before": "2.0",
+      "after": "2.1"
+    },
+    {
+      "path": "/fixtures/aa_snapshot_messy.json/report/tldr_html",
+      "before": "This implementation graded <strong>F</strong> (55%). The grader evaluated 79 components in this report suite using the <span class=\"mono\">strict@2.0</span> rubric pack. The largest gap is in <strong>governance posture</strong> (0%); 3 of 3 rules in that category fired.",
+      "after": "This implementation graded <strong>F</strong> (55%). The grader evaluated 79 components in this report suite using the <span class=\"mono\">strict@2.1</span> rubric pack. The largest gap is in <strong>governance posture</strong> (0%); 3 of 3 rules in that category fired."
+    },
+    {
+      "path": "/fixtures/cja_snapshot_clean.json/fail_below_a_report/rubric/version",
+      "before": "2.0",
+      "after": "2.1"
+    },
+    {
+      "path": "/fixtures/cja_snapshot_clean.json/fail_below_a_report/tldr_html",
+      "before": "This implementation graded <strong>A</strong> (100%). The grader evaluated 53 components in this data view using the <span class=\"mono\">strict@2.0</span> rubric pack.",
+      "after": "This implementation graded <strong>A</strong> (100%). The grader evaluated 53 components in this data view using the <span class=\"mono\">strict@2.1</span> rubric pack."
+    },
+    {
+      "path": "/fixtures/cja_snapshot_clean.json/report/rubric/version",
+      "before": "2.0",
+      "after": "2.1"
+    },
+    {
+      "path": "/fixtures/cja_snapshot_clean.json/report/tldr_html",
+      "before": "This implementation graded <strong>A</strong> (100%). The grader evaluated 53 components in this data view using the <span class=\"mono\">strict@2.0</span> rubric pack.",
+      "after": "This implementation graded <strong>A</strong> (100%). The grader evaluated 53 components in this data view using the <span class=\"mono\">strict@2.1</span> rubric pack."
+    },
+    {
+      "path": "/fixtures/cja_snapshot_messy.json/fail_below_a_report/findings/3/body/2/body_html",
+      "before": "Verify each unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers.",
+      "after": "Verify each scored unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers."
+    },
+    {
+      "path": "/fixtures/cja_snapshot_messy.json/fail_below_a_report/findings/4/body/2/body_html",
+      "before": "Verify each unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers.",
+      "after": "Verify each scored unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers."
+    },
+    {
+      "path": "/fixtures/cja_snapshot_messy.json/fail_below_a_report/remediations/3/text",
+      "before": "Verify each unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers.",
+      "after": "Verify each scored unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers."
+    },
+    {
+      "path": "/fixtures/cja_snapshot_messy.json/fail_below_a_report/remediations/4/text",
+      "before": "Verify each unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers.",
+      "after": "Verify each scored unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers."
+    },
+    {
+      "path": "/fixtures/cja_snapshot_messy.json/fail_below_a_report/rubric/version",
+      "before": "2.0",
+      "after": "2.1"
+    },
+    {
+      "path": "/fixtures/cja_snapshot_messy.json/fail_below_a_report/tldr_html",
+      "before": "This implementation graded <strong>F</strong> (47%). The grader evaluated 542 components in this data view using the <span class=\"mono\">strict@2.0</span> rubric pack. The largest gap is in <strong>governance posture</strong> (0%); 3 of 3 rules in that category fired.",
+      "after": "This implementation graded <strong>F</strong> (47%). The grader evaluated 542 components in this data view using the <span class=\"mono\">strict@2.1</span> rubric pack. The largest gap is in <strong>governance posture</strong> (0%); 3 of 3 rules in that category fired."
+    },
+    {
+      "path": "/fixtures/cja_snapshot_messy.json/report/findings/3/body/2/body_html",
+      "before": "Verify each unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers.",
+      "after": "Verify each scored unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers."
+    },
+    {
+      "path": "/fixtures/cja_snapshot_messy.json/report/findings/4/body/2/body_html",
+      "before": "Verify each unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers.",
+      "after": "Verify each scored unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers."
+    },
+    {
+      "path": "/fixtures/cja_snapshot_messy.json/report/remediations/3/text",
+      "before": "Verify each unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers.",
+      "after": "Verify each scored unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers."
+    },
+    {
+      "path": "/fixtures/cja_snapshot_messy.json/report/remediations/4/text",
+      "before": "Verify each unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers.",
+      "after": "Verify each scored unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers."
+    },
+    {
+      "path": "/fixtures/cja_snapshot_messy.json/report/rubric/version",
+      "before": "2.0",
+      "after": "2.1"
+    },
+    {
+      "path": "/fixtures/cja_snapshot_messy.json/report/tldr_html",
+      "before": "This implementation graded <strong>F</strong> (47%). The grader evaluated 542 components in this data view using the <span class=\"mono\">strict@2.0</span> rubric pack. The largest gap is in <strong>governance posture</strong> (0%); 3 of 3 rules in that category fired.",
+      "after": "This implementation graded <strong>F</strong> (47%). The grader evaluated 542 components in this data view using the <span class=\"mono\">strict@2.1</span> rubric pack. The largest gap is in <strong>governance posture</strong> (0%); 3 of 3 rules in that category fired."
+    },
+    {
+      "path": "/readme/report/rubric/version",
+      "before": "2.0",
+      "after": "2.1"
+    },
+    {
+      "path": "/readme/report/tldr_html",
+      "before": "This implementation graded <strong>A</strong> (100%). The grader evaluated 53 components in this data view using the <span class=\"mono\">strict@2.0</span> rubric pack.",
+      "after": "This implementation graded <strong>A</strong> (100%). The grader evaluated 53 components in this data view using the <span class=\"mono\">strict@2.1</span> rubric pack."
+    },
+    {
+      "path": "/trend/report/points/0/report/rubric/version",
+      "before": "2.0",
+      "after": "2.1"
+    },
+    {
+      "path": "/trend/report/points/0/report/tldr_html",
+      "before": "This implementation graded <strong>A</strong> (100%). The grader evaluated 53 components in this data view using the <span class=\"mono\">strict@2.0</span> rubric pack.",
+      "after": "This implementation graded <strong>A</strong> (100%). The grader evaluated 53 components in this data view using the <span class=\"mono\">strict@2.1</span> rubric pack."
+    },
+    {
+      "path": "/trend/report/points/1/report/findings/2/body/2/body_html",
+      "before": "Verify each unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers.",
+      "after": "Verify each scored unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers."
+    },
+    {
+      "path": "/trend/report/points/1/report/findings/3/body/2/body_html",
+      "before": "Verify each unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers.",
+      "after": "Verify each scored unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers."
+    },
+    {
+      "path": "/trend/report/points/1/report/remediations/2/text",
+      "before": "Verify each unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers.",
+      "after": "Verify each scored unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers."
+    },
+    {
+      "path": "/trend/report/points/1/report/remediations/3/text",
+      "before": "Verify each unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers.",
+      "after": "Verify each scored unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers."
+    },
+    {
+      "path": "/trend/report/points/1/report/rubric/version",
+      "before": "2.0",
+      "after": "2.1"
+    },
+    {
+      "path": "/trend/report/points/1/report/tldr_html",
+      "before": "This implementation graded <strong>F</strong> (58%). The grader evaluated 542 components in this data view using the <span class=\"mono\">strict@2.0</span> rubric pack. The largest gap is in <strong>calc metric maint</strong> (11%); 4 of 5 rules in that category fired.",
+      "after": "This implementation graded <strong>F</strong> (58%). The grader evaluated 542 components in this data view using the <span class=\"mono\">strict@2.1</span> rubric pack. The largest gap is in <strong>calc metric maint</strong> (11%); 4 of 5 rules in that category fired."
+    }
+  ]
+}

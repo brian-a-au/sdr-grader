@@ -42,7 +42,7 @@ def build_demo_report() -> Report:
         components_skipped=0,
         components_skipped_reason=None,
         adapter=Adapter(platform="CJA", tool="cja_auto_sdr", version="3.5.17"),
-        rubric=Rubric(pack="strict", version="2.0"),
+        rubric=Rubric(pack="strict", version="2.1"),
         generated_at=datetime(2026, 4, 25, 9, 14, tzinfo=UTC),
         tldr_html=(
             "This illustrative implementation graded <strong>B−</strong>. In the configured reference "
@@ -172,7 +172,7 @@ def build_demo_report() -> Report:
                         "descriptions force readers to infer intent from names alone, which is frequently wrong."
                     )),
                     FindingBlock(kind="section", label="Distribution", body_html=(
-                        "Dimensions: 120 of 203 missing (59%). The strict@2.0 rubric threshold is 56%."
+                        "Dimensions: 120 of 203 missing (59%). The strict@2.1 rubric threshold is 56%."
                     )),
                     FindingBlock(kind="section", label="How to remediate", body_html=(
                         "Use the component IDs reported above to populate descriptions via the data view "
@@ -266,7 +266,7 @@ def build_demo_report() -> Report:
         methodology=Methodology(
             paragraphs=[
                 ("This illustrative grade was produced by <span class=\"mono\">sdr-grader</span> using "
-                 "the <span class=\"mono\">strict@2.0</span> rubric pack. The default CJA inventory "
+                 "the <span class=\"mono\">strict@2.1</span> rubric pack. The default CJA inventory "
                  "contains 27 rules across six active categories; six are represented by findings in "
                  "this report. Each rule contributes to a category subtotal weighted by severity "
                  "(critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall "

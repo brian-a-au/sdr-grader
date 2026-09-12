@@ -5,13 +5,13 @@ expose different configuration surfaces — so coverage is broader on
 CJA than on AA. Thresholds apply only where the platform exposes the
 underlying field.
 
-Bundled pack `2.0` contains 27 rule definitions. All 27 apply to CJA;
+Bundled pack `2.1` contains 27 rule definitions. All 27 apply to CJA;
 23 apply to AA. The four CJA-only definitions below are excluded from
 AA execution and from its scoring denominator.
 
 ## Bundled coverage inventory
 
-The `strict` and `pragmatic` 2.0 packs have the same ID and platform
+The `strict` and `pragmatic` 2.1 packs have the same ID and platform
 inventory; only severities and parameters differ.
 
 | Platform | Applicable rules | Excluded IDs |
@@ -59,3 +59,14 @@ it is for CJA. If you're picking a launch tier:
 - **AA**: full default-pack coverage minus the four
   admin-surface rules above. Plan to revisit when Adobe ships the
   2.0 admin endpoints.
+
+## Reference grading policy 2.1
+
+AA and CJA use the same narrow exemption in SCH-002 and CALC-002 under both
+bundled packs. Explicitly typed, unresolved calculated-metric segment references
+remain unverified and unscored. Other reference kinds, unknown or ambiguous
+identities, and references from segment consumers retain existing checks.
+The catalog still contains 27 IDs; platform applicability, suppression, and
+excluded-only policy states determine the effective count for a snapshot.
+No exporter upgrade, live API collection, or re-export is required. See
+[Reference grading policy](REFERENCE_GRADING_POLICY.md).

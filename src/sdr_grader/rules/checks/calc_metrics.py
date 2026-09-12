@@ -7,10 +7,9 @@ from collections import defaultdict
 from collections.abc import Iterator
 from typing import TYPE_CHECKING
 
+from sdr_grader.core.reference_policy import assess_references
 from sdr_grader.render import Finding, FindingBlock
 from sdr_grader.rules.checks._helpers import (
-    all_component_ids,
-    all_segment_ids,
     collect_referenced_ids,
     make_finding,
 )
@@ -59,16 +58,8 @@ def check_calc_metrics_missing_descriptions(
 
 @register_check("calc_formula_broken_refs")
 def check_calc_formula_broken_refs(impl: Implementation, ctx: RuleContext) -> list[Finding]:
-    component_ids = all_component_ids(impl)
-    segment_ids = all_segment_ids(impl)
-    calc_ids = {cm.id for cm in impl.calculated_metrics}
-    known = component_ids | segment_ids | calc_ids | impl.available_reference_ids
-
-    broken: list[tuple[str, str]] = []  # (calc_id, missing_ref)
-    for cm in impl.calculated_metrics:
-        for ref in cm.references:
-            if ref not in known:
-                broken.append((cm.id, ref))
+    assessment = assess_references(impl, check_name="calc_formula_broken_refs", params=ctx.params)
+    broken = [(ref.consumer_id, ref.target_id) for ref in assessment.unresolved_scoring]
 
     if not broken:
         return []
