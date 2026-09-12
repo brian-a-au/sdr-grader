@@ -455,7 +455,7 @@ pre.code {
     </div>
     <div class="item">
       <span class="label">Rubric</span>
-      <span class="value">strict@2.0</span>
+      <span class="value">strict@2.1</span>
     </div>
     <div class="item">
       <span class="label">Generated</span>
@@ -477,7 +477,7 @@ pre.code {
 
   <section id="tldr">
     <div class="tldr">Summary</div>
-    <p class="tldr-body">This implementation graded <strong>F</strong> (47%). The grader evaluated 542 components in this data view using the <span class="mono">strict@2.0</span> rubric pack. The largest gap is in <strong>governance posture</strong> (0%); 3 of 3 rules in that category fired.</p>
+    <p class="tldr-body">This implementation graded <strong>F</strong> (47%). The grader evaluated 542 components in this data view using the <span class="mono">strict@2.1</span> rubric pack. The largest gap is in <strong>governance posture</strong> (0%); 3 of 3 rules in that category fired.</p>
   </section>
 
 
@@ -589,7 +589,7 @@ pre.code {
 
       <li>
         <span class="text">
-          Verify each unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers.
+          Verify each scored unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers.
           <span class="ref">SCH-002</span>
         </span>
         <span class="priority-weight">Priority weight 5</span>
@@ -597,7 +597,7 @@ pre.code {
 
       <li>
         <span class="text">
-          Verify each unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers.
+          Verify each scored unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers.
           <span class="ref">CALC-002</span>
         </span>
         <span class="priority-weight">Priority weight 3</span>
@@ -746,7 +746,7 @@ calc_metric calculatedMetrics/cm_amer_share -&gt; missing metrics/amer_visits
 
 
             <div class="finding-section-label">How to remediate</div>
-            <p>Verify each unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers.</p>
+            <p>Verify each scored unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers.</p>
 
 
       </div>
@@ -815,7 +815,7 @@ calculatedMetrics/cm_amer_share -&gt; metrics/amer_visits
 
 
             <div class="finding-section-label">How to remediate</div>
-            <p>Verify each unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers.</p>
+            <p>Verify each scored unresolved ID in the source platform and export the relevant inventory for the correct data view or report suite. If the reference is confirmed invalid, restore the component or update its consumers.</p>
 
 
       </div>
@@ -1028,7 +1028,7 @@ calculatedMetrics/cm_orders_per_visit  complexity=25
 
     <div class="finding-body" style="max-width: 720px;">
 
-        <p>This grade was produced by <span class="mono">sdr-grader</span> using the <span class="mono">strict@2.0</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 11 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.</p>
+        <p>This grade was produced by <span class="mono">sdr-grader</span> using the <span class="mono">strict@2.1</span> rubric pack. The rubric encodes 27 rules across 6 active categories; 11 fired against this snapshot. Each rule contributes to a category subtotal weighted by severity (critical: 4, high: 3, medium: 2, low: 1). Category subtotals roll up to the overall score using the category weights defined in the rubric pack.</p>
 
         <p>The grader is rule-based and deterministic — the same input always produces the same grade. Findings carry stable rule IDs that can be checked against the rubric documentation and rule definitions in the sdr-grader repository. Rules can be suppressed or reweighted via a project-level <span class="mono">.sdr-grader.yaml</span>.</p>
 
@@ -1039,9 +1039,9 @@ calculatedMetrics/cm_orders_per_visit  complexity=25
 
 
   <div class="provenance">
-    Generated by <a href="https://github.com/brian-a-au/sdr-grader">sdr-grader v1.3.1</a>
+    Generated by <a href="https://github.com/brian-a-au/sdr-grader">sdr-grader v1.4.0</a>
     against snapshot <span class="mono">2026-04-25T09:14:00Z</span>.
-    Rubric: <span class="mono">strict@2.0</span>.
+    Rubric: <span class="mono">strict@2.1</span>.
     Adapter: <span class="mono">cja_auto_sdr@3.5.17</span>.
     Color pack: default.
     542 components evaluated; 0 components skipped

@@ -1,7 +1,7 @@
 # Troubleshooting installed `sdr-grader`
 
 This guide covers the public, installed-user failure modes for `sdr-grader`
-1.3.1. Run `sdr-grader --version` first so the diagnostic is tied to a known
+1.4.0. Run `sdr-grader --version` first so the diagnostic is tied to a known
 release. File, directory, and stdin grading are local; only `--dataview` and
 `--rsid` invoke child generators that call Adobe APIs.
 
@@ -166,3 +166,14 @@ The current authority for what each output and sharing surface retains is the
 [report-sharing privacy matrix](https://github.com/brian-a-au/sdr-grader/blob/main/SECURITY.md#report-sharing-privacy-matrix).
 Prefer a synthetic reduction when reporting a defect, and follow that policy
 before transferring any production-derived material.
+
+## An unresolved segment reference is not a finding
+
+Under bundled policy 2.1, an explicitly typed calculated-metric-to-segment
+reference can remain unresolved but unscored. Read its unverified methodology
+diagnostic. The snapshot cannot establish whether it is internal, deleted,
+inaccessible, or otherwise unavailable; exclusion does not establish validity.
+Missing metric/dimension references and segment-consumer references remain
+scored. A mixed finding retains its full rule penalty, so a score increase is
+not guaranteed. Existing snapshots need no re-export. See
+[Reference grading policy](REFERENCE_GRADING_POLICY.md).

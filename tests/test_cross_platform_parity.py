@@ -153,8 +153,10 @@ def test_bundled_pack_2_removes_inert_and_raw_count_rules():
         rubric = load_rubric(STRICT_PACK.parent / pack_name)
         ids = {rule.id for rule in rubric.rules}
 
-        assert rubric.version == "2.0"
+        assert rubric.version == "2.1"
         assert len(rubric.rules) == 27
+        assert all(rule.params.get("exclude_unresolved_calculated_metric_segments") is True
+                   for rule in rubric.rules if rule.id in {"SCH-002", "CALC-002"})
         assert ids.isdisjoint({"GOV-002", "GOV-007", "GOV-008"})
 
 

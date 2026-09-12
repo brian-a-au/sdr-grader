@@ -16,6 +16,7 @@ from sdr_grader.core.models import (
     CalculatedMetric,
     Component,
     Implementation,
+    ReferenceClassification,
     Segment,
 )
 from sdr_grader.core.segment_identity import validate_segment_identities
@@ -251,6 +252,7 @@ def _calc_from_record(record: Any, *, index: int | None = None) -> CalculatedMet
         allocation=record.get("allocation"),
         complexity_score=_safe_float(record.get("complexity_score")),
         references=references,
+        reference_classifications=_aa_reference_classifications(definition, references),
         created_at=_optional_timestamp(record.get("created") or record.get("created_at")),
         modified_at=_optional_timestamp(record.get("modified") or record.get("modified_at")),
         owner=str(record.get("owner_id")) if record.get("owner_id") else None,
@@ -590,3 +592,90 @@ def _normalize_polarity(value: Any):
     if lowered in {"positive", "negative", "neutral"}:
         return lowered  # type: ignore[return-value]
     return None
+
+
+def _aa_reference_classifications(
+    definition: dict[str, Any], references: list[str]
+) -> dict[str, ReferenceClassification]:
+    """Classify supported AST positions without changing legacy extraction."""
+    positions = {
+        "formula",
+        "args",
+        "col",
+        "col1",
+        "col2",
+        "metric",
+        "filter",
+        "filters",
+        "container",
+        "pred",
+        "preds",
+        "val",
+        "evt",
+    }
+    kinds: dict[str, set[str]] = {ref: set() for ref in references}
+    blockers: dict[str, set[str]] = {ref: set() for ref in references}
+
+    def block_malformed(value: Any) -> None:
+        if isinstance(value, str):
+            ref = value
+            if ref in blockers:
+                blockers[ref].add("malformed")
+        elif isinstance(value, dict):
+            for child in value.values():
+                block_malformed(child)
+        elif isinstance(value, list):
+            for child in value:
+                block_malformed(child)
+
+    def walk(node: Any) -> None:
+        if isinstance(node, list):
+            for child in node:
+                walk(child)
+        elif isinstance(node, dict):
+            func = node.get("func")
+            kind = (
+                {
+                    "segment-ref": "segment",
+                    "metric": "metric",
+                    "event": "metric",
+                    "attr": "dimension",
+                }.get(func)
+                if isinstance(func, str)
+                else None
+            )
+            value = node.get("id" if func == "segment-ref" else "name")
+            if isinstance(value, str) and value in kinds:
+                if kind and value.strip():
+                    kinds[value].add(kind)
+                else:
+                    blockers[value].add("unknown")
+            if kind and isinstance(value, (dict, list)):
+                block_malformed(value)
+            if kind is None:
+                for key in ("id", "name"):
+                    unknown = node.get(key)
+                    if isinstance(unknown, str) and unknown in blockers:
+                        blockers[unknown].add("unknown")
+                    elif isinstance(unknown, (dict, list)):
+                        block_malformed(unknown)
+            args = node.get("args")
+            if isinstance(args, list):
+                for arg in args:
+                    if (
+                        isinstance(arg, str)
+                        and arg.startswith(_AA_REF_PREFIXES)
+                        and arg in blockers
+                    ):
+                        blockers[arg].add("unknown")
+            for key in positions:
+                if key in node:
+                    walk(node[key])
+
+    walk(definition)
+    return {
+        ref: ReferenceClassification(
+            frozenset(kinds[ref]), frozenset(blockers[ref] or (() if kinds[ref] else ("unknown",)))
+        )
+        for ref in references
+    }

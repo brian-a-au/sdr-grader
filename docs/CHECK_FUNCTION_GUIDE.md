@@ -142,3 +142,15 @@ applicability is part of the contract.
 runs over the same input produce byte-identical HTML. If your check
 introduces randomness or wall-clock dependence, this test will catch
 it. Don't bypass it; redesign the check.
+
+## Reference-policy applicability
+
+An empty finding list ordinarily means the check found no scored failure.
+For `broken_references` and `calc_formula_broken_refs`, the engine first uses
+the shared reference assessment to remove an excluded-only rule from execution
+and scoring. Such a rule is **not assessed**, not a verified pass. Resolved
+nonexcluded candidates keep it assessed; mixed unresolved candidates retain
+its full penalty. Both checks use `core.reference_policy.assess_references`;
+do not drop canonical references or add exclusions to known IDs. Diagnostics
+belong in methodology, never informational Findings. See
+[Reference grading policy](REFERENCE_GRADING_POLICY.md).

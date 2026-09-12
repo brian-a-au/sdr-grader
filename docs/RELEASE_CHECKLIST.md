@@ -262,3 +262,19 @@ record is observable.
 
 Do not announce while any release, security, control, calibration,
 plugin, or soak evidence is missing or stale.
+
+## Reference-policy 2.1 implementation verification
+
+For package 1.4.0, verify both platforms/packs, mixed and excluded-only findings,
+exact denominator/threshold behavior, complete escaped diagnostics, legacy packs,
+and preserved canonical references with the offline reference-policy fixtures.
+Run the historical compatibility comparator with the separate exact policy
+expectations; preserve old baseline artifacts. Report schema stays 1. Existing
+snapshots require no re-export, credentials, Adobe API collection, exporter
+changes, or exporter-evidence source gates. U6 visualizer wording is independent
+and does not gate the grader policy release. Paired color-pack gates apply when
+color-pack contracts change; this release changes none.
+
+Local implementation verification does not publish a release or establish
+hosted controls, attestations, private-cohort admission, or publication approval.
+Complete applicable publication gates above separately for an immutable candidate.

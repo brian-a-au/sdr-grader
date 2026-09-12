@@ -22,7 +22,7 @@ def test_report_json_declares_schema_and_stable_evaluation_identity():
         "tool": "cja_auto_sdr",
         "version": "3.5.17",
     }
-    assert data["rubric"] == {"pack": "strict", "version": "2.0"}
+    assert data["rubric"] == {"pack": "strict", "version": "2.1"}
     assert data["tool_version"] == __version__
 
 

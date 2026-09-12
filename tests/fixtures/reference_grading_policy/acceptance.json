@@ -1,0 +1,298 @@
+{
+  "aa-excluded_only-strict": {
+    "score": 78,
+    "grade": "C+",
+    "fail_below_A_exit": 2,
+    "reference_findings": [],
+    "effective_rules": 21,
+    "weights": {
+      "schema_hygiene": {
+        "denominator": 6,
+        "failed": 0
+      },
+      "calc_metric_maint": {
+        "denominator": 7,
+        "failed": 0
+      }
+    }
+  },
+  "aa-excluded_only-pragmatic": {
+    "score": 90,
+    "grade": "A\u2212",
+    "fail_below_A_exit": 2,
+    "reference_findings": [],
+    "effective_rules": 21,
+    "weights": {
+      "schema_hygiene": {
+        "denominator": 5,
+        "failed": 0
+      },
+      "calc_metric_maint": {
+        "denominator": 5,
+        "failed": 0
+      }
+    }
+  },
+  "aa-mixed-strict": {
+    "score": 69,
+    "grade": "D+",
+    "fail_below_A_exit": 2,
+    "reference_findings": [
+      "CALC-002",
+      "SCH-002"
+    ],
+    "effective_rules": 23,
+    "weights": {
+      "schema_hygiene": {
+        "denominator": 9,
+        "failed": 3
+      },
+      "calc_metric_maint": {
+        "denominator": 9,
+        "failed": 2
+      }
+    }
+  },
+  "aa-mixed-pragmatic": {
+    "score": 78,
+    "grade": "C+",
+    "fail_below_A_exit": 2,
+    "reference_findings": [
+      "CALC-002",
+      "SCH-002"
+    ],
+    "effective_rules": 23,
+    "weights": {
+      "schema_hygiene": {
+        "denominator": 8,
+        "failed": 3
+      },
+      "calc_metric_maint": {
+        "denominator": 7,
+        "failed": 2
+      }
+    }
+  },
+  "aa-resolved-strict": {
+    "score": 78,
+    "grade": "C+",
+    "fail_below_A_exit": 2,
+    "reference_findings": [],
+    "effective_rules": 23,
+    "weights": {
+      "schema_hygiene": {
+        "denominator": 9,
+        "failed": 0
+      },
+      "calc_metric_maint": {
+        "denominator": 9,
+        "failed": 0
+      }
+    }
+  },
+  "aa-resolved-pragmatic": {
+    "score": 90,
+    "grade": "A\u2212",
+    "fail_below_A_exit": 2,
+    "reference_findings": [],
+    "effective_rules": 23,
+    "weights": {
+      "schema_hygiene": {
+        "denominator": 8,
+        "failed": 0
+      },
+      "calc_metric_maint": {
+        "denominator": 7,
+        "failed": 0
+      }
+    }
+  },
+  "aa-legacy-strict": {
+    "score": 69,
+    "grade": "D+",
+    "fail_below_A_exit": 2,
+    "reference_findings": [
+      "CALC-002",
+      "SCH-002"
+    ],
+    "effective_rules": 23,
+    "weights": {
+      "schema_hygiene": {
+        "denominator": 9,
+        "failed": 3
+      },
+      "calc_metric_maint": {
+        "denominator": 9,
+        "failed": 2
+      }
+    }
+  },
+  "aa-legacy-pragmatic": {
+    "score": 78,
+    "grade": "C+",
+    "fail_below_A_exit": 2,
+    "reference_findings": [
+      "CALC-002",
+      "SCH-002"
+    ],
+    "effective_rules": 23,
+    "weights": {
+      "schema_hygiene": {
+        "denominator": 8,
+        "failed": 3
+      },
+      "calc_metric_maint": {
+        "denominator": 7,
+        "failed": 2
+      }
+    }
+  },
+  "cja-excluded_only-strict": {
+    "score": 78,
+    "grade": "C+",
+    "fail_below_A_exit": 2,
+    "reference_findings": [],
+    "effective_rules": 25,
+    "weights": {
+      "schema_hygiene": {
+        "denominator": 14,
+        "failed": 0
+      },
+      "calc_metric_maint": {
+        "denominator": 7,
+        "failed": 0
+      }
+    }
+  },
+  "cja-excluded_only-pragmatic": {
+    "score": 90,
+    "grade": "A\u2212",
+    "fail_below_A_exit": 2,
+    "reference_findings": [],
+    "effective_rules": 25,
+    "weights": {
+      "schema_hygiene": {
+        "denominator": 10,
+        "failed": 0
+      },
+      "calc_metric_maint": {
+        "denominator": 5,
+        "failed": 0
+      }
+    }
+  },
+  "cja-mixed-strict": {
+    "score": 71,
+    "grade": "C\u2212",
+    "fail_below_A_exit": 2,
+    "reference_findings": [
+      "CALC-002",
+      "SCH-002"
+    ],
+    "effective_rules": 27,
+    "weights": {
+      "schema_hygiene": {
+        "denominator": 17,
+        "failed": 3
+      },
+      "calc_metric_maint": {
+        "denominator": 9,
+        "failed": 2
+      }
+    }
+  },
+  "cja-mixed-pragmatic": {
+    "score": 81,
+    "grade": "B\u2212",
+    "fail_below_A_exit": 2,
+    "reference_findings": [
+      "CALC-002",
+      "SCH-002"
+    ],
+    "effective_rules": 27,
+    "weights": {
+      "schema_hygiene": {
+        "denominator": 13,
+        "failed": 3
+      },
+      "calc_metric_maint": {
+        "denominator": 7,
+        "failed": 2
+      }
+    }
+  },
+  "cja-resolved-strict": {
+    "score": 78,
+    "grade": "C+",
+    "fail_below_A_exit": 2,
+    "reference_findings": [],
+    "effective_rules": 27,
+    "weights": {
+      "schema_hygiene": {
+        "denominator": 17,
+        "failed": 0
+      },
+      "calc_metric_maint": {
+        "denominator": 9,
+        "failed": 0
+      }
+    }
+  },
+  "cja-resolved-pragmatic": {
+    "score": 90,
+    "grade": "A\u2212",
+    "fail_below_A_exit": 2,
+    "reference_findings": [],
+    "effective_rules": 27,
+    "weights": {
+      "schema_hygiene": {
+        "denominator": 13,
+        "failed": 0
+      },
+      "calc_metric_maint": {
+        "denominator": 7,
+        "failed": 0
+      }
+    }
+  },
+  "cja-legacy-strict": {
+    "score": 71,
+    "grade": "C\u2212",
+    "fail_below_A_exit": 2,
+    "reference_findings": [
+      "CALC-002",
+      "SCH-002"
+    ],
+    "effective_rules": 27,
+    "weights": {
+      "schema_hygiene": {
+        "denominator": 17,
+        "failed": 3
+      },
+      "calc_metric_maint": {
+        "denominator": 9,
+        "failed": 2
+      }
+    }
+  },
+  "cja-legacy-pragmatic": {
+    "score": 81,
+    "grade": "B\u2212",
+    "fail_below_A_exit": 2,
+    "reference_findings": [
+      "CALC-002",
+      "SCH-002"
+    ],
+    "effective_rules": 27,
+    "weights": {
+      "schema_hygiene": {
+        "denominator": 13,
+        "failed": 3
+      },
+      "calc_metric_maint": {
+        "denominator": 7,
+        "failed": 2
+      }
+    }
+  }
+}

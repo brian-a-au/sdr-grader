@@ -178,10 +178,12 @@ def test_verifier_rejects_other_payload_drift(tmp_path, monkeypatch):
     monkeypatch.setattr(module, "_extract_baseline", lambda *args, **kwargs: None)
     monkeypatch.setattr(module, "_sync_environment", lambda *args, **kwargs: {})
 
+    monkeypatch.setattr(module, "_load_policy_contract", lambda *_: {"public_deltas": []})
+
     for candidate in (wrong_item, wrong_count, score_drift):
         results = iter((candidate, baseline))
         monkeypatch.setattr(module, "_run_grades", lambda **kwargs: next(results))
-        with pytest.raises(module.CompatibilityError, match="beyond the approved"):
+        with pytest.raises(module.CompatibilityError, match="beyond exact reference-policy deltas"):
             module.verify_compatibility(tmp_path)
 
 
@@ -649,3 +651,40 @@ def test_real_correctness_oracle_rejects_type_drift_inside_recorded_deltas():
     with pytest.raises(module.CompatibilityError, match='recorded exact deltas'):
         module._verify_correctness_case('boolean-cja-invalid-strict', contract['baseline'],
                                         contract['candidate'], contract)
+
+
+def test_policy_delta_layer_is_exact_and_preserves_historical_contract():
+    module = _load_module()
+    original = {"score": 38, "rubric": {"version": "2.0"}, "items": ["missing"]}
+    changes = [{"path": "/rubric/version", "before": "2.0", "after": "2.1"}]
+    expected = module._apply_policy_deltas(original, changes)
+    assert expected == {**original, "rubric": {"version": "2.1"}}
+    assert original["rubric"]["version"] == "2.0"
+    with pytest.raises(module.CompatibilityError, match="before"):
+        module._apply_policy_deltas(expected, changes)
+    with pytest.raises(module.CompatibilityError, match="before"):
+        module._apply_policy_deltas({"score": True}, [{"path": "/score", "before": 1, "after": 2}])
+
+
+def test_policy_correctness_rejects_unapproved_score_or_diagnostic_drift():
+    module = _load_module()
+    legacy = {"baseline": {"score": 38}, "candidate": {"score": 38}, "deltas": []}
+    module._verify_policy_correctness_case("case", {"score": 38}, {"score": 38}, legacy, [])
+    for changed in [{"score": 39}, {"score": 38, "diagnostic": "valid"}]:
+        with pytest.raises(module.CompatibilityError, match="policy"):
+            module._verify_policy_correctness_case("case", {"score": 38}, changed, legacy, [])
+
+
+def test_checked_in_policy_layer_has_exact_legacy_preconditions():
+    module = _load_module()
+    fixtures = REPO_ROOT / "tests/fixtures"
+    legacy = json.loads((fixtures / "correctness_1_3/expectations.json").read_text())
+    policy = json.loads((fixtures / "reference_grading_policy/compatibility.json").read_text())
+    assert policy["package_version"] == "1.4.0"
+    assert policy["rubric_version"] == "2.1"
+    assert policy["schema_version"] == 1
+    assert policy["correctness_cases"].keys() == legacy["cases"].keys()
+    for name, deltas in policy["correctness_cases"].items():
+        old = legacy["cases"][name]
+        expected = module._apply_policy_deltas(old["candidate"], deltas)
+        module._verify_policy_correctness_case(name, old["baseline"], expected, old, deltas)

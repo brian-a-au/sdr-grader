@@ -255,12 +255,14 @@ def test_calculated_metric_wrapped_segment_id_resolves_exact_target(pack, presen
     assert normalized.calculated_metrics[0].references == ["metrics/visits", "segments/s_saved"]
     report = grade(normalized, load_rubric(BUNDLED_PACKS_DIR / pack))
     findings = [f for f in report.findings if f.id in {"SCH-002", "CALC-002"}]
-    assert {f.id for f in findings} == (set() if present else {"SCH-002", "CALC-002"})
-    for finding in findings:
-        assert [item for block in finding.body for item in (block.items or [])] == [
-            "calc_metric cm1 -> missing segments/s_saved" if finding.id == "SCH-002"
-            else "cm1 -> segments/s_saved"
-        ]
+    assert findings == []
+    diagnostics = [p for p in report.methodology.paragraphs if "Unverified reference:" in p]
+    assert len(diagnostics) == (0 if present else 1)
+    if not present:
+        assert "segments/s_saved" in diagnostics[0]
+        assert "CALC-002, SCH-002" in diagnostics[0]
+    # The resolved metric operand keeps both rules assessed in either case.
+    assert not any({"SCH-002", "CALC-002"} & set(s.ids) for s in report.methodology.skipped)
 
 
 def test_unknown_segment_wrapper_cannot_resolve_summary_by_inventory_suffix():

@@ -1,6 +1,6 @@
-# Rubric audit — bundled pack 2.0
+# Rubric audit — bundled pack 2.1
 
-This premise audit is synchronized to the YAML shipped in both bundled `2.0`
+This premise audit is synchronized to the YAML shipped in both bundled `2.1`
 packs. `strict` and `pragmatic` contain the same 27 rule IDs in the same six
 categories; their parameters and severities may differ. The YAML and registered
 check functions are the runtime authorities when this narrative drifts.
@@ -32,7 +32,7 @@ Dispositions mean:
 | Rule | Disposition | Runtime-aligned note |
 |---|---|---|
 | SCH-001 | Solid | Detects duplicate names within the same normalized `Component.component_type` across metrics, dimensions, and derived fields. |
-| SCH-002 | Solid | Resolves segment and calculated-metric references against normalized component, segment, and calculated-metric IDs. |
+| SCH-002 | Solid | Compares canonical references against inventory; policy 2.1 excludes only typed unresolved calculated-metric segment references, retaining unverified diagnostics and other penalties. |
 | SCH-003 | Solid | Measures the maximum missing-description ratio across normalized metrics and dimensions; pack parameters set the threshold. |
 | SCH-004 | Solid | Detects rate/percent-shaped names paired with integer-shaped normalized data types. Adobe's AA 2.0 API collapses counter/numeric detail, so this is a shape check, not an admin-event-type audit. |
 | SCH-005 | Solid | Uses tags and bounded name markers to find deprecated normalized components that still have consumers. |
@@ -64,7 +64,7 @@ Dispositions mean:
 | Rule | Disposition | Runtime-aligned note |
 |---|---|---|
 | CALC-001 | Solid | Measures the missing-description ratio across normalized `CalculatedMetric` records. |
-| CALC-002 | Solid | Resolves normalized calculated-metric formula references. |
+| CALC-002 | Solid | Applies the same policy partition as SCH-002 to calculated-metric references; excluded-only cases are not assessed. |
 | CALC-003 | Solid | Enforces the pack threshold against normalized `CalculatedMetric.complexity_score`. |
 | CALC-014 | Solid | Uses Jaccard similarity over normalized `CalculatedMetric.references` to find near-duplicates. |
 | CALC-015 | Solid | Finds distinct calculated metrics with identical normalized `formula_text`. |
@@ -129,3 +129,5 @@ and ATTR-004 from its scoring denominator.
 - [Manage calculated metrics](https://experienceleague.adobe.com/en/docs/analytics/components/calculated-metrics/calcmetric-workflow/cm-manager)
 - [Manage segments (CJA)](https://experienceleague.adobe.com/en/docs/analytics-platform/using/cja-components/segments/seg-manage)
 - [Derived fields](https://experienceleague.adobe.com/en/docs/analytics-platform/using/cja-dataviews/derived-fields)
+
+See [Reference grading policy](REFERENCE_GRADING_POLICY.md) for the deliberate coverage loss, denominator behavior, and historical comparison boundary.

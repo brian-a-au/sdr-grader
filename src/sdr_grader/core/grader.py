@@ -22,6 +22,9 @@ from markupsafe import Markup
 
 from sdr_grader.core.grade_calc import GradeResult, compute_grade
 from sdr_grader.core.models import Implementation
+from sdr_grader.core.reference_policy import (
+    ReferenceAssessment,
+)
 from sdr_grader.core.segment_identity import validate_segment_identities
 from sdr_grader.core.timeparse import parse_timestamp
 from sdr_grader.render import (
@@ -36,7 +39,7 @@ from sdr_grader.render import (
 from sdr_grader.render import (
     Rubric as RenderRubric,
 )
-from sdr_grader.rules.engine import RuleInventory, resolve_effective_rules, run_rules
+from sdr_grader.rules.engine import RuleInventory, resolve_rule_inventory, run_rules
 from sdr_grader.rules.rubric import Rubric, RuleDefinition
 from sdr_grader.rules.suppression import (
     Suppression,
@@ -66,17 +69,15 @@ def grade(
     validate_segment_identities(impl)
     if suppression is not None:
         rubric = apply_to_rubric(rubric, suppression)
-    rule_inventory = resolve_effective_rules(
+    resolution = resolve_rule_inventory(
         impl,
         rubric,
-        excluded_rule_ids=(
-            suppression.fully_suppressed_ids if suppression is not None else ()
-        ),
+        excluded_rule_ids=(suppression.fully_suppressed_ids if suppression is not None else ()),
     )
+    rule_inventory = resolution.effective_rules
+    assessments = resolution.reference_assessments
     raw_findings = run_rules(impl, rubric, rule_inventory=rule_inventory)
-    findings = (
-        apply_to_findings(raw_findings, suppression) if suppression else raw_findings
-    )
+    findings = apply_to_findings(raw_findings, suppression) if suppression else raw_findings
     result = compute_grade(rubric, findings, rule_inventory=rule_inventory)
 
     generated_at = _resolve_generated_at(impl.snapshot_taken_at)
@@ -109,6 +110,7 @@ def grade(
             findings,
             rule_inventory,
             suppression,
+            assessments=assessments,
         ),
         distribution=None,  # attached later by the CLI when --distribution-data is set
     )
@@ -173,16 +175,21 @@ def _derive_remediations(
 # ---------------------------------------------------------------------------
 
 
-def _build_tldr(
-    impl: Implementation, rubric: Rubric, result: GradeResult
-) -> Markup:
+def _build_tldr(impl: Implementation, rubric: Rubric, result: GradeResult) -> Markup:
     weakest = min(result.categories, key=lambda c: c.pct, default=None)
     pack_pin = Markup('<span class="mono">{}@{}</span>').format(
         rubric.pack,
         rubric.version,
     )
     components = _component_count(impl)
-    parts = [
+    parts = []
+    if not any(category.rules_total for category in result.categories):
+        parts.append(
+            Markup(
+                "No scoring rules were assessed. Scores and grades do not establish verification."
+            )
+        )
+    parts.append(
         Markup(
             "This implementation graded <strong>{}</strong> "
             "({}%). The grader evaluated {} components in this {} "
@@ -194,7 +201,8 @@ def _build_tldr(
             _PLATFORM_NOUN.get(impl.platform, "instance"),
             pack_pin,
         )
-    ]
+    )
+    parts.extend(_unassessed_category_disclosures(result))
     if weakest is not None and weakest.rules_failed > 0:
         parts.append(
             Markup(
@@ -210,12 +218,25 @@ def _build_tldr(
     return Markup(" ").join(parts)
 
 
+def _unassessed_category_disclosures(result: GradeResult) -> list[Markup]:
+    return [
+        Markup(
+            "No scoring rules were assessed in {}. Its score of 100 is an arithmetic "
+            "default, not verification."
+        ).format(_human_category(category.slug))
+        for category in result.categories
+        if category.rules_total == 0
+    ]
+
+
 def _build_methodology(
     rubric: Rubric,
     result: GradeResult,
     findings: list[Finding],
     rule_inventory: RuleInventory,
     suppression: Suppression | None = None,
+    *,
+    assessments: dict[str, ReferenceAssessment] | None = None,
 ) -> Methodology:
     rule_count = len(rule_inventory)
     fired_count = len({f.id for f in findings})
@@ -252,7 +273,45 @@ def _build_methodology(
             'reweighted via a project-level <span class="mono">.sdr-grader.yaml</span>.'
         ),
     ]
+    paragraphs.extend(_unassessed_category_disclosures(result))
+    if not rule_inventory:
+        paragraphs.append(
+            Markup(
+                "No scoring rules were assessed. Scores and grades do not establish verification."
+            )
+        )
+    associations: dict[tuple[str, str, str], set[str]] = {}
     skipped: list[SkippedRules] = []
+    for rule_id, assessment in sorted((assessments or {}).items()):
+        for candidate in assessment.excluded:
+            associations.setdefault(candidate, set()).add(rule_id)
+        if assessment.not_assessed:
+            skipped.append(
+                SkippedRules(
+                    ids=[rule_id],
+                    reason=(
+                        "Not assessed: all reference candidates were excluded by the "
+                        "calculated-metric-to-segment policy; the references remain unverified."
+                    ),
+                )
+            )
+    if associations:
+        paragraphs.append(
+            Markup(
+                "Explicitly typed calculated-metric-to-segment references unresolved in this "
+                "snapshot are excluded from the participating reference checks. Snapshot absence "
+                "does not establish availability, validity, project ownership, or lifecycle; "
+                "invalid references in this category are also unscored. These diagnostics "
+                "do not contribute findings, remediations, or grading penalties."
+            )
+        )
+        for (_, consumer, target), rule_ids in sorted(associations.items()):
+            paragraphs.append(
+                Markup(
+                    "Unverified reference: calculated metric {} → segment {}. "
+                    "Unresolved in this snapshot; excluded from grading by {}."
+                ).format(consumer, target, ", ".join(sorted(rule_ids)))
+            )
     if suppression:
         for summary in summarize_suppressed(suppression):
             skipped.append(SkippedRules(ids=summary.ids, reason=summary.reason))
@@ -266,10 +325,16 @@ def _build_methodology(
 
 def _component_count(impl: Implementation) -> int:
     """Count every supplied normalized inventory considered by the grader."""
-    return sum(len(items) for items in (
-        impl.metrics, impl.dimensions, impl.derived_fields,
-        impl.segments, impl.calculated_metrics,
-    ))
+    return sum(
+        len(items)
+        for items in (
+            impl.metrics,
+            impl.dimensions,
+            impl.derived_fields,
+            impl.segments,
+            impl.calculated_metrics,
+        )
+    )
 
 
 def _human_category(slug: str) -> str:

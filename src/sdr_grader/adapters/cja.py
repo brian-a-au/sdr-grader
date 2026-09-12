@@ -19,6 +19,7 @@ from sdr_grader.core.models import (
     CalculatedMetric,
     Component,
     Implementation,
+    ReferenceClassification,
     Segment,
 )
 from sdr_grader.core.segment_identity import validate_segment_identities
@@ -339,6 +340,7 @@ def _calc_metric_from_record(
         allocation=allocation,
         complexity_score=complexity,
         references=references,
+        reference_classifications=_cja_reference_classifications(formula, references),
         created_at=_optional_timestamp(record.get("created") or record.get("created_at")),
         modified_at=_optional_timestamp(record.get("modified") or record.get("modified_at")),
         owner=_normalize_owner(record.get("owner")),
@@ -850,3 +852,115 @@ def _governance_shared_to_count(record: dict[str, Any]) -> int | None:
     if isinstance(value, (int, float)):
         return int(value)
     return None
+
+
+def _cja_reference_classifications(
+    definition: dict[str, Any], references: list[str]
+) -> dict[str, ReferenceClassification]:
+    """Retain conservative typing separately from canonical summary reconciliation."""
+    positions = {
+        "formula",
+        "args",
+        "col",
+        "col1",
+        "col2",
+        "metric",
+        "filter",
+        "filters",
+        "container",
+        "pred",
+        "preds",
+        "val",
+        "evt",
+    }
+    kinds: dict[str, set[str]] = {ref: set() for ref in references}
+    blockers: dict[str, set[str]] = {ref: set() for ref in references}
+
+    def identities(value: Any) -> tuple[set[str], bool]:
+        if isinstance(value, str):
+            candidate = _calc_segment_reference_id(value)
+            return ({candidate} if candidate else set()), False
+        if value is None:
+            return set(), False
+        if isinstance(value, dict):
+            keys = [key for key in ("segment_id", "id") if key in value]
+            if not keys:
+                keys = [key for key in ("name", "metric", "value", "val") if key in value]
+            if not keys:
+                return set(), True
+            value = [value[key] for key in keys]
+        if isinstance(value, list):
+            candidates: set[str] = set()
+            malformed = False
+            for child in value:
+                found, invalid = identities(child)
+                candidates.update(found)
+                malformed |= invalid
+            return candidates, malformed
+        return set(), True
+
+    def observe(value: Any, kind: str, issues: set[str] | None = None) -> None:
+        if isinstance(value, str) and value.strip() in kinds:
+            ref = value.strip()
+            kinds[ref].add(kind)
+            blockers[ref].update(issues or ())
+
+    def block_malformed(value: Any) -> None:
+        if isinstance(value, str):
+            ref = value.strip()
+            if ref in blockers:
+                blockers[ref].add("malformed")
+        elif isinstance(value, dict):
+            for child in value.values():
+                block_malformed(child)
+        elif isinstance(value, list):
+            for child in value:
+                block_malformed(child)
+
+    def walk(node: Any) -> None:
+        if isinstance(node, list):
+            for child in node:
+                walk(child)
+        elif isinstance(node, dict):
+            func = node.get("func")
+            if func in ("metric", "event", "attr"):
+                observe(node.get("name"), "dimension" if func == "attr" else "metric")
+                if isinstance(node.get("name"), (dict, list)):
+                    block_malformed(node["name"])
+            elif func in ("segment", "segment-ref"):
+                slots = [node[key] for key in ("segment_id", "id") if key in node]
+                candidates, malformed = identities(slots)
+                if func == "segment-ref" and any(isinstance(slot, (dict, list)) for slot in slots):
+                    malformed = True
+                issues = {"ambiguous"} if len(candidates) > 1 else set()
+                if malformed:
+                    issues.add("malformed")
+                selected = node.get("segment_id", node.get("id"))
+                if func == "segment" and isinstance(selected, (dict, list)):
+                    selected = _calc_segment_reference_id(selected)
+                # Canonical extraction can select a fallback label even when an
+                # empty explicit slot prevents our identity proof. Keep it unknown.
+                if isinstance(selected, str) and selected.strip() not in candidates:
+                    issues.add("unknown")
+                observe(selected, "segment", issues)
+                for candidate in candidates:
+                    if issues and candidate in blockers:
+                        blockers[candidate].update(issues)
+            else:
+                for key in ("id", "segment_id", "name"):
+                    value = node.get(key)
+                    if isinstance(value, str) and value.strip() in blockers:
+                        blockers[value.strip()].add("unknown")
+                    elif isinstance(value, (dict, list)):
+                        block_malformed(value)
+            for key in positions:
+                if key in node:
+                    walk(node[key])
+
+    walk(definition)
+    return {
+        ref: ReferenceClassification(
+            frozenset(kinds[ref]), frozenset(blockers[ref] or (() if kinds[ref] else ("unknown",)))
+        )
+        for ref in references
+    }

@@ -22,6 +22,7 @@ from typing import Any
 import yaml
 
 from sdr_grader.core.exceptions import RubricValidationError
+from sdr_grader.core.reference_policy import POLICY_PARAM, REFERENCE_CHECKS
 from sdr_grader.rules.registry import _import_all_checks, get_check, registered_names
 
 VALID_SEVERITIES = {"critical", "high", "medium", "low"}
@@ -310,6 +311,14 @@ def _validate_rule_entry(entry: Any, *, category: str, source: str) -> RuleDefin
     params = entry.get("params", {})
     if not isinstance(params, dict):
         raise RubricValidationError(f"{source} {rule_id}: 'params' must be a mapping")
+    if (
+        check_name in REFERENCE_CHECKS
+        and POLICY_PARAM in params
+        and not isinstance(params[POLICY_PARAM], bool)
+    ):
+        raise RubricValidationError(
+            f"{source} {rule_id}: '{POLICY_PARAM}' must be a boolean"
+        )
     _validate_common_params(params, rule_id=rule_id, source=source)
     return RuleDefinition(
         id=rule_id,

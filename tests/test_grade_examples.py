@@ -223,7 +223,7 @@ def test_generators_are_deterministic_and_semantically_current(tmp_path):
         ("aa", "messy"): (55, "F", 8),
     }
     assert all(report.rubric.pack == "strict" for report in second_reports.values())
-    assert all(report.rubric.version == "2.0" for report in second_reports.values())
+    assert all(report.rubric.version == "2.1" for report in second_reports.values())
     assert [(point.report.overall_pct, point.report.grade) for point in first_trend.points] == [
         (58, "F"),
         (59, "F"),

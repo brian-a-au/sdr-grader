@@ -56,6 +56,14 @@ class Segment:
     platform_specific: dict[str, Any] = field(default_factory=dict)
 
 
+@dataclass(frozen=True)
+class ReferenceClassification:
+    """Definition-derived kinds and uncertainty; never target availability."""
+
+    kinds: frozenset[str] = frozenset()
+    blockers: frozenset[str] = frozenset()
+
+
 @dataclass
 class CalculatedMetric:
     id: str
@@ -74,6 +82,9 @@ class CalculatedMetric:
     approved: bool | None = None
     shared_to_count: int | None = None
     platform_specific: dict[str, Any] = field(default_factory=dict)
+    # Companion metadata only: canonical references remain authoritative for
+    # relationships. Missing classification means unknown, including legacy models.
+    reference_classifications: dict[str, ReferenceClassification] = field(default_factory=dict)
 
 
 @dataclass
