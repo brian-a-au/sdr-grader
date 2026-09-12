@@ -36,29 +36,21 @@ or [healthy AA report](https://raw.githack.com/brian-a-au/sdr-grader/v1.4.0/exam
 
 ## What it grades
 
-Version 1.4.0 introduces reference grading policy 2.1. Explicitly typed,
-unresolved calculated-metric-to-segment references are unscored in SCH-002
-and CALC-002 on AA and CJA. They remain visible as unverified in methodology;
-this deliberately also leaves invalid references in that category unscored.
-Canonical relationships and other reference penalties remain intact. Existing
-snapshots work without re-export. See the
-[reference grading policy](https://github.com/brian-a-au/sdr-grader/blob/v1.4.0/docs/REFERENCE_GRADING_POLICY.md) for eligibility,
-assessment, and compatibility details. JSON schema `1` is unchanged.
+`sdr-grader` checks schema hygiene, naming consistency, segment complexity,
+calculated metric maintainability, attribution coverage, and governance posture.
+Choose `strict` for tighter thresholds or `pragmatic` for the same checks with
+more forgiving thresholds and severities.
 
-Scores are per failed rule, not per reference. Removing some entries from a
-mixed finding can leave its penalty unchanged. Regrade historical inputs with
-one pinned package and rubric before rebaselining CI thresholds or comparisons.
+Rules assess the data in your snapshot. Unresolved references remain visible,
+but explicitly typed calculated-metric-to-segment references are unscored:
+snapshot absence cannot establish whether a segment is available or valid.
+This also leaves genuinely invalid references in that category unscored;
+other reference penalties still apply. See the
+[reference grading policy](https://github.com/brian-a-au/sdr-grader/blob/v1.4.0/docs/REFERENCE_GRADING_POLICY.md)
+for eligibility and diagnostic details.
 
-`sdr-grader` ships `strict` and `pragmatic` rubric packs. Both cover schema
-hygiene, naming consistency, segment complexity, calculated metric
-maintainability, attribution coverage, and governance posture. `strict` uses
-tight, master-cert-grade thresholds; `pragmatic` uses the same rule IDs with
-looser thresholds and severities.
-
-Bundled pack `2.1` has 27 rule IDs. Policy changes affect comparisons with
-older packs, so re-baseline CI thresholds, trends, and leaderboards after upgrading.
-Every default rule grades data carried by the snapshot. Optional registered
-checks can use operator-supplied JSON; see [Supplementary inputs](#supplementary-inputs).
+Optional checks can use operator-supplied JSON alongside the snapshot; see
+[Supplementary inputs](#supplementary-inputs).
 
 ## How it grades
 
@@ -67,8 +59,12 @@ checks can use operator-supplied JSON; see [Supplementary inputs](#supplementary
 3. **Score** each weighted category from fired and available severity.
 4. **Assign a letter** using the pack's descending grade-scale bands.
 
-The scoring implementation is pinned with this release at
-[`src/sdr_grader/core/grade_calc.py`](https://github.com/brian-a-au/sdr-grader/blob/v1.4.0/src/sdr_grader/core/grade_calc.py).
+Penalties apply per failed rule, so removing some entries from a mixed finding
+may leave its score unchanged. For consistent trends and comparisons, regrade
+historical snapshots with the same package and rubric, and review CI thresholds
+when upgrading. See the
+[scoring implementation](https://github.com/brian-a-au/sdr-grader/blob/v1.4.0/src/sdr_grader/core/grade_calc.py)
+for details.
 
 ## First local grade
 
