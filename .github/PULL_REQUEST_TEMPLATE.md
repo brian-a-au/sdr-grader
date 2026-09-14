@@ -10,6 +10,11 @@
 - [ ] Docs / examples / CI
 - [ ] Other (describe)
 
+## Release impact
+
+- [ ] Docs, CI, or development-tooling-only change; no package version bump or changelog entry is needed
+- [ ] Runtime dependency, shipped output, or user-visible behavior changed; release impact is called out below
+
 ## Invariant check
 
 These are non-negotiable per CONTRIBUTING.md. Confirm:
