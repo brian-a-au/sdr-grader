@@ -87,6 +87,22 @@ uv run ruff check      # lint
 uv run ruff format     # auto-format
 ```
 
+## Dependency maintenance
+
+Dependabot groups weekly Python dependency updates into `uv.lock` and keeps
+GitHub Actions updates in a separate group. For a dependency-only PR:
+
+1. Keep the change limited to the lockfile unless the dependency constraint in
+   `pyproject.toml` also needs to change.
+2. Run `uv sync --locked --all-extras --dev`, `uv run pytest`, and
+   `uv run ruff check` from the repository root.
+3. Run the fixture and example regeneration sequence below when the dependency
+   can affect generated output. If the drift check finds changes, inspect and
+   commit the regenerated fixtures or examples with the dependency update.
+4. Development-tooling-only updates do not require a package version bump or a
+   changelog entry. If a runtime dependency, shipped output, or user-visible
+   behavior changes, call out the release impact for maintainer review.
+
 ## Regenerating fixtures and examples
 
 After a change that affects the canonical CJA fixtures, rules, or renderer,
