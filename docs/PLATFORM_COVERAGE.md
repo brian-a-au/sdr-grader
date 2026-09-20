@@ -53,9 +53,10 @@ scoring rather than treating them as passed:
 | SCH-009 | Derived field references to missing components |
 | ATTR-004 | Data View metric attribution override without rationale |
 
-**Separate AA coverage gaps.** The grader does not yet assess these four
-AA admin areas: eVar allocation/expiration, counter versus numeric success
-events, event serialization, and merchandising product binding. These are not
+**Optional AA administration coverage.** The separate `aa-admin@1.0` pack
+assesses four configuration areas against declared expectations: eVar
+allocation/expiration, counter/numeric/currency success-event type, serialization,
+and merchandising settings. These are not
 one-to-one replacements for SCH-007, SCH-008, SCH-009, and ATTR-004.
 
 As checked on September 20, 2026, Adobe documents read access to eVar
@@ -68,11 +69,15 @@ The earlier blanket claim that all four areas require the legacy Admin API
 is outdated; Adobe's [1.4 retirement notice](https://developer.adobe.com/analytics-apis/docs/1.4/guides/eol/)
 gives August 31, 2026 as the retirement date.
 
-Closing these gaps requires AA-specific rules, documented input contracts,
-and evidence-aware applicability. API documentation alone does not establish
-that an installed exporter captures the fields or that a rule has been
-validated. Missing evidence must be reported as not assessed rather than
-counting as a successful check. No such new rules ship in pack 2.1.
+The [AA administration input contract](AA_ADMIN_INPUT.md) combines expanded API
+fields with supplementary observations and independent business expectations.
+Run it as a separate report with `--pack aa-admin --extra-input aa_admin=FILE`.
+It assesses only declared targets; missing or unsupported evidence excludes the
+entire affected rule from its denominator and reports it as not assessed.
+The default packs remain version 2.1 with the original 23 applicable AA rules.
+The four additional checks have synthetic regression and CLI coverage; live
+tenant/exporter verification remains pending. Settings agreement does not prove
+runtime event-ID delivery, deduplication, or merchandising product binding.
 
 **Honest framing.** The grader works on AA today and catches real
 bugs there (broken references, naming inconsistency, segment
@@ -83,8 +88,9 @@ of every CJA configuration choice. If you're picking a launch tier:
 
 - **CJA**: full default-pack coverage including Data View settings.
 - **AA**: 23 applicable rules from the current bundled catalog, excluding
-  the four CJA-only definitions. The separate AA admin gaps above remain
-  unassessed until new rules and their required evidence are implemented.
+  the four CJA-only definitions. Four optional administration checks run in a
+  separate pack when their required evidence is supplied. This is not 27/27
+  coverage of the original catalog or a complete AA implementation audit.
 
 ## Reference grading policy 2.1
 

@@ -148,6 +148,24 @@ def _component_from_record(
     handled = {"id", "name", "description", "type", "polarity", "tags"}
     platform_specific = {k: v for k, v in record.items() if k not in handled}
 
+    if component_type == "dimension":
+        # Preserve source separation so selected AA admin checks can reject
+        # conflicts without changing legacy pack input acceptance.
+        aliases = {
+            "allocationType": "allocation", "expirationType": "expiration",
+            "expirationCustomDays": "expiration_days", "bindingEvents": "binding_events",
+            "merchandisingSyntax": "merchandising_syntax",
+        }
+        extra = record.get("extra")
+        sources = [record, extra] if isinstance(extra, dict) else [record]
+        # API nulls mean unavailable/not applicable, never a configured default.
+        # Supplementary protocol nulls remain malformed in evidence validation.
+        platform_specific["aa_admin_sources"] = [
+            {target: source[key] for key, target in aliases.items()
+             if key in source and source[key] is not None}
+            for source in sources
+        ]
+
     return Component(
         id=str(component_id),
         name=str(name),

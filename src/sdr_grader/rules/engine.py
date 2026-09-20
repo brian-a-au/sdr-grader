@@ -11,6 +11,7 @@ from collections.abc import Collection, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
+from sdr_grader.core.aa_admin import AA_CHECKS, AAAdminAssessment, assess_aa_admin
 from sdr_grader.core.models import Implementation
 from sdr_grader.core.reference_policy import (
     REFERENCE_CHECKS,
@@ -34,6 +35,7 @@ class RuleContext:
     params: dict[str, Any] = field(default_factory=dict)
     rationale: str = ""
     remediation: str = ""
+    aa_admin_assessment: AAAdminAssessment | None = None
 
 
 RuleInventory = tuple[RuleDefinition, ...]
@@ -44,6 +46,7 @@ class RuleResolution:
     configured_rules: RuleInventory
     effective_rules: RuleInventory
     reference_assessments: dict[str, ReferenceAssessment]
+    aa_admin_assessments: dict[str, AAAdminAssessment] = field(default_factory=dict)
 
 
 def resolve_rule_inventory(
@@ -64,12 +67,19 @@ def resolve_rule_inventory(
         for rule in configured
         if rule.check in REFERENCE_CHECKS
     }
+    aa_by_check = assess_aa_admin(
+        impl, {rule.check for rule in configured if rule.check in AA_CHECKS}
+    )
+    aa_assessments = {
+        rule.id: aa_by_check[rule.check] for rule in configured if rule.check in aa_by_check
+    }
     effective = tuple(
         rule
         for rule in configured
-        if rule.id not in assessments or not assessments[rule.id].not_assessed
+        if (rule.id not in assessments or not assessments[rule.id].not_assessed)
+        and (rule.id not in aa_assessments or not aa_assessments[rule.id].not_assessed)
     )
-    return RuleResolution(configured, effective, assessments)
+    return RuleResolution(configured, effective, assessments, aa_assessments)
 
 
 def resolve_effective_rules(
@@ -87,12 +97,18 @@ def run_rules(
     rubric: Rubric,
     *,
     rule_inventory: Sequence[RuleDefinition] | None = None,
+    aa_admin_assessments: dict[str, AAAdminAssessment] | None = None,
 ) -> list[Finding]:
     """Execute one resolved rule inventory for the implementation."""
-    rules = resolve_effective_rules(impl, rubric) if rule_inventory is None else rule_inventory
+    if rule_inventory is None:
+        resolution = resolve_rule_inventory(impl, rubric)
+        rules = resolution.effective_rules
+        aa_admin_assessments = resolution.aa_admin_assessments
+    else:
+        rules = rule_inventory
     findings: list[Finding] = []
     for rule in rules:
-        ctx = _build_context(rule)
+        ctx = _build_context(rule, (aa_admin_assessments or {}).get(rule.id))
         check = get_check(rule.check)
         produced = check(impl, ctx)
         unexpected_ids = {finding.id for finding in produced if finding.id != rule.id}
@@ -111,7 +127,9 @@ def _applies_to_platform(rule: RuleDefinition, impl: Implementation) -> bool:
     return impl.platform in rule.platforms
 
 
-def _build_context(rule: RuleDefinition) -> RuleContext:
+def _build_context(
+    rule: RuleDefinition, assessment: AAAdminAssessment | None = None
+) -> RuleContext:
     return RuleContext(
         rule_id=rule.id,
         rule_name=rule.name,
@@ -121,4 +139,5 @@ def _build_context(rule: RuleDefinition) -> RuleContext:
         params=dict(rule.params),
         rationale=rule.rationale,
         remediation=rule.remediation,
+        aa_admin_assessment=assessment,
     )

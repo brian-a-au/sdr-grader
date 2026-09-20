@@ -64,6 +64,7 @@ def _import_all_checks() -> None:
     """
     # Local imports keep registry import-cycle-safe.
     from sdr_grader.rules.checks import (  # noqa: F401
+        aa_admin,
         attribution,
         calc_metrics,
         governance,

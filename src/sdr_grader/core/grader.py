@@ -20,6 +20,7 @@ from datetime import UTC, datetime
 
 from markupsafe import Markup
 
+from sdr_grader.core.aa_admin import AAAdminAssessment
 from sdr_grader.core.grade_calc import GradeResult, compute_grade
 from sdr_grader.core.models import Implementation
 from sdr_grader.core.reference_policy import (
@@ -76,7 +77,10 @@ def grade(
     )
     rule_inventory = resolution.effective_rules
     assessments = resolution.reference_assessments
-    raw_findings = run_rules(impl, rubric, rule_inventory=rule_inventory)
+    raw_findings = run_rules(
+        impl, rubric, rule_inventory=rule_inventory,
+        aa_admin_assessments=resolution.aa_admin_assessments,
+    )
     findings = apply_to_findings(raw_findings, suppression) if suppression else raw_findings
     result = compute_grade(rubric, findings, rule_inventory=rule_inventory)
 
@@ -111,6 +115,7 @@ def grade(
             rule_inventory,
             suppression,
             assessments=assessments,
+            aa_assessments=resolution.aa_admin_assessments,
         ),
         distribution=None,  # attached later by the CLI when --distribution-data is set
     )
@@ -237,6 +242,7 @@ def _build_methodology(
     suppression: Suppression | None = None,
     *,
     assessments: dict[str, ReferenceAssessment] | None = None,
+    aa_assessments: dict[str, AAAdminAssessment] | None = None,
 ) -> Methodology:
     rule_count = len(rule_inventory)
     fired_count = len({f.id for f in findings})
@@ -294,6 +300,16 @@ def _build_methodology(
                         "calculated-metric-to-segment policy; the references remain unverified."
                     ),
                 )
+            )
+    for rule_id, assessment in sorted((aa_assessments or {}).items()):
+        if assessment.not_assessed:
+            skipped.append(SkippedRules(ids=[rule_id], reason="Not assessed: " + assessment.reason))
+        else:
+            paragraphs.append(
+                Markup(
+                    "{} assessed only declared targets: {}. Configuration agreement does not "
+                    "verify runtime event-ID delivery or product binding."
+                ).format(rule_id, ", ".join(assessment.targets))
             )
     if associations:
         paragraphs.append(

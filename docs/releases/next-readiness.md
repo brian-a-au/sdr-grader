@@ -2,11 +2,40 @@
 
 **Decision: HOLD — candidate not selected; publication and announcement are not approved.**
 
-This is the preparation record for the score-neutral public-preview patch.
+This is the preparation record for the public-preview readiness work and the
+optional AA administration pack. The added capability expands the original
+patch scope; select the release version under the project's version policy.
 Rename it to `<version>-readiness.md` when an unused version is selected.
 The [release checklist](../RELEASE_CHECKLIST.md) is the canonical gate list;
 all applicable checks must have candidate-specific evidence here before GO.
 No pending field or historical observation counts as a passed gate.
+
+## Development verification — September 20, 2026
+
+Local preparation on `chore/announcement-readiness`:
+
+- macOS / Python 3.12.13: 1,873 tests passed; 99.08% source coverage.
+- Ruff lint, version identity, and generated-example drift checks passed.
+  A separate optional repository-wide format check found existing formatting
+  differences; no broad formatting rewrite was made.
+- The soak workflow parsed, and all 15 shell steps passed Bash syntax and
+  ShellCheck. A regression test verifies exact durable comment retention before
+  disabling the monitor. The candidate configuration remains inactive.
+- An isolated installed wheel produced CJA, AA, and optional AA-admin HTML/JSON
+  reports outside the checkout, with bundled pack/plugin/template resources.
+- Adobe's documented eVar response shape is covered, including API null fields.
+  Invalid binding IDs are rejected. Supplementary event evidence and all four
+  rule pass/fail/exclusion paths have synthetic coverage. No live tenant was used.
+- Independent Astra inspection found and verified the fixes for completion
+  comment newlines, API null handling, and malformed binding IDs.
+  Code review: skipped (ce-code-review unavailable) — the full review could not
+  complete because of the agent thread limit. A manual diff scan and the bounded
+  independent inspection supplement testing; they are not a full review receipt.
+
+These are development checks, not approved release evidence. Package version
+1.4.0 is still the development identity; select an unused candidate version and
+refresh release-pinned documentation links before publication. Re-run the
+candidate checks and complete independent review after that freeze.
 
 ## Identity and scope
 
@@ -15,7 +44,7 @@ No pending field or historical observation counts as a passed gate.
 | Package / plugin / marketplace version | Pending selection |
 | Candidate release commit (40-character SHA) | Pending freeze |
 | Annotated tag / tag object SHA | Pending approval and creation |
-| Rubric / schema | Intended: 2.1 / 1; confirm against candidate |
+| Rubric / schema | Default packs 2.1; optional aa-admin 1.0; JSON schema 1 |
 | Wheel / sdist names and SHA-256 digests | Pending build-once validation |
 | Artifact inventory and provenance evidence / digest | Pending |
 | Evidence revision / durable evidence store | Pending |
@@ -24,9 +53,12 @@ No pending field or historical observation counts as a passed gate.
 | Accountable maintainer | Brian Au; approval not yet recorded |
 
 Proposed claims: deterministic offline snapshot linting; versioned,
-maintainer-judgment thresholds; CJA 27/27 bundled rules; AA 23/27, excluding
-eVar allocation/expiration, success-event type distinctions, serialization,
-and merchandising product binding. This is not a complete AA audit or a
+maintainer-judgment thresholds; CJA 27/27 default rules; AA 23/27 with four
+CJA-only rules excluded. A separate optional AA pack compares allocation/
+expiration, success-event type, serialization, and merchandising settings
+against declared expectations when evidence is complete. Its synthetic checks
+do not verify live API collection, runtime event IDs, or product binding.
+This is not a complete AA audit or a
 calibration-validated measure of implementation quality. Review findings
 against the source platform before production changes.
 
@@ -56,6 +88,7 @@ against the source platform before production changes.
 | Windows / later Python versions | Unverified; no verified-support claim |
 | CJA and AA file/directory/stdin; strict/pragmatic; HTML/JSON; threshold exits | Candidate evidence pending |
 | Live `--dataview` / `--rsid` and exporter versions | Unverified for this candidate; credential/network behavior is separate |
+| Optional AA admin API fields and supplementary event configuration | Synthetic validation available; live tenant evidence and operator source review pending |
 | Plugin summary/findings/show/compare | Candidate evidence pending |
 
 ## Soak and decision record

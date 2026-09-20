@@ -20,11 +20,14 @@ if not isinstance(launch, dict):
     return []
 ```
 
-So an opt-in rule simply doesn't fire on snapshots that don't attach
-its key. There's no error, no warning, no penalty in the score — it's
-as if the rule wasn't in the pack for that run. This lets the same
-rubric pack run across snapshots with and without supplementary data
-without changes.
+A silent check emits no finding, but silence alone does not remove the rule
+from the scoring denominator. Older supplementary checks retain that behavior.
+Only checks with explicit applicability gating are excluded from scoring.
+
+The optional built-in `aa-admin@1.0` pack provides that gating: missing,
+unsupported, or incomplete evidence excludes the affected rule and records a
+methodology explanation in HTML and JSON. See [AA administration evidence](AA_ADMIN_INPUT.md)
+for its versioned `aa_admin` protocol, collection instructions, and four checks.
 
 ## Usage
 

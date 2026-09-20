@@ -5,6 +5,10 @@ spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
 **Unreleased**
 
+- Add the optional `aa-admin@1.0` pack with four configuration checks using
+  expanded eVar API fields and supplementary event evidence. Compare only
+  declared expectations; exclude incomplete evidence from scoring. Existing
+  strict/pragmatic 2.1 grades remain unchanged. Live tenant validation is pending.
 - Make release-soak monitoring candidate-bound and inactive until explicitly
   configured. Verify actual checkpoint jobs and start evidence, retain a full
   timeline, and separate soak completion from human announcement approval.
@@ -14,7 +18,7 @@ spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
 - Reframe the project as a public preview with provisional, maintainer-judgment
   grading. Document CJA's 27-of-27 bundled-rule coverage, AA's 23-of-27
-  coverage and four unavailable admin surfaces, and require human review before
+  coverage and the optional administration evidence boundary, and require human review before
   production changes.
 - Distinguish offline file and directory grading from credentialed, networked
   child-generator modes. Align support claims with the verified Ubuntu/Python
