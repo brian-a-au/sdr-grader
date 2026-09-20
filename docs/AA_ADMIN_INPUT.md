@@ -1,15 +1,14 @@
-# AA administration evidence (`aa-admin@1.0`)
+# AA administration evidence
 
-The optional built-in `aa-admin` pack compares Adobe Analytics administration
-settings with separately declared business expectations. It has four AA-only
-rules and its own score; it does not add rules to `strict@2.1` or `pragmatic@2.1`.
-This is a standalone four-rule report, not 27/27 coverage of the original
-27-rule assessment catalog. CJA-only rules remain CJA-only. The grader remains
-an offline linter and never authenticates to Adobe.
+The default `strict@3.0` and `pragmatic@3.0` packs include four AA-only rules
+comparing administration settings with separately declared business expectations.
+AA has 27 applicable checks in their 31-rule catalog. CJA also has 27 applicable
+checks; the four CJA-only rules remain CJA-only. The grader remains an offline
+linter and never authenticates to Adobe.
 
 ```bash
-sdr-grader snapshot.json --pack aa-admin \
-  --extra-input aa_admin=aa-admin.json --output aa-admin.html --json aa-admin-report.json
+sdr-grader snapshot.json --extra-input aa_admin=aa-admin.json \
+  --output grade.html --json grade.json
 ```
 
 | Rule | Declared target settings compared |
@@ -18,6 +17,11 @@ sdr-grader snapshot.json --pack aa-admin \
 | AA-002 | Success-event type: counter, numeric, or currency |
 | AA-003 | Event serialization configuration |
 | AA-004 | Merchandising syntax and allocation; binding event IDs for conversion-variable syntax |
+
+The default packs place AA-001 and AA-004 in attribution coverage and AA-002
+and AA-003 in schema hygiene, retaining the six existing category weights.
+The standalone `--pack aa-admin` pack remains available at version 1.0 for a
+separate report containing only these four checks.
 
 Configuration matches do **not** prove runtime event-ID delivery, deduplication,
 product binding, or collection correctness. Expectations must come from the
@@ -166,10 +170,20 @@ list the limited declared target scope in methodology. A category with no
 assessed rules has an arithmetic score of 100 with an explicit disclosure that
 this is not verification.
 
-For example, if AA-003 is unassessed and only AA-002 fails, three equally weighted
+In the standalone pack, if AA-003 is unassessed and only AA-002 fails, three equally weighted
 rules are assessed and the score is 67, not 75. This explicit gating is specific
 to AA admin checks; older supplementary checks may stay silent while still
 remaining in their rubric's denominator.
+
+Default pack 3.0 is a scoring-policy change from 2.1. Complete AA evidence adds
+the rules to their category severity denominators; a mismatch can lower a score,
+and a passing rule can change the relative share of existing failures. Without
+AA admin evidence the four rules are excluded, preserving prior numeric scores
+while adding explicit skipped-rule disclosures. CJA scores are unchanged.
+Regrade comparison snapshots under one pack version; do not compare a standalone
+four-rule score with the full default-pack score. The released grader 1.4.0 lacks
+these checks; use the development build containing them until a new release is
+selected. Do not copy pack 3.0 into a released 1.4.0 installation.
 
 ## Verification boundary
 

@@ -399,7 +399,7 @@ def test_rule_entries_reject_invalid_fields_with_rule_context(tmp_path, entry, m
         load_rubric(pack)
 
 
-def test_rubric_audit_inventory_matches_both_shipped_pack_2_0_definitions():
+def test_rubric_audit_inventory_matches_both_shipped_pack_definitions():
     audit = (REPO_ROOT / "docs" / "RUBRIC_AUDIT.md").read_text(encoding="utf-8")
     headings = {
         "schema_hygiene": "Schema hygiene",
@@ -413,7 +413,7 @@ def test_rubric_audit_inventory_matches_both_shipped_pack_2_0_definitions():
     inventories: list[dict[str, set[str]]] = []
     for pack_name in ("strict", "pragmatic"):
         rubric = load_rubric(REPO_ROOT / "src" / "sdr_grader" / "rules" / "packs" / pack_name)
-        assert rubric.version == "2.1"
+        assert rubric.version == "3.0"
         by_category: dict[str, set[str]] = {}
         for rule in rubric.rules:
             by_category.setdefault(rule.category, set()).add(rule.id)

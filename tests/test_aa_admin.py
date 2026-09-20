@@ -1,5 +1,6 @@
 import copy
 import json
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -210,19 +211,71 @@ def test_no_declared_targets_and_null_document():
         grade(impl, load_rubric(PACK))
 
 
-def test_cja_and_legacy_packs_ignore_aa_input():
+@pytest.mark.parametrize("name", ["strict", "pragmatic"])
+def test_default_packs_validate_aa_input_and_keep_baseline_without_evidence(name):
     impl = implementation()
     impl.supplementary_data["aa_admin"] = "malformed"
-    for name in ("strict", "pragmatic"):
-        rubric = load_rubric(PACK.parent / name)
-        assert rubric.version == "2.1"
-        report = grade(impl, rubric)
-        impl.supplementary_data.clear()
-        assert report == grade(impl, rubric)
-        impl.supplementary_data["aa_admin"] = "malformed"
+    rubric = load_rubric(PACK.parent / name)
+    with pytest.raises(InvalidSnapshotError, match="aa_admin: malformed"):
+        grade(impl, rubric)
+
+    impl.supplementary_data.clear()
+    report = grade(impl, rubric)
+    previous = replace(
+        rubric,
+        rules=[rule for rule in rubric.rules if not rule.id.startswith("AA-")],
+    )
+    previous_report = grade(impl, previous)
+    assert report.findings == previous_report.findings
+    assert report.overall_pct == previous_report.overall_pct
+    assert report.grade == previous_report.grade
+    assert {rule_id for item in report.methodology.skipped for rule_id in item.ids} == {
+        "AA-001", "AA-002", "AA-003", "AA-004"
+    }
+
+
+def test_standalone_pack_ignores_aa_input_for_cja():
+    impl = implementation()
+    impl.supplementary_data["aa_admin"] = "malformed"
     impl.platform = "cja"
     assert not resolve_rule_inventory(impl, load_rubric(PACK)).effective_rules
     assert not grade(impl, load_rubric(PACK)).findings
+
+
+@pytest.mark.parametrize("name", ["strict", "pragmatic"])
+def test_default_packs_execute_complete_aa_evidence_and_grade_findings(name):
+    snapshot, evidence = inputs()
+    evidence["expectations"]["evars"][0].update(
+        allocation="linear", expiration_days=90, binding_events=[]
+    )
+    evidence["expectations"]["events"][0].update(
+        event_type="currency", serialization="always"
+    )
+    impl = implementation(snapshot, evidence)
+    rubric = load_rubric(PACK.parent / name)
+    assert len(resolve_rule_inventory(impl, rubric).effective_rules) == 27
+    report = grade(impl, rubric)
+    aa_findings = {finding.id for finding in report.findings if finding.id.startswith("AA-")}
+    assert aa_findings == {"AA-001", "AA-002", "AA-003", "AA-004"}
+    assert report.overall_pct < 100
+    assert not ({"AA-001", "AA-002", "AA-003", "AA-004"} & {
+        rule_id for item in report.methodology.skipped for rule_id in item.ids
+    })
+
+
+@pytest.mark.parametrize("name", ["strict", "pragmatic"])
+def test_default_packs_exclude_and_disclose_partial_aa_evidence(name):
+    snapshot, evidence = inputs()
+    del evidence["observations"]["events"][0]["serialization"]
+    report = grade(implementation(snapshot, evidence), load_rubric(PACK.parent / name))
+    skipped = {
+        rule_id: item.reason
+        for item in report.methodology.skipped
+        for rule_id in item.ids
+    }
+    assert "AA-003" in skipped
+    assert "Not assessed" in skipped["AA-003"]
+    assert "AA-003" not in {finding.id for finding in report.findings}
 
 
 def test_direct_checks_and_supplied_inventory():

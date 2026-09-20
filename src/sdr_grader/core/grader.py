@@ -253,7 +253,7 @@ def _build_methodology(
         Markup(
             'This grade was produced by <span class="mono">sdr-grader</span> '
             'using the <span class="mono">{}@{}</span> '
-            "rubric pack. The rubric encodes {} rule{} across {} active "
+            "rubric pack. This assessment scores {} rule{} across {} active "
             "categor{}; {} fired against this snapshot. Each rule contributes "
             "to a category subtotal weighted by severity (critical: {}, high: {}, "
             "medium: {}, low: {}). Category subtotals roll up to the overall score "

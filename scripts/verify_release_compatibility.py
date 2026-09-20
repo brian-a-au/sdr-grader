@@ -614,11 +614,17 @@ def verify_compatibility(repo_root: Path = ROOT, *, uv: str = "uv") -> None:
             readme_arguments=readme_arguments,
         )
         policy = _load_policy_contract(fixture_root)
-        expected_candidate = _apply_policy_deltas(
+        policy_expected = _apply_policy_deltas(
             _expected_candidate_from_baseline(baseline), policy["public_deltas"]
         )
+        expected_candidate = _apply_default_aa_admin_contract(
+            policy_expected, _load_default_aa_admin_contract(fixture_root)
+        )
         if not _exact_json_equal(candidate, expected_candidate):
-            raise CompatibilityError("public matrix differs beyond exact reference-policy deltas")
+            raise CompatibilityError(
+                "public matrix differs beyond exact reference-policy deltas or the "
+                "reviewed default-AA-admin layer"
+            )
 
 
 # This gate is deliberately separate from the historical v1.2.2 transforms.
@@ -756,6 +762,92 @@ def _load_policy_contract(fixtures: Path) -> dict[str, Any]:
     return contract
 
 
+def _load_default_aa_admin_contract(fixtures: Path) -> dict[str, Any]:
+    contract = json.loads(
+        (fixtures / "default_aa_admin_compatibility/compatibility.json").read_text()
+    )
+    identity = (
+        contract.get("package_version"),
+        contract.get("rubric_version"),
+        contract.get("prior_rubric_version"),
+        contract.get("schema_version"),
+    )
+    if identity != ("1.4.0", "3.0", "2.1", 1):
+        raise CompatibilityError("default-AA-admin expectation identity differs")
+    return contract
+
+
+def _apply_default_aa_admin_contract(original: Any, contract: dict[str, Any]) -> Any:
+    """Apply the reviewed 2.1 -> 3.0 default-pack behavior contract."""
+    expected = copy.deepcopy(original)
+    old_version = contract["prior_rubric_version"]
+    new_version = contract["rubric_version"]
+    default_packs = set(contract["packs"])
+    skipped = contract["absent_evidence"]["skipped"]
+    methodology_copy = contract["methodology_copy"]
+
+    def replace_once(text: str, before: str, after: str, label: str) -> str:
+        if text.count(before) != 1:
+            raise CompatibilityError(f"default-AA-admin {label} precondition differs")
+        return text.replace(before, after, 1)
+
+    def transform(value: Any) -> None:
+        if isinstance(value, dict):
+            rubric = value.get("rubric")
+            adapter = value.get("adapter")
+            methodology = value.get("methodology")
+            if isinstance(methodology, dict):
+                paragraphs = methodology.get("paragraphs")
+                if isinstance(paragraphs, list):
+                    matches = [index for index, paragraph in enumerate(paragraphs)
+                               if isinstance(paragraph, str)
+                               and methodology_copy["before"] in paragraph]
+                    if matches != [0]:
+                        raise CompatibilityError(
+                            "default-AA-admin methodology copy precondition differs"
+                        )
+                    paragraphs[0] = replace_once(
+                        paragraphs[0], methodology_copy["before"],
+                        methodology_copy["after"], "methodology copy"
+                    )
+            if (
+                isinstance(rubric, dict)
+                and rubric.get("pack") in default_packs
+                and rubric.get("version") == old_version
+                and isinstance(adapter, dict)
+            ):
+                rubric["version"] = new_version
+                old_marker = f"{rubric['pack']}@{old_version}"
+                new_marker = f"{rubric['pack']}@{new_version}"
+                if isinstance(methodology, dict):
+                    paragraphs = methodology.get("paragraphs")
+                    if isinstance(paragraphs, list):
+                        methodology["paragraphs"] = [
+                            replace_once(paragraph, old_marker, new_marker, "rubric copy")
+                            if index == 0 and isinstance(paragraph, str) else paragraph
+                            for index, paragraph in enumerate(paragraphs)
+                        ]
+                    if adapter.get("platform") == "AA":
+                        if methodology.get("skipped") != []:
+                            raise CompatibilityError(
+                                "default-AA-admin skipped precondition differs"
+                            )
+                        methodology["skipped"] = copy.deepcopy(skipped)
+                tldr = value.get("tldr_html")
+                if isinstance(tldr, str):
+                    value["tldr_html"] = replace_once(
+                        tldr, old_marker, new_marker, "summary copy"
+                    )
+            for child in value.values():
+                transform(child)
+        elif isinstance(value, list):
+            for child in value:
+                transform(child)
+
+    transform(expected)
+    return expected
+
+
 def _apply_policy_deltas(original: Any, deltas: list[dict[str, Any]]) -> Any:
     """Apply exact reviewed pointer changes without normalizing candidate behavior."""
     expected = copy.deepcopy(original)
@@ -801,6 +893,54 @@ def _run_correctness_matrix(*, environment_root, environment, work_root, fixture
         for case in cases}
 
 
+def _verify_default_aa_admin_full_evidence(
+    *, console: Path, environment: dict[str, str], work_root: Path,
+    fixture_root: Path, contract: dict[str, Any]
+) -> None:
+    """Prove the four newly defaulted rules score complete AA admin evidence."""
+    work_root.mkdir(parents=True)
+    snapshot = fixture_root / "aa_admin/snapshot.json"
+    evidence = json.loads((fixture_root / "aa_admin/evidence.json").read_text())
+    evidence["expectations"]["evars"][0].update(
+        allocation="linear", expiration_days=90, binding_events=[]
+    )
+    evidence["expectations"]["events"][0].update(
+        event_type="currency", serialization="always"
+    )
+    evidence_path = work_root / "evidence.json"
+    evidence_path.write_text(json.dumps(evidence, sort_keys=True), encoding="utf-8")
+    for pack in contract["packs"]:
+        case_root = work_root / pack
+        case_root.mkdir()
+        shutil.copyfile(snapshot, case_root / "snapshot.json")
+        pack_arguments = [] if pack == "strict" else ["--pack", pack]
+        result = _run(
+            [str(console), "snapshot.json", *pack_arguments, "--extra-input",
+             f"aa_admin={evidence_path}", "--output", "grade.html", "--json",
+             "grade.json", "--quiet"],
+            cwd=case_root, env=environment, capture=True,
+        )
+        if result.returncode != 0:
+            raise CompatibilityError(f"{pack}: full AA admin evidence probe failed")
+        report = json.loads((case_root / "grade.json").read_text())
+        finding_ids = [finding["id"] for finding in report["findings"]
+                       if finding["id"].startswith("AA-")]
+        expected_ids = contract["full_evidence"]["expected_finding_ids"]
+        if set(finding_ids) != set(expected_ids) or len(finding_ids) != len(expected_ids):
+            raise CompatibilityError(f"{pack}: full AA admin evidence did not score all rules")
+        reviewed = contract["full_evidence"]["expected_scores"][pack]
+        categories = {category["name"]: category["pct"] for category in report["categories"]}
+        actual_scores = {
+            "overall_pct": report["overall_pct"],
+            "schema_hygiene_pct": categories.get("schema hygiene"),
+            "attribution_coverage_pct": categories.get("attribution coverage"),
+        }
+        if actual_scores != reviewed:
+            raise CompatibilityError(f"{pack}: full AA admin evidence scores differ")
+        if report["methodology"]["skipped"]:
+            raise CompatibilityError(f"{pack}: full AA admin evidence was not fully assessed")
+
+
 def verify_correctness_compatibility(repo_root: Path = ROOT, *, uv: str = "uv") -> None:
     repo_root = Path(repo_root).resolve()
     environment = _clean_environment()
@@ -810,6 +950,7 @@ def verify_correctness_compatibility(repo_root: Path = ROOT, *, uv: str = "uv") 
     fixtures = repo_root / "tests/fixtures"
     expected = json.loads((fixtures / "correctness_1_3/expectations.json").read_text())
     policy = _load_policy_contract(fixtures)
+    default_aa_admin = _load_default_aa_admin_contract(fixtures)
     if expected["baseline_commit"] != CORRECTNESS_BASELINE_COMMIT:
         raise CompatibilityError("correctness expectation baseline identity differs")
     with tempfile.TemporaryDirectory(prefix="sdr-grader-correctness-") as temporary:
@@ -831,16 +972,31 @@ def verify_correctness_compatibility(repo_root: Path = ROOT, *, uv: str = "uv") 
                 raise CompatibilityError(f"{label}: correctness import escaped installed environment")
             outcomes.append(_run_correctness_matrix(environment_root=env_root, environment=env,
                              work_root=temp / label, fixture_root=fixtures))
+            if label == "candidate":
+                console, _ = _environment_paths(env_root)
+                _verify_default_aa_admin_full_evidence(
+                    console=console, environment=env,
+                    work_root=temp / "candidate-aa-admin-full-evidence",
+                    fixture_root=fixtures, contract=default_aa_admin,
+                )
         baseline, candidate = outcomes
         if baseline.keys() != expected["cases"].keys() or candidate.keys() != baseline.keys():
             raise CompatibilityError("correctness case matrix differs from reviewed contract")
         if policy["correctness_cases"].keys() != baseline.keys():
             raise CompatibilityError("reference-policy case matrix differs")
         for name in baseline:
-            _verify_policy_correctness_case(
-                name, baseline[name], candidate[name], expected["cases"][name],
-                policy["correctness_cases"][name]
+            legacy = expected["cases"][name]
+            _verify_correctness_case(name, baseline[name], legacy["candidate"], legacy)
+            policy_expected = _apply_policy_deltas(
+                legacy["candidate"], policy["correctness_cases"][name]
             )
+            current_expected = _apply_default_aa_admin_contract(
+                policy_expected, default_aa_admin
+            )
+            if not _exact_json_equal(candidate[name], current_expected):
+                raise CompatibilityError(
+                    f"{name}: candidate differs beyond exact default-AA-admin deltas"
+                )
     print(f"v1.2.9 correctness compatibility verified: {len(baseline)} exact outcomes; "
           "all five corrections, both platforms/packs, custom packs, typed errors, "
           "threshold exits and repeated report determinism")

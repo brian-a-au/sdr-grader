@@ -148,13 +148,17 @@ def _mutate_raw_trigger(snapshot: dict, platform: str, rule_id: str) -> None:
         raise AssertionError(f"missing raw trigger mutation for {rule_id}")
 
 
-def test_bundled_pack_2_removes_inert_and_raw_count_rules():
+def test_bundled_pack_3_has_platform_parity_and_removes_inert_raw_count_rules():
     for pack_name in ("strict", "pragmatic"):
         rubric = load_rubric(STRICT_PACK.parent / pack_name)
         ids = {rule.id for rule in rubric.rules}
 
-        assert rubric.version == "2.1"
-        assert len(rubric.rules) == 27
+        assert rubric.version == "3.0"
+        assert len(rubric.rules) == 31
+        assert len(ids) == 31
+        assert sum("aa" in rule.platforms for rule in rubric.rules) == 27
+        assert sum("cja" in rule.platforms for rule in rubric.rules) == 27
+        assert {"AA-001", "AA-002", "AA-003", "AA-004"} <= ids
         assert all(rule.params.get("exclude_unresolved_calculated_metric_segments") is True
                    for rule in rubric.rules if rule.id in {"SCH-002", "CALC-002"})
         assert ids.isdisjoint({"GOV-002", "GOV-007", "GOV-008"})

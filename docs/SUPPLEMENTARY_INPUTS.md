@@ -24,7 +24,8 @@ A silent check emits no finding, but silence alone does not remove the rule
 from the scoring denominator. Older supplementary checks retain that behavior.
 Only checks with explicit applicability gating are excluded from scoring.
 
-The optional built-in `aa-admin@1.0` pack provides that gating: missing,
+The AA administration checks in default packs `strict@3.0` and `pragmatic@3.0`
+(also available alone as `aa-admin@1.0`) provide that gating: missing,
 unsupported, or incomplete evidence excludes the affected rule and records a
 methodology explanation in HTML and JSON. See [AA administration evidence](AA_ADMIN_INPUT.md)
 for its versioned `aa_admin` protocol, collection instructions, and four checks.
