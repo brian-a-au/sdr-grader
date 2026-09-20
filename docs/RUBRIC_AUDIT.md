@@ -15,7 +15,11 @@ audits remain evidence of their recorded package versions.
 The May 2026 private-cohort work cited below was compatibility evidence, not an
 admitted grading-calibration cohort. The 108 snapshots (100 CJA, 8 AA) helped
 exercise adapters and premises, but zero entries met the later calibration
-admission contract. Thresholds therefore remain maintainer judgment.
+admission contract. Thresholds therefore remain maintainer judgment. Any future
+accuracy or validation claim must satisfy the independent, held-out outcome
+study and HOLD gate in
+[`CALIBRATION_VALIDATION.md`](CALIBRATION_VALIDATION.md); descriptive
+distribution confidence is not outcome validation.
 
 Dispositions mean:
 
@@ -102,13 +106,17 @@ size or sharing volume into a quality penalty.
 
 The shipped CJA persistence and Data View attribution rules close the two gaps
 claimed by older revisions of this audit. The remaining high-value gaps are
-AA admin settings that the current AA 2.0 Reporting API snapshot does not
-provide:
+AA admin settings that the current grader does not assess:
 
 1. eVar allocation and expiration combinations.
 2. Raw success-event type distinctions such as counter versus numeric.
 3. Event serialization on retry-prone conversion events.
 4. Merchandising eVar product-binding configuration.
+
+Adobe now documents read access to eVar configuration through Dimensions API
+expansions; success-event configuration remains outside documented 2.0 read
+support. See the dated source review in [Platform coverage](PLATFORM_COVERAGE.md).
+These four AA areas are separate from the four CJA-only bundled rule IDs.
 
 Do not implement these by probing arbitrary `Implementation.raw` paths. Add a
 documented `--extra-input KEY=PATH` contract, or wait for the upstream snapshot
