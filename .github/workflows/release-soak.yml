@@ -533,7 +533,8 @@ jobs:
         run: |
           set -euo pipefail
           ISSUE=$(jq -r .issue_number .github/release-soak/candidate.json)
+          jq -n --rawfile body "$RUNNER_TEMP/soak-complete.md" '{body: $body}' > "$RUNNER_TEMP/comment-request.json"
           gh api --method POST "repos/${GITHUB_REPOSITORY}/issues/${ISSUE}/comments" \
-            --raw-field body="$(cat "$RUNNER_TEMP/soak-complete.md")" > "$RUNNER_TEMP/retained.json"
+            --input "$RUNNER_TEMP/comment-request.json" > "$RUNNER_TEMP/retained.json"
           jq -e --rawfile expected "$RUNNER_TEMP/soak-complete.md" '.body == $expected' "$RUNNER_TEMP/retained.json" >/dev/null
           gh api --method PUT "repos/${GITHUB_REPOSITORY}/actions/workflows/release-soak.yml/disable"

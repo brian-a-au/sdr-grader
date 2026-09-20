@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+import os
 import re
+import shutil
+import subprocess
 from pathlib import Path
 
+import pytest
 import yaml
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -24,6 +28,48 @@ def _workflow_text(name: str) -> str:
 
 def _action_text(name: str) -> str:
     return (ACTIONS / name / "action.yml").read_text(encoding="utf-8")
+
+
+def test_soak_completion_retains_exact_comment_before_disabling(tmp_path):
+    if not shutil.which("jq") or not shutil.which("bash"):
+        pytest.skip("workflow shell regression requires bash and jq")
+    workflow = yaml.safe_load(_workflow_text("release-soak.yml"))
+    step = next(
+        step
+        for job in workflow["jobs"].values()
+        for step in job.get("steps", [])
+        if step.get("name") == "Retain durable full evidence and stop monitor"
+    )
+    config = tmp_path / ".github/release-soak/candidate.json"
+    config.parent.mkdir(parents=True)
+    config.write_text('{"issue_number": 1}')
+    (tmp_path / "soak-complete.md").write_text('Evidence "quoted"\n```json\n{}\n```\n')
+    # Emulate GitHub's JSON response without making network requests.
+    fake_gh = r"""
+    gh() {
+      if [[ "$*" == *"--method PUT"* ]]; then
+        touch "$RUNNER_TEMP/disabled"
+        return
+      fi
+      while [[ $# -gt 0 ]]; do
+        case "$1" in
+          --input) cat "$2"; return ;;
+          --raw-field) jq -n --arg body "${2#body=}" '{body: $body}'; return ;;
+        esac
+        shift
+      done
+      return 1
+    }
+    """
+    completed = subprocess.run(
+        ["bash", "-c", fake_gh + step["run"]],
+        cwd=tmp_path,
+        env={**os.environ, "RUNNER_TEMP": str(tmp_path), "GITHUB_REPOSITORY": "owner/repo"},
+        capture_output=True,
+        text=True,
+    )
+    assert completed.returncode == 0, completed.stderr
+    assert (tmp_path / "disabled").exists()
 
 
 def test_every_workflow_action_is_pinned_and_checkout_drops_credentials():

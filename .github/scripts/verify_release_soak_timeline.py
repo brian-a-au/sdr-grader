@@ -17,7 +17,7 @@ CHECKPOINT_TOLERANCE_SECONDS = 7_200
 
 
 class VerificationError(Exception):
-    """The soak timeline does not support an soak completion."""
+    """The soak timeline does not support soak completion."""
 
 
 class VerificationPending(VerificationError):
@@ -158,7 +158,6 @@ def verify_timeline(
         raise VerificationError("the current run has an invalid trigger")
     if current_run.get("head_branch") != "main":
         raise VerificationError("the current run is not on main")
-    finalized_epoch = finalized_epoch or int(dt.datetime.now(dt.UTC).timestamp())
     if finalized_epoch < current_started:
         raise VerificationError("finalization time precedes the current observation")
 
@@ -385,7 +384,8 @@ def main() -> int:
     try:
         from validate_release_soak_config import epoch, validate
 
-        config = json.loads(args.config.read_bytes())
+        config_bytes = args.config.read_bytes()
+        config = json.loads(config_bytes)
         env = validate(config)
         if not config["active"]:
             raise VerificationError("inactive candidate")
@@ -404,7 +404,7 @@ def main() -> int:
             release_commit=config["release"]["commit"],
             companion=config["companion"],
             marker_prefix=env["SOAK_MARKER_PREFIX"],
-            config_sha=hashlib.sha256(args.config.read_bytes()).hexdigest(),
+            config_sha=hashlib.sha256(config_bytes).hexdigest(),
             monitor_commit=config["monitor_commit"],
             allow_pending=args.readiness_output is not None,
         )
