@@ -4,7 +4,7 @@
 [![Tests](https://github.com/brian-a-au/sdr-grader/actions/workflows/test.yml/badge.svg)](https://github.com/brian-a-au/sdr-grader/actions/workflows/test.yml)
 [![Lint](https://github.com/brian-a-au/sdr-grader/actions/workflows/lint.yml/badge.svg)](https://github.com/brian-a-au/sdr-grader/actions/workflows/lint.yml)
 [![Version Sync](https://github.com/brian-a-au/sdr-grader/actions/workflows/version-sync.yml/badge.svg)](https://github.com/brian-a-au/sdr-grader/actions/workflows/version-sync.yml)
-[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.11+ requirement](https://img.shields.io/badge/python-requires%203.11%2B-blue.svg)](https://www.python.org/downloads/)
 [![Coverage](https://img.shields.io/badge/coverage-99%25-brightgreen.svg)](https://github.com/brian-a-au/sdr-grader/tree/v1.4.0/tests)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
@@ -22,7 +22,27 @@ same input and rubric always produce the same grade. The convenience modes
 `--dataview` and `--rsid` are different: they launch a child generator, and
 that child calls Adobe APIs before the local grader runs.
 
-**See what’s healthy. Know what to fix.**
+## Public preview scope
+
+This project is in public preview. Its grades are review aids, not certification:
+the bundled thresholds and severities reflect maintainer judgment, with no
+implementations currently admitted to grading calibration. Review every finding
+against the source implementation before changing production configuration.
+
+Bundled rubric pack `2.1` applies all 27 rules to CJA and 23 of 27 to AA. “All
+bundled rules” describes the CJA rule inventory; it does not mean a complete
+audit of every platform setting. AA snapshots do not expose four admin surfaces
+needed to grade eVar allocation and expiration, counter versus numeric success
+events, event serialization, and merchandising eVar product binding. See the
+[platform coverage and evidence boundary](https://github.com/brian-a-au/sdr-grader/blob/v1.4.0/docs/PLATFORM_COVERAGE.md).
+
+The verified preview matrix is Ubuntu with Python 3.11 and 3.12. macOS with
+Python 3.12 has historical local exercise only. Windows and later Python
+versions are unverified; their examples are retained as guidance. The package
+installation constraint remains Python 3.11 or newer and is broader than the
+verified matrix.
+
+**See what the rubric marks healthy. Review what to fix.**
 
 <a href="https://raw.githubusercontent.com/brian-a-au/sdr-grader/main/.github/assets/grader-showcase.png">
   <img src="https://raw.githubusercontent.com/brian-a-au/sdr-grader/main/.github/assets/grader-showcase.gif" width="1120" height="720" alt="SDR Grader demo: an A-grade CJA report at 100%, mixed category scores in a separate diagnostic example, a high-severity finding with remediation, and an A-grade Adobe Analytics report at 100%.">
@@ -30,9 +50,9 @@ that child calls Adobe APIs before the local grader runs.
 
 *21-second loop · Actual report excerpts from independent synthetic snapshots.
 Click the animation for a still image.* Explore the complete
-[healthy CJA report](https://raw.githack.com/brian-a-au/sdr-grader/v1.4.0/examples/grade-cja-clean.html),
+[synthetic CJA report with no findings](https://raw.githack.com/brian-a-au/sdr-grader/v1.4.0/examples/grade-cja-clean.html),
 [diagnostic CJA report](https://raw.githack.com/brian-a-au/sdr-grader/v1.4.0/examples/grade-cja-messy.html),
-or [healthy AA report](https://raw.githack.com/brian-a-au/sdr-grader/v1.4.0/examples/grade-aa-clean.html).
+or [synthetic AA report with no findings](https://raw.githack.com/brian-a-au/sdr-grader/v1.4.0/examples/grade-aa-clean.html).
 
 ## What it grades
 
@@ -68,9 +88,11 @@ for details.
 
 ## First local grade
 
-This auth-free quickstart works from any writable directory after installing
-Python 3.11 or newer. It grades a tagged synthetic fixture, so you can confirm
+This auth-free quickstart grades a tagged synthetic fixture, so you can confirm
 the installation before using production data or configuring Adobe credentials.
+It requires Python 3.11 or newer. The commands are verified on Ubuntu with
+Python 3.11 and 3.12; the macOS path has historical local exercise on Python
+3.12, and the Windows commands are unverified guidance.
 
 Install the released grader with `uv` (or use `pipx` or another isolated Python
 tool installer):
@@ -88,13 +110,13 @@ macOS and Linux:
 curl -fL -o cja_snapshot_clean.json https://raw.githubusercontent.com/brian-a-au/sdr-grader/v1.4.0/tests/fixtures/cja_snapshot_clean.json
 ```
 
-Windows PowerShell:
+Windows PowerShell (unverified guidance):
 
 ```powershell
 Invoke-WebRequest -Uri "https://raw.githubusercontent.com/brian-a-au/sdr-grader/v1.4.0/tests/fixtures/cja_snapshot_clean.json" -OutFile "cja_snapshot_clean.json"
 ```
 
-Grade it with the installed command on macOS, Linux, or Windows:
+Grade it with the installed command (Windows use is unverified):
 
 ```bash
 sdr-grader cja_snapshot_clean.json --output grade.html --json grade.json --quiet
@@ -145,8 +167,8 @@ aa_auto_sdr prod_us --format json --output snapshot.json
 sdr-grader snapshot.json --output grade.html --json grade.json
 ```
 
-For an installed streaming workflow on macOS, Linux, or Windows shells with
-pipe support:
+For an installed streaming workflow on shells with pipe support (Windows is
+unverified guidance):
 
 ```bash
 cja_auto_sdr dv_prod_web --include-all-inventory --format json --output - | sdr-grader - --output grade.html

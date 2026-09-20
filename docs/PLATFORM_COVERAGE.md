@@ -1,5 +1,19 @@
 # Platform coverage
 
+## Public preview evidence boundary
+
+Grading is provisional. Bundled thresholds and severities reflect maintainer
+judgment, and zero implementations are currently admitted to grading
+calibration. Treat findings as review prompts: verify each one against the
+source implementation before changing production configuration.
+
+The tested preview matrix is Ubuntu with Python 3.11 and 3.12. macOS with
+Python 3.12 has historical local exercise only. Windows and later Python
+versions are unverified, although the README retains Windows examples as
+guidance. The package metadata's Python 3.11-or-newer requirement is an
+installation constraint, not a claim that every later Python or operating
+system combination has been verified.
+
 The default packs grade both CJA and AA, but the two platforms
 expose different configuration surfaces — so coverage is broader on
 CJA than on AA. Thresholds apply only where the platform exposes the
@@ -41,8 +55,8 @@ false-firing:
 
 **Known AA coverage gaps.** Four bug classes the audit identifies as
 high-leverage are not yet implementable from the AA 2.0 Reporting
-API alone — the underlying configuration (counter / numeric event
-types, eVar allocation+expiration, event serialization, merchandising
+API alone — the underlying configuration (eVar allocation and expiration,
+counter versus numeric success events, event serialization, and merchandising
 eVar product binding) lives in the legacy 1.4 Admin API surface.
 Adobe has indicated these are migrating to 2.0 eventually; until
 then the rule shapes are documented in
@@ -52,8 +66,9 @@ the data is.
 **Honest framing.** The grader works on AA today and catches real
 bugs there (broken references, naming inconsistency, segment
 complexity, and documentation/governance gaps). It
-just isn't yet a full audit of every AA configuration choice the way
-it is for CJA. If you're picking a launch tier:
+is not a full audit of every AA configuration choice. CJA's 27-of-27
+bundled-rule coverage likewise describes this pack, not a complete audit
+of every CJA configuration choice. If you're picking a launch tier:
 
 - **CJA**: full default-pack coverage including Data View settings.
 - **AA**: full default-pack coverage minus the four
