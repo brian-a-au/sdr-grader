@@ -283,23 +283,43 @@ plugin are simultaneously live and healthy.
 - [ ] Announcement approver, timestamp, candidate SHA, and evidence revision:
       `________`
 
-For the bounded v1.2.3 soak, `.github/workflows/release-soak.yml` records
-hourly public-release checkpoints from a frozen monitor revision. New or
-updated grader issues block until a maintainer applies either
-`soak-triaged-nonblocking` or `soak-triaged-resolved`. A failed workflow run
-does not count as an observation and blocks finalization unless a maintainer
-records an infrastructure-only disposition in release PR #46 using the marker
-`sdr-grader-v1.2.3-soak-run-<run-id>-triaged-infrastructure`; release-health
-failures restart the 48-hour soak instead. Rerunning a failed workflow is not
-allowed because the runs API exposes only the latest attempt; use a new manual
-dispatch so the failed run remains in the timeline. GitHub's repository-scoped
-workflow token cannot read private vulnerability reports or secret-scanning
-alerts, so the final GO additionally requires an owner-authenticated,
-post-48h clearance comment carrying
-`sdr-grader-v1.2.3-private-advisory-clear`. That clearance must be no more than
-two hours old, records aggregate counts only, and never includes advisory or
-alert content. The owner-side gate refreshes it until the announcement-GO
-record is observable.
+The reusable `.github/workflows/release-soak.yml` reads the reviewed
+`.github/release-soak/candidate.json`. It ships inactive: merging preparation
+work must not begin an observation window. See [the soak runbook](RELEASE_SOAK.md)
+for activation, authenticated start proof, evidence retention, and finalization.
+
+Bind three identities separately: the published release commit, the earlier
+reviewed monitoring implementation commit, and the frozen activation/main
+revision containing the candidate configuration. Verify monitoring code against
+its pinned implementation commit; retain the configuration digest. Freeze main,
+monitoring code, and applicable hosted controls throughout observation. Changes
+invalidate the window rather than inheriting observations from another revision.
+
+Hourly observations provide margin against the four-hour maximum. Start evidence
+must prove that all required public surfaces actually passed; the 48 hours run
+from that successful observation, not from publication time or a configured
+clock value alone. New or updated grader issues block until a maintainer applies
+`soak-triaged-nonblocking` or `soak-triaged-resolved`. Every new update requires
+fresh triage; an old disposition must not excuse a newly reported regression.
+
+A failed workflow run does not count as an observation. Infrastructure-only
+failures need an owner disposition bound to this release/window/run and cannot
+excuse an excessive gap. Release-health failures restart observation after
+repair. Never rerun a failed observation: use a new manual dispatch so the failed
+attempt remains visible. Missing, skipped, duplicate, or failed required jobs
+cannot establish a completed checkpoint, including the current finalizing run.
+
+The workflow token cannot establish private vulnerability-report or secret-
+scanning clearance. Finalization requires a separate owner-authenticated,
+post-48h clearance, no more than two hours old, containing aggregate counts
+only. Refresh it if it expires before the human announcement decision.
+
+Retain the complete timeline and digest durably in the reviewed evidence
+location, not only in expiring workflow artifacts. Automated `SOAK_COMPLETE`
+means observation evidence is ready for review. It is not an announcement GO,
+a claim that live Adobe flows passed, or a waiver of the final readiness audit.
+The release owner records the final audit and a separate approval with the exact
+candidate, evidence revision, timestamp, scope, and permitted announcement copy.
 
 Do not announce while any release, security, control, calibration,
 plugin, or soak evidence is missing or stale.

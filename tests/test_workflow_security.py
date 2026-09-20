@@ -90,8 +90,14 @@ def test_release_workflow_is_tag_only_build_once_and_authority_isolated():
     assert "uv build --no-sources --clear --no-create-gitignore" in text
     assert "scripts/verify_release_artifacts.py" in text
     assert "draft: true" in text
-    assert "name: ${{ github.event_name == 'workflow_dispatch' && 'release-verifier-harness' || 'pypi' }}" in text
-    assert "name: ${{ github.event_name == 'workflow_dispatch' && 'release-verifier-harness' || 'github-release' }}" in text
+    assert (
+        "name: ${{ github.event_name == 'workflow_dispatch' && 'release-verifier-harness' || 'pypi' }}"
+        in text
+    )
+    assert (
+        "name: ${{ github.event_name == 'workflow_dispatch' && 'release-verifier-harness' || 'github-release' }}"
+        in text
+    )
     assert "--draft=false" in text
     assert "verify-public:" in text
 
@@ -102,7 +108,7 @@ def test_release_workflow_is_tag_only_build_once_and_authority_isolated():
     assert "id-token: write" in build
     assert "attestations: write" in build
     assert "Attest immutable distributions for rerun recovery" in build
-    assert "subject-path: \"dist/*\"" in build
+    assert 'subject-path: "dist/*"' in build
     publisher = text.split("\n  publish-pypi:", 1)[1].split(
         "\n  publish-github:",
         1,
@@ -148,14 +154,20 @@ def test_release_workflow_builds_before_isolated_frozen_wheel_plugin_smoke():
     assert "plugin compare smoke" in plugin_smoke
     assert "--suppress-config" in plugin_smoke
     assert '"${RUNNER_TEMP}/plugin-grade-suppressed.json"' in plugin_smoke
-    assert "needs: [candidate, build, recover, install-smoke, plugin-smoke, verify-prepublication]" in draft
+    assert (
+        "needs: [candidate, build, recover, install-smoke, plugin-smoke, verify-prepublication]"
+        in draft
+    )
 
 
 def test_release_workflow_digest_gates_idempotent_pypi_recovery():
     text = _workflow_text("release.yml")
 
     assert "scripts/check_pypi_release_state.py" in text
-    assert "if: ${{ github.event_name != 'workflow_dispatch' && steps.pypi-state.outputs.state != 'matching' }}" in text
+    assert (
+        "if: ${{ github.event_name != 'workflow_dispatch' && steps.pypi-state.outputs.state != 'matching' }}"
+        in text
+    )
     assert "skip-existing: true" in text
     assert text.index("Verify recoverable PyPI state") < text.index(
         "Publish exact candidate to PyPI"
@@ -250,10 +262,10 @@ def test_release_workflow_reuses_an_existing_draft_during_recovery():
     assert "release not found" in draft
     assert "gh release download" not in draft
     assert "steps.release-state.outputs.exists != 'true'" in draft
-    assert draft.index("Inspect existing GitHub release") < draft.index(
-        "Verify existing GitHub release assets"
-    ) < draft.index(
-        "Create draft from tested bytes"
+    assert (
+        draft.index("Inspect existing GitHub release")
+        < draft.index("Verify existing GitHub release assets")
+        < draft.index("Create draft from tested bytes")
     )
 
 
@@ -268,7 +280,10 @@ def test_release_workflow_runs_bounded_readme_checks_before_and_after_publicatio
     assert "needs: [install-smoke, plugin-smoke]" in pre
     assert "scripts/verify_published_readme.py prepublication" in pre
     assert "--evidence release-evidence/release-artifacts.json" in pre
-    assert "needs: [candidate, build, recover, install-smoke, plugin-smoke, verify-prepublication]" in draft
+    assert (
+        "needs: [candidate, build, recover, install-smoke, plugin-smoke, verify-prepublication]"
+        in draft
+    )
     assert "needs: publish-pypi" in post
     assert "scripts/verify_published_readme.py postpublication" in post
     assert "--evidence release-evidence/release-artifacts.json" in post
@@ -290,77 +305,22 @@ def test_release_soak_is_frozen_least_privilege_and_self_terminating():
 
     assert 'cron: "23 * * * *"' in text
     assert "if: github.ref == 'refs/heads/main'" in text
-    assert "ref: e3e82dca03ac831da6aa4825e4c1bf087f8ea0b7" in text
+    assert "validate_release_soak_config.py" in text
+    assert "candidate.json" in text
+    assert "needs.config.outputs.active == 'true'" in text
+    assert "announcement GO" not in text
+    assert "issues/46" not in text
     assert "pypi-attestations==0.0.30" in text
-    assert "--source-ref \"refs/tags/${GRADER_TAG}\"" in text
-    assert "--source-digest \"${GRADER_COMMIT}\"" in text
-    assert "VISUALIZER_COMMIT" in text
-    assert "certificate.txt" in text
-    assert "URI:https://github.com/${repository}/.github/workflows/release.yml@refs/tags/${tag}" in text
+    assert '--source-digest "${GRADER_COMMIT}"' in text
     assert "security-events: read" in text
     assert "vulnerability-alerts: read" in text
-    assert "secret-scanning/alerts" not in text
-    assert 'SOAK_MARKER_PREFIX: "sdr-grader-v1.2.3"' in text
-    assert '--arg marker_prefix "${SOAK_MARKER_PREFIX}"' in text
-    assert '$marker_prefix + "-private-advisory-clear"' in text
-    assert '$marker_prefix + "-announcement-go"' in text
-    assert '--marker-prefix "${SOAK_MARKER_PREFIX}"' in text
-    assert 'GRADER_VERSION: "1.2.3"' in text
-    assert 'GRADER_TAG: "v1.2.3"' in text
-    assert (
-        'GRADER_TAG_OBJECT: "1a71e615563cf98087a1e0bd1503f3ad7feeba7b"'
-        in text
-    )
-    assert (
-        'GRADER_WHEEL_SHA: '
-        '"29def223ea89eb11f5cf138085ee2b3019d86a9d203707ed30f78a8775a85d9d"'
-        in text
-    )
-    assert (
-        'GRADER_SDIST_SHA: '
-        '"aa004044902f2a24c4327b7001a09d4a2aa8a603eff85c920c550659443de80c"'
-        in text
-    )
-    assert (
-        'GRADER_EVIDENCE_SHA: '
-        '"1bcec5fdc6f1e1ed72e46c87b212f236867d968dfce9c74622986a81e41a6a98"'
-        in text
-    )
-    assert 'VISUALIZER_VERSION: "1.0.8"' in text
-    assert 'VISUALIZER_TAG: "v1.0.8"' in text
-    assert (
-        'VISUALIZER_COMMIT: "42da01927de9b75c3c0256d9258fc4e33f0f61e3"'
-        in text
-    )
-    assert (
-        'VISUALIZER_TAG_OBJECT: "8fbb75ccbb51c04e906afa1f20195401e184f71c"'
-        in text
-    )
-    assert (
-        'VISUALIZER_WHEEL_SHA: '
-        '"a69afa3ac9e09e817af9b4fb1fad3a25f80efffe9809c724edc39169c223ed53"'
-        in text
-    )
-    assert (
-        'VISUALIZER_SDIST_SHA: '
-        '"cce94b0c6967d06b61b5043e077b14ab69d2f64ff15a7389632b9adf0cd93ca1"'
-        in text
-    )
-    assert (
-        'VISUALIZER_SUMS_SHA: '
-        '"c00b913241534ad75488d6d25f6ab3cf7c925fbe45ae4f441da8c603be2572ef"'
-        in text
-    )
-    assert 'SOAK_START_ISO: "2026-08-10T02:35:51Z"' in text
-    assert 'SOAK_END_ISO: "2026-08-12T02:35:51Z"' in text
-    assert "pull/46#issuecomment-5235269302" in text
-    assert "1.2.2" not in text
-    assert "1.0.6" not in text
-    assert '.user.login == "brian-a-au"' in text
-    assert "CLEARANCE_CUTOFF" in text
-    assert ".github/scripts/verify_release_soak_timeline.py" in text
     assert "retention-days: 90" in text
     assert "actions/workflows/release-soak.yml/disable" in text
+    assert "timeline.json" in text
+    assert "--current-jobs" in text
+    assert "--start-jobs" in text
+    assert "--readiness-output" in text
+    assert text.count("if: steps.readiness.outputs.ready == 'true'") == 2
 
     verify = text.split("\n  verify:", 1)[1].split("\n  hosted-state:", 1)[0]
     hosted = text.split("\n  hosted-state:", 1)[1].split(
@@ -384,26 +344,18 @@ def test_codeql_dependency_updates_and_governance_files_are_configured():
     assert "languages: python" in codeql
 
     dependabot = yaml.safe_load(
-        (REPO_ROOT / ".github" / "dependabot.yml").read_text(
-            encoding="utf-8"
-        )
+        (REPO_ROOT / ".github" / "dependabot.yml").read_text(encoding="utf-8")
     )
-    ecosystems = {
-        update["package-ecosystem"] for update in dependabot["updates"]
-    }
+    ecosystems = {update["package-ecosystem"] for update in dependabot["updates"]}
     assert ecosystems == {"github-actions", "uv"}
 
-    codeowners = (REPO_ROOT / ".github" / "CODEOWNERS").read_text(
-        encoding="utf-8"
-    )
+    codeowners = (REPO_ROOT / ".github" / "CODEOWNERS").read_text(encoding="utf-8")
     assert "* @brian-a-au" in codeowners
     assert "/.github/workflows/ @brian-a-au" in codeowners
 
     conduct = (REPO_ROOT / "CODE_OF_CONDUCT.md").read_text(encoding="utf-8")
     security = (REPO_ROOT / "SECURITY.md").read_text(encoding="utf-8")
-    checklist = (REPO_ROOT / "docs" / "RELEASE_CHECKLIST.md").read_text(
-        encoding="utf-8"
-    )
+    checklist = (REPO_ROOT / "docs" / "RELEASE_CHECKLIST.md").read_text(encoding="utf-8")
     assert "Enforcement" in conduct
     assert "1.2.x" in security
     assert "private security advisory" in security.lower()
@@ -423,12 +375,19 @@ def test_draft_recovery_has_write_access_without_granting_it_to_smoke_jobs():
     workflow = yaml.safe_load(_workflow_text("release.yml"))
     jobs = workflow["jobs"]
     recovery = jobs["recover"]
-    assert recovery["permissions"] == {"contents": "write", "actions": "read", "attestations": "read"}
+    assert recovery["permissions"] == {
+        "contents": "write",
+        "actions": "read",
+        "attestations": "read",
+    }
     assert recovery["needs"] == "candidate"
     assert recovery["if"] == "github.run_attempt > 1"
     steps = recovery["steps"]
     fetch = next(s for s in steps if s.get("uses") == "./.github/actions/fetch-release-candidate")
-    assert fetch["with"]["source"] == "${{ github.event_name == 'workflow_dispatch' && 'artifacts' || 'auto' }}"
+    assert (
+        fetch["with"]["source"]
+        == "${{ github.event_name == 'workflow_dispatch' && 'artifacts' || 'auto' }}"
+    )
     assert not any("uv pip install" in s.get("run", "") for s in steps)
     uploads = [s for s in steps if s.get("uses", "").startswith("actions/upload-artifact@")]
     assert len(uploads) == 2
@@ -441,7 +400,11 @@ def test_draft_recovery_has_write_access_without_granting_it_to_smoke_jobs():
         assert job.get("permissions", workflow["permissions"])["contents"] == "read"
     for name, job in jobs.items():
         for step in job["steps"]:
-            if step.get("uses") == "./.github/actions/fetch-release-candidate" and name not in {"recover", "verify-public", "verify-completion"}:
+            if step.get("uses") == "./.github/actions/fetch-release-candidate" and name not in {
+                "recover",
+                "verify-public",
+                "verify-completion",
+            }:
                 assert step.get("with", {}).get("source", "artifacts") == "artifacts"
 
 
@@ -449,7 +412,14 @@ def test_release_publication_jobs_override_skipped_ancestors_but_require_success
     """An unused build/recovery branch must not skip a tested release."""
     jobs = yaml.safe_load(_workflow_text("release.yml"))["jobs"]
     expected_dependencies = {
-        "draft-github": ["candidate", "build", "recover", "install-smoke", "plugin-smoke", "verify-prepublication"],
+        "draft-github": [
+            "candidate",
+            "build",
+            "recover",
+            "install-smoke",
+            "plugin-smoke",
+            "verify-prepublication",
+        ],
         "publish-pypi": ["draft-github"],
         "publish-github": ["publish-pypi", "verify-pypi-publication"],
     }
@@ -462,10 +432,15 @@ def test_release_publication_jobs_override_skipped_ancestors_but_require_success
         # on failure, cancellation, or an unexpectedly skipped prerequisite.
         terms = condition.split(" && ")
         assert terms[:2] == ["always()", "!cancelled()"], name
-        required = [f"needs.{dependency}.result == 'success'" for dependency in dependencies
-                    if dependency not in {"build", "recover"}]
+        required = [
+            f"needs.{dependency}.result == 'success'"
+            for dependency in dependencies
+            if dependency not in {"build", "recover"}
+        ]
         if name == "draft-github":
-            required.append("(needs.build.result == 'success' || needs.recover.result == 'success')")
+            required.append(
+                "(needs.build.result == 'success' || needs.recover.result == 'success')"
+            )
         assert sorted(terms[2:]) == sorted(required), name
 
 
@@ -476,16 +451,18 @@ def test_read_only_verifiers_run_after_partial_rerun_ancestor_skips():
         ("verify-pypi-publication", "publish-pypi"),
     ):
         job = jobs[name]
-        assert job['needs'] == dependencies
-        assert job['if'] == '${{ always() && !cancelled() }}'
-        assert set(job['permissions'].values()) == {'read'}
-        steps = job['steps']
-        fetch = next(i for i, step in enumerate(steps)
-                     if step.get('uses') == './.github/actions/fetch-release-candidate')
-        validations = [i for i, step in enumerate(steps)
-                       if 'publication' in step.get('run', '')]
+        assert job["needs"] == dependencies
+        assert job["if"] == "${{ always() && !cancelled() }}"
+        assert set(job["permissions"].values()) == {"read"}
+        steps = job["steps"]
+        fetch = next(
+            i
+            for i, step in enumerate(steps)
+            if step.get("uses") == "./.github/actions/fetch-release-candidate"
+        )
+        validations = [i for i, step in enumerate(steps) if "publication" in step.get("run", "")]
         assert validations and all(fetch < index for index in validations)
-        assert not any(step.get('continue-on-error') for step in steps)
+        assert not any(step.get("continue-on-error") for step in steps)
 
 
 def test_public_recovery_runs_even_after_skipped_publisher_and_is_read_only():
@@ -495,9 +472,13 @@ def test_public_recovery_runs_even_after_skipped_publisher_and_is_read_only():
     assert set(public["permissions"].values()) == {"read"}
     steps = public["steps"]
     fetch = next(s for s in steps if s.get("uses") == "./.github/actions/fetch-release-candidate")
-    assert fetch["with"]["source"] == "${{ github.event_name == 'workflow_dispatch' && 'artifacts' || 'public' }}"
-    assert next(i for i,s in enumerate(steps) if "postpublication" in s.get("run", "")) < next(
-        i for i,s in enumerate(steps) if "uv pip install" in s.get("run", ""))
+    assert (
+        fetch["with"]["source"]
+        == "${{ github.event_name == 'workflow_dispatch' && 'artifacts' || 'public' }}"
+    )
+    assert next(i for i, s in enumerate(steps) if "postpublication" in s.get("run", "")) < next(
+        i for i, s in enumerate(steps) if "uv pip install" in s.get("run", "")
+    )
     terminal = jobs["verify-completion"]
     assert terminal["if"] == "${{ always() }}"
     assert set(terminal["needs"]) == set(jobs) - {"verify-completion"}
@@ -512,4 +493,7 @@ def test_smoke_checks_remain_eligible_on_partial_reruns_without_hiding_intention
         assert "needs." not in condition
         assert "always() && !cancelled()" in condition
     assert jobs["install-smoke"]["if"] == "${{ always() && !cancelled() }}"
-    assert "!(github.event_name == 'workflow_dispatch' && inputs.scenario == 'skip')" in jobs["plugin-smoke"]["if"]
+    assert (
+        "!(github.event_name == 'workflow_dispatch' && inputs.scenario == 'skip')"
+        in jobs["plugin-smoke"]["if"]
+    )
