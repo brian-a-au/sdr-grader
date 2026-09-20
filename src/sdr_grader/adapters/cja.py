@@ -731,7 +731,7 @@ def _parse_tag_list(value: Any) -> list[str]:
     if value is None or value == "":
         return []
     if isinstance(value, list):
-        return [str(t) for t in value]
+        return _tag_names(value)
     if isinstance(value, str):
         try:
             parsed = json.loads(value)
@@ -742,9 +742,21 @@ def _parse_tag_list(value: Any) -> list[str]:
         validate_decoded_structure(parsed, label="tag list")
         validate_unicode_scalars(parsed, label="tag list")
         if isinstance(parsed, list):
-            return [str(t) for t in parsed]
+            return _tag_names(parsed)
         return []
     return []
+
+
+def _tag_names(values: list[Any]) -> list[str]:
+    """Keep string tags and reduce API tag objects to their useful identity."""
+    tags = []
+    for value in values:
+        if isinstance(value, dict):
+            value = value.get("name") or value.get("id")
+            if not isinstance(value, str) or not value:
+                continue
+        tags.append(str(value))
+    return tags
 
 
 def _parse_ref_list(value: Any) -> list[str]:
