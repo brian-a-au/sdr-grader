@@ -1,8 +1,35 @@
 # Release checklist
 
-This is the tracked control record for a release candidate. Complete it
-against one immutable commit. A passing build is not publication
-approval, and publication is not announcement approval.
+This is the canonical checklist for a release candidate. Copy its applicable
+checks into a tracked `docs/releases/<version>-readiness.md` record and complete
+that record against one immutable release commit. Preserve earlier records.
+Before version selection, use `docs/releases/next-readiness.md` with identity
+fields explicitly pending; rename it when the candidate is selected. A passing
+build is not publication approval, and publication is not announcement approval.
+
+## Claim and evidence scope
+
+Both announcement scopes require current publication, hosted-control, security,
+plugin, beta, compatibility, final-audit, and 48-hour soak evidence. Missing or
+stale evidence means **Hold**, including for a public preview.
+
+- **Scoped public preview:** provisional, versioned maintainer-judgment grades;
+  CJA supports all 27 bundled rules and AA supports 23 of 27. These are snapshot
+  checks, not a complete platform audit. A current candidate-bound attestation
+  of zero admitted calibration entries is acceptable only with that limitation
+  prominent in the public copy. Compatibility evidence is not calibration.
+- **Broader grading claims:** additionally require an independently reviewed
+  healthy/unhealthy outcome model and evaluation supporting each claimed rule,
+  platform, population, and grade interpretation. Admitting snapshots or
+  reporting threshold distributions alone does not meet this gate.
+- **Environment claims:** distinguish the Python installation requirement from
+  the verified environment matrix. Record actual OS, Python, exporter, and
+  workflow versions; unverified Windows, later Python, and live-generator
+  workflows cannot be advertised as verified.
+
+Record the intended announcement scope, exact proposed copy, unresolved risks,
+and permitted claims. A completed soak is evidence for the human decision,
+never automatic announcement approval.
 
 ## Candidate identity
 
@@ -12,6 +39,9 @@ approval, and publication is not announcement approval.
 - [ ] Package/plugin/marketplace version: `________`
 - [ ] Bundled pack version: `________`
 - [ ] JSON schema version: `________`
+- [ ] Announcement scope and proposed copy: `________`
+- [ ] Evidence revision and durable evidence location: `________`
+- [ ] Verified environment/workflow matrix: `________`
 - [ ] Candidate is the reviewed `main` commit and the working tree is
       clean.
 - [ ] `python3 scripts/check_version_sync.py --tag v<version>` passes.
@@ -37,6 +67,8 @@ Record the successful run URLs for these stable checks:
 - [ ] Strict plugin and clean local marketplace smoke: `________`
 - [ ] Private compatibility-cohort attestation and entry count: `________`
 - [ ] Calibration-cohort attestation and admitted entry count: `________`
+- [ ] Aggregate beta validation and exit decision (see `BETA_VALIDATION.md`):
+      `________`
 
 An unavailable, inconclusive, skipped, or stale check is a failure. The
 private corpus stays outside Git and public CI; its aggregate evidence must
@@ -49,7 +81,9 @@ Color-pack changes are a paired release gate. The comparator must prove exact
 equality of the ordered catalog, every ordered source-swatch list, and the
 required semantic-role list exported by both repositories. The linked sibling
 PR or commit must be green in the same release cycle. Do not publish a
-one-sided grader or visualizer color-pack change.
+one-sided grader or visualizer color-pack change. If no color-pack contract
+changes, record these paired gates as not applicable with the reviewed diff
+and rationale; do not inherit an unrelated companion release as a gate.
 
 ## Artifact evidence
 
@@ -233,14 +267,21 @@ control change.
 Start the 48-hour soak only when PyPI, GitHub, provenance, and the remote
 plugin are simultaneously live and healthy.
 
+- [ ] Release commit, annotated tag object, and artifact digests: `________`
+- [ ] Frozen monitor revision and candidate configuration digest: `________`
 - [ ] Start checkpoint: `________`
 - [ ] `+4h` checkpoint: `________`
 - [ ] `+24h` checkpoint: `________`
 - [ ] `+48h` checkpoint: `________`
-- [ ] No observation gap exceeded four hours.
+- [ ] No observation gap exceeded four hours; measured maximum: `________`
+- [ ] Complete timeline URL, SHA-256, and durable retained copy: `________`
+- [ ] Post-48h owner-only private security clearance (at most two hours old):
+      `________`
 - [ ] Inbound reports were triaged with severity and recovery class.
 - [ ] Final readiness audit path: `________`
-- [ ] Announcement approver and timestamp: `________`
+- [ ] Exact permitted claims and announcement scope: `________`
+- [ ] Announcement approver, timestamp, candidate SHA, and evidence revision:
+      `________`
 
 For the bounded v1.2.3 soak, `.github/workflows/release-soak.yml` records
 hourly public-release checkpoints from a frozen monitor revision. New or

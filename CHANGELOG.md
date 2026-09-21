@@ -3,6 +3,19 @@
 All notable changes follow the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
+**Unreleased**
+
+- Reframe the project as a public preview with provisional, maintainer-judgment
+  grading. Document CJA's 27-of-27 bundled-rule coverage, AA's 23-of-27
+  coverage and four unavailable admin surfaces, and require human review before
+  production changes.
+- Distinguish offline file and directory grading from credentialed, networked
+  child-generator modes. Align support claims with the verified Ubuntu/Python
+  3.11 and 3.12 matrix; describe macOS/Python 3.12 as historical local exercise
+  and retain Windows instructions as unverified guidance.
+- Mark package maturity as Beta and remove the OS-independent classifier while
+  retaining the Python 3.11-or-newer installation constraint.
+
 ## 1.4.0 — 2026-09-12
 
 - Bundled rubric policy `2.1` excludes explicitly typed, unresolved calculated-
