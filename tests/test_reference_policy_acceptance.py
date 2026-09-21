@@ -129,7 +129,7 @@ def test_excluded_reference_changes_do_not_enter_trend_churn(tmp_path, platform,
     (tmp_path / "snapshot_2026-09-02.json").write_text(json.dumps(snapshot))
     trend = build_trend_report(tmp_path, load_rubric(BUNDLED_PACKS_DIR / pack))
     assert _findings_churn(trend) == ([], [])
-    assert trend.pack_version == "2.1"
+    assert trend.pack_version == "3.0"
     assert all(
         len([p for p in point.report.methodology.paragraphs if "Unverified reference:" in p]) == 1
         for point in trend.points

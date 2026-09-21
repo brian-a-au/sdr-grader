@@ -1,0 +1,9 @@
+{
+  "report_suite": {"rsid": "suite", "name": "Synthetic AA suite"},
+  "captured_at": "2026-09-20T00:00:00Z",
+  "dimensions": [{"id": "variables/evar1", "name": "Campaign", "extra": {
+    "allocationType": "most_recent_last", "expirationType": "day", "expirationCustomDays": 30,
+    "merchandisingSyntax": "conversion_variable", "bindingEvents": ["metrics/event1", "metrics/event2"]
+  }}],
+  "metrics": [{"id": "metrics/event1", "name": "Orders", "type": "int"}]
+}

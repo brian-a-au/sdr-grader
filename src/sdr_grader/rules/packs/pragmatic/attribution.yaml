@@ -7,6 +7,22 @@ description: Pragmatic attribution rules — same IDs as strict, looser threshol
 # docs/RUBRIC_AUDIT.md.
 
 rules:
+  - id: AA-001
+    name: eVar allocation and expiration differ from expectations
+    severity: high
+    platforms: [aa]
+    check: aa_allocation_expiration
+    rationale: Compare sourced configuration with explicit business expectations.
+    remediation: Review the declared expectation and correct the report-suite configuration if needed.
+
+  - id: AA-004
+    name: Merchandising configuration differs from expectations
+    severity: high
+    platforms: [aa]
+    check: aa_merchandising
+    rationale: Compare sourced configuration with explicit business expectations.
+    remediation: Review the declared expectation and correct the report-suite configuration if needed.
+
   - id: ATTR-003
     name: Inconsistent attribution choices across similar metrics
     severity: low

@@ -29,12 +29,17 @@ the bundled thresholds and severities reflect maintainer judgment, with no
 implementations currently admitted to grading calibration. Review every finding
 against the source implementation before changing production configuration.
 
-Bundled rubric pack `2.1` applies all 27 rules to CJA and 23 of 27 to AA. “All
-bundled rules” describes the CJA rule inventory; it does not mean a complete
-audit of every platform setting. The current grader does not assess four AA
-admin areas: eVar allocation and expiration, counter versus numeric success
-events, event serialization, and merchandising eVar product binding. These
-are separate from the four CJA-only rules excluded on AA. See the
+Default rubric packs `3.0` include **27 applicable checks for AA and 27 for CJA**
+from a shared catalog of 31. AA now includes eVar allocation/expiration,
+success-event type, serialization configuration, and merchandising settings
+against declared expectations. Supply their API fields and supplementary event
+configuration with `--extra-input aa_admin=aa-admin.json`; no separate pack is
+required. Missing evidence is reported as not assessed and excluded from scoring,
+so 27 available checks does not mean 27 were assessed on every snapshot.
+Configuration checks do not verify runtime event-ID delivery or product binding.
+See the [AA administration input guide](https://github.com/brian-a-au/sdr-grader/blob/v1.4.0/docs/AA_ADMIN_INPUT.md).
+The catalog includes four CJA-only and four AA-only rules; these counts do not
+claim a complete audit of either platform. See the
 [platform coverage and evidence boundary](https://github.com/brian-a-au/sdr-grader/blob/v1.4.0/docs/PLATFORM_COVERAGE.md).
 
 The verified preview matrix is Ubuntu with Python 3.11 and 3.12. macOS with

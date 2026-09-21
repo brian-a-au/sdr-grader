@@ -179,6 +179,17 @@ def test_verifier_rejects_other_payload_drift(tmp_path, monkeypatch):
     monkeypatch.setattr(module, "_sync_environment", lambda *args, **kwargs: {})
 
     monkeypatch.setattr(module, "_load_policy_contract", lambda *_: {"public_deltas": []})
+    monkeypatch.setattr(
+        module,
+        "_load_default_aa_admin_contract",
+        lambda *_: {
+            "prior_rubric_version": "2.1",
+            "rubric_version": "3.0",
+            "packs": [],
+            "methodology_copy": {"before": "old", "after": "new"},
+            "absent_evidence": {"skipped": []},
+        },
+    )
 
     for candidate in (wrong_item, wrong_count, score_drift):
         results = iter((candidate, baseline))
@@ -688,3 +699,153 @@ def test_checked_in_policy_layer_has_exact_legacy_preconditions():
         old = legacy["cases"][name]
         expected = module._apply_policy_deltas(old["candidate"], deltas)
         module._verify_policy_correctness_case(name, old["baseline"], expected, old, deltas)
+
+
+def test_default_aa_admin_layer_preserves_scores_and_historical_contract():
+    module = _load_module()
+    fixtures = REPO_ROOT / "tests/fixtures"
+    legacy = json.loads((fixtures / "correctness_1_3/expectations.json").read_text())
+    policy = json.loads((fixtures / "reference_grading_policy/compatibility.json").read_text())
+    contract = module._load_default_aa_admin_contract(fixtures)
+
+    assert contract["rubric_version"] == "3.0"
+    assert contract["prior_rubric_version"] == "2.1"
+    assert contract["rule_ids"] == ["AA-001", "AA-002", "AA-003", "AA-004"]
+    assert contract["absent_evidence"]["score_change"] is False
+
+    for platform in ("cja", "aa"):
+        for quality in ("clean", "messy"):
+            for pack in ("strict", "pragmatic"):
+                name = f"{platform}-{quality}-{pack}"
+                previous = module._apply_policy_deltas(
+                    legacy["cases"][name]["candidate"], policy["correctness_cases"][name]
+                )
+                current = module._apply_default_aa_admin_contract(previous, contract)
+                assert current["report"]["overall_pct"] == previous["report"]["overall_pct"]
+                assert current["report"]["rubric"]["version"] == "3.0"
+                assert "This assessment scores" in current["report"]["methodology"][
+                    "paragraphs"
+                ][0]
+                assert "The rubric encodes" not in current["report"]["methodology"][
+                    "paragraphs"
+                ][0]
+                if platform == "aa":
+                    assert current["report"]["methodology"]["skipped"] == contract[
+                        "absent_evidence"
+                    ]["skipped"]
+                else:
+                    assert current["report"]["methodology"]["skipped"] == []
+
+    assert policy["rubric_version"] == "2.1"
+    assert legacy["cases"]["aa-clean-strict"]["candidate"]["report"]["rubric"][
+        "version"
+    ] == "2.0"
+
+
+def test_default_aa_admin_layer_rejects_nonempty_skip_precondition():
+    module = _load_module()
+    contract = module._load_default_aa_admin_contract(REPO_ROOT / "tests/fixtures")
+    report = {
+        "adapter": {"platform": "AA"},
+        "rubric": {"pack": "strict", "version": "2.1"},
+        "methodology": {
+            "paragraphs": ["The rubric encodes rules using strict@2.1."],
+            "skipped": [{"ids": ["OLD"]}],
+        },
+        "tldr_html": "Summary for strict@2.1.",
+        "overall_pct": 73,
+    }
+    with pytest.raises(module.CompatibilityError, match="skipped precondition"):
+        module._apply_default_aa_admin_contract(report, contract)
+
+
+def test_default_aa_admin_layer_does_not_mask_score_or_diagnostic_drift():
+    module = _load_module()
+    fixtures = REPO_ROOT / "tests/fixtures"
+    contract = module._load_default_aa_admin_contract(fixtures)
+    legacy = json.loads((fixtures / "correctness_1_3/expectations.json").read_text())
+    policy = json.loads((fixtures / "reference_grading_policy/compatibility.json").read_text())
+    name = "aa-clean-strict"
+    previous = module._apply_policy_deltas(
+        legacy["cases"][name]["candidate"], policy["correctness_cases"][name]
+    )
+    expected = module._apply_default_aa_admin_contract(previous, contract)
+
+    score_drift = json.loads(json.dumps(expected))
+    score_drift["report"]["overall_pct"] += 1
+    assert not module._exact_json_equal(score_drift, expected)
+
+    error = {"kind": "invalid-input", "exit": 1, "diagnostic": "error: reviewed"}
+    assert module._apply_default_aa_admin_contract(error, contract) == error
+
+
+def test_full_evidence_probe_uses_default_strict_and_reviewed_scores(tmp_path, monkeypatch):
+    module = _load_module()
+    fixtures = REPO_ROOT / "tests/fixtures"
+    contract = module._load_default_aa_admin_contract(fixtures)
+    commands = []
+
+    def run(command, *, cwd, **kwargs):
+        commands.append(command)
+        pack = command[command.index("--pack") + 1] if "--pack" in command else "strict"
+        scores = contract["full_evidence"]["expected_scores"][pack]
+        report = {
+            "overall_pct": scores["overall_pct"],
+            "categories": [
+                {"name": "schema hygiene", "pct": scores["schema_hygiene_pct"]},
+                {
+                    "name": "attribution coverage",
+                    "pct": scores["attribution_coverage_pct"],
+                },
+            ],
+            "findings": [{"id": rule_id} for rule_id in contract["rule_ids"]],
+            "methodology": {"skipped": []},
+        }
+        (cwd / "grade.json").write_text(json.dumps(report))
+        (cwd / "grade.html").write_text("report")
+        return module.subprocess.CompletedProcess(command, 0, "", "")
+
+    monkeypatch.setattr(module, "_run", run)
+    module._verify_default_aa_admin_full_evidence(
+        console=Path("sdr-grader"), environment={}, work_root=tmp_path / "probe",
+        fixture_root=fixtures, contract=contract,
+    )
+
+    assert "--pack" not in commands[0]
+    assert commands[1][commands[1].index("--pack") + 1] == "pragmatic"
+
+
+@pytest.mark.parametrize("drift", ["missing-aa-findings", "legacy-scores"])
+def test_full_evidence_probe_rejects_outcomes_that_do_not_prove_aa_scoring(
+    tmp_path, monkeypatch, drift
+):
+    module = _load_module()
+    fixtures = REPO_ROOT / "tests/fixtures"
+    contract = module._load_default_aa_admin_contract(fixtures)
+
+    def run(command, *, cwd, **kwargs):
+        scores = contract["full_evidence"]["expected_scores"]["strict"]
+        report = {
+            "overall_pct": 73 if drift == "legacy-scores" else scores["overall_pct"],
+            "categories": [
+                {"name": "schema hygiene", "pct": 87 if drift == "legacy-scores" else 47},
+                {
+                    "name": "attribution coverage",
+                    "pct": 100 if drift == "legacy-scores" else 14,
+                },
+            ],
+            "findings": [] if drift == "missing-aa-findings" else [
+                {"id": rule_id} for rule_id in contract["rule_ids"]
+            ],
+            "methodology": {"skipped": []},
+        }
+        (cwd / "grade.json").write_text(json.dumps(report))
+        (cwd / "grade.html").write_text("report")
+        return module.subprocess.CompletedProcess(command, 0, "", "")
+
+    monkeypatch.setattr(module, "_run", run)
+    with pytest.raises(module.CompatibilityError, match="full AA admin evidence"):
+        module._verify_default_aa_admin_full_evidence(
+            console=Path("sdr-grader"), environment={}, work_root=tmp_path / "probe",
+            fixture_root=fixtures, contract=contract,
+        )

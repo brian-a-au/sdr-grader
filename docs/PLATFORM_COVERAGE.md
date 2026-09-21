@@ -14,24 +14,21 @@ guidance. The package metadata's Python 3.11-or-newer requirement is an
 installation constraint, not a claim that every later Python or operating
 system combination has been verified.
 
-The default packs grade both CJA and AA, but the two platforms
-expose different configuration surfaces — so coverage is broader on
-CJA than on AA. Thresholds apply only where the platform exposes the
-underlying field.
-
-Bundled pack `2.1` contains 27 rule definitions. All 27 apply to CJA;
-23 apply to AA. The four CJA-only definitions below are excluded from
-AA execution and from its scoring denominator.
+Default packs `strict@3.0` and `pragmatic@3.0` each contain 31 rule
+definitions: 23 shared, four CJA-only, and four AA-only. Each platform has
+27 applicable checks. Platform-inapplicable rules are excluded from execution
+and scoring. Applicable rules with incomplete required evidence may also be
+excluded and disclosed as not assessed; availability is not proof of assessment.
 
 ## Bundled coverage inventory
 
-The `strict` and `pragmatic` 2.1 packs have the same ID and platform
-inventory; only severities and parameters differ.
+Both default packs have the same IDs and platform inventory; severities and
+parameters may differ. The existing six category weights are unchanged.
 
 | Platform | Applicable rules | Excluded IDs |
 |---|---:|---|
-| CJA | 27 | — |
-| AA | 23 | SCH-007, SCH-008, SCH-009, ATTR-004 |
+| CJA | 27 | AA-001, AA-002, AA-003, AA-004 |
+| AA | 27 | SCH-007, SCH-008, SCH-009, ATTR-004 |
 
 **Private evidence boundary.** The 108-entry private cohort contains 100 CJA
 Data Views and 8 AA report suites and is used for compatibility regression.
@@ -53,9 +50,10 @@ scoring rather than treating them as passed:
 | SCH-009 | Derived field references to missing components |
 | ATTR-004 | Data View metric attribution override without rationale |
 
-**Separate AA coverage gaps.** The grader does not yet assess these four
-AA admin areas: eVar allocation/expiration, counter versus numeric success
-events, event serialization, and merchandising product binding. These are not
+**AA administration coverage in the default packs.** Four AA-only rules
+assess configuration against declared expectations: eVar
+allocation/expiration, counter/numeric/currency success-event type, serialization,
+and merchandising settings. These are not
 one-to-one replacements for SCH-007, SCH-008, SCH-009, and ATTR-004.
 
 As checked on September 20, 2026, Adobe documents read access to eVar
@@ -68,23 +66,28 @@ The earlier blanket claim that all four areas require the legacy Admin API
 is outdated; Adobe's [1.4 retirement notice](https://developer.adobe.com/analytics-apis/docs/1.4/guides/eol/)
 gives August 31, 2026 as the retirement date.
 
-Closing these gaps requires AA-specific rules, documented input contracts,
-and evidence-aware applicability. API documentation alone does not establish
-that an installed exporter captures the fields or that a rule has been
-validated. Missing evidence must be reported as not assessed rather than
-counting as a successful check. No such new rules ship in pack 2.1.
+The [AA administration input contract](AA_ADMIN_INPUT.md) combines expanded API
+fields with supplementary observations and independent business expectations.
+Use `--extra-input aa_admin=FILE` with the default strict pack or `--pack pragmatic`.
+The standalone `--pack aa-admin` remains available for a four-rule-only report.
+It assesses only declared targets; missing or unsupported evidence excludes the
+entire affected rule from its denominator and reports it as not assessed.
+Pack 3.0 includes AA-001/AA-004 in attribution coverage and AA-002/AA-003 in
+schema hygiene. Complete evidence activates their scoring contribution; absent
+evidence preserves the earlier numeric scores and discloses the missing checks.
+Grades with different rubric versions or evidence scopes are not interchangeable.
+The four additional checks have synthetic regression and CLI coverage; live
+tenant/exporter verification remains pending. Settings agreement does not prove
+runtime event-ID delivery, deduplication, or merchandising product binding.
 
 **Honest framing.** The grader works on AA today and catches real
 bugs there (broken references, naming inconsistency, segment
 complexity, and documentation/governance gaps). It
-is not a full audit of every AA configuration choice. CJA's 27-of-27
-bundled-rule coverage likewise describes this pack, not a complete audit
-of every CJA configuration choice. If you're picking a launch tier:
-
-- **CJA**: full default-pack coverage including Data View settings.
-- **AA**: 23 applicable rules from the current bundled catalog, excluding
-  the four CJA-only definitions. The separate AA admin gaps above remain
-  unassessed until new rules and their required evidence are implemented.
+is not a full audit of every AA configuration choice. The same boundary applies
+to CJA: 27 applicable checks describes the available platform-specific inventory,
+not complete platform certification. “27 of 27 assessed” is appropriate only for
+a report whose effective inventory actually contains all 27 checks. Missing
+required inputs must remain visible, never converted into passing results.
 
 ## Reference grading policy 2.1
 
@@ -92,7 +95,8 @@ AA and CJA use the same narrow exemption in SCH-002 and CALC-002 under both
 bundled packs. Explicitly typed, unresolved calculated-metric segment references
 remain unverified and unscored. Other reference kinds, unknown or ambiguous
 identities, and references from segment consumers retain existing checks.
-The catalog still contains 27 IDs; platform applicability, suppression, and
+The reference-policy exemption is retained in the 31-ID catalog; platform applicability, suppression, and
 excluded-only policy states determine the effective count for a snapshot.
-No exporter upgrade, live API collection, or re-export is required. See
+The reference-policy behavior itself needs no exporter upgrade or re-export;
+the AA admin additions have their separate evidence contract above. See
 [Reference grading policy](REFERENCE_GRADING_POLICY.md).

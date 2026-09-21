@@ -193,7 +193,10 @@ IDs. The flag excludes only unresolved, unambiguously typed calculated-metric
 segment references; other checks and mixed penalties stay active. Excluded-only
 rules leave the severity denominator and are disclosed as not assessed.
 
-Both bundled packs are 2.1 and require grader 1.4.0 or later. An older grader
-ignores this parameter and must not be used with a policy-2.1 pack. Version text
+This parameter was introduced in pack 2.1 with grader 1.4.0 and remains enabled
+in default packs 3.0. Older graders ignore this parameter. Pack 3.0 additionally
+requires the new AA administration check implementations; the released 1.4.0
+grader cannot load it. See [AA administration evidence](AA_ADMIN_INPUT.md).
+Version text
 alone does not enable policy behavior. See
 [Reference grading policy](REFERENCE_GRADING_POLICY.md).
