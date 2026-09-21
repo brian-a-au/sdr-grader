@@ -1,0 +1,30 @@
+category: aa_administration
+rules:
+  - id: AA-001
+    name: eVar allocation and expiration differ from expectations
+    severity: high
+    platforms: [aa]
+    check: aa_allocation_expiration
+    rationale: Compare sourced configuration with explicit business expectations.
+    remediation: Review the declared expectation and correct the report-suite configuration if needed.
+  - id: AA-002
+    name: Success-event type differs from expectations
+    severity: high
+    platforms: [aa]
+    check: aa_event_type
+    rationale: Compare sourced configuration with explicit business expectations.
+    remediation: Review the declared expectation and correct the report-suite configuration if needed.
+  - id: AA-003
+    name: Event serialization differs from expectations
+    severity: high
+    platforms: [aa]
+    check: aa_serialization
+    rationale: Compare sourced configuration with explicit business expectations.
+    remediation: Review the declared expectation and correct the report-suite configuration if needed.
+  - id: AA-004
+    name: Merchandising configuration differs from expectations
+    severity: high
+    platforms: [aa]
+    check: aa_merchandising
+    rationale: Compare sourced configuration with explicit business expectations.
+    remediation: Review the declared expectation and correct the report-suite configuration if needed.

@@ -1,23 +1,34 @@
 # Platform coverage
 
-The default packs grade both CJA and AA, but the two platforms
-expose different configuration surfaces — so coverage is broader on
-CJA than on AA. Thresholds apply only where the platform exposes the
-underlying field.
+## Public preview evidence boundary
 
-Bundled pack `2.1` contains 27 rule definitions. All 27 apply to CJA;
-23 apply to AA. The four CJA-only definitions below are excluded from
-AA execution and from its scoring denominator.
+Grading is provisional. Bundled thresholds and severities reflect maintainer
+judgment, and zero implementations are currently admitted to grading
+calibration. Treat findings as review prompts: verify each one against the
+source implementation before changing production configuration.
+
+The tested preview matrix is Ubuntu with Python 3.11 and 3.12. macOS with
+Python 3.12 has historical local exercise only. Windows and later Python
+versions are unverified, although the README retains Windows examples as
+guidance. The package metadata's Python 3.11-or-newer requirement is an
+installation constraint, not a claim that every later Python or operating
+system combination has been verified.
+
+Default packs `strict@3.0` and `pragmatic@3.0` each contain 31 rule
+definitions: 23 shared, four CJA-only, and four AA-only. Each platform has
+27 applicable checks. Platform-inapplicable rules are excluded from execution
+and scoring. Applicable rules with incomplete required evidence may also be
+excluded and disclosed as not assessed; availability is not proof of assessment.
 
 ## Bundled coverage inventory
 
-The `strict` and `pragmatic` 2.1 packs have the same ID and platform
-inventory; only severities and parameters differ.
+Both default packs have the same IDs and platform inventory; severities and
+parameters may differ. The existing six category weights are unchanged.
 
 | Platform | Applicable rules | Excluded IDs |
 |---|---:|---|
-| CJA | 27 | — |
-| AA | 23 | SCH-007, SCH-008, SCH-009, ATTR-004 |
+| CJA | 27 | AA-001, AA-002, AA-003, AA-004 |
+| AA | 27 | SCH-007, SCH-008, SCH-009, ATTR-004 |
 
 **Private evidence boundary.** The 108-entry private cohort contains 100 CJA
 Data Views and 8 AA report suites and is used for compatibility regression.
@@ -28,9 +39,9 @@ thresholds apply to AA only where the underlying field shape is equivalent
 rationale and [`CALIBRATION_CORPUS.md`](CALIBRATION_CORPUS.md) for admission
 requirements.
 
-**CJA-only rules** grade Data View configuration that AA's 2.0
-Reporting API doesn't expose. They no-op on AA snapshots rather than
-false-firing:
+**CJA-only rules** grade CJA Data View and derived-field semantics. They are
+not AA rules awaiting more input fields: AA excludes them from execution and
+scoring rather than treating them as passed:
 
 | Rule | What it grades |
 |---|---|
@@ -39,26 +50,44 @@ false-firing:
 | SCH-009 | Derived field references to missing components |
 | ATTR-004 | Data View metric attribution override without rationale |
 
-**Known AA coverage gaps.** Four bug classes the audit identifies as
-high-leverage are not yet implementable from the AA 2.0 Reporting
-API alone — the underlying configuration (counter / numeric event
-types, eVar allocation+expiration, event serialization, merchandising
-eVar product binding) lives in the legacy 1.4 Admin API surface.
-Adobe has indicated these are migrating to 2.0 eventually; until
-then the rule shapes are documented in
-[`RUBRIC_AUDIT.md`](RUBRIC_AUDIT.md) so they're ready when
-the data is.
+**AA administration coverage in the default packs.** Four AA-only rules
+assess configuration against declared expectations: eVar
+allocation/expiration, counter/numeric/currency success-event type, serialization,
+and merchandising settings. These are not
+one-to-one replacements for SCH-007, SCH-008, SCH-009, and ATTR-004.
+
+As checked on September 20, 2026, Adobe documents read access to eVar
+allocation, expiration, merchandising syntax, and binding events through
+[Dimensions API expansions](https://developer.adobe.com/analytics-apis/docs/2.0/guides/endpoints/dimensions/).
+The [migration guide](https://developer.adobe.com/analytics-apis/docs/2.0/guides/migration)
+still excludes reading success-event configuration objects. Event reporting
+`type` is not proof of the configured counter/numeric type or serialization.
+The earlier blanket claim that all four areas require the legacy Admin API
+is outdated; Adobe's [1.4 retirement notice](https://developer.adobe.com/analytics-apis/docs/1.4/guides/eol/)
+gives August 31, 2026 as the retirement date.
+
+The [AA administration input contract](AA_ADMIN_INPUT.md) combines expanded API
+fields with supplementary observations and independent business expectations.
+Use `--extra-input aa_admin=FILE` with the default strict pack or `--pack pragmatic`.
+The standalone `--pack aa-admin` remains available for a four-rule-only report.
+It assesses only declared targets; missing or unsupported evidence excludes the
+entire affected rule from its denominator and reports it as not assessed.
+Pack 3.0 includes AA-001/AA-004 in attribution coverage and AA-002/AA-003 in
+schema hygiene. Complete evidence activates their scoring contribution; absent
+evidence preserves the earlier numeric scores and discloses the missing checks.
+Grades with different rubric versions or evidence scopes are not interchangeable.
+The four additional checks have synthetic regression and CLI coverage; live
+tenant/exporter verification remains pending. Settings agreement does not prove
+runtime event-ID delivery, deduplication, or merchandising product binding.
 
 **Honest framing.** The grader works on AA today and catches real
 bugs there (broken references, naming inconsistency, segment
 complexity, and documentation/governance gaps). It
-just isn't yet a full audit of every AA configuration choice the way
-it is for CJA. If you're picking a launch tier:
-
-- **CJA**: full default-pack coverage including Data View settings.
-- **AA**: full default-pack coverage minus the four
-  admin-surface rules above. Plan to revisit when Adobe ships the
-  2.0 admin endpoints.
+is not a full audit of every AA configuration choice. The same boundary applies
+to CJA: 27 applicable checks describes the available platform-specific inventory,
+not complete platform certification. “27 of 27 assessed” is appropriate only for
+a report whose effective inventory actually contains all 27 checks. Missing
+required inputs must remain visible, never converted into passing results.
 
 ## Reference grading policy 2.1
 
@@ -66,7 +95,8 @@ AA and CJA use the same narrow exemption in SCH-002 and CALC-002 under both
 bundled packs. Explicitly typed, unresolved calculated-metric segment references
 remain unverified and unscored. Other reference kinds, unknown or ambiguous
 identities, and references from segment consumers retain existing checks.
-The catalog still contains 27 IDs; platform applicability, suppression, and
+The reference-policy exemption is retained in the 31-ID catalog; platform applicability, suppression, and
 excluded-only policy states determine the effective count for a snapshot.
-No exporter upgrade, live API collection, or re-export is required. See
+The reference-policy behavior itself needs no exporter upgrade or re-export;
+the AA admin additions have their separate evidence contract above. See
 [Reference grading policy](REFERENCE_GRADING_POLICY.md).

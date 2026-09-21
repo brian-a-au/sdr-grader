@@ -1,6 +1,7 @@
 # Reference grading policy 2.1
 
-Grader 1.4.0 with bundled strict or pragmatic 2.1 excludes explicitly typed,
+Introduced in grader 1.4.0 with bundled strict or pragmatic 2.1, this policy
+remains enabled in default packs 3.0. It excludes explicitly typed,
 unresolved calculated-metric-to-segment references from SCH-002 and CALC-002.
 This applies equally to AA and CJA. The references remain unresolved and
 unverified. Snapshot absence cannot distinguish internal/project-only omissions

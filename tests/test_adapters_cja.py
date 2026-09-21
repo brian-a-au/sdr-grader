@@ -372,16 +372,25 @@ def _minimal_snapshot(*, dim_tags, metric_tags=None):
     }
 
 
-def test_string_encoded_tags_parsed_as_list() -> None:
-    """cja_auto_sdr ships `tags` as a JSON-encoded string like `'["custom"]'`.
-
-    The adapter previously called `list(record.get("tags") or [])` which
-    iterates the raw string as characters, producing tags like `'['`,
-    `'"'`, `'c'`. Verify the JSON-string form parses back to a real list.
-    """
-    impl = adapt(_minimal_snapshot(dim_tags='["custom","ga4"]'))
-    dim = impl.dimensions[0]
-    assert dim.tags == ["custom", "ga4"]
+@pytest.mark.parametrize("encoded", [False, True], ids=["native", "json-encoded"])
+@pytest.mark.parametrize(
+    ("values", "expected"),
+    [
+        (["custom", "ga4"], ["custom", "ga4"]),
+        ([{"name": "Governed", "id": "tag-ignored"}], ["Governed"]),
+        ([{"name": "", "id": "tag-id"}], ["tag-id"]),
+        ([{}, {"name": ""}, {"id": ""}], []),
+        (
+            ["first", 7, None, False, {"name": "Named"}, {"id": "last"}],
+            ["first", "7", "None", "False", "Named", "last"],
+        ),
+    ],
+    ids=["strings", "named-object", "id-fallback", "empty-objects", "mixed-order"],
+)
+def test_tag_lists_normalize_api_objects_and_scalars(values, expected, encoded) -> None:
+    raw = json.dumps(values) if encoded else values
+    impl = adapt(_minimal_snapshot(dim_tags=raw))
+    assert impl.dimensions[0].tags == expected
 
 
 def test_empty_string_tags_parsed_as_empty_list() -> None:

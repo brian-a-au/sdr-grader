@@ -137,22 +137,27 @@ not to fine-grain the population.
 ## Calibration confidence
 
 For explicitly admitted entries, `scripts/calibrate_thresholds.py` writes
-`docs/threshold_calibration.md`. Each rule gets a confidence rating:
+`docs/threshold_calibration.md`. Its `confidence` label describes only the
+amount and shape of the observed distribution:
 
-- **high** — distribution observed across ≥ 8 snapshots in both
-  platforms, with a clear inflection between healthy and unhealthy
-  populations.
-- **medium** — observed across ≥ 4 snapshots, but the distribution is
-  smooth (no obvious cut point) or the denominator is small enough that
-  individual snapshots swing the percentile noticeably.
-- **low** — fewer than 4 observations, or the underlying denominator is
-  usually < 10 (e.g. tenants with very few calc metrics make
-  "% missing description" statistically meaningless).
+- **high** — at least 8 meaningful observations, the smallest nonempty
+  denominator is at least 10, and the observed values have nonzero range.
+- **medium** — at least 4 meaningful observations, the smallest nonempty
+  denominator is at least 5, and the observed values have nonzero range, but
+  the `high` conditions are not all met.
+- **low** — fewer than 4 meaningful observations, a smallest denominator
+  below 5, or a zero-range distribution.
 
-Percentiles remain descriptive rather than outcome validation. Low-confidence
-thresholds are expert judgment, and even high-confidence distributions do not
-become a calibration claim without an independently documented healthy versus
-unhealthy outcome model.
+Zero-denominator entries are excluded per rule before `n` and the smallest
+denominator are calculated. If a measurement supplies no denominators, the
+script uses a minimum denominator of zero and labels it `low`; structural
+measurements that do supply component counts use those counts. The heuristic does not inspect
+organization independence, require both platforms, locate an inflection, or
+compare findings with known outcomes. Its percentiles and labels are
+descriptive, not evidence of accuracy. All thresholds remain maintainer
+judgment until the independent protocol in
+[`CALIBRATION_VALIDATION.md`](CALIBRATION_VALIDATION.md) is approved, run, and
+passes its predeclared acceptance criteria.
 
 ## What does **not** belong in the corpus
 

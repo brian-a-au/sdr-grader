@@ -169,7 +169,7 @@ def test_aa_messy_grade_uses_only_platform_applicable_rules(messy_aa):
     report = grade(adapt(messy_aa), load_rubric(STRICT_PACK))
 
     assert (report.overall_pct, report.grade) == (55, "F")
-    assert "encodes 23 rules across 6 active categories" in report.methodology.paragraphs[0]
+    assert "scores 23 rules across 6 active categories" in report.methodology.paragraphs[0]
     assert {"ATTR-004", "SCH-007", "SCH-008", "SCH-009"}.isdisjoint(
         finding.id for finding in report.findings
     )
@@ -181,11 +181,34 @@ def test_missing_dimensions_key_raises():
         adapt(snap)
 
 
-def test_stringified_tags_parse_as_list():
+@pytest.mark.parametrize("encoded", [False, True], ids=["native", "json-encoded"])
+@pytest.mark.parametrize(
+    ("values", "expected"),
+    [
+        (["marketing", "web"], ["marketing", "web"]),
+        ([{"name": "Governed", "id": "tag-ignored"}], ["Governed"]),
+        ([{"name": "", "id": "tag-id"}], ["tag-id"]),
+        ([{}, {"name": ""}, {"id": ""}], []),
+        (
+            ["first", 7, None, False, {"name": "Named"}, {"id": "last"}],
+            ["first", "7", "None", "False", "Named", "last"],
+        ),
+    ],
+    ids=["strings", "named-object", "id-fallback", "empty-objects", "mixed-order"],
+)
+def test_tag_lists_normalize_api_objects_and_scalars(values, expected, encoded):
     from sdr_grader.adapters.aa import _component_from_record
 
-    comp = _component_from_record({"id": "evar1", "tags": '["marketing", "web"]'}, "dimension", {})
-    assert comp.tags == ["marketing", "web"]
+    raw = json.dumps(values) if encoded else values
+    component = _component_from_record({"id": "evar1", "tags": raw}, "dimension", {})
+    assert component.tags == expected
+
+
+def test_malformed_tag_string_falls_back_to_empty():
+    from sdr_grader.adapters.aa import _component_from_record
+
+    component = _component_from_record({"id": "evar1", "tags": "not-json-{["}, "dimension", {})
+    assert component.tags == []
 
 
 def test_non_iterable_tags_become_empty():

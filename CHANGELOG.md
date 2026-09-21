@@ -3,6 +3,33 @@
 All notable changes follow the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
+**Unreleased**
+
+- Include AA-001 through AA-004 in both default rubric packs, now version 3.0:
+  31 total definitions, with 27 applicable checks each for AA and CJA. Compare
+  expanded eVar fields and supplementary event configuration against declared
+  expectations. Missing evidence is excluded and disclosed. Retain the
+  standalone `aa-admin@1.0` pack. Existing scores without AA evidence stay the
+  same; scores with assessed AA evidence use the expanded category denominators.
+  Live tenant validation is pending.
+- Make release-soak monitoring candidate-bound and inactive until explicitly
+  configured. Verify actual checkpoint jobs and start evidence, retain a full
+  timeline, and separate soak completion from human announcement approval.
+- Add tracked beta/readiness records and an independent calibration protocol.
+  Correct the AA API coverage description to distinguish supported eVar read
+  expansions from unavailable success-event configuration and CJA-only rules.
+
+- Reframe the project as a public preview with provisional, maintainer-judgment
+  grading. Document the 27 applicable checks per platform
+  and the administration evidence boundary, and require human review before
+  production changes.
+- Distinguish offline file and directory grading from credentialed, networked
+  child-generator modes. Align support claims with the verified Ubuntu/Python
+  3.11 and 3.12 matrix; describe macOS/Python 3.12 as historical local exercise
+  and retain Windows instructions as unverified guidance.
+- Mark package maturity as Beta and remove the OS-independent classifier while
+  retaining the Python 3.11-or-newer installation constraint.
+
 ## 1.4.0 — 2026-09-12
 
 - Bundled rubric policy `2.1` excludes explicitly typed, unresolved calculated-
