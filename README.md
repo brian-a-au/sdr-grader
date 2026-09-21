@@ -24,29 +24,22 @@ that child calls Adobe APIs before the local grader runs.
 
 ## Public preview scope
 
-This project is in public preview. Its grades are review aids, not certification:
-the bundled thresholds and severities reflect maintainer judgment, with no
-implementations currently admitted to grading calibration. Review every finding
-against the source implementation before changing production configuration.
+This project is in public preview. Its grades are review aids, not certification.
+The bundled thresholds and severities reflect maintainer judgment, and no
+implementation has been admitted to grading calibration yet. Review every finding
+against the source implementation before you change any production configuration.
 
-Default rubric packs `3.0` include **27 applicable checks for AA and 27 for CJA**
-from a shared catalog of 31. AA now includes eVar allocation/expiration,
-success-event type, serialization configuration, and merchandising settings
-against declared expectations. Supply their API fields and supplementary event
-configuration with `--extra-input aa_admin=aa-admin.json`; no separate pack is
-required. Missing evidence is reported as not assessed and excluded from scoring,
-so 27 available checks does not mean 27 were assessed on every snapshot.
-Configuration checks do not verify runtime event-ID delivery or product binding.
-See the [AA administration input guide](https://github.com/brian-a-au/sdr-grader/blob/v1.5.0/docs/AA_ADMIN_INPUT.md).
-The catalog includes four CJA-only and four AA-only rules; these counts do not
-claim a complete audit of either platform. See the
-[platform coverage and evidence boundary](https://github.com/brian-a-au/sdr-grader/blob/v1.5.0/docs/PLATFORM_COVERAGE.md).
+The default rubric packs include 27 checks for AA and 27 for CJA, drawn from a
+shared catalog of 31. Missing evidence is reported as not assessed and left out
+of scoring, so the number of available checks is not the number that ran on your
+snapshot. These checks read configuration only. They do not confirm runtime
+event-ID delivery or product binding. For the full check list and platform
+coverage, see the
+[platform coverage guide](https://github.com/brian-a-au/sdr-grader/blob/v1.5.0/docs/PLATFORM_COVERAGE.md).
 
-The verified preview matrix is Ubuntu with Python 3.11 and 3.12. macOS with
-Python 3.12 has historical local exercise only. Windows and later Python
-versions are unverified; their examples are retained as guidance. The package
-installation constraint remains Python 3.11 or newer and is broader than the
-verified matrix.
+The tool is verified on Ubuntu with Python 3.11 and 3.12. Other platforms and
+later Python versions are not yet verified. The package installs on Python 3.11
+or newer.
 
 **See what the rubric marks healthy. Review what to fix.**
 
@@ -67,11 +60,11 @@ calculated metric maintainability, attribution coverage, and governance posture.
 Choose `strict` for tighter thresholds or `pragmatic` for the same checks with
 more forgiving thresholds and severities.
 
-Rules assess the data in your snapshot. Unresolved references remain visible,
-but explicitly typed calculated-metric-to-segment references are unscored:
-snapshot absence cannot establish whether a segment is available or valid.
-This also leaves genuinely invalid references in that category unscored;
-other reference penalties still apply. See the
+Rules assess the data in your snapshot. Unresolved references stay visible in the
+report. A reference from a calculated metric to a segment is not scored when it
+is explicitly typed, because the snapshot alone cannot establish whether the
+segment is available or valid. This also leaves genuinely invalid references of
+that kind unscored. Other reference penalties still apply. See the
 [reference grading policy](https://github.com/brian-a-au/sdr-grader/blob/v1.5.0/docs/REFERENCE_GRADING_POLICY.md)
 for eligibility and diagnostic details.
 
@@ -200,8 +193,11 @@ rejects mixed-platform or mixed-instance input rather than combining it.
 ### Supplementary inputs
 
 Forked rubrics can read optional JSON from `Implementation.supplementary_data`.
-Attach it with repeatable `--extra-input KEY=PATH` flags; a rule whose key is
-absent stays silent. The tagged
+Attach it with repeatable `--extra-input KEY=PATH` flags. A rule whose key is
+absent stays silent. AA has extra checks that read admin evidence supplied this
+way. See the
+[AA administration input guide](https://github.com/brian-a-au/sdr-grader/blob/v1.5.0/docs/AA_ADMIN_INPUT.md).
+The tagged
 [supplementary-input contract](https://github.com/brian-a-au/sdr-grader/blob/v1.5.0/docs/SUPPLEMENTARY_INPUTS.md)
 defines keys, paths, and failure behavior.
 
