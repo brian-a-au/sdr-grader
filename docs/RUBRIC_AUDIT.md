@@ -1,7 +1,7 @@
-# Rubric audit — bundled pack 2.1
+# Rubric audit — bundled pack 3.0
 
-This premise audit is synchronized to the YAML shipped in both bundled `2.1`
-packs. `strict` and `pragmatic` contain the same 27 rule IDs in the same six
+This premise audit is synchronized to the YAML shipped in both bundled `3.0`
+packs. `strict` and `pragmatic` contain the same 31 rule IDs in the same six
 categories; their parameters and severities may differ. The YAML and registered
 check functions are the runtime authorities when this narrative drifts.
 
@@ -15,7 +15,11 @@ audits remain evidence of their recorded package versions.
 The May 2026 private-cohort work cited below was compatibility evidence, not an
 admitted grading-calibration cohort. The 108 snapshots (100 CJA, 8 AA) helped
 exercise adapters and premises, but zero entries met the later calibration
-admission contract. Thresholds therefore remain maintainer judgment.
+admission contract. Thresholds therefore remain maintainer judgment. Any future
+accuracy or validation claim must satisfy the independent, held-out outcome
+study and HOLD gate in
+[`CALIBRATION_VALIDATION.md`](CALIBRATION_VALIDATION.md); descriptive
+distribution confidence is not outcome validation.
 
 Dispositions mean:
 
@@ -27,7 +31,7 @@ Dispositions mean:
   both bundled packs. Opt-in checks are discussed separately and never counted
   as bundled rules.
 
-## Schema hygiene (8 bundled rules)
+## Schema hygiene (10 bundled rules)
 
 | Rule | Disposition | Runtime-aligned note |
 |---|---|---|
@@ -39,6 +43,8 @@ Dispositions mean:
 | SCH-007 | Solid, CJA-only | Reads the documented `persistenceSetting` extension in `Component.platform_specific` and enforces the 90-day CJA lookback cap. Persistence is graded; it is not a missing pack-2.0 capability. |
 | SCH-008 | Solid, CJA-only | Detects cycles among normalized derived-field component references. |
 | SCH-009 | Solid, CJA-only | Resolves derived-field component references after CJA namespace normalization and built-in filtering. |
+| AA-002 | Limited, AA-only evidence | Compares observed success-event counter/numeric/currency configuration with declared expectations; the reporting metric type is not evidence. |
+| AA-003 | Limited, AA-only evidence | Compares serialization settings with declared expectations; does not verify runtime event-ID delivery or deduplication. |
 
 ## Naming consistency (4 bundled rules)
 
@@ -69,12 +75,14 @@ Dispositions mean:
 | CALC-014 | Solid | Uses Jaccard similarity over normalized `CalculatedMetric.references` to find near-duplicates. |
 | CALC-015 | Solid | Finds distinct calculated metrics with identical normalized `formula_text`. |
 
-## Attribution (2 bundled rules)
+## Attribution (4 bundled rules)
 
 | Rule | Disposition | Runtime-aligned note |
 |---|---|---|
 | ATTR-003 | Solid but rare | Flags inconsistent non-empty `CalculatedMetric.attribution_model` values among metrics with the same normalized references. The premise is structural even when explicit models are uncommon. |
 | ATTR-004 | Solid, CJA-only | Reads the documented `attributionSetting` extension in metric `Component.platform_specific` and requires a description to explain a non-default Data View override. Data View attribution is graded; it is not a missing pack-2.0 capability. |
+| AA-001 | Limited, AA-only evidence | Compares normalized eVar allocation and expiration against declared expectations, including days when required. |
+| AA-004 | Limited, AA-only evidence | Compares merchandising syntax, allocation, and applicable binding IDs; does not verify runtime product binding. |
 
 `ATTR-001` (silent last-touch default) and `ATTR-002` (ratio lacking explicit
 attribution) remain registered for custom packs but are not bundled. Historical
@@ -100,22 +108,19 @@ size or sharing volume into a quality penalty.
 
 ## Remaining coverage gaps
 
-The shipped CJA persistence and Data View attribution rules close the two gaps
-claimed by older revisions of this audit. The remaining high-value gaps are
-AA admin settings that the current AA 2.0 Reporting API snapshot does not
-provide:
+The default packs now include four AA administration checks using documented
+API expansions and the versioned `aa_admin` supplementary evidence contract.
+They compare supplied settings with declared business expectations and are
+excluded with a visible explanation if any declared target lacks required
+evidence. See [AA administration evidence](AA_ADMIN_INPUT.md).
 
-1. eVar allocation and expiration combinations.
-2. Raw success-event type distinctions such as counter versus numeric.
-3. Event serialization on retry-prone conversion events.
-4. Merchandising eVar product-binding configuration.
-
-Do not implement these by probing arbitrary `Implementation.raw` paths. Add a
-documented `--extra-input KEY=PATH` contract, or wait for the upstream snapshot
-exporter to supply the setting and normalize it into an explicit model field or
-documented `platform_specific` key. Until that evidence exists, AA correctly
-runs the 23 applicable bundled rules and excludes SCH-007, SCH-008, SCH-009,
-and ATTR-004 from its scoring denominator.
+The remaining gaps are live exporter/tenant verification, runtime event-ID
+delivery and deduplication, runtime merchandising product binding, and independent
+validation of the business expectations themselves. Synthetic tests and settings
+agreement do not establish those outcomes. AA and CJA each have 27 applicable
+checks in the 31-ID catalog; effective counts depend on available evidence.
+Default pack 3.0 retains prior reference-policy exemptions and category weights,
+but changes scoring when AA administration evidence is assessed.
 
 ## Sources
 

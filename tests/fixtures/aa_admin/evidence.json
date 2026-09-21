@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "platform": "aa",
+  "report_suite_id": "suite",
+  "captured_at": "2026-09-20T00:00:00Z",
+  "source": "Synthetic fixture; event settings represent an operator-reviewed Admin export",
+  "observations": {
+    "events": [{"id": "metrics/event1", "event_type": "counter", "serialization": "use_event_id"}]
+  },
+  "expectations": {
+    "evars": [{"id": "variables/evar1", "allocation": "most_recent_last", "expiration": "day", "expiration_days": 30,
+               "merchandising_syntax": "conversion_variable", "binding_events": ["metrics/event2", "metrics/event1"]}],
+    "events": [{"id": "metrics/event1", "event_type": "counter", "serialization": "use_event_id"}]
+  }
+}

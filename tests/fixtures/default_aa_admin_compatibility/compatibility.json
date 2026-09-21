@@ -1,0 +1,62 @@
+{
+  "package_version": "1.4.0",
+  "rubric_version": "3.0",
+  "prior_rubric_version": "2.1",
+  "schema_version": 1,
+  "packs": [
+    "strict",
+    "pragmatic"
+  ],
+  "rule_ids": [
+    "AA-001",
+    "AA-002",
+    "AA-003",
+    "AA-004"
+  ],
+  "methodology_copy": {
+    "before": "The rubric encodes",
+    "after": "This assessment scores"
+  },
+  "absent_evidence": {
+    "score_change": false,
+    "skipped": [
+      {
+        "ids": ["AA-001"],
+        "reason": "Not assessed: aa_admin input absent; settings remain unverified."
+      },
+      {
+        "ids": ["AA-002"],
+        "reason": "Not assessed: aa_admin input absent; settings remain unverified."
+      },
+      {
+        "ids": ["AA-003"],
+        "reason": "Not assessed: aa_admin input absent; settings remain unverified."
+      },
+      {
+        "ids": ["AA-004"],
+        "reason": "Not assessed: aa_admin input absent; settings remain unverified."
+      }
+    ]
+  },
+  "full_evidence": {
+    "rules_are_scored": true,
+    "expected_finding_ids": [
+      "AA-001",
+      "AA-002",
+      "AA-003",
+      "AA-004"
+    ],
+    "expected_scores": {
+      "strict": {
+        "overall_pct": 54,
+        "schema_hygiene_pct": 47,
+        "attribution_coverage_pct": 14
+      },
+      "pragmatic": {
+        "overall_pct": 65,
+        "schema_hygiene_pct": 50,
+        "attribution_coverage_pct": 14
+      }
+    }
+  }
+}

@@ -4,6 +4,22 @@ description: |
   descriptions, and references in the data view.
 
 rules:
+  - id: AA-002
+    name: Success-event type differs from expectations
+    severity: high
+    platforms: [aa]
+    check: aa_event_type
+    rationale: Compare sourced configuration with explicit business expectations.
+    remediation: Review the declared expectation and correct the report-suite configuration if needed.
+
+  - id: AA-003
+    name: Event serialization differs from expectations
+    severity: high
+    platforms: [aa]
+    check: aa_serialization
+    rationale: Compare sourced configuration with explicit business expectations.
+    remediation: Review the declared expectation and correct the report-suite configuration if needed.
+
   - id: SCH-001
     name: Duplicate component names within the same component type
     severity: medium

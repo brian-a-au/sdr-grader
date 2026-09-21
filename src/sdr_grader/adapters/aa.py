@@ -148,6 +148,24 @@ def _component_from_record(
     handled = {"id", "name", "description", "type", "polarity", "tags"}
     platform_specific = {k: v for k, v in record.items() if k not in handled}
 
+    if component_type == "dimension":
+        # Preserve source separation so selected AA admin checks can reject
+        # conflicts without changing legacy pack input acceptance.
+        aliases = {
+            "allocationType": "allocation", "expirationType": "expiration",
+            "expirationCustomDays": "expiration_days", "bindingEvents": "binding_events",
+            "merchandisingSyntax": "merchandising_syntax",
+        }
+        extra = record.get("extra")
+        sources = [record, extra] if isinstance(extra, dict) else [record]
+        # API nulls mean unavailable/not applicable, never a configured default.
+        # Supplementary protocol nulls remain malformed in evidence validation.
+        platform_specific["aa_admin_sources"] = [
+            {target: source[key] for key, target in aliases.items()
+             if key in source and source[key] is not None}
+            for source in sources
+        ]
+
     return Component(
         id=str(component_id),
         name=str(name),
@@ -509,7 +527,7 @@ def _parse_tag_list(value: Any) -> list[str]:
     if value is None or value == "":
         return []
     if isinstance(value, list):
-        return [str(t) for t in value]
+        return _tag_names(value)
     if isinstance(value, str):
         try:
             parsed = json.loads(value)
@@ -520,8 +538,20 @@ def _parse_tag_list(value: Any) -> list[str]:
         validate_decoded_structure(parsed, label="tag list")
         validate_unicode_scalars(parsed, label="tag list")
         if isinstance(parsed, list):
-            return [str(t) for t in parsed]
+            return _tag_names(parsed)
     return []
+
+
+def _tag_names(values: list[Any]) -> list[str]:
+    """Keep string tags and reduce API tag objects to their useful identity."""
+    tags = []
+    for value in values:
+        if isinstance(value, dict):
+            value = value.get("name") or value.get("id")
+            if not isinstance(value, str) or not value:
+                continue
+        tags.append(str(value))
+    return tags
 
 
 def _safe_float(value: Any, default: float = 0.0) -> float:
