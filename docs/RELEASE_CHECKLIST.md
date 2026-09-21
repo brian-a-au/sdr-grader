@@ -14,8 +14,11 @@ plugin, beta, compatibility, final-audit, and 48-hour soak evidence. Missing or
 stale evidence means **Hold**, including for a public preview.
 
 - **Scoped public preview:** provisional, versioned maintainer-judgment grades;
-  CJA supports all 27 bundled rules and AA supports 23 of 27. These are snapshot
-  checks, not a complete platform audit. A current candidate-bound attestation
+  the default packs contain 31 rule definitions, with 27 applicable to each
+  platform. AA assesses all 27 only when the required administration evidence
+  is complete; absent that evidence, 23 are assessed and four are explicitly
+  unassessed. These are snapshot checks, not a complete platform audit.
+  A current candidate-bound attestation
   of zero admitted calibration entries is acceptable only with that limitation
   prominent in the public copy. Compatibility evidence is not calibration.
 - **Broader grading claims:** additionally require an independently reviewed

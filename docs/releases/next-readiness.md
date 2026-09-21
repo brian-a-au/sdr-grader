@@ -57,6 +57,72 @@ These are development checks, not approved release evidence. Package version
 refresh release-pinned documentation links before publication. Re-run the
 candidate checks and complete independent review after that freeze.
 
+### Release-preparation follow-up
+
+Read-only checks on September 20 against development commit `21b5212`:
+
+- The installed wheel's marketplace and standalone plugin both passed strict
+  validation with Claude Code 2.1.278. Installation into a fresh temporary
+  Claude profile succeeded. The installed helper's `summary`, `findings`,
+  `show`, and `compare` operations passed against synthetic reports, including
+  a suppression comparison. `show` also successfully retrieved each of the four
+  AA administration findings from an installed default-pack report.
+  This supplements development verification; the
+  frozen release workflow still uses its pinned CLI and must pass separately.
+- GitHub releases and the PyPI version index listed 1.4.0 as the latest
+  release; neither listed 1.5.0, and the remote had no `v1.5.0` tag.
+  Version 1.5.0 is a proposed minor release for
+  the new capability, not a reservation or frozen candidate. Recheck all remote
+  refs and package state when selecting it.
+- The release checklist now matches the default packs: 31 definitions,
+  27 applicable per platform, and explicit exclusions for absent AA evidence.
+  All 21 release-documentation tests passed after this correction.
+
+### Completed preparation review
+
+Review `readiness-20260920` completed over the six commits from `d4f9a8e` through
+`21b5212` (57 files), with no actionable findings retained. Correctness, security,
+testing, standards, API contracts, reliability, maintainability, and adversarial
+lenses were covered. A file-extraction suggestion was rejected because it did
+not demonstrate a concrete defect. This supersedes the earlier unavailable
+review attempt for this development scope, not the final candidate review gate.
+
+The review identified one test gap. Five new real-Git CLI scenarios now verify
+matching monitor bytes, changed bytes, a missing pinned file, a missing commit,
+and a forbidden rerun. Rejections leave both GitHub output files untouched.
+The related soak, workflow-security, and release-documentation suites passed
+85 tests; Ruff passed. A subsequent independent inspection found no defects in
+these tests or the documentation follow-up. Production code did not change.
+
+Review limits: session capacity required sequential roles in reused reviewer
+contexts. The external Claude peer could not authenticate, so an in-session
+adversarial pass was used; no cross-model corroboration is claimed. The review
+did not attest full plan completion, live tenant behavior, beta outcomes,
+hosted controls, or release approval. Reconcile those gates separately.
+
+### Hosted-control observations — September 20
+
+These observations are not publication clearance. Read-only GitHub API exports
+were retained in a private temporary evidence directory; move them into the
+restricted durable release store and refresh them against the final candidate.
+
+| Control | Observed state / remaining gap |
+| --- | --- |
+| Secret scanning / push protection / Dependabot security updates | Enabled |
+| Private vulnerability reporting | Enabled; independent non-admin route check pending |
+| `main` protection | Classic branch protection, not a branch ruleset; seven required checks, strict status checks, administrator enforcement, conversation resolution, and force-push/deletion prevention enabled |
+| Review requirements | Pull-request review configuration exists, but requires zero approving reviews; CODEOWNERS review and last-push approval are disabled. Maintainer must reconcile intended review policy before declaring this gate complete |
+| Release tag ruleset | Active ruleset `19988762`, targeting `refs/tags/v*`, has deletion and non-fast-forward prevention and no bypass actors. It has no creation restriction; it does not satisfy the checklist's full tag-creation protection requirement |
+| `pypi` environment | Required maintainer reviewer; tag policy `v*.*.*`; self-review allowed |
+| `github-release` environment | Required maintainer reviewer; tag policy `v*.*.*`; self-review allowed |
+| Public repository metadata / community files | Description, homepage, topics, README, license, contributing guide, Code of Conduct and PR template exposed by API; independent issue-form/reporting-route checks pending |
+
+No hosted settings were changed. PyPI trusted-publisher configuration,
+dependency-graph/alert clearance, private security clearance, recovery access,
+and the full history/namespace scan remain unverified. The current plan does
+not authorize hosted-control mutations; prepare and review the exact changes
+with the maintainer before applying them.
+
 ## Identity and scope
 
 | Field | Value |
