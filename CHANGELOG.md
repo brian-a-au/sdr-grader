@@ -5,6 +5,13 @@ spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
 **Unreleased**
 
+- Make release-soak monitoring candidate-bound and inactive until explicitly
+  configured. Verify actual checkpoint jobs and start evidence, retain a full
+  timeline, and separate soak completion from human announcement approval.
+- Add tracked beta/readiness records and an independent calibration protocol.
+  Correct the AA API coverage description to distinguish supported eVar read
+  expansions from unavailable success-event configuration and CJA-only rules.
+
 - Reframe the project as a public preview with provisional, maintainer-judgment
   grading. Document CJA's 27-of-27 bundled-rule coverage, AA's 23-of-27
   coverage and four unavailable admin surfaces, and require human review before

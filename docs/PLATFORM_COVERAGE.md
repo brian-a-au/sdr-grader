@@ -42,9 +42,9 @@ thresholds apply to AA only where the underlying field shape is equivalent
 rationale and [`CALIBRATION_CORPUS.md`](CALIBRATION_CORPUS.md) for admission
 requirements.
 
-**CJA-only rules** grade Data View configuration that AA's 2.0
-Reporting API doesn't expose. They no-op on AA snapshots rather than
-false-firing:
+**CJA-only rules** grade CJA Data View and derived-field semantics. They are
+not AA rules awaiting more input fields: AA excludes them from execution and
+scoring rather than treating them as passed:
 
 | Rule | What it grades |
 |---|---|
@@ -53,15 +53,26 @@ false-firing:
 | SCH-009 | Derived field references to missing components |
 | ATTR-004 | Data View metric attribution override without rationale |
 
-**Known AA coverage gaps.** Four bug classes the audit identifies as
-high-leverage are not yet implementable from the AA 2.0 Reporting
-API alone — the underlying configuration (eVar allocation and expiration,
-counter versus numeric success events, event serialization, and merchandising
-eVar product binding) lives in the legacy 1.4 Admin API surface.
-Adobe has indicated these are migrating to 2.0 eventually; until
-then the rule shapes are documented in
-[`RUBRIC_AUDIT.md`](RUBRIC_AUDIT.md) so they're ready when
-the data is.
+**Separate AA coverage gaps.** The grader does not yet assess these four
+AA admin areas: eVar allocation/expiration, counter versus numeric success
+events, event serialization, and merchandising product binding. These are not
+one-to-one replacements for SCH-007, SCH-008, SCH-009, and ATTR-004.
+
+As checked on September 20, 2026, Adobe documents read access to eVar
+allocation, expiration, merchandising syntax, and binding events through
+[Dimensions API expansions](https://developer.adobe.com/analytics-apis/docs/2.0/guides/endpoints/dimensions/).
+The [migration guide](https://developer.adobe.com/analytics-apis/docs/2.0/guides/migration)
+still excludes reading success-event configuration objects. Event reporting
+`type` is not proof of the configured counter/numeric type or serialization.
+The earlier blanket claim that all four areas require the legacy Admin API
+is outdated; Adobe's [1.4 retirement notice](https://developer.adobe.com/analytics-apis/docs/1.4/guides/eol/)
+gives August 31, 2026 as the retirement date.
+
+Closing these gaps requires AA-specific rules, documented input contracts,
+and evidence-aware applicability. API documentation alone does not establish
+that an installed exporter captures the fields or that a rule has been
+validated. Missing evidence must be reported as not assessed rather than
+counting as a successful check. No such new rules ship in pack 2.1.
 
 **Honest framing.** The grader works on AA today and catches real
 bugs there (broken references, naming inconsistency, segment
@@ -71,9 +82,9 @@ bundled-rule coverage likewise describes this pack, not a complete audit
 of every CJA configuration choice. If you're picking a launch tier:
 
 - **CJA**: full default-pack coverage including Data View settings.
-- **AA**: full default-pack coverage minus the four
-  admin-surface rules above. Plan to revisit when Adobe ships the
-  2.0 admin endpoints.
+- **AA**: 23 applicable rules from the current bundled catalog, excluding
+  the four CJA-only definitions. The separate AA admin gaps above remain
+  unassessed until new rules and their required evidence are implemented.
 
 ## Reference grading policy 2.1
 
