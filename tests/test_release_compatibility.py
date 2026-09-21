@@ -708,6 +708,7 @@ def test_default_aa_admin_layer_preserves_scores_and_historical_contract():
     policy = json.loads((fixtures / "reference_grading_policy/compatibility.json").read_text())
     contract = module._load_default_aa_admin_contract(fixtures)
 
+    assert contract["package_version"] == "1.5.0"
     assert contract["rubric_version"] == "3.0"
     assert contract["prior_rubric_version"] == "2.1"
     assert contract["rule_ids"] == ["AA-001", "AA-002", "AA-003", "AA-004"]

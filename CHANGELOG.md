@@ -3,8 +3,12 @@
 All notable changes follow the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
-**Unreleased**
+## 1.5.0 — 2026-09-20
 
+Candidate preparation; publication is pending the release checklist.
+
+- Normalize structured AA/CJA tag objects by name or ID, keeping tag-dependent
+  checks consistent with the visualizer instead of stringifying object data.
 - Include AA-001 through AA-004 in both default rubric packs, now version 3.0:
   31 total definitions, with 27 applicable checks each for AA and CJA. Compare
   expanded eVar fields and supplementary event configuration against declared
