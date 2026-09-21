@@ -1,4 +1,8 @@
 import importlib.util
+import json
+import os
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -99,3 +103,81 @@ def test_explicit_immutable_companion():
 def test_wrong_top_level_shapes_fail(config):
     with pytest.raises(ValueError):
         MODULE.validate(config)
+
+
+@pytest.mark.parametrize(
+    "scenario", ["matching", "changed", "missing-file", "missing-commit", "rerun"]
+)
+def test_cli_verifies_frozen_monitor_before_emitting_outputs(tmp_path, scenario):
+    """Exercise real git identity checks and fail-closed GitHub output writes."""
+
+    def git(*args):
+        return subprocess.check_output(
+            ["git", *args], cwd=tmp_path, text=True, stderr=subprocess.PIPE
+        ).strip()
+
+    git("init", "--quiet")
+    for name in MODULE.MONITOR_FILES:
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes((ROOT / name).read_bytes())
+    missing = MODULE.MONITOR_FILES[0]
+    tracked = [
+        name for name in MODULE.MONITOR_FILES if scenario != "missing-file" or name != missing
+    ]
+    git("add", *tracked)
+    git(
+        "-c",
+        "user.name=Soak Test",
+        "-c",
+        "user.email=soak@example.invalid",
+        "-c",
+        "commit.gpgsign=false",
+        "commit",
+        "--quiet",
+        "-m",
+        "Pin monitor fixtures",
+    )
+    config = candidate()
+    config["monitor_commit"] = (
+        "f" * 40 if scenario == "missing-commit" else git("rev-parse", "HEAD")
+    )
+    if scenario == "changed":
+        (tmp_path / missing).write_text("changed monitor bytes\n")
+    (tmp_path / "candidate.json").write_text(json.dumps(config))
+    env_output, step_output = tmp_path / "env", tmp_path / "output"
+    # Existing step output must also remain untouched on rejection.
+    env_output.write_text("EXISTING=value\n")
+    step_output.write_text("existing=value\n")
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(ROOT / ".github/scripts/validate_release_soak_config.py"),
+            "--config",
+            "candidate.json",
+            "--verify-monitor",
+            "--env-output",
+            str(env_output),
+            "--output",
+            str(step_output),
+        ],
+        cwd=tmp_path,
+        env={**os.environ, "GITHUB_RUN_ATTEMPT": "2" if scenario == "rerun" else "1"},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if scenario == "matching":
+        assert result.returncode == 0, result.stderr
+        assert "GRADER_VERSION=7.8.9\n" in env_output.read_text()
+        assert "SOAK_CONFIG_SHA=" in env_output.read_text()
+        assert "active=true\n" in step_output.read_text()
+    else:
+        assert result.returncode != 0
+        assert "release soak config invalid:" in result.stderr
+        if scenario == "changed":
+            assert "monitor bytes differ:" in result.stderr
+        elif scenario == "rerun":
+            assert "rerun attempts forbidden" in result.stderr
+        assert env_output.read_text() == "EXISTING=value\n"
+        assert step_output.read_text() == "existing=value\n"
