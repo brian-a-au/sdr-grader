@@ -772,7 +772,7 @@ def _load_default_aa_admin_contract(fixtures: Path) -> dict[str, Any]:
         contract.get("prior_rubric_version"),
         contract.get("schema_version"),
     )
-    if identity != ("1.4.0", "3.0", "2.1", 1):
+    if identity != ("1.5.0", "3.0", "2.1", 1):
         raise CompatibilityError("default-AA-admin expectation identity differs")
     return contract
 

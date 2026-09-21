@@ -195,8 +195,10 @@ rules leave the severity denominator and are disclosed as not assessed.
 
 This parameter was introduced in pack 2.1 with grader 1.4.0 and remains enabled
 in default packs 3.0. Older graders ignore this parameter. Pack 3.0 additionally
-requires the new AA administration check implementations; the released 1.4.0
-grader cannot load it. See [AA administration evidence](AA_ADMIN_INPUT.md).
+requires the new AA administration check implementations and therefore grader
+1.5.0 or the current 1.5.0 candidate. Grader 1.5.0 is not yet published, and the
+released 1.4.0 grader cannot load pack 3.0. See
+[AA administration evidence](AA_ADMIN_INPUT.md).
 Version text
 alone does not enable policy behavior. See
 [Reference grading policy](REFERENCE_GRADING_POLICY.md).
