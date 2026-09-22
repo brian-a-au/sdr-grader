@@ -3,9 +3,22 @@
 All notable changes follow the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
+## 1.5.1 — 2026-09-21
+
+Documentation and release-metadata patch; no grading behavior change. The same
+input and rubric produce the same grade as 1.5.0, apart from the version string
+in the report footer. Bundled packs stay `strict@3.0` / `pragmatic@3.0`,
+standalone `aa-admin@1.0`, and report schema 1.
+
+- Reconcile the 1.5.0 changelog note to record that the release was published,
+  keeping the distinction that publication is not announcement approval.
+- Bump package, plugin, marketplace, and release-pinned documentation identities
+  to 1.5.1 and regenerate examples so their footer carries the new version.
+
 ## 1.5.0 — 2026-09-20
 
-Candidate preparation; publication is pending the release checklist.
+Published to PyPI and GitHub on 2026-09-21 as a scoped public preview. Public
+announcement remains gated on the release checklist.
 
 - Normalize structured AA/CJA tag objects by name or ID, keeping tag-dependent
   checks consistent with the visualizer instead of stringifying object data.

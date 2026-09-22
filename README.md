@@ -5,7 +5,7 @@
 [![Lint](https://github.com/brian-a-au/sdr-grader/actions/workflows/lint.yml/badge.svg)](https://github.com/brian-a-au/sdr-grader/actions/workflows/lint.yml)
 [![Version Sync](https://github.com/brian-a-au/sdr-grader/actions/workflows/version-sync.yml/badge.svg)](https://github.com/brian-a-au/sdr-grader/actions/workflows/version-sync.yml)
 [![Python 3.11+ requirement](https://img.shields.io/badge/python-requires%203.11%2B-blue.svg)](https://www.python.org/downloads/)
-[![Coverage](https://img.shields.io/badge/coverage-99%25-brightgreen.svg)](https://github.com/brian-a-au/sdr-grader/tree/v1.5.0/tests)
+[![Coverage](https://img.shields.io/badge/coverage-99%25-brightgreen.svg)](https://github.com/brian-a-au/sdr-grader/tree/v1.5.1/tests)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/brian-a-au/sdr-grader/blob/main/LICENSE)
@@ -35,7 +35,7 @@ of scoring, so the number of available checks is not the number that ran on your
 snapshot. These checks read configuration only. They do not confirm runtime
 event-ID delivery or product binding. For the full check list and platform
 coverage, see the
-[platform coverage guide](https://github.com/brian-a-au/sdr-grader/blob/v1.5.0/docs/PLATFORM_COVERAGE.md).
+[platform coverage guide](https://github.com/brian-a-au/sdr-grader/blob/v1.5.1/docs/PLATFORM_COVERAGE.md).
 
 The tool is verified on Ubuntu with Python 3.11 and 3.12. Other platforms and
 later Python versions are not yet verified. The package installs on Python 3.11
@@ -49,9 +49,9 @@ or newer.
 
 *21-second loop · Actual report excerpts from independent synthetic snapshots.
 Click the animation for a still image.* Explore the complete
-[synthetic CJA report with no findings](https://raw.githack.com/brian-a-au/sdr-grader/v1.5.0/examples/grade-cja-clean.html),
-[diagnostic CJA report](https://raw.githack.com/brian-a-au/sdr-grader/v1.5.0/examples/grade-cja-messy.html),
-or [synthetic AA report with no findings](https://raw.githack.com/brian-a-au/sdr-grader/v1.5.0/examples/grade-aa-clean.html).
+[synthetic CJA report with no findings](https://raw.githack.com/brian-a-au/sdr-grader/v1.5.1/examples/grade-cja-clean.html),
+[diagnostic CJA report](https://raw.githack.com/brian-a-au/sdr-grader/v1.5.1/examples/grade-cja-messy.html),
+or [synthetic AA report with no findings](https://raw.githack.com/brian-a-au/sdr-grader/v1.5.1/examples/grade-aa-clean.html).
 
 ## What it grades
 
@@ -65,7 +65,7 @@ report. A reference from a calculated metric to a segment is not scored when it
 is explicitly typed, because the snapshot alone cannot establish whether the
 segment is available or valid. This also leaves genuinely invalid references of
 that kind unscored. Other reference penalties still apply. See the
-[reference grading policy](https://github.com/brian-a-au/sdr-grader/blob/v1.5.0/docs/REFERENCE_GRADING_POLICY.md)
+[reference grading policy](https://github.com/brian-a-au/sdr-grader/blob/v1.5.1/docs/REFERENCE_GRADING_POLICY.md)
 for eligibility and diagnostic details.
 
 Optional checks can use operator-supplied JSON alongside the snapshot; see
@@ -82,7 +82,7 @@ Penalties apply per failed rule, so removing some entries from a mixed finding
 may leave its score unchanged. For consistent trends and comparisons, regrade
 historical snapshots with the same package and rubric, and review CI thresholds
 when upgrading. See the
-[scoring implementation](https://github.com/brian-a-au/sdr-grader/blob/v1.5.0/src/sdr_grader/core/grade_calc.py)
+[scoring implementation](https://github.com/brian-a-au/sdr-grader/blob/v1.5.1/src/sdr_grader/core/grade_calc.py)
 for details.
 
 ## First local grade
@@ -101,18 +101,18 @@ uv tool install sdr-grader
 sdr-grader --version
 ```
 
-Download the v1.5.0 synthetic CJA snapshot.
+Download the v1.5.1 synthetic CJA snapshot.
 
 macOS and Linux:
 
 ```bash
-curl -fL -o cja_snapshot_clean.json https://raw.githubusercontent.com/brian-a-au/sdr-grader/v1.5.0/tests/fixtures/cja_snapshot_clean.json
+curl -fL -o cja_snapshot_clean.json https://raw.githubusercontent.com/brian-a-au/sdr-grader/v1.5.1/tests/fixtures/cja_snapshot_clean.json
 ```
 
 Windows PowerShell (unverified guidance):
 
 ```powershell
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/brian-a-au/sdr-grader/v1.5.0/tests/fixtures/cja_snapshot_clean.json" -OutFile "cja_snapshot_clean.json"
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/brian-a-au/sdr-grader/v1.5.1/tests/fixtures/cja_snapshot_clean.json" -OutFile "cja_snapshot_clean.json"
 ```
 
 Grade it with the installed command (Windows use is unverified):
@@ -196,9 +196,9 @@ Forked rubrics can read optional JSON from `Implementation.supplementary_data`.
 Attach it with repeatable `--extra-input KEY=PATH` flags. A rule whose key is
 absent stays silent. AA has extra checks that read admin evidence supplied this
 way. See the
-[AA administration input guide](https://github.com/brian-a-au/sdr-grader/blob/v1.5.0/docs/AA_ADMIN_INPUT.md).
+[AA administration input guide](https://github.com/brian-a-au/sdr-grader/blob/v1.5.1/docs/AA_ADMIN_INPUT.md).
 The tagged
-[supplementary-input contract](https://github.com/brian-a-au/sdr-grader/blob/v1.5.0/docs/SUPPLEMENTARY_INPUTS.md)
+[supplementary-input contract](https://github.com/brian-a-au/sdr-grader/blob/v1.5.1/docs/SUPPLEMENTARY_INPUTS.md)
 defines keys, paths, and failure behavior.
 
 ## Output
@@ -208,7 +208,7 @@ defines keys, paths, and failure behavior.
   CSS or JavaScript.
 - **JSON output** at `--json PATH` uses schema `1` and contains stable instance,
   adapter, rubric, and grader identity plus the complete report model. See the
-  tagged [JSON output contract](https://github.com/brian-a-au/sdr-grader/blob/v1.5.0/docs/JSON_OUTPUT.md).
+  tagged [JSON output contract](https://github.com/brian-a-au/sdr-grader/blob/v1.5.1/docs/JSON_OUTPUT.md).
 
 ### HTML color packs
 
@@ -249,42 +249,42 @@ Rendered examples for this release:
 
 | | Clean (A) | Messy (F) |
 |---|---|---|
-| **CJA** | [CJA clean](https://raw.githack.com/brian-a-au/sdr-grader/v1.5.0/examples/grade-cja-clean.html) | [CJA messy](https://raw.githack.com/brian-a-au/sdr-grader/v1.5.0/examples/grade-cja-messy.html) |
-| **AA** | [AA clean](https://raw.githack.com/brian-a-au/sdr-grader/v1.5.0/examples/grade-aa-clean.html) | [AA messy](https://raw.githack.com/brian-a-au/sdr-grader/v1.5.0/examples/grade-aa-messy.html) |
+| **CJA** | [CJA clean](https://raw.githack.com/brian-a-au/sdr-grader/v1.5.1/examples/grade-cja-clean.html) | [CJA messy](https://raw.githack.com/brian-a-au/sdr-grader/v1.5.1/examples/grade-cja-messy.html) |
+| **AA** | [AA clean](https://raw.githack.com/brian-a-au/sdr-grader/v1.5.1/examples/grade-aa-clean.html) | [AA messy](https://raw.githack.com/brian-a-au/sdr-grader/v1.5.1/examples/grade-aa-messy.html) |
 
 ## Troubleshooting
 
 Missing generators, Adobe authentication, incomplete inventories, platform
 detection, directory mixing, compatibility warnings, output paths, and privacy
 are covered in the tagged
-[troubleshooting guide](https://github.com/brian-a-au/sdr-grader/blob/v1.5.0/docs/TROUBLESHOOTING.md).
+[troubleshooting guide](https://github.com/brian-a-au/sdr-grader/blob/v1.5.1/docs/TROUBLESHOOTING.md).
 
 Before sharing an HTML or JSON report, follow the current
 [report-sharing privacy matrix](https://github.com/brian-a-au/sdr-grader/blob/main/SECURITY.md#report-sharing-privacy-matrix).
 
 ## Integrating sdr-grader
 
-- [CI integration](https://github.com/brian-a-au/sdr-grader/blob/v1.5.0/docs/CI_INTEGRATION.md) — use `--fail-below` safely in automation.
-- [Trend reports](https://github.com/brian-a-au/sdr-grader/blob/v1.5.0/docs/TREND_REPORTS.md) — filename conventions and flag interactions.
-- [Internal leaderboards](https://github.com/brian-a-au/sdr-grader/blob/v1.5.0/docs/LEADERBOARDS.md) — build a distribution reference from collected JSON outputs.
-- [Supplementary inputs](https://github.com/brian-a-au/sdr-grader/blob/v1.5.0/docs/SUPPLEMENTARY_INPUTS.md) — attach repeatable `--extra-input KEY=PATH` data.
-- [Claude Code skill](https://github.com/brian-a-au/sdr-grader/tree/v1.5.0/skills/sdr-grader) — query a grade without rerunning the grader.
+- [CI integration](https://github.com/brian-a-au/sdr-grader/blob/v1.5.1/docs/CI_INTEGRATION.md) — use `--fail-below` safely in automation.
+- [Trend reports](https://github.com/brian-a-au/sdr-grader/blob/v1.5.1/docs/TREND_REPORTS.md) — filename conventions and flag interactions.
+- [Internal leaderboards](https://github.com/brian-a-au/sdr-grader/blob/v1.5.1/docs/LEADERBOARDS.md) — build a distribution reference from collected JSON outputs.
+- [Supplementary inputs](https://github.com/brian-a-au/sdr-grader/blob/v1.5.1/docs/SUPPLEMENTARY_INPUTS.md) — attach repeatable `--extra-input KEY=PATH` data.
+- [Claude Code skill](https://github.com/brian-a-au/sdr-grader/tree/v1.5.1/skills/sdr-grader) — query a grade without rerunning the grader.
 
 ## Extending sdr-grader
 
 Start with the tagged
-[customization guide](https://github.com/brian-a-au/sdr-grader/blob/v1.5.0/docs/CUSTOMIZATION.md),
+[customization guide](https://github.com/brian-a-au/sdr-grader/blob/v1.5.1/docs/CUSTOMIZATION.md),
 then choose the narrowest extension surface:
 
-- [Project configuration](https://github.com/brian-a-au/sdr-grader/blob/v1.5.0/docs/PROJECT_CONFIG.md) — suppressions in `.sdr-grader.yaml`.
-- [Rubric format](https://github.com/brian-a-au/sdr-grader/blob/v1.5.0/docs/RUBRIC_FORMAT.md) — fork or create a YAML pack.
-- [Check-function guide](https://github.com/brian-a-au/sdr-grader/blob/v1.5.0/docs/CHECK_FUNCTION_GUIDE.md) — add rule logic.
-- [Adapter guide](https://github.com/brian-a-au/sdr-grader/blob/v1.5.0/docs/ADAPTER_GUIDE.md) — add a platform in a source checkout.
+- [Project configuration](https://github.com/brian-a-au/sdr-grader/blob/v1.5.1/docs/PROJECT_CONFIG.md) — suppressions in `.sdr-grader.yaml`.
+- [Rubric format](https://github.com/brian-a-au/sdr-grader/blob/v1.5.1/docs/RUBRIC_FORMAT.md) — fork or create a YAML pack.
+- [Check-function guide](https://github.com/brian-a-au/sdr-grader/blob/v1.5.1/docs/CHECK_FUNCTION_GUIDE.md) — add rule logic.
+- [Adapter guide](https://github.com/brian-a-au/sdr-grader/blob/v1.5.1/docs/ADAPTER_GUIDE.md) — add a platform in a source checkout.
 
 ## Maintaining sdr-grader
 
 These are source-checkout workflows. Run them from the repository root after
-cloning the [v1.5.0 source tree](https://github.com/brian-a-au/sdr-grader/tree/v1.5.0):
+cloning the [v1.5.1 source tree](https://github.com/brian-a-au/sdr-grader/tree/v1.5.1):
 
 ```bash
 uv sync
@@ -298,11 +298,11 @@ uv run python scripts/generate_trend_example.py
 
 Maintainer references:
 
-- [Platform coverage](https://github.com/brian-a-au/sdr-grader/blob/v1.5.0/docs/PLATFORM_COVERAGE.md) — CJA/AA compatibility evidence and known gaps.
-- [Calibration corpus](https://github.com/brian-a-au/sdr-grader/blob/v1.5.0/docs/CALIBRATION_CORPUS.md) — private compatibility and calibration admission.
-- [Threshold calibration](https://github.com/brian-a-au/sdr-grader/blob/v1.5.0/docs/threshold_calibration.md) — admitted-cohort status.
-- [Rubric audit](https://github.com/brian-a-au/sdr-grader/blob/v1.5.0/docs/RUBRIC_AUDIT.md) — rule premises against Adobe documentation.
-- [Release checklist](https://github.com/brian-a-au/sdr-grader/blob/v1.5.0/docs/RELEASE_CHECKLIST.md) — publication, recovery, and announcement gates.
+- [Platform coverage](https://github.com/brian-a-au/sdr-grader/blob/v1.5.1/docs/PLATFORM_COVERAGE.md) — CJA/AA compatibility evidence and known gaps.
+- [Calibration corpus](https://github.com/brian-a-au/sdr-grader/blob/v1.5.1/docs/CALIBRATION_CORPUS.md) — private compatibility and calibration admission.
+- [Threshold calibration](https://github.com/brian-a-au/sdr-grader/blob/v1.5.1/docs/threshold_calibration.md) — admitted-cohort status.
+- [Rubric audit](https://github.com/brian-a-au/sdr-grader/blob/v1.5.1/docs/RUBRIC_AUDIT.md) — rule premises against Adobe documentation.
+- [Release checklist](https://github.com/brian-a-au/sdr-grader/blob/v1.5.1/docs/RELEASE_CHECKLIST.md) — publication, recovery, and announcement gates.
 
 ## Community
 
