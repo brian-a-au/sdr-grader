@@ -175,16 +175,16 @@ rules are assessed and the score is 67, not 75. This explicit gating is specific
 to AA admin checks; older supplementary checks may stay silent while still
 remaining in their rubric's denominator.
 
-Default pack 3.0 is a scoring-policy change from 2.1 and requires grader 1.5.0
-or the current 1.5.0 candidate. Complete AA evidence adds
+Default pack 3.0 is a scoring-policy change from 2.1 and requires grader 1.5.1
+or the current 1.5.1 candidate. Complete AA evidence adds
 the rules to their category severity denominators; a mismatch can lower a score,
 and a passing rule can change the relative share of existing failures. Without
 AA admin evidence the four rules are excluded, preserving prior numeric scores
 while adding explicit skipped-rule disclosures. CJA scores are unchanged.
 Regrade comparison snapshots under one pack version; do not compare a standalone
 four-rule score with the full default-pack score. The released grader 1.4.0
-cannot load pack 3.0 because it lacks these checks. Until 1.5.0 is published,
-use only the current 1.5.0 candidate build for pack 3.0 evaluation. Do not copy
+cannot load pack 3.0 because it lacks these checks. Until 1.5.1 is published,
+use only the current 1.5.1 candidate build for pack 3.0 evaluation. Do not copy
 pack 3.0 into a released 1.4.0 installation. Historical pack 2.1 policy
 references for grader 1.4.0 remain valid.
 
