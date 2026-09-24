@@ -264,6 +264,8 @@ control change.
       3.11/3.12 installs match the candidate.
 - [ ] Remote Claude marketplace install and summary/findings/show/compare
       operations pass.
+- [ ] GitHub Pages shows this published tag and all six synthetic examples
+      generated from it; check the landing page and report links after deploy.
 
 ## Announcement approval
 
