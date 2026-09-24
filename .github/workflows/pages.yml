@@ -1,0 +1,96 @@
+name: pages
+
+on:
+  push:
+    branches: [main]
+  release:
+    types: [published]
+  workflow_dispatch:
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          ref: main
+
+      - name: Preserve site template
+        run: cp pages/index.html "${RUNNER_TEMP}/pages-index.html"
+
+      - name: Select latest published release
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="$(gh api "repos/${GITHUB_REPOSITORY}/releases/latest" --jq '.tag_name')"
+          [[ "${TAG}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          echo "tag=${TAG}" >> "${GITHUB_OUTPUT}"
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          ref: ${{ steps.release.outputs.tag }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          version: 0.11.16
+          enable-cache: true
+          prune-cache: false
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Sync release dependencies
+        run: uv sync --locked --all-extras --dev
+
+      - name: Verify release identity
+        env:
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+        run: python3 scripts/check_version_sync.py --tag "${RELEASE_TAG}"
+
+      - name: Regenerate release examples
+        run: |
+          uv run python scripts/generate_examples.py
+          uv run python scripts/generate_grade_examples.py
+          uv run python scripts/generate_trend_example.py
+          git diff --exit-code -- examples/
+
+      - name: Assemble site
+        env:
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p _site
+          cp examples/*.html _site/
+          sed "s/__RELEASE_TAG__/${RELEASE_TAG}/g" "${RUNNER_TEMP}/pages-index.html" > _site/index.html
+          test -s _site/index.html
+          test "$(find _site -maxdepth 1 -name '*.html' | wc -l)" -eq 7
+
+      - name: Upload site
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
+        with:
+          path: _site
+
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5

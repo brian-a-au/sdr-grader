@@ -23,6 +23,7 @@ from sdr_grader.rules.rubric import VALID_PLATFORMS, load_rubric
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 REPOSITORY_URL = "https://github.com/brian-a-au/sdr-grader"
+PAGES_URL = "https://brian-a-au.github.io/sdr-grader/"
 RELEASE_TAG = "v1.5.1"
 
 
@@ -222,7 +223,7 @@ def test_project_metadata_exposes_complete_release_urls_and_markdown_readme():
 
     assert project["readme"] == {"file": "README.md", "content-type": "text/markdown"}
     assert project["urls"] == {
-        "Homepage": REPOSITORY_URL,
+        "Homepage": PAGES_URL,
         "Documentation": f"{REPOSITORY_URL}/blob/{RELEASE_TAG}/README.md",
         "Source": f"{REPOSITORY_URL}/tree/{RELEASE_TAG}",
         "Issues": f"{REPOSITORY_URL}/issues",

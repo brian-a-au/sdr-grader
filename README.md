@@ -49,9 +49,9 @@ or newer.
 
 *21-second loop · Actual report excerpts from independent synthetic snapshots.
 Click the animation for a still image.* Explore the complete
-[synthetic CJA report with no findings](https://raw.githack.com/brian-a-au/sdr-grader/v1.5.1/examples/grade-cja-clean.html),
-[diagnostic CJA report](https://raw.githack.com/brian-a-au/sdr-grader/v1.5.1/examples/grade-cja-messy.html),
-or [synthetic AA report with no findings](https://raw.githack.com/brian-a-au/sdr-grader/v1.5.1/examples/grade-aa-clean.html).
+[synthetic CJA report with no findings](https://brian-a-au.github.io/sdr-grader/grade-cja-clean.html),
+[diagnostic CJA report](https://brian-a-au.github.io/sdr-grader/grade-cja-messy.html),
+or [synthetic AA report with no findings](https://brian-a-au.github.io/sdr-grader/grade-aa-clean.html).
 
 ## What it grades
 
@@ -245,12 +245,12 @@ structure. Print-specific foreground, background, and border roles are also
 tested. Every palette remains embedded in the same self-contained HTML, so
 reports continue to work offline without external CSS or JavaScript.
 
-Rendered examples for this release:
+Rendered examples from the [latest published release](https://brian-a-au.github.io/sdr-grader/):
 
 | | Clean (A) | Messy (F) |
 |---|---|---|
-| **CJA** | [CJA clean](https://raw.githack.com/brian-a-au/sdr-grader/v1.5.1/examples/grade-cja-clean.html) | [CJA messy](https://raw.githack.com/brian-a-au/sdr-grader/v1.5.1/examples/grade-cja-messy.html) |
-| **AA** | [AA clean](https://raw.githack.com/brian-a-au/sdr-grader/v1.5.1/examples/grade-aa-clean.html) | [AA messy](https://raw.githack.com/brian-a-au/sdr-grader/v1.5.1/examples/grade-aa-messy.html) |
+| **CJA** | [CJA clean](https://brian-a-au.github.io/sdr-grader/grade-cja-clean.html) | [CJA messy](https://brian-a-au.github.io/sdr-grader/grade-cja-messy.html) |
+| **AA** | [AA clean](https://brian-a-au.github.io/sdr-grader/grade-aa-clean.html) | [AA messy](https://brian-a-au.github.io/sdr-grader/grade-aa-messy.html) |
 
 ## Troubleshooting
 

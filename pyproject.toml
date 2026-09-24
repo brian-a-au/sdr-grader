@@ -34,7 +34,7 @@ dependencies = [
 sdr-grader = "sdr_grader.cli.main:main"
 
 [project.urls]
-Homepage = "https://github.com/brian-a-au/sdr-grader"
+Homepage = "https://brian-a-au.github.io/sdr-grader/"
 Documentation = "https://github.com/brian-a-au/sdr-grader/blob/v1.5.1/README.md"
 Source = "https://github.com/brian-a-au/sdr-grader/tree/v1.5.1"
 Issues = "https://github.com/brian-a-au/sdr-grader/issues"
