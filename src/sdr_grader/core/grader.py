@@ -27,7 +27,7 @@ from sdr_grader.core.reference_policy import (
     ReferenceAssessment,
 )
 from sdr_grader.core.segment_identity import validate_segment_identities
-from sdr_grader.core.timeparse import parse_timestamp
+from sdr_grader.core.timeparse import parse_snapshot_timestamp
 from sdr_grader.render import (
     Adapter,
     Category,
@@ -53,8 +53,8 @@ TOP_REMEDIATIONS = 5
 SEVERITY_TO_PRIORITY_WEIGHT = {"critical": 10, "high": 5, "medium": 3, "low": 1}
 SEVERITY_RANK = {"critical": 0, "high": 1, "medium": 2, "low": 3}
 
-# Stable fallback timestamp when the snapshot has none. Documented so the
-# determinism golden never depends on wall-clock state.
+# Legacy schema-1 sentinel for missing/unrecognized snapshot timestamps.
+# generated_at_source identifies it; renderers must not present it as a date.
 _FALLBACK_GENERATED_AT = datetime(2026, 1, 1, 0, 0, tzinfo=UTC)
 
 _PLATFORM_NOUN = {"cja": "data view", "aa": "report suite"}
@@ -84,7 +84,8 @@ def grade(
     findings = apply_to_findings(raw_findings, suppression) if suppression else raw_findings
     result = compute_grade(rubric, findings, rule_inventory=rule_inventory)
 
-    generated_at = _resolve_generated_at(impl.snapshot_taken_at)
+    snapshot_timestamp = _resolve_generated_at(impl.snapshot_taken_at)
+    generated_at = snapshot_timestamp or _FALLBACK_GENERATED_AT
     components_evaluated = _component_count(impl)
     rules_by_id = {r.id: r for r in rule_inventory}
 
@@ -104,6 +105,7 @@ def grade(
         ),
         rubric=RenderRubric(pack=rubric.pack, version=rubric.version),
         generated_at=generated_at,
+        generated_at_source="snapshot" if snapshot_timestamp is not None else "fallback",
         tldr_html=_build_tldr(impl, rubric, result),
         categories=[_render_category(cs) for cs in result.categories],
         remediations=_derive_remediations(rules_by_id, findings),
@@ -362,10 +364,8 @@ def _compact_text(text: str) -> str:
     return " ".join(text.split())
 
 
-def _resolve_generated_at(snapshot_taken_at: str | None) -> datetime:
-    if not snapshot_taken_at:
-        return _FALLBACK_GENERATED_AT
-    return parse_timestamp(snapshot_taken_at) or _FALLBACK_GENERATED_AT
+def _resolve_generated_at(snapshot_taken_at: str | None) -> datetime | None:
+    return parse_snapshot_timestamp(snapshot_taken_at)
 
 
 _INSTANCE_TOKEN_RE = re.compile(r"[^A-Z0-9]+")

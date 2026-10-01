@@ -538,6 +538,28 @@ def test_correctness_normalizes_only_package_version():
     assert payload['tool_version'] == '1.3.0'
 
 
+@pytest.mark.parametrize("source", ["snapshot", "fallback"])
+def test_timestamp_provenance_is_the_only_new_compatibility_allowance(source):
+    module = _load_module()
+    report = {"generated_at": "2026-01-01T00:00:00Z", "generated_at_source": source,
+              "categories": [], "findings": [], "overall_pct": 100}
+    normalized = module._correctness_payload({"report": report})["report"]
+    assert normalized == {key: value for key, value in report.items()
+                          if key != "generated_at_source"}
+    assert report["generated_at_source"] == source
+    changed = {**report, "overall_pct": 99}
+    assert module._correctness_payload(changed)["overall_pct"] == 99
+
+
+@pytest.mark.parametrize("source,timestamp", [(None, "2026-01-01T00:00:00Z"),
+                                            ("unknown", "2026-01-01T00:00:00Z"),
+                                            ("fallback", "2026-09-30T00:00:00Z")])
+def test_compatibility_rejects_invalid_timestamp_provenance(source, timestamp):
+    module = _load_module()
+    with pytest.raises(module.CompatibilityError):
+        module._normalize_report({"generated_at_source": source, "generated_at": timestamp})
+
+
 def test_correctness_fetch_rejects_moved_baseline(monkeypatch):
     module = _load_module()
     commands = []

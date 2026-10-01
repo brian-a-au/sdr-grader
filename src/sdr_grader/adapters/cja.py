@@ -29,6 +29,7 @@ from sdr_grader.core.structure_limits import (
     validate_snapshot_structure,
     validate_unicode_scalars,
 )
+from sdr_grader.core.timeparse import select_snapshot_timestamp
 
 
 def adapt(snapshot: dict[str, Any], *, source: str = "<unknown>") -> Implementation:
@@ -59,20 +60,16 @@ def adapt(snapshot: dict[str, Any], *, source: str = "<unknown>") -> Implementat
         or metadata.get("dataViewName")
         or instance_id
     )
-    snapshot_taken_at = (
-        metadata.get("Generation Timestamp")
-        or metadata.get("generation_timestamp")
-        or metadata.get("generated_at")
+    snapshot_taken_at = select_snapshot_timestamp(
+        metadata.get("Generation Timestamp"),
+        metadata.get("generation_timestamp"),
+        metadata.get("generated_at"),
         # The key real cja_auto_sdr exports actually carry (value like
         # "2026-05-20 10:56:29 PDT"). The grader parses the explicit
         # timezone allowlist without consulting host locale settings.
         # Found via the private corpus, 2026-07-17.
-        or metadata.get("Generated Date & timestamp and timezone")
+        metadata.get("Generated Date & timestamp and timezone"),
     )
-    if isinstance(snapshot_taken_at, str):
-        snapshot_taken_at = snapshot_taken_at.strip() or None
-    else:
-        snapshot_taken_at = None
 
     adapter_version = (
         metadata.get("Tool Version")

@@ -24,7 +24,7 @@ from sdr_grader.rules.rubric import VALID_PLATFORMS, load_rubric
 REPO_ROOT = Path(__file__).resolve().parent.parent
 REPOSITORY_URL = "https://github.com/brian-a-au/sdr-grader"
 PAGES_URL = "https://brian-a-au.github.io/sdr-grader/"
-RELEASE_TAG = "v1.5.1"
+RELEASE_TAG = "v1.5.2"
 
 
 def _markdown_targets(document: str) -> list[str]:
@@ -166,7 +166,7 @@ def test_readme_first_run_is_auth_free_and_platform_complete():
     first_run = readme.split("## First local grade", 1)[1].split("## ", 1)[0]
     fixture_url = (
         "https://raw.githubusercontent.com/brian-a-au/sdr-grader/"
-        "v1.5.1/tests/fixtures/cja_snapshot_clean.json"
+        "v1.5.2/tests/fixtures/cja_snapshot_clean.json"
     )
 
     assert "cja_auto_sdr" in first_run and "aa_auto_sdr" in first_run
@@ -446,8 +446,8 @@ def test_security_is_the_five_surface_privacy_authority():
     assert "../SECURITY.md" in ci
     assert "JSON_OUTPUT.md" in ci
     for document in (skill_readme, skill):
-        assert "blob/v1.5.1/docs/JSON_OUTPUT.md" in document
-        assert "blob/v1.5.1/SECURITY.md#report-sharing-privacy-matrix" in document
+        assert "blob/v1.5.2/docs/JSON_OUTPUT.md" in document
+        assert "blob/v1.5.2/SECURITY.md#report-sharing-privacy-matrix" in document
 
 
 def test_claude_skill_requires_user_paths_consent_and_inert_data():

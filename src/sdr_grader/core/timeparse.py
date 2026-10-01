@@ -1,6 +1,6 @@
 """Shared timestamp parsing (spec F4).
 
-One parser for every metadata timestamp the grader reads. Accepts
+Shared ISO parsing with separate rule and snapshot abbreviation allowlists. Accepts
 ISO-8601 with optional fractional seconds, trailing 'Z', numeric UTC
 offsets, space or 'T' separators, and bare dates. Returns UTC-aware
 datetimes so downstream formatting never depends on the machine's
@@ -22,6 +22,16 @@ _ABBREVIATION_OFFSETS = {
     "UTC": 0,
 }
 
+# Exporter metadata uses the host's timezone abbreviation. Keep reporting's
+# extra fixed offsets separate from rule-date parsing, so this presentation
+# fix does not change custom governance assessments. Ambiguous abbreviations
+# such as CST, IST, and BST need an explicit numeric offset instead.
+_SNAPSHOT_ABBREVIATION_OFFSETS = {
+    **_ABBREVIATION_OFFSETS,
+    "CET": 1, "CEST": 2, "EET": 2, "EEST": 3,
+    "EST": -5, "EDT": -4, "MST": -7, "MDT": -6,
+}
+
 
 def to_utc(value: datetime) -> datetime:
     """Return an aware UTC datetime; naive input is treated as UTC."""
@@ -37,6 +47,24 @@ def parse_timestamp(value: str) -> datetime | None:
     Unknown or ambiguous abbreviations fail deterministically rather than
     consulting the host locale or timezone database.
     """
+    return _parse_timestamp(value, _ABBREVIATION_OFFSETS)
+
+
+def parse_snapshot_timestamp(value: str | None) -> datetime | None:
+    """Resolve an exporter timestamp using explicit, host-independent offsets."""
+    return _parse_timestamp(value, _SNAPSHOT_ABBREVIATION_OFFSETS)
+
+
+def select_snapshot_timestamp(*values: object) -> str | None:
+    """Prefer the first usable alias; retain unrecognized text if none parses."""
+    candidates = [value.strip() for value in values if isinstance(value, str) and value.strip()]
+    for candidate in candidates:
+        if parse_snapshot_timestamp(candidate) is not None:
+            return candidate
+    return candidates[0] if candidates else None
+
+
+def _parse_timestamp(value: str | None, offsets: dict[str, int]) -> datetime | None:
     if not isinstance(value, str):
         return None
     candidate = value.strip()
@@ -45,7 +73,7 @@ def parse_timestamp(value: str) -> datetime | None:
     abbreviation_match = _ABBREVIATION_SUFFIX.fullmatch(candidate)
     if abbreviation_match is not None:
         abbreviation = abbreviation_match.group("abbreviation").upper()
-        offset_hours = _ABBREVIATION_OFFSETS.get(abbreviation)
+        offset_hours = offsets.get(abbreviation)
         if offset_hours is None:
             return None
         try:

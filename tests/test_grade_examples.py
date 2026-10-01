@@ -117,6 +117,7 @@ def test_grade_example_json_shape_and_exit_behavior_are_locked(platform, kind, t
         "distribution",
         "findings",
         "generated_at",
+        "generated_at_source",
         "grade",
         "id",
         "instance_id",
