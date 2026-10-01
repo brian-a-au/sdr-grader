@@ -245,7 +245,7 @@ def _environment_paths(environment_root: Path) -> tuple[Path, Path]:
 
 
 def _normalize_report(payload: dict[str, Any]) -> dict[str, Any]:
-    normalized = copy.deepcopy(payload)
+    normalized = _legacy_timestamp_fields(copy.deepcopy(payload))
     normalized[NORMALIZED_VERSION_FIELD] = "<normalized-version>"
     methodology = normalized.get("methodology")
     if isinstance(methodology, dict) and "paragraphs" in methodology:
@@ -256,6 +256,18 @@ def _normalize_report(payload: dict[str, Any]) -> dict[str, Any]:
             if isinstance(chart, dict) and "label" in chart:
                 chart["label"] = "<normalized-copy>"
     return normalized
+
+
+def _legacy_timestamp_fields(report: dict[str, Any]) -> dict[str, Any]:
+    """Compare schema-1 fields while validating the additive timestamp source."""
+    if "generated_at_source" not in report:
+        return report
+    source = report.pop("generated_at_source")
+    if source not in ("snapshot", "fallback"):
+        raise CompatibilityError("invalid generated_at_source")
+    if source == "fallback" and report.get("generated_at") != "2026-01-01T00:00:00Z":
+        raise CompatibilityError("timestamp fallback must retain the schema-1 sentinel")
+    return report
 
 
 def _expected_candidate_from_baseline(baseline: dict[str, Any]) -> dict[str, Any]:
@@ -633,8 +645,10 @@ CORRECTNESS_BASELINE_COMMIT = "9687fcc66622d454cc121cd49daa319c0c01a939"
 
 
 def _correctness_payload(value: Any) -> Any:
-    """Only package identity differs unconditionally; retain every other field."""
+    """Normalize package identity and the validated additive timestamp source."""
     if isinstance(value, dict):
+        if {"generated_at", "findings", "categories"}.issubset(value):
+            value = _legacy_timestamp_fields(dict(value))
         return {k: "<package-version>" if k == "tool_version" else _correctness_payload(v)
                 for k, v in value.items()}
     if isinstance(value, list):

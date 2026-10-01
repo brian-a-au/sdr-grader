@@ -25,11 +25,19 @@ Use these fields when identifying or comparing evaluations:
 | Grader identity | `tool_version`, `tool_url` |
 | Grade result | `grade`, `overall_pct`, `categories[]` |
 | Audit result | `findings[]`, `remediations[]`, `methodology` |
-| Evaluation time | `generated_at` |
+| Snapshot capture time | `generated_at`, `generated_at_source` |
 
 `id` is the report's synthetic display identifier. Use `instance_id`, not `id`
 or the human-readable `instance_name`, as the stable implementation identity.
 `generated_at` is an ISO-8601 UTC string ending in `Z`.
+It represents the input snapshot's capture time, rather than when grading ran.
+Check `generated_at_source` before treating this value as evidence: `snapshot`
+means a timestamp was resolved from the input; `fallback` means it was missing
+or unrecognized. For schema-1 compatibility, fallback reports retain the legacy
+`2026-01-01T00:00:00Z` sentinel and synthetic dated ID. The HTML report displays
+“Timestamp unavailable” in that case. A genuine Jan 1 timestamp has source
+`snapshot`; consumers must not infer availability from the date alone.
+`generated_at_source` is an additive field; reports from older versions may omit it.
 
 ## Complete serialized shape
 
@@ -51,7 +59,8 @@ or the human-readable `instance_name`, as the stable implementation identity.
 | `rubric` | `object` | yes | Rubric pack identity |
 | `rubric.pack` | `string` | yes | Pack name |
 | `rubric.version` | `string` | yes | Pack version |
-| `generated_at` | `string` | yes | Evaluation timestamp in ISO-8601 UTC |
+| `generated_at` | `string` | yes | Snapshot capture timestamp in ISO-8601 UTC, or the legacy sentinel when source is `fallback` |
+| `generated_at_source` | `string` | yes | `snapshot` for a resolved input timestamp; `fallback` for missing or unrecognized input |
 | `tldr_html` | `string` | yes | Generated summary containing reviewed HTML fragments |
 | `categories` | `array` | yes | Category score records |
 | `categories[]` | `object` | yes | One category score |

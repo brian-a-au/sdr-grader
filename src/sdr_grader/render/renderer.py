@@ -174,6 +174,7 @@ class Report:
     distribution: Distribution | None = None
     tool_version: str = _PACKAGE_VERSION
     tool_url: str = "https://github.com/brian-a-au/sdr-grader"
+    generated_at_source: Literal["snapshot", "fallback"] = "snapshot"
 
 
 # ---------------------------------------------------------------------------
@@ -284,6 +285,7 @@ def render(report: Report, color_pack: str = "default") -> str:
         "rubric": asdict(report.rubric),
         "generated_at_iso": to_iso_z(report.generated_at),
         "generated_at_human": human_datetime(report.generated_at),
+        "generated_at_source": report.generated_at_source,
         "tldr_html": report.tldr_html,
         "categories": [
             {

@@ -3,6 +3,19 @@
 All notable changes follow the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
+## 1.5.2 — 2026-09-30
+
+Patch candidate; not yet published. Bundled rubric versions and JSON schema 1
+remain unchanged.
+
+- Resolve common CJA exporter timezone abbreviations in snapshot reporting and
+  select usable timestamp aliases when an earlier field is blank, malformed,
+  or the wrong type. Custom governance date parsing remains unchanged.
+- Label report dates as “Snapshot captured” and display “Timestamp unavailable”
+  when no timestamp can be resolved. Schema-1 JSON retains its legacy fallback
+  timestamp and ID, with additive `generated_at_source` provenance so consumers
+  can distinguish missing evidence from a real Jan 1 capture date.
+
 ## 1.5.1 — 2026-09-21
 
 Documentation and release-metadata patch; no grading behavior change. The same

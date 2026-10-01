@@ -93,10 +93,18 @@ compatibility window. For a small CI query, `jq '.findings[].id'` extracts the
 fired rule IDs; load the full artifact with `json.load` when a dashboard needs
 the complete structure.
 
-CJA generator timestamps using `PDT` or `PST` are interpreted with fixed UTC
-offsets, as are explicit ISO offsets, `Z`, `UTC`, and `GMT`. Unknown timezone
-abbreviations never consult the host timezone; they follow the existing
-deterministic missing-timestamp fallback (`2026-01-01T00:00:00Z`).
+The report's “Snapshot captured” date comes from the input, so grading the same
+snapshot remains reproducible. Reporting accepts ISO numeric offsets and `Z`,
+plus fixed offsets for `UTC`, `GMT`, `PST`, `PDT`, `CET`, `CEST`, `EET`, `EEST`,
+`EST`, `EDT`, `MST`, and `MDT`. Ambiguous abbreviations such as `CST`, `IST`, and
+`BST` require an explicit numeric offset; the grader never consults the host
+timezone. Exporters should supply an ISO timestamp with a numeric offset or `Z`.
+
+If no usable timestamp alias exists, HTML displays “Timestamp unavailable”.
+JSON retains the schema-1 sentinel (`2026-01-01T00:00:00Z`) and marks it with
+`generated_at_source: "fallback"`; check that field before using the date.
+Custom governance rules retain their existing date parser and abbreviation
+allowlist; the additional reporting offsets do not expand rule-date parsing.
 
 ## Suppressing rules in CI
 

@@ -26,6 +26,7 @@ from sdr_grader.core.structure_limits import (
     validate_snapshot_structure,
     validate_unicode_scalars,
 )
+from sdr_grader.core.timeparse import select_snapshot_timestamp
 
 
 def adapt(snapshot: dict[str, Any], *, source: str = "<unknown>") -> Implementation:
@@ -52,11 +53,9 @@ def adapt(snapshot: dict[str, Any], *, source: str = "<unknown>") -> Implementat
     if not instance_id:
         raise InvalidSnapshotError("AA snapshot 'report_suite' missing 'rsid'")
     instance_name = rs.get("name") or instance_id
-    snapshot_taken_at = snapshot.get("captured_at") or snapshot.get("captured")
-    if isinstance(snapshot_taken_at, str):
-        snapshot_taken_at = snapshot_taken_at.strip() or None
-    else:
-        snapshot_taken_at = None
+    snapshot_taken_at = select_snapshot_timestamp(
+        snapshot.get("captured_at"), snapshot.get("captured"),
+    )
     adapter_version = str(snapshot.get("tool_version") or "unknown")
 
     dims_raw = _ensure_list(snapshot, "dimensions")
