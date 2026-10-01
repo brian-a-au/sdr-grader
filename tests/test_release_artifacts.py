@@ -106,11 +106,7 @@ def _write_candidate(
             REPO_ROOT / ".claude-plugin" / "marketplace.json",
             REPO_ROOT / "skills" / "sdr-grader" / "README.md",
             REPO_ROOT / "skills" / "sdr-grader" / "SKILL.md",
-            REPO_ROOT
-            / "skills"
-            / "sdr-grader"
-            / "scripts"
-            / "query_grade.py",
+            REPO_ROOT / "skills" / "sdr-grader" / "scripts" / "query_grade.py",
             REPO_ROOT / "pyproject.toml",
             REPO_ROOT / "README.md",
             REPO_ROOT / "CHANGELOG.md",
@@ -169,6 +165,35 @@ def test_release_verifier_accepts_exact_candidate_and_writes_provenance(
         },
     ]
     assert json.loads(manifest.read_text(encoding="utf-8")) == result
+
+
+@pytest.mark.parametrize("guidance", ["AGENTS.md", "CLAUDE.md"])
+def test_release_verifier_allows_repository_guidance_only_in_sdist(tmp_path, guidance):
+    module = _load_module()
+    dist_dir = tmp_path / "dist"
+    dist_dir.mkdir()
+    wheel, sdist = _write_candidate(dist_dir)
+    members = module._read_sdist(sdist)
+    member_name = f"{SDIST_ROOT}/{guidance}"
+    payload = b"Repository guidance\n"
+    members[member_name] = payload
+    with tarfile.open(sdist, "w:gz") as archive:
+        for name, content in members.items():
+            info = tarfile.TarInfo(name)
+            info.size = len(content)
+            archive.addfile(info, io.BytesIO(content))
+
+    result = module.verify_release_artifacts(dist_dir, source_root=REPO_ROOT)
+    assert {
+        "path": member_name,
+        "sha256": hashlib.sha256(payload).hexdigest(),
+        "size": len(payload),
+    } in result["inventory"]["sdist"]["files"]
+
+    with zipfile.ZipFile(wheel, "a") as archive:
+        archive.writestr(guidance, payload)
+    with pytest.raises(module.VerificationError, match="wheel contains unexpected project members"):
+        module.verify_release_artifacts(dist_dir, source_root=REPO_ROOT)
 
 
 def test_release_verifier_normalizes_artifact_read_failures(
@@ -289,7 +314,9 @@ def test_release_verifier_requires_source_wheel_and_sdist_descriptions_to_match(
     dist_dir.mkdir()
     _write_candidate(dist_dir, sdist_description="# drifted sdist description\n")
 
-    with pytest.raises(module.VerificationError, match="description.*source README|descriptions differ"):
+    with pytest.raises(
+        module.VerificationError, match="description.*source README|descriptions differ"
+    ):
         module.verify_release_artifacts(
             dist_dir,
             source_root=REPO_ROOT,

@@ -5,19 +5,18 @@ should preserve that. Participation is governed by the
 [Code of Conduct](CODE_OF_CONDUCT.md); report vulnerabilities through
 the private route in [SECURITY.md](SECURITY.md), not a public issue.
 
-## Invariants
+## Repository guidance
 
-Non-negotiable. PRs that break these will be rejected.
+[AGENTS.md](AGENTS.md) is the canonical, tool-neutral repository guidance,
+including architectural invariants and the locked visual contract. Read it
+before making changes. `CLAUDE.md` is a short compatibility wrapper that imports
+it for Claude Code; `@AGENTS.md` is Claude-specific syntax, not a universal
+AGENTS.md feature. Both are regular files, with shared guidance kept only in
+AGENTS.md.
 
-1. **No randomness, no `datetime.now()` in graded output.** Same input
-   + same rubric version = byte-identical output. The `examples-drift`
-   CI gate enforces this on every PR.
-2. **No cardinality rules.** Rules measure shape, ratio, or
-   correctness — never raw counts. The same number is healthy for one
-   tenant and pathological for another; rules whose firing condition
-   reduces to `len(X) > k` are rejected by default.
-3. **Renderer stays presentation-only.** No imports from `rules/` or
-   `core/grader.py` inside `render/`.
+Directory-scoped `AGENTS.md` files may add instructions for a directory and its
+subdirectories when a concrete local need exists. Read applicable files before
+editing; keep repository-wide instructions in the root file.
 
 ## Adding a rule
 
@@ -32,8 +31,8 @@ A rule lands in three places:
 3. **Unit test** in `tests/test_rules_<category>.py` exercising the
    check with synthetic data.
 
-See `docs/RUBRIC_FORMAT.md` and `docs/CHECK_FUNCTION_GUIDE.md` for the
-shapes.
+See [Rubric format](docs/RUBRIC_FORMAT.md) and the
+[Check function guide](docs/CHECK_FUNCTION_GUIDE.md) for the shapes.
 
 ## Calibration: what's PR-able vs. maintainer-gated
 
@@ -81,11 +80,26 @@ repository root; the referenced tests, scripts, fixtures, and examples are not
 installed with the wheel.
 
 ```bash
-uv sync                # set up environment
-uv run pytest          # full test suite
-uv run ruff check      # lint
-uv run ruff format     # auto-format
+uv sync --locked --all-extras --dev  # set up the locked development environment
+uv run pytest                       # full test suite
+uv run pytest --cov=src/sdr_grader --cov-report=term  # CI coverage gate
+uv run ruff check                   # lint (also run in CI)
+uv run ruff format --check <paths>   # check formatting of changed Python files
+uv run ruff format <paths>           # auto-format those files
 ```
+
+Choose checks that cover the changed contract: run focused tests for the
+affected adapter, rule, renderer, or script while iterating, and run the full
+suite with coverage before marking a code change ready. For prose-only changes,
+check links and documented commands; run documentation tests when applicable.
+CI tests Python 3.11 and 3.12 and runs Ruff lint; it currently has no format gate.
+Limit local formatting to changed Python files.
+
+Changes that can affect generated output also need the
+[regeneration sequence](#regenerating-fixtures-and-examples) and a drift check.
+Packaging changes need the build and artifact checks documented in the
+[release checklist](docs/RELEASE_CHECKLIST.md) and the public-package job in
+[CI](.github/workflows/test.yml).
 
 ## Dependency maintenance
 

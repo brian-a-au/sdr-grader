@@ -33,6 +33,7 @@ RELEASE_PINNED_ROOTS = {"docs", "examples", "skills", "src", "tests"}
 ALLOWED_SDIST_TOP_LEVEL = {
     ".claude-plugin",
     ".gitignore",
+    "AGENTS.md",
     "CHANGELOG.md",
     "CLAUDE.md",
     "CODE_OF_CONDUCT.md",
