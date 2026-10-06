@@ -359,7 +359,8 @@ def test_release_soak_is_frozen_least_privilege_and_self_terminating():
     assert "pypi-attestations==0.0.30" in text
     assert '--source-digest "${GRADER_COMMIT}"' in text
     assert "security-events: read" in text
-    assert "vulnerability-alerts: read" in text
+    # This is not a supported GITHUB_TOKEN permission scope.
+    assert "vulnerability-alerts:" not in text
     assert "retention-days: 90" in text
     assert "actions/workflows/release-soak.yml/disable" in text
     assert "timeline.json" in text
