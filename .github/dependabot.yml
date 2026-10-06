@@ -1,7 +1,4 @@
-# Weekly, grouped into one PR per ecosystem — matching sdr-visualizer.
-# A dependency bump that changes rendered output fails the examples-drift
-# check like any other change; regenerate examples/ in the Dependabot PR
-# before merging.
+# Weekly individual Python updates; GitHub Actions remain grouped for manual review.
 version: 2
 updates:
   - package-ecosystem: "github-actions"
@@ -24,6 +21,3 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: "chore"
-    groups:
-      python:
-        patterns: ["*"]

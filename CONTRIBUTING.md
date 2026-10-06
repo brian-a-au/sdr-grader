@@ -103,8 +103,11 @@ Packaging changes need the build and artifact checks documented in the
 
 ## Dependency maintenance
 
-Dependabot groups weekly Python dependency updates into `uv.lock` and keeps
-GitHub Actions updates in a separate group. For a dependency-only PR:
+Dependabot opens individual weekly Python dependency updates and keeps GitHub
+Actions updates in a separate group. Patch-only lockfile updates to `ruff`,
+`pytest`, and `pytest-cov` receive automatic policy review and merge after all
+required checks pass. See [Dependabot automation](docs/DEPENDABOT_AUTOMATION.md)
+for the trust boundary and manual-review cases. For a dependency-only PR:
 
 1. Keep the change limited to the lockfile unless the dependency constraint in
    `pyproject.toml` also needs to change.
