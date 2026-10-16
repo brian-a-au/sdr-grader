@@ -125,6 +125,22 @@ def test_pr_workflows_have_read_only_defaults_and_stable_check_names():
         assert check_name in text
 
 
+def test_auto_merge_retries_subscribe_to_actual_pr_workflow_names():
+    # GitHub matches workflow_run subscriptions against display names, including
+    # case. Every PR workflow can be the last required check to finish.
+    workflows = [
+        yaml.load(path.read_text(encoding="utf-8"), Loader=yaml.BaseLoader)
+        for path in WORKFLOWS.glob("*.yml")
+    ]
+    pr_names = {
+        workflow["name"] for workflow in workflows if "pull_request" in workflow.get("on", {})
+    }
+    auto_merge = yaml.load(_workflow_text("dependabot-auto-merge.yml"), Loader=yaml.BaseLoader)
+    subscriptions = auto_merge["on"]["workflow_run"]["workflows"]
+    assert len(subscriptions) == len(set(subscriptions))
+    assert set(subscriptions) == pr_names
+
+
 def test_release_workflow_is_tag_only_build_once_and_authority_isolated():
     text = _workflow_text("release.yml")
     assert "pull_request:" not in text
