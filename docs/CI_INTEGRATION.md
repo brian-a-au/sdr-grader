@@ -5,6 +5,10 @@
 report card and (with `--json`) a machine-readable JSON output suitable
 for dashboards, leaderboards, and gating.
 
+The version-pinned example below matches this source version and becomes
+available when that version is released. For the published package, use the
+documentation linked from the [latest release](https://github.com/brian-a-au/sdr-grader/releases/latest).
+
 ## Exit codes
 
 | Code | Meaning                                   |
@@ -44,7 +48,7 @@ jobs:
           version: "0.11.16"
 
       - name: Install sdr-grader
-        run: uv tool install sdr-grader==1.5.2
+        run: uv tool install sdr-grader==1.5.3
 
       - name: Run grader
         run: |

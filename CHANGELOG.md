@@ -3,12 +3,28 @@
 All notable changes follow the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
-**Unreleased**
+## 1.5.3 — 2026-10-16
 
-- Correct current preview, support, pack-compatibility, installed-command, and
-  public bug-report privacy guidance. Candidate identity remains pending.
-  These main-branch corrections do not replace immutable tagged documentation
-  or existing PyPI descriptions. No grading or schema change.
+Patch preparation recorded October 16, 2026. See the
+[release record](docs/releases/1.5.3-readiness.md) for candidate evidence and the
+[GitHub release](https://github.com/brian-a-au/sdr-grader/releases/tag/v1.5.3)
+for publication status. Publication and announcement have separate gates.
+
+- Reject malformed AA attribution aliases and Unicode/JSON numeric parsing
+  failures with controlled input errors while preserving existing output files.
+- Enforce generator deadlines when descendants retain pipes after the parent
+  exits; clean up the process group and close pipes from their owning readers.
+- Make plugin duplicate-key errors fixed and payload-free.
+- Disclose component-scoped suppression as unapplied and count skipped rule IDs
+  accurately. Component suppression still does not change findings or scores.
+- Align preview, support, pack compatibility, installed commands, and public
+  bug-report privacy guidance; reconcile release approval stages, required
+  checks, dependency retry subscriptions, and frozen-main automation handling.
+
+Valid-input grades, findings, thresholds, severities, and scoring denominators
+are unchanged. Methodology strings and skipped-rule counts can change full
+HTML/JSON bytes. Default packs remain 3.0, standalone aa-admin remains 1.0, and
+the report schema remains 1. Pretag builds are engineering verification only.
 
 ## 1.5.2 — 2026-09-30
 

@@ -82,7 +82,7 @@ intake workflow and privacy-review checklist.
 
 | Version | Security support |
 |---|---|
-| Latest published `1.5.x` patch (currently `1.5.2`) | Supported |
+| Latest published `1.5.x` patch | Supported |
 | Earlier patches and `<1.5` | Not supported |
 
 As of 2026-10-16, only the latest published patch in the supported minor line

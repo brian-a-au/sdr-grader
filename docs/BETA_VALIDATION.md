@@ -2,6 +2,9 @@
 
 **Status: unverified — no candidate-specific beta exit decision is recorded.**
 
+Current preparation target: [unpublished, unfrozen 1.5.3](releases/1.5.3-readiness.md).
+The protocol, participants, exact artifact identities, and exit decision remain pending.
+
 Historical statements that beta rounds occurred are not an acceptance record.
 The documented 108 compatibility snapshots (100 CJA, 8 AA) are not counts of
 independent beta participants, organizations, or calibration-admitted entries.
@@ -33,6 +36,16 @@ No minimum participant count or accuracy claim has been approved. Record actual
 independent participation and its limits rather than inventing a target after
 the results are known.
 
+For a new release, obtain source/tag-preparation authorization and use the
+protected tag workflow to build and retain the immutable wheel/sdist before
+running candidate-specific beta attempts. Keep the protected `pypi` approval
+pending; local pretag builds are engineering checks, not the approved pair. Install those exact artifacts for the
+prepublication round; confirm public installation after publication. A public
+install cannot be a prerequisite for publishing that same new candidate.
+For an already published candidate, run a prospective round against the exact
+public version and record that timing; it does not establish a historical
+prepublication beta pass.
+
 ## Aggregate round record
 
 | Field | Evidence |
@@ -54,7 +67,8 @@ for a beta attempt. Mark unavailable live flows unverified.
 
 | Workflow | Attempts / completions | Findings / evidence |
 | --- | --- | --- |
-| Clean public install and version check | Pending | Pending |
+| Clean frozen-artifact install and version check (new candidate, prepublication) | Pending | Pending |
+| Clean public install and version check (postpublication) | Pending | Pending |
 | CJA file grading, complete component inventory | Pending | Pending |
 | AA file grading and coverage disclosure | Pending | Pending |
 | Directory and stdin inputs | Pending | Pending |
