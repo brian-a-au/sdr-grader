@@ -404,7 +404,8 @@ def test_codeql_dependency_updates_and_governance_files_are_configured():
     security = (REPO_ROOT / "SECURITY.md").read_text(encoding="utf-8")
     checklist = (REPO_ROOT / "docs" / "RELEASE_CHECKLIST.md").read_text(encoding="utf-8")
     assert "Enforcement" in conduct
-    assert "1.2.x" in security
+    assert "Latest published `1.5.x` patch" in security
+    assert "| Earlier patches and `<1.5` | Not supported |" in security
     assert "private security advisory" in security.lower()
     for required in (
         "Candidate identity",

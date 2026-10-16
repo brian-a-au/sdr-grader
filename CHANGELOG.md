@@ -3,10 +3,19 @@
 All notable changes follow the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
+**Unreleased**
+
+- Correct current preview, support, pack-compatibility, installed-command, and
+  public bug-report privacy guidance. Candidate identity remains pending.
+  These main-branch corrections do not replace immutable tagged documentation
+  or existing PyPI descriptions. No grading or schema change.
+
 ## 1.5.2 — 2026-09-30
 
-Patch candidate; not yet published. Bundled rubric versions and JSON schema 1
-remain unchanged.
+Published to PyPI and GitHub on 2026-10-01. Correction dated 2026-10-16:
+this supersedes the preparation note “Patch candidate; not yet published.”
+Publication does not constitute announcement approval. Bundled rubric versions
+and JSON schema 1 remain unchanged.
 
 - Resolve common CJA exporter timezone abbreviations in snapshot reporting and
   select usable timestamp aliases when an earlier field is blank, malformed,
