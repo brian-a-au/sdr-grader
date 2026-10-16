@@ -519,7 +519,7 @@ def test_public_ci_example_uses_reviewed_pins_and_opt_in_artifacts():
     )
     assert checkout["with"]["persist-credentials"] is False
     assert by_name["Install uv"]["with"]["version"] == "0.11.16"
-    assert by_name["Install sdr-grader"]["run"] == "uv tool install sdr-grader==1.5.1"
+    assert by_name["Install sdr-grader"]["run"] == "uv tool install sdr-grader==1.5.2"
 
     grader_command = by_name["Run grader"]["run"].replace("\\\n", " ")
     assert "sdr-grader path/to/snapshot.json" in grader_command
@@ -670,3 +670,36 @@ def test_contributor_regeneration_sequence_matches_examples_drift_ci():
     assert contributor_scripts == ci_scripts
     assert len([script for script in ci_scripts if "/build_" in script]) == 1
     assert len([script for script in ci_scripts if "/generate_" in script]) == 3
+
+
+def test_public_bug_form_requires_synthetic_or_private_first_exact_byte_review():
+    form = yaml.safe_load(
+        (REPO_ROOT / ".github/ISSUE_TEMPLATE/bug_report.yml").read_text(encoding="utf-8")
+    )
+    guidance = form["body"][0]["attributes"]["value"]
+    reproduction = next(item for item in form["body"] if item.get("id") == "reproduction")
+    assert "synthetic" in guidance
+    assert "Do not upload production-derived data here" in guidance
+    assert "not permission to share" in guidance
+    assert "SECURITY.md#reporting-false-positives-on-private-data" in guidance
+    assert "before\nuploading" in guidance
+    assert "SHA-256 digest" in guidance
+    assert "later edits need fresh review" in guidance
+    assert "only\nsynthetic data" in reproduction["attributes"]["description"]
+
+
+def test_pages_preview_caveat_preserves_six_synthetic_example_links():
+    document = (REPO_ROOT / "pages/index.html").read_text(encoding="utf-8")
+    assert "Public preview" in document
+    assert "provisional maintainer-judgment thresholds" in document
+    assert "review aids, not certification" in document
+    assert "synthetic examples" in document
+    examples = re.findall(r'href="([^"/:]+\.html)"', document)
+    assert set(examples) == {
+        "grade-cja-clean.html",
+        "grade-cja-messy.html",
+        "grade-aa-clean.html",
+        "grade-aa-messy.html",
+        "templated-report.html",
+        "trend-example.html",
+    }
