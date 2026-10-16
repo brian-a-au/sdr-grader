@@ -5,9 +5,10 @@ spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
 ## 1.5.3 — 2026-10-16
 
-Unpublished patch candidate. Source identity remains unfrozen until the
-prerequisite correction PRs and candidate preparation merge. Publication and
-announcement require the separate approvals in the release checklist.
+Patch preparation recorded October 16, 2026. See the
+[release record](docs/releases/1.5.3-readiness.md) for candidate evidence and the
+[GitHub release](https://github.com/brian-a-au/sdr-grader/releases/tag/v1.5.3)
+for publication status. Publication and announcement have separate gates.
 
 - Reject malformed AA attribution aliases and Unicode/JSON numeric parsing
   failures with controlled input errors while preserving existing output files.
