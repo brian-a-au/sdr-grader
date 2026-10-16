@@ -331,6 +331,11 @@ def _build_methodology(
                 ).format(consumer, target, ", ".join(sorted(rule_ids)))
             )
     if suppression:
+        if suppression.component_suppressions:
+            paragraphs.append(
+                "component-scoped suppression requests were not applied; "
+                "these rules remain active and included in scoring."
+            )
         for summary in summarize_suppressed(suppression):
             skipped.append(SkippedRules(ids=summary.ids, reason=summary.reason))
     return Methodology(paragraphs=paragraphs, skipped=skipped)

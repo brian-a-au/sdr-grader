@@ -949,6 +949,8 @@ def test_cli_current_older_and_unparseable_generators_are_quiet(
 
     assert rc == SUCCESS
     assert "generator-version" not in capsys.readouterr().err
+
+
 def test_trend_requires_snapshot_directory_argument(capsys):
     rc = main(["--trend"])
 
@@ -1071,3 +1073,49 @@ def test_cli_html_caps_component_lists_but_json_keeps_full_list(tmp_path):
         if block["kind"] == "components" and block["items"]
     ]
     assert max(item_counts) == 60  # JSON list is complete, not capped
+
+
+@pytest.mark.parametrize("route", ["file", "stdin", "extra"])
+@pytest.mark.parametrize(
+    "raw",
+    [b"\xffPRIVATE", b'{"PRIVATE":' + b"9" * 5000 + b"}", b"[" * 10000 + b"0" + b"]" * 10000],
+    ids=["utf8", "integer", "depth"],
+)
+def test_malformed_consumed_json_is_controlled(tmp_path, monkeypatch, capsys, route, raw):
+    import io
+
+    source = tmp_path / "bad.json"
+    source.write_bytes(raw)
+    output = tmp_path / "report.html"
+    output.write_text("previous report")
+    json_output = tmp_path / "report.json"
+    json_output.write_text("previous JSON")
+    args = [str(source)]
+    if route == "stdin":
+        monkeypatch.setattr("sys.stdin", io.TextIOWrapper(io.BytesIO(raw), encoding="utf-8"))
+        args = ["-"]
+    elif route == "extra":
+        args = [str(FIXTURES / "cja_snapshot_messy.json"), "--extra-input", f"usage={source}"]
+    assert main([*args, "--output", str(output), "--json", str(json_output)]) == RUNTIME_ERROR
+    assert output.read_text() == "previous report"
+    assert json_output.read_text() == "previous JSON"
+    err = capsys.readouterr().err
+    assert "PRIVATE" not in err
+    assert "Traceback" not in err
+
+
+@pytest.mark.parametrize("alias", ["attribution", "attribution_model"])
+@pytest.mark.parametrize("value", [{"PRIVATE": "last-touch"}, ["PRIVATE"], {}, []])
+def test_aa_structured_attribution_is_controlled(tmp_path, capsys, alias, value):
+    snapshot = json.loads((FIXTURES / "aa_snapshot_messy.json").read_text())
+    metric = snapshot["calculated_metrics"][0]
+    metric.pop("attribution", None)
+    metric.pop("attribution_model", None)
+    metric[alias] = value
+    source = tmp_path / "aa.json"
+    source.write_text(json.dumps(snapshot))
+    output = tmp_path / "report.html"
+    output.write_text("previous report")
+    assert main([str(source), "--output", str(output)]) == RUNTIME_ERROR
+    assert output.read_text() == "previous report"
+    assert "PRIVATE" not in capsys.readouterr().err

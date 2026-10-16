@@ -126,7 +126,7 @@ def _shell_out(
         ) from None
     try:
         snapshot = json.loads(decoded)
-    except json.JSONDecodeError:
+    except ValueError:
         raise InvalidSnapshotError(
             f"shell error [invalid-json]: {tool} output was not valid JSON"
         ) from None
@@ -206,6 +206,7 @@ def _communicate_bounded(
             _terminate_process_tree(process)
         finally:
             buffers[name] = bytes(captured)
+            stream.close()
 
     streams = (
         ("stdout", process.stdout, MAX_STDOUT_BYTES),
@@ -225,7 +226,7 @@ def _communicate_bounded(
 
     deadline = time.monotonic() + SHELL_OUT_TIMEOUT_SECONDS
     timed_out = False
-    while process.poll() is None:
+    while process.poll() is None or any(reader.is_alive() for reader in readers):
         remaining = deadline - time.monotonic()
         if remaining <= 0:
             timed_out = True
@@ -246,8 +247,6 @@ def _communicate_bounded(
     for reader in readers:
         reader.join(timeout=_READER_JOIN_SECONDS)
     readers_still_alive = any(reader.is_alive() for reader in readers)
-    for _name, stream, _limit in streams:
-        stream.close()
     if readers_still_alive:
         for reader in readers:
             reader.join(timeout=0.1)
@@ -283,7 +282,7 @@ def _popen_options(platform_name: str) -> dict[str, Any]:
 
 def _terminate_process_tree(process: subprocess.Popen[bytes]) -> None:
     """Best-effort termination of the child and its descendants."""
-    if process.poll() is not None:
+    if os.name != "posix" and process.poll() is not None:
         return
     try:
         if os.name == "posix":

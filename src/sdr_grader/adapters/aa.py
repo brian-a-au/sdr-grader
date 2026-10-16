@@ -259,6 +259,11 @@ def _calc_from_record(record: Any, *, index: int | None = None) -> CalculatedMet
     extra = record.get("extra") if isinstance(record.get("extra"), dict) else {}
     approved, shared_to_count = _aa_governance_signals(extra)
 
+    for alias in ("attribution", "attribution_model"):
+        value = record.get(alias)
+        if value is not None and not isinstance(value, str):
+            raise InvalidSnapshotError("calculated metric attribution must be a string or null")
+
     return CalculatedMetric(
         id=str(metric_id),
         name=str(name),
