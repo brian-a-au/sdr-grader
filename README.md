@@ -24,7 +24,8 @@ that child calls Adobe APIs before the local grader runs.
 
 ## Public preview scope
 
-This project is in public preview. Its grades are review aids, not certification.
+This project is in public preview; the current published patch is 1.5.2.
+Its grades are review aids, not certification.
 The bundled thresholds and severities reflect maintainer judgment, and no
 implementation has been admitted to grading calibration yet. Review every finding
 against the source implementation before you change any production configuration.

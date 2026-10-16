@@ -35,7 +35,9 @@ The sanitizer prints a SHA-256 review digest without echoing private file
 paths. Record a share/abort decision against that digest so later edits do
 not inherit an earlier review. For release or calibration evidence, the
 maintainer performs a second review of the exact digest; the submitter's
-review is not sufficient by itself.
+review is not sufficient by itself. Human approval applies only to those exact
+bytes and the agreed audience; sanitization never grants upload approval.
+Changed bytes require a new review and share/abort decision.
 
 ## Snapshot handling
 
@@ -80,11 +82,10 @@ intake workflow and privacy-review checklist.
 
 | Version | Security support |
 |---|---|
-| `1.2.x` | Supported |
-| `1.1.x` | Not supported |
-| `<1.1` | Not supported |
+| Latest published `1.5.x` patch (currently `1.5.2`) | Supported |
+| Earlier patches and `<1.5` | Not supported |
 
-Only the latest supported minor line receives new security fixes. If
-you are on an older line, upgrade before reporting an issue. A report
-against an unsupported version is still useful when the behavior also
-reproduces on the supported line.
+As of 2026-10-16, only the latest published patch in the supported minor line
+receives new security fixes. Upgrade to that patch when reproducing an issue.
+Reports against older versions are still welcome; include the version and
+whether the behavior reproduces on the supported patch.
