@@ -96,7 +96,7 @@ or unrecognized. For schema-1 compatibility, fallback reports retain the legacy
 | `methodology` | `object` | yes | Method and suppression disclosure |
 | `methodology.paragraphs` | `array` | yes | Ordered methodology paragraphs |
 | `methodology.paragraphs[]` | `string` | yes | One paragraph containing reviewed HTML fragments |
-| `methodology.skipped` | `array` | yes | Suppressed or skipped-rule groups |
+| `methodology.skipped` | `array` | yes | Actually suppressed or skipped-rule groups |
 | `methodology.skipped[]` | `object` | yes | One skipped-rule group |
 | `methodology.skipped[].ids` | `array` | yes | Rule IDs in the group |
 | `methodology.skipped[].ids[]` | `string` | yes | One skipped rule ID |

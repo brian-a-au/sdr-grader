@@ -403,7 +403,7 @@ def _unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     result: dict[str, Any] = {}
     for key, value in pairs:
         if key in result:
-            raise _LoadError(f"duplicate JSON key: {key}")
+            raise _LoadError("duplicate JSON key")
         result[key] = value
     return result
 

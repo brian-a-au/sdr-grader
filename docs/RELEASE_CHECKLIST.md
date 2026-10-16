@@ -38,7 +38,7 @@ never automatic announcement approval.
 
 - [ ] Version: `________`
 - [ ] Candidate commit SHA (40 characters): `________`
-- [ ] Annotated tag to create only after approval: `v________`
+- [ ] Annotated tag to create only after source/tag-preparation authorization: `v________`
 - [ ] Package/plugin/marketplace version: `________`
 - [ ] Bundled pack version: `________`
 - [ ] JSON schema version: `________`
@@ -62,6 +62,10 @@ Record the successful run URLs for these stable checks:
 - [ ] `Version identity`: `________`
 - [ ] `Dependency review`: `________`
 - [ ] `CodeQL / Python`: `________`
+- [ ] `Public README and installed wheel`: `________`
+- [ ] `actionlint`: `________`
+- [ ] `lockfile`: `________`
+- [ ] `dependabot-policy`: `________`
 - [ ] Cross-repository color-pack contract comparator against the exact grader
       and visualizer candidate commits, including mirrored text/non-text
       contrast-pair gates: `________`
@@ -90,7 +94,31 @@ and rationale; do not inherit an unrelated companion release as a gate.
 
 ## Artifact evidence
 
-- [ ] Command was exactly `uv build --no-sources --clear
+The first protected tag workflow builds the release pair itself; it does not
+ingest a locally approved pair. Pretag builds are disposable engineering
+verification, not the immutable candidate for beta or publication approval.
+
+### Source/tag-preparation authorization
+
+- [ ] Reviewed source SHA, version, and source-check run URLs: `________`
+- [ ] Authorizer and authorization timestamp: `________`
+- [ ] Authorization permits the annotated tag, candidate build, validation,
+      attestations, and immutable GitHub draft only; publication remains held.
+- [ ] The owner keeps the protected `pypi` environment approval pending until
+      the exact retained pair satisfies all applicable publication gates.
+
+Create the authorized tag from the reviewed source. The first tag run builds,
+validates and attests its wheel/sdist, runs installed and plugin checks, then
+creates the immutable draft before waiting at `pypi`. Retrieve that run's exact
+pair and manifest for independent verification and prospective beta testing.
+Keep the protected `github-release` approval gated as well. Neither authorization
+to prepare a tag nor successful draft creation approves publication.
+
+### Immutable candidate verification
+
+- [ ] Tag workflow run URL, attempt, source SHA, and retained artifact IDs:
+      `________`
+- [ ] Command in that run was exactly `uv build --no-sources --clear
       --no-create-gitignore`; the log says the wheel was built from the
       source distribution.
 - [ ] Exactly one wheel and one sdist were produced.
@@ -101,15 +129,18 @@ and rationale; do not inherit an unrelated companion release as a gate.
 - [ ] Wheel inventory tree SHA-256: `________`
 - [ ] Sdist inventory tree SHA-256: `________`
 - [ ] Wheel and sdist installed outside the checkout on Python 3.11 and
-      3.12.
+      3.12; retain actual interpreter version, executable identity, OS, and
+      installer version for each environment, not just the requested matrix.
 - [ ] Installed `sdr-grader --version`, CJA HTML+JSON, AA HTML+JSON,
       bundled packs/templates/CSS/data, and packaged Claude resources
       passed.
 - [ ] Wheel and sdist produced byte-identical CJA/AA HTML+JSON outputs.
 - [ ] GitHub attestation subject digests, issuer, repository, workflow,
       and candidate SHA match the evidence: `________`
+- [ ] Beta protocol and coverage were approved prospectively; independent beta
+      used this exact retained pair and has a signed exit in `BETA_VALIDATION.md`.
 
-Never rebuild after this point. A failed candidate is discarded; do not
+Never rebuild this pair after its immutable-artifact evidence. A failed candidate is discarded; do not
 move or reuse a published tag or version.
 
 ## Hosted controls
@@ -250,6 +281,9 @@ soak run to prove the fix.
 
 ## Publication approval
 
+This is separate from source/tag-preparation authorization. Complete beta,
+candidate-bound private attestations, hosted-control and security review, and
+all other applicable gates against the retained tag-workflow-built pair first.
 Approval expires after 24 hours and is invalidated by any candidate or
 control change.
 
@@ -258,8 +292,8 @@ control change.
 - [ ] Candidate SHA: `________`
 - [ ] Gate/evidence revision: `________`
 - [ ] Artifact digests: `________`
-- [ ] Publish the exact approved bytes through the protected tag
-      workflow.
+- [ ] Approve the protected publication stages of that same tag workflow to
+      publish the exact approved bytes; do not rebuild or substitute a local pair.
 - [ ] PyPI bytes, GitHub release bytes, attestations, and clean Python
       3.11/3.12 installs match the candidate.
 - [ ] Remote Claude marketplace install and summary/findings/show/compare
@@ -299,6 +333,11 @@ revision containing the candidate configuration. Verify monitoring code against
 its pinned implementation commit; retain the configuration digest. Freeze main,
 monitoring code, and applicable hosted controls throughout observation. Changes
 invalidate the window rather than inheriting observations from another revision.
+Before activation, save and pause only dependency auto-merge and drain its
+in-flight runs as described in [the automation procedure](DEPENDABOT_AUTOMATION.md#frozen-main-release-window).
+Keep required checks and security scans enabled. Restore the recorded automation
+state only after the human decision or abandonment, retaining the restoration
+receipt outside the frozen branch during observation.
 
 Hourly observations provide margin against the four-hour maximum. Start evidence
 must prove that all required public surfaces actually passed; the 48 hours run
