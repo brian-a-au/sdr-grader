@@ -31,8 +31,9 @@ implementation has been admitted to grading calibration yet. Review every findin
 against the source implementation before you change any production configuration.
 
 The default rubric packs include 27 checks for AA and 27 for CJA, drawn from a
-shared catalog of 31. Missing evidence is reported as not assessed and left out
-of scoring, so the number of available checks is not the number that ran on your
+shared catalog of 31. The report identifies explicitly unassessed checks and
+their scoring treatment. Missing required configuration can still produce
+findings, so the number of available checks is not the number that ran on your
 snapshot. These checks read configuration only. They do not confirm runtime
 event-ID delivery or product binding. For the full check list and platform
 coverage, see the
