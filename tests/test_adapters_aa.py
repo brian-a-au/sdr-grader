@@ -664,3 +664,20 @@ def test_cja_snapshot_forced_through_aa_keeps_platform_validation_failure():
 
     with pytest.raises(InvalidSnapshotError, match="not an AA snapshot"):
         adapt(cja)
+
+
+@pytest.mark.parametrize(
+    "primary,secondary,expected",
+    [
+        (None, None, None),
+        ("", "last-touch", "last-touch"),
+        ("first-touch", "last-touch", "first-touch"),
+        (None, "last-touch", "last-touch"),
+    ],
+)
+def test_attribution_aliases_preserve_supported_evidence(primary, secondary, expected):
+    snapshot = json.loads((FIXTURES / "aa_snapshot_messy.json").read_text())
+    snapshot["calculated_metrics"][0].update(attribution=primary, attribution_model=secondary)
+    impl = adapt(snapshot)
+    assert impl.calculated_metrics[0].attribution_model == expected
+    grade(impl, load_rubric(STRICT_PACK))
