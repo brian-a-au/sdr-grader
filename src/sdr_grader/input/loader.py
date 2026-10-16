@@ -55,7 +55,10 @@ def load_snapshot(
 
 
 def _load_stdin() -> tuple[dict[str, Any], str]:
-    raw = sys.stdin.read()
+    try:
+        raw = sys.stdin.read()
+    except UnicodeError:
+        raise InvalidSnapshotError("stdin is not valid UTF-8") from None
     if not raw.strip():
         raise InvalidSnapshotError("stdin is empty; expected JSON snapshot")
     try:
@@ -64,12 +67,16 @@ def _load_stdin() -> tuple[dict[str, Any], str]:
         raise InvalidSnapshotError(f"stdin is not valid JSON: {exc}") from exc
     except RecursionError as exc:
         raise InvalidSnapshotError("stdin JSON exceeds nesting limits") from exc
+    except ValueError:
+        raise InvalidSnapshotError("stdin JSON contains an invalid numeric value") from None
     return snapshot, "stdin"
 
 
 def _load_from_file(path: Path) -> tuple[dict[str, Any], str]:
     try:
         text = path.read_text(encoding="utf-8-sig")
+    except UnicodeError:
+        raise InvalidSnapshotError("snapshot is not valid UTF-8") from None
     except (OSError, RuntimeError) as exc:
         raise InvalidSnapshotError(f"could not read {path}: {exc}") from exc
     try:
@@ -78,6 +85,8 @@ def _load_from_file(path: Path) -> tuple[dict[str, Any], str]:
         raise InvalidSnapshotError(f"{path}: not valid JSON: {exc}") from exc
     except RecursionError as exc:
         raise InvalidSnapshotError(f"{path}: JSON exceeds nesting limits") from exc
+    except ValueError:
+        raise InvalidSnapshotError("snapshot JSON contains an invalid numeric value") from None
     return snapshot, str(path)
 
 

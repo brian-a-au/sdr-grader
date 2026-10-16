@@ -574,3 +574,18 @@ def test_version_sync_rejects_malformed_plugin_metadata(
 
     assert module.main(tmp_path) == 1
     assert "error:" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize(
+    "key", ["\x1bPRIVATE", "PRIVATE", "PRIVATE" * 10000], ids=["control", "private", "oversized"]
+)
+def test_duplicate_key_error_is_fixed_and_payload_free(tmp_path, key):
+    source = tmp_path / "duplicate.json"
+    encoded = json.dumps(key)
+    source.write_text("{" + encoded + ":1," + encoded + ":2}")
+    result = _run(["summary", str(source)])
+    assert result.returncode != 0
+    assert "duplicate JSON key" in result.stderr
+    assert "PRIVATE" not in result.stderr
+    assert "\x1b" not in result.stderr
+    assert len(result.stderr) < 200
