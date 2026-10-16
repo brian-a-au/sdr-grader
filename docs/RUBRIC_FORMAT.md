@@ -1,8 +1,9 @@
 # Rubric format
 
 A "rubric pack" is a directory of YAML files. The grader ships two:
-`strict` (master-cert-grade opinion) and `pragmatic` (sanity-check
-thresholds). Users can fork either one or write their own and pass it
+`strict` (stricter thresholds) and `pragmatic` (more permissive
+thresholds). Both use provisional maintainer judgment; preview grades are review
+aids, not certification. Users can fork either one or write their own and pass it
 via `--rubric PATH`.
 
 This document is the contract. The format is the user-facing IP.
@@ -196,8 +197,8 @@ rules leave the severity denominator and are disclosed as not assessed.
 This parameter was introduced in pack 2.1 with grader 1.4.0 and remains enabled
 in default packs 3.0. Older graders ignore this parameter. Pack 3.0 additionally
 requires the new AA administration check implementations and therefore grader
-1.5.1 or the current 1.5.1 candidate. Grader 1.5.1 is not yet published, and the
-released 1.4.0 grader cannot load pack 3.0. See
+1.5.0 or later. The v1.5.0 tag first includes both pack 3.0 and those checks;
+1.4.0 cannot load pack 3.0. The current published patch is 1.5.2. See
 [AA administration evidence](AA_ADMIN_INPUT.md).
 Version text
 alone does not enable policy behavior. See

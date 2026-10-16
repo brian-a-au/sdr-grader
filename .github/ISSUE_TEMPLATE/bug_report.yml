@@ -6,15 +6,16 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time to file a bug. A reproducible snapshot
-        is the single most useful thing you can attach.
+        Prefer a minimal **synthetic** snapshot and command that reproduce the bug,
+        without production-derived values. Review logs, screenshots, and reports
+        before posting them too.
 
-        **Do not paste a real production snapshot.** Use
-        `scripts/sanitize_sdr.py` to scrub tenant identifiers, then trim
-        to the smallest shape that still reproduces the bug. If the
-        snapshot is sensitive even after scrubbing, open a
-        [private security advisory](https://github.com/brian-a-au/sdr-grader/security/advisories/new)
-        instead.
+        **Do not upload production-derived data here.** Sanitization produces a
+        review candidate, not permission to share. Follow the
+        [exact-byte human review and private-first sharing policy](https://github.com/brian-a-au/sdr-grader/blob/main/SECURITY.md#reporting-false-positives-on-private-data):
+        contact the maintainer privately and agree on the minimum needed before
+        uploading a production-derived candidate. Record approval against its
+        exact SHA-256 digest; later edits need fresh review.
 
   - type: textarea
     id: what-happened
@@ -33,8 +34,8 @@ body:
     attributes:
       label: Reproduction
       description: |
-        Minimal command + minimal snapshot. Inline the snapshot in a code
-        block if it's small, or attach it.
+        Minimal command + minimal synthetic snapshot. Inline or attach only
+        synthetic data; use the private-first policy above for production-derived data.
       render: shell
     validations:
       required: true

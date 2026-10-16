@@ -13,15 +13,19 @@ announcement. The [release checklist](RELEASE_CHECKLIST.md) remains authoritativ
 2. Complete publication and verify public PyPI/GitHub bytes, immutable tags,
    provenance, and the remote plugin. Record the actual release commit, tag
    object, asset names, and SHA-256 digests; do not substitute the monitor SHA.
-3. Create a release evidence issue and an owner-authored placeholder comment in
+3. With owner authorization, save the dependency auto-merge workflow state,
+   disable only `dependabot-auto-merge.yml`, and cancel/drain every in-flight
+   merge run using the [frozen-main procedure](DEPENDABOT_AUTOMATION.md#frozen-main-release-window).
+   Confirm no merge-capable run remains; keep policy checks and scanners enabled.
+4. Create a release evidence issue and an owner-authored placeholder comment in
    that issue. Save its permanent issue-comment URL. Apply the appropriate
    triage disposition to the evidence issue so it does not block its own soak.
    This URL is reserved before activation; it is not yet start evidence.
-4. Fill the active manifest described below, including an unused window ID and
+5. Fill the active manifest described below, including an unused window ID and
    planned UTC start/end at least 48 hours apart. Start the first successful
    checkpoint within two hours of the planned start. Finish all merges before
    the window and freeze main, monitor code, and applicable controls.
-5. Validate with `python3 .github/scripts/validate_release_soak_config.py
+6. Validate with `python3 .github/scripts/validate_release_soak_config.py
    --verify-monitor`. Review and merge the activation manifest. Re-enable the
    workflow if it was disabled after a prior soak. The frozen activation SHA is
    this main revision; it differs from the published release and monitor commits.
@@ -116,3 +120,8 @@ release owner must still complete the final audit and explicitly approve the
 announcement scope, copy, candidate identity, and evidence revision. Refresh
 private clearance if it becomes stale before that decision. No automated output
 claims successful live Adobe flows, empirical calibration, or announcement GO.
+
+After the human announcement decision or explicit abandonment, restore the
+recorded auto-merge state and retain the restoration receipt. Keep it paused
+throughout a live observation window. Store ongoing evidence outside the frozen
+branch; editing the readiness ledger on main would invalidate the window.

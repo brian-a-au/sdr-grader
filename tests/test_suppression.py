@@ -445,3 +445,38 @@ def test_cli_can_use_pragmatic_pack(tmp_path):
         ]
     )
     assert rc == SUCCESS
+
+
+def test_component_requests_are_unapplied_and_skipped_count_counts_ids():
+    from sdr_grader.render.renderer import render
+
+    impl = adapt(json.loads((FIXTURES / "cja_snapshot_messy.json").read_text()))
+    rubric = load_rubric(STRICT_PACK)
+    baseline = grade(impl, rubric)
+    scoped = grade(
+        impl,
+        rubric,
+        suppression=Suppression(
+            suppressed=[
+                SuppressedRule("CALC-014", "same", ["one"]),
+            ]
+        ),
+    )
+    assert scoped.findings == baseline.findings
+    assert scoped.overall_pct == baseline.overall_pct
+    assert scoped.methodology.skipped == baseline.methodology.skipped
+    assert "component-scoped suppression requests were not applied" in " ".join(
+        scoped.methodology.paragraphs
+    )
+    whole = grade(
+        impl,
+        rubric,
+        suppression=Suppression(
+            suppressed=[
+                SuppressedRule("CALC-014", "same"),
+                SuppressedRule("SCH-003", "same"),
+            ]
+        ),
+    )
+    count = sum(len(s.ids) for s in whole.methodology.skipped)
+    assert f"{count} rules skipped during this run" in render(whole)

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import os
 import subprocess
 import sys
@@ -261,3 +262,65 @@ def test_non_posix_process_cleanup_kills_direct_child(
     shell_out._terminate_process_tree(process)  # type: ignore[arg-type]  # noqa: SLF001
 
     assert process.killed is True
+
+
+@pytest.mark.skipif(os.name != "posix", reason="POSIX process-group cleanup")
+def test_deadline_covers_descendant_pipes_after_leader_exit(tmp_path):
+    import signal
+
+    pid_file = tmp_path / "descendant.pid"
+    output = tmp_path / "report.html"
+    output.write_text("previous report")
+    probe = (
+        "import sys; from sdr_grader.input import shell_out; "
+        "shell_out.SHELL_OUT_TIMEOUT_SECONDS=.2; "
+        "shell_out.shutil.which=lambda _:sys.executable; "
+        "from sdr_grader.cli import main as cli; "
+        "cli.shell_aa=lambda _:shell_out._shell_out('fake', ['-c', sys.argv[1]], flag='--fake'); "
+        "sys.exit(cli.main(['--rsid','synthetic','--output',sys.argv[2]]))"
+    )
+    child = (
+        "import subprocess,sys; from pathlib import Path; "
+        "p=subprocess.Popen([sys.executable,'-c','import time; time.sleep(20)']); "
+        f"Path({str(pid_file)!r}).write_text(str(p.pid))"
+    )
+    pid = None
+    try:
+        result = subprocess.run(
+            [sys.executable, "-c", probe, child, str(output)],
+            capture_output=True,
+            text=True,
+            timeout=6,
+        )
+        pid = int(pid_file.read_text())
+        assert result.returncode == 1
+        assert "shell error [timeout]" in result.stderr
+        assert "Traceback" not in result.stderr
+        assert output.read_text() == "previous report"
+        deadline = time.monotonic() + 2
+        while time.monotonic() < deadline:
+            try:
+                os.kill(pid, 0)
+            except ProcessLookupError:
+                break
+            status = subprocess.run(
+                ["ps", "-o", "stat=", "-p", str(pid)],
+                capture_output=True, text=True, check=False, timeout=1,
+            ).stdout.strip()
+            if status.startswith("Z"):
+                break  # Dead descendants can await init's reap on Linux.
+            time.sleep(0.05)
+        else:
+            pytest.fail("descendant survived deadline cleanup")
+    finally:
+        if pid is None and pid_file.exists():
+            pid = int(pid_file.read_text())
+        if pid is not None:
+            with contextlib.suppress(ProcessLookupError):
+                os.kill(pid, signal.SIGKILL)
+
+
+def test_shell_numeric_conversion_is_controlled(monkeypatch):
+    with pytest.raises(InvalidSnapshotError, match=r"shell error \[invalid-json\]") as raised:
+        _run_python(monkeypatch, "print('{\"PRIVATE\":' + '9' * 5000 + '}')")
+    assert "PRIVATE" not in str(raised.value)

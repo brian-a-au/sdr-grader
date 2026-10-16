@@ -167,7 +167,7 @@
       {% if report.methodology.skipped %}
       <div class="finding-section-label">Skipped rules</div>
       <div class="skipped">
-        <strong>{{ report.methodology.skipped | length }} rules skipped during this run:</strong>
+        <strong>{{ report.methodology.skipped | map(attribute="ids") | map("length") | sum }} rules skipped during this run:</strong>
         <ul>
           {% for s in report.methodology.skipped %}
           <li><span class="mono">{{ s.ids | join(' · ') }}</span> — {{ s.reason }}</li>

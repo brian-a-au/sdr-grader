@@ -328,6 +328,8 @@ def _attach_extra_inputs(impl, raw_specs: list[str]) -> None:
             raise InvalidSnapshotError(f"--extra-input {key}: file not found at {path}")
         try:
             text = path.read_text(encoding="utf-8")
+        except UnicodeError:
+            raise InvalidSnapshotError("--extra-input is not valid UTF-8") from None
         except OSError as exc:
             raise InvalidSnapshotError(
                 f"--extra-input {key}: could not read {path}: {exc}"
@@ -336,6 +338,8 @@ def _attach_extra_inputs(impl, raw_specs: list[str]) -> None:
             payload = _json.loads(text)
         except _json.JSONDecodeError as exc:
             raise InvalidSnapshotError(f"--extra-input {key}: not valid JSON: {exc}") from exc
+        except (ValueError, RecursionError):
+            raise InvalidSnapshotError("--extra-input JSON exceeds parsing limits") from None
         if key in impl.supplementary_data:
             raise InvalidSnapshotError(f"--extra-input {key}: duplicate key (already attached)")
         impl.supplementary_data[key] = payload

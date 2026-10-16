@@ -98,6 +98,39 @@ App if triggering those downstream workflows becomes necessary.
 To pause automatic merging, disable `dependabot-auto-merge.yml`. Keep the policy and existing required CI checks.
 Change the allowlist only through a reviewed repository PR.
 
+## Frozen-main release window
+
+The release owner pauses only the merge workflow before a release-soak freeze.
+Keep `dependabot-policy.yml`, dependency review, CodeQL, required checks, and
+security features enabled. Do not turn off repository-wide Actions or branch
+protection. Save receipts in the release evidence store outside the frozen
+branch so recording observations does not itself change main.
+
+1. Record the workflow's current state with
+   `gh api repos/brian-a-au/sdr-grader/actions/workflows/dependabot-auto-merge.yml`
+   and retain the response, actor, and time. Record whether it was already disabled.
+2. Disable only this workflow with
+   `gh workflow disable dependabot-auto-merge.yml --repo brian-a-au/sdr-grader`.
+   This prevents new triggers; it does not cancel a run already able to merge.
+3. List its runs using
+   `gh run list --repo brian-a-au/sdr-grader --workflow dependabot-auto-merge.yml --limit 100 --json databaseId,status,conclusion,headSha,url`.
+   Cancel every queued, pending, waiting, or in-progress merge run with
+   `gh run cancel <run-id> --repo brian-a-au/sdr-grader`; wait for each to reach a
+   terminal state. Recheck workflow state and runs, including additional pages
+   if needed, until no merge-capable run remains. Retain the result.
+4. Finish preparation merges and verify main again. Review and merge the
+   activation-only manifest, then start the soak using the
+   [release-soak runbook](RELEASE_SOAK.md). Freeze main and relevant controls.
+   Do not manually dispatch auto-merge or merge dependency PRs during observation.
+5. After the release owner's announcement decision or explicit abandonment of
+   the window, restore the saved state. If it was active, use
+   `gh workflow enable dependabot-auto-merge.yml --repo brian-a-au/sdr-grader`;
+   if it was disabled, leave it disabled. Verify and retain the final state,
+   actor, time, and decision reference. Do not restore early during a live window.
+
+Pausing or restoring hosted automation requires the owner's authorization;
+merging this documentation does not perform either action.
+
 ## Consistency across the SDR repositories
 
 This policy matches `aa_auto_sdr` and `cja_auto_sdr`: the same patch-only

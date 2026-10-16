@@ -219,7 +219,7 @@ def summarize_suppressed(suppression: Suppression) -> list[SkippedRulesSummary]:
     """Group suppression entries for the rendered methodology section."""
     by_reason: dict[str, list[str]] = {}
     for s in suppression.suppressed:
-        if not s.rule_id:
+        if not s.rule_id or s.components:
             continue
         key = s.reason or "(no reason recorded)"
         by_reason.setdefault(key, []).append(s.rule_id)
