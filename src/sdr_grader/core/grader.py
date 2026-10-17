@@ -78,7 +78,9 @@ def grade(
     rule_inventory = resolution.effective_rules
     assessments = resolution.reference_assessments
     raw_findings = run_rules(
-        impl, rubric, rule_inventory=rule_inventory,
+        impl,
+        rubric,
+        rule_inventory=rule_inventory,
         aa_admin_assessments=resolution.aa_admin_assessments,
     )
     findings = apply_to_findings(raw_findings, suppression) if suppression else raw_findings
@@ -118,6 +120,7 @@ def grade(
             suppression,
             assessments=assessments,
             aa_assessments=resolution.aa_admin_assessments,
+            platform=impl.platform,
         ),
         distribution=None,  # attached later by the CLI when --distribution-data is set
     )
@@ -245,6 +248,7 @@ def _build_methodology(
     *,
     assessments: dict[str, ReferenceAssessment] | None = None,
     aa_assessments: dict[str, AAAdminAssessment] | None = None,
+    platform: str,
 ) -> Methodology:
     rule_count = len(rule_inventory)
     fired_count = len({f.id for f in findings})
@@ -332,11 +336,13 @@ def _build_methodology(
             )
     if suppression:
         if suppression.component_suppressions:
+            scoped_ids = ", ".join(sorted(suppression.component_suppressions))
             paragraphs.append(
-                "component-scoped suppression requests were not applied; "
+                f"Component-scoped suppression requests were not applied for {scoped_ids}; "
                 "these rules remain active and included in scoring."
             )
-        for summary in summarize_suppressed(suppression):
+        applicable_ids = {r.id for r in rubric.rules if platform in r.platforms}
+        for summary in summarize_suppressed(suppression, applicable_ids):
             skipped.append(SkippedRules(ids=summary.ids, reason=summary.reason))
     return Methodology(paragraphs=paragraphs, skipped=skipped)
 

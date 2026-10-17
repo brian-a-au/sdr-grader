@@ -241,7 +241,7 @@ def test_suppression_summary_groups_reasons_and_omits_empty_rule_ids():
         ]
     )
 
-    summaries = summarize_suppressed(suppression)
+    summaries = summarize_suppressed(suppression, {"NAME-002", "SCH-003", "CALC-014"})
     assert [(summary.reason, summary.ids) for summary in summaries] == [
         ("legacy", ["NAME-002", "SCH-003"]),
         ("(no reason recorded)", ["CALC-014"]),
@@ -497,9 +497,10 @@ def test_component_requests_are_unapplied_and_skipped_count_counts_ids():
     assert scoped.findings == baseline.findings
     assert scoped.overall_pct == baseline.overall_pct
     assert scoped.methodology.skipped == baseline.methodology.skipped
-    assert "component-scoped suppression requests were not applied" in " ".join(
-        scoped.methodology.paragraphs
-    )
+    assert (
+        "Component-scoped suppression requests were not applied for CALC-014; "
+        "these rules remain active and included in scoring."
+    ) in scoped.methodology.paragraphs
     whole = grade(
         impl,
         rubric,
@@ -537,3 +538,44 @@ def test_suppression_valid_yaml_neighbors_remain_accepted(tmp_path, severity):
     assert suppression.severity_overrides == {"NAME-002": severity}
     assert suppression.category_weight_overrides == {"schema_hygiene": 0, "naming_conventions": 1}
     assert suppression.suppressed[0].reason == "café 日本語"
+
+
+def test_duplicate_suppress_rule_rejected():
+    from sdr_grader.rules.suppression import _parse
+
+    with pytest.raises(RubricValidationError, match="suppress lists CALC-001 more than once"):
+        _parse({"suppress": [{"rule": "CALC-001"}, {"rule": "CALC-001"}]}, source="s.yaml")
+
+
+def test_component_suppression_sentence_names_rules():
+    impl = adapt(json.loads((FIXTURES / "cja_snapshot_messy.json").read_text()))
+    rubric = load_rubric(STRICT_PACK)
+    report = grade(
+        impl,
+        rubric,
+        suppression=Suppression(suppressed=[SuppressedRule("CALC-001", "r", ["x"])]),
+    )
+    assert (
+        "Component-scoped suppression requests were not applied for CALC-001; "
+        "these rules remain active and included in scoring."
+    ) in report.methodology.paragraphs
+
+
+def test_inapplicable_suppressed_rule_not_reported_skipped():
+    impl = adapt(json.loads((FIXTURES / "cja_snapshot_messy.json").read_text()))
+    rubric = load_rubric(STRICT_PACK)
+    report = grade(
+        impl, rubric, suppression=Suppression(suppressed=[SuppressedRule("AA-001", "r")])
+    )
+    assert all("AA-001" not in s.ids for s in report.methodology.skipped)
+
+
+def test_single_skipped_rule_is_singular():
+    from sdr_grader.render.renderer import render
+
+    impl = adapt(json.loads((FIXTURES / "cja_snapshot_messy.json").read_text()))
+    rubric = load_rubric(STRICT_PACK)
+    report = grade(
+        impl, rubric, suppression=Suppression(suppressed=[SuppressedRule("CALC-014", "r")])
+    )
+    assert "1 rule skipped during this run" in render(report)
