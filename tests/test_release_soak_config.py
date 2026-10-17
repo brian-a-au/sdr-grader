@@ -46,13 +46,18 @@ def test_accepts_independent_identities(version):
     assert env["COMPANION_APPLICABLE"] == "false"
 
 
-def test_ships_inactive():
-    import json
+def test_accepts_inactive_manifest():
+    assert MODULE.validate({"schema_version": 1, "active": False}) == {}
 
-    assert (
-        MODULE.validate(json.loads((ROOT / ".github/release-soak/candidate.json").read_text()))
-        == {}
-    )
+
+def test_tracked_candidate_is_valid():
+    config = json.loads((ROOT / ".github/release-soak/candidate.json").read_text())
+    env = MODULE.validate(config)
+    if config["active"]:
+        assert env["GRADER_VERSION"] == config["release"]["version"]
+        assert (ROOT / config["readiness_record"]).is_file()
+    else:
+        assert env == {}
 
 
 @pytest.mark.parametrize(
