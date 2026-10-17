@@ -582,3 +582,82 @@ def test_single_skipped_rule_is_singular():
     )
     assert sum(len(s.ids) for s in report.methodology.skipped) == 1
     assert "1 rule skipped during this run" in render(report)
+
+
+# ---------------------------------------------------------------------------
+# Suppression that leaves nothing to score (#118)
+# ---------------------------------------------------------------------------
+
+
+def _cja_rule_ids() -> list[str]:
+    rubric = load_rubric(STRICT_PACK)
+    return [r.id for r in rubric.rules if "cja" in r.platforms]
+
+
+def _suppress_all_config(tmp_path: Path, keep: tuple[str, ...] = ()) -> Path:
+    ids = [i for i in _cja_rule_ids() if i not in keep]
+    return _write_suppression(tmp_path, {"suppress": [{"rule": i} for i in ids]})
+
+
+def test_suppressing_every_applicable_rule_is_rejected(tmp_path):
+    config = _suppress_all_config(tmp_path)
+    rubric = load_rubric(STRICT_PACK)
+    suppression = load_suppression(config)
+    snapshot = json.loads((FIXTURES / "cja_snapshot_messy.json").read_text(encoding="utf-8"))
+    impl = adapt(snapshot, source="test")
+    with pytest.raises(
+        RubricValidationError,
+        match="suppression leaves no applicable rule in a weighted category",
+    ):
+        grade(impl, rubric, suppression)
+
+
+def test_cli_rejects_suppression_that_scores_nothing(tmp_path, capsys):
+    config = _suppress_all_config(tmp_path)
+    output = tmp_path / "r.html"
+    output.write_text("old", encoding="utf-8")
+    rc = main(
+        [
+            str(FIXTURES / "cja_snapshot_messy.json"),
+            "--output",
+            str(output),
+            "--suppress-config",
+            str(config),
+            "--quiet",
+        ]
+    )
+    assert rc == RUBRIC_VALIDATION_FAILURE
+    assert output.read_text(encoding="utf-8") == "old"
+    assert "rubric error:" in capsys.readouterr().err
+
+
+def test_trend_rejects_suppression_that_scores_nothing(tmp_path):
+    config = _suppress_all_config(tmp_path)
+    src = (FIXTURES / "cja_snapshot_messy.json").read_text(encoding="utf-8")
+    snapshots = tmp_path / "snaps"
+    snapshots.mkdir()
+    for name in ("snapshot_2026-01-01.json", "snapshot_2026-02-01.json"):
+        (snapshots / name).write_text(src, encoding="utf-8")
+    rc = main(
+        [
+            str(snapshots),
+            "--trend",
+            "--output",
+            str(tmp_path / "t.html"),
+            "--suppress-config",
+            str(config),
+            "--quiet",
+        ]
+    )
+    assert rc == RUBRIC_VALIDATION_FAILURE
+    assert not (tmp_path / "t.html").exists()
+
+
+def test_partial_suppression_still_grades(tmp_path):
+    rubric = load_rubric(STRICT_PACK)
+    keep = next(i for i in _cja_rule_ids())
+    config = _suppress_all_config(tmp_path, keep=(keep,))
+    suppression = load_suppression(config)
+    snapshot = json.loads((FIXTURES / "cja_snapshot_messy.json").read_text(encoding="utf-8"))
+    report = grade(adapt(snapshot, source="test"), rubric, suppression)
+    assert isinstance(report.overall_pct, int)

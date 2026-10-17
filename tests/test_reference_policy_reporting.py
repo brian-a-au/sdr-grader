@@ -5,6 +5,7 @@ from dataclasses import replace
 import pytest
 
 from _rule_test_helpers import component, impl
+from sdr_grader.core.exceptions import RubricValidationError
 from sdr_grader.core.grader import grade
 from sdr_grader.core.models import ReferenceClassification
 from sdr_grader.render import cap_component_items, render
@@ -60,6 +61,10 @@ def test_report_assessment_and_deduplicated_diagnostic(platform, pack, extra):
 @pytest.mark.parametrize("suppressed", [[], ["SCH-002"], ["CALC-002", "SCH-002"]])
 def test_full_suppression_limits_diagnostic_associations(suppressed):
     suppression = Suppression(suppressed=[SuppressedRule(r, "User choice") for r in suppressed])
+    if len(suppressed) == 2:
+        with pytest.raises(RubricValidationError, match="suppression leaves no applicable rule"):
+            grade(impl(calc=[typed_calc()]), policy_rubric(), suppression)
+        return
     report = grade(impl(calc=[typed_calc()]), policy_rubric(), suppression)
     remaining = sorted({"SCH-002", "CALC-002"} - set(suppressed))
     assert len(diagnostics(report)) == bool(remaining)
