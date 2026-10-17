@@ -21,6 +21,7 @@ from datetime import UTC, datetime
 from markupsafe import Markup
 
 from sdr_grader.core.aa_admin import AAAdminAssessment
+from sdr_grader.core.exceptions import RubricValidationError
 from sdr_grader.core.grade_calc import GradeResult, compute_grade
 from sdr_grader.core.models import Implementation
 from sdr_grader.core.reference_policy import (
@@ -75,6 +76,17 @@ def grade(
         rubric,
         excluded_rule_ids=(suppression.fully_suppressed_ids if suppression is not None else ()),
     )
+    if (
+        suppression is not None
+        and suppression.fully_suppressed_ids
+        and not any(
+            rubric.category_weights.get(rule.category, 0) > 0
+            for rule in resolution.configured_rules
+        )
+    ):
+        raise RubricValidationError(
+            "suppression leaves no applicable rule in a weighted category; nothing would be scored"
+        )
     rule_inventory = resolution.effective_rules
     assessments = resolution.reference_assessments
     raw_findings = run_rules(

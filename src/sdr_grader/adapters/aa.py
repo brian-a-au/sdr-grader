@@ -567,7 +567,7 @@ def _safe_float(value: Any, default: float = 0.0) -> float:
     elif isinstance(value, str):
         try:
             result = float(value.strip())
-        except (ValueError, OverflowError):
+        except ValueError:
             return default
     else:
         return default

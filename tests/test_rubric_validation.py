@@ -127,6 +127,11 @@ def test_param_bounds_are_inclusive(tmp_path):
         ("threshold", float("inf")),
         ("threshold", 1.5),
         ("threshold", -0.1),
+        ("min_consistency", 1.5),
+        ("min_similarity", -0.1),
+        ("max_complexity", -1),
+        ("cap_days", 2.5),
+        ("max_age_days", True),
     ],
 )
 def test_invalid_numeric_params_rejected(tmp_path, key, value):
@@ -685,3 +690,64 @@ def test_boolean_meta_version_is_rejected(tmp_path):
     _write_structured_pack(tmp_path, meta=meta)
     with pytest.raises(RubricValidationError):
         load_rubric(tmp_path)
+
+
+@pytest.mark.parametrize("bad_id", ["\x1b[2J", "X" * 65, "A" * 10_000])
+def test_rule_id_must_be_bounded_printable_text(tmp_path, bad_id):
+    pack = _write_structured_pack(
+        tmp_path,
+        category_content={"category": "naming_conventions", "rules": [_valid_rule(id=bad_id)]},
+    )
+    with pytest.raises(RubricValidationError) as exc:
+        load_rubric(pack)
+    message = str(exc.value)
+    assert "rule id must be printable text of at most 64 characters" in message
+    assert "\x1b" not in message
+    assert len(message) < 200
+
+
+def test_colliding_long_category_weight_keys_are_bounded(tmp_path):
+    key = "A" * 10_000
+    meta = _valid_meta()
+    meta["category_weights"] = {key: 0.5, key.lower(): 0.5}
+    _write_structured_pack(tmp_path, meta=meta)
+    with pytest.raises(RubricValidationError) as exc:
+        load_rubric(tmp_path)
+    assert len(str(exc.value)) < 300
+
+
+def test_duplicate_rule_id_message_is_bounded(tmp_path):
+    category_content = {
+        "category": "naming_conventions",
+        "rules": [_valid_rule(id="X" * 64), _valid_rule(id="X" * 64)],
+    }
+    pack = _write_structured_pack(tmp_path, category_content=category_content)
+    with pytest.raises(RubricValidationError) as exc:
+        load_rubric(pack)
+    assert len(str(exc.value)) < 300
+
+
+def test_invalid_regex_message_is_bounded(tmp_path):
+    pattern = "(\x1b" + "a" * 10_000
+    pack = _write_structured_pack(
+        tmp_path,
+        category_content={
+            "category": "naming_conventions",
+            "rules": [_valid_rule(params={"pattern": pattern})],
+        },
+    )
+    with pytest.raises(RubricValidationError) as exc:
+        load_rubric(pack)
+    assert len(str(exc.value)) < 300
+    assert "\x1b" not in str(exc.value)
+
+
+def test_grade_scale_descending_message_is_bounded(tmp_path):
+    label = "\x1b" + "G" * 10_000
+    meta = _valid_meta()
+    meta["grade_scale"] = [{"min": 90, "grade": label}, {"min": 90, "grade": label}]
+    _write_structured_pack(tmp_path, meta=meta)
+    with pytest.raises(RubricValidationError) as exc:
+        load_rubric(tmp_path)
+    assert len(str(exc.value)) < 300
+    assert "\x1b" not in str(exc.value)

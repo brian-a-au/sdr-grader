@@ -58,6 +58,11 @@ A list of suppression entries. Each entry must have:
   rejected rather than converted to whole-rule suppressions. Whole-rule suppression
   is the only enforcement today. Tracked for a future release.
 
+Suppression must leave at least one applicable rule in a category with a
+positive weight. If every applicable rule in the weighted categories is
+suppressed, nothing would be scored, so this is a configuration error and
+exits with code 3.
+
 ### `severity_overrides`
 
 A mapping of rule ID → new severity. The value must be one of
@@ -93,7 +98,8 @@ References are validated against the selected rubric before grading:
 - every `suppress[].rule` must name a rule in that pack;
 - every `severity_overrides` key must name a rule in that pack; and
 - every `category_weights` key must exactly match a pack category slug; and
-- the resulting weights must leave at least one category with a positive weight.
+- the resulting weights must leave at least one category with a positive weight; and
+- suppression must leave at least one applicable rule in a positive-weight category.
 
 An unknown reference exits with code 3 before HTML or JSON output is
 published. When moving to bundled pack `2.0`, remove suppressions or

@@ -113,7 +113,7 @@ def test_dry_run_never_dispatches(monkeypatch, capsys, calls):
     assert "dispatch=True" in capsys.readouterr().out
 
 
-def test_gh_failure_returns_one(monkeypatch, capsys, calls):
+def test_gh_failure_returns_one(monkeypatch, capsys):
     def boom(cmd, **kwargs):
         return subprocess.CompletedProcess(cmd, 1, stdout="", stderr="x")
 

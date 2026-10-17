@@ -1091,6 +1091,31 @@ def test_malformed_consumed_json_is_controlled(tmp_path, monkeypatch, capsys, ro
     assert "Traceback" not in err
 
 
+def test_extra_input_over_depth_is_controlled_on_every_interpreter(tmp_path, capsys):
+    source = tmp_path / "deep.json"
+    source.write_text("[" * 150 + "0" + "]" * 150)
+    output = tmp_path / "report.html"
+    output.write_text("previous report")
+    json_output = tmp_path / "report.json"
+    json_output.write_text("previous JSON")
+    args = [str(FIXTURES / "cja_snapshot_messy.json"), "--extra-input", f"usage={source}"]
+    assert main([*args, "--output", str(output), "--json", str(json_output)]) == RUNTIME_ERROR
+    assert output.read_text() == "previous report"
+    assert json_output.read_text() == "previous JSON"
+    err = capsys.readouterr().err
+    assert "error:" in err
+    assert "--extra-input usage exceeds the maximum structure depth of 100" in err
+    assert "Traceback" not in err
+
+
+def test_extra_input_at_max_depth_is_accepted(tmp_path):
+    source = tmp_path / "deep.json"
+    source.write_text("[" * 100 + "0" + "]" * 100)
+    output = tmp_path / "report.html"
+    args = [str(FIXTURES / "cja_snapshot_messy.json"), "--extra-input", f"usage={source}"]
+    assert main([*args, "--output", str(output), "--quiet"]) == SUCCESS
+
+
 @pytest.mark.parametrize("alias", ["attribution", "attribution_model"])
 @pytest.mark.parametrize("value", [{"PRIVATE": "last-touch"}, ["PRIVATE"], {}, []])
 def test_aa_structured_attribution_is_controlled(tmp_path, capsys, alias, value):

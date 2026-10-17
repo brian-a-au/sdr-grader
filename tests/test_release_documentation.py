@@ -709,5 +709,6 @@ def test_published_patch_records_are_not_marked_unpublished() -> None:
     changelog = (REPO_ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
     section = changelog.split("## 1.5.4", 1)[1].split("\n## ", 1)[0]
     assert "not yet published" not in section
+    assert "scoped public preview" in section
     beta = (REPO_ROOT / "docs/BETA_VALIDATION.md").read_text(encoding="utf-8")
     assert "The latest published release is [1.5.4](releases/1.5.4-readiness.md)" in beta
