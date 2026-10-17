@@ -138,7 +138,8 @@ When the grader loads a pack, it validates:
 - `severity` is one of the four known values.
 - `platforms` is a non-empty list containing only `aa` and/or `cja`.
 - `params` is a mapping (or omitted).
-- Rule IDs are unique within the pack.
+- Rule IDs are unique within the pack and are printable text of at most
+  64 characters.
 - Each category referenced by a rule appears in `_meta.yaml.category_weights`.
 - Two files can share the same `category:` slug — their rules merge.
 - Malformed YAML is reported with the affected filename and no parser
@@ -221,7 +222,7 @@ This parameter was introduced in pack 2.1 with grader 1.4.0 and remains enabled
 in default packs 3.0. Older graders ignore this parameter. Pack 3.0 additionally
 requires the new AA administration check implementations and therefore grader
 1.5.0 or later. The v1.5.0 tag first includes both pack 3.0 and those checks;
-1.4.0 cannot load pack 3.0. This guide targets grader 1.5.4. See
+1.4.0 cannot load pack 3.0. This guide targets grader 1.5.5. See
 [AA administration evidence](AA_ADMIN_INPUT.md).
 Version text
 alone does not enable policy behavior. See

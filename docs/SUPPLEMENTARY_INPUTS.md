@@ -36,6 +36,9 @@ for its versioned `aa_admin` protocol, collection instructions, and four checks.
 sdr-grader snapshot.json --extra-input KEY=path/to/data.json
 ```
 
+Each `--extra-input` file is limited to nesting depth 100 and 250,000 nodes and
+must not contain surrogate code points; larger or deeper inputs exit 1.
+
 The flag is repeatable; pass it once per attached file:
 
 ```bash

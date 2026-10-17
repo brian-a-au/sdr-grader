@@ -3,6 +3,42 @@
 All notable changes follow the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
+## 1.5.5 — 2026-10-17
+
+Patch source preparation recorded October 17, 2026; not yet published. See the
+[release record](docs/releases/1.5.5-readiness.md).
+
+- (#119) Reject YAML aliases (`*name` references to an anchor) and YAML nested
+  deeper than 64 levels in rubric packs and `.sdr-grader.yaml`. A plain anchor
+  without an alias still loads. This breaks configs that used aliases; inline
+  the values instead.
+- (#119) Validate numeric rule params when the rubric loads: `threshold`,
+  `min_consistency`, `min_similarity` in [0, 1]; `max_complexity` ≥ 0;
+  `max_depth`, `cap_days`, `max_age_days` integers ≥ 0.
+- (#119) Reject suppression `category_weights` that leave no positive weight
+  (exit 3); previously these graded A (100%).
+- (#122, closes #118) Reject suppression that leaves no applicable rule in a
+  weighted category (exit 3); previously this graded A (100%).
+- (#119) Non-finite or oversized snapshot numbers and malformed
+  `--distribution-data` files no longer cause a traceback; snapshot directories
+  ignore broken symlinks and subdirectories named `*.json`.
+- (#122) `--extra-input` payloads are checked like snapshots (depth 100,
+  250,000 nodes, no surrogate code points) on every Python version; deeper
+  inputs now exit 1.
+- (#122) Rule IDs, `suppress` rules, and `severity_overrides` keys must be
+  printable text of at most 64 characters; configuration error messages no
+  longer echo long or control-character text.
+- (#120) A rule listed twice under `suppress` is a configuration error. The
+  skipped-rules list shows only rules that apply to the snapshot's platform; the
+  component-scoped note names its rules; "1 rule skipped" is singular.
+- (#120) The near-duplicate calculated metric check uses prefix filtering:
+  findings are identical, and a 16,000-metric synthetic snapshot dropped from
+  34.4 s to 0.65 s.
+- (#120) Snapshot-tool runs give the child an empty stdin, report timeouts
+  before pipe errors, and stop descendants that keep output pipes open more than
+  5 seconds after the tool exits. Descendant cleanup applies on macOS and Linux;
+  on Windows only the direct child is terminated.
+
 ## 1.5.4 — 2026-10-17
 
 Published October 17, 2026 as a scoped public preview; announcement on hold. See
