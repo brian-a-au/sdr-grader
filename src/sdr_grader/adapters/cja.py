@@ -35,9 +35,7 @@ from sdr_grader.core.timeparse import select_snapshot_timestamp
 def adapt(snapshot: dict[str, Any], *, source: str = "<unknown>") -> Implementation:
     """Convert a parsed cja_auto_sdr JSON snapshot into an Implementation."""
     if not isinstance(snapshot, dict):
-        raise InvalidSnapshotError(
-            f"expected top-level JSON object, got {type(snapshot).__name__}"
-        )
+        raise InvalidSnapshotError(f"expected top-level JSON object, got {type(snapshot).__name__}")
     validate_snapshot_structure(snapshot, label="CJA snapshot")
 
     metadata = _require_dict(snapshot, "metadata")
@@ -45,9 +43,7 @@ def adapt(snapshot: dict[str, Any], *, source: str = "<unknown>") -> Implementat
     dimensions_raw = _require_list(snapshot, "dimensions")
 
     instance_id = (
-        metadata.get("Data View ID")
-        or metadata.get("data_view_id")
-        or metadata.get("dataViewId")
+        metadata.get("Data View ID") or metadata.get("data_view_id") or metadata.get("dataViewId")
     )
     if not instance_id:
         raise InvalidSnapshotError(
@@ -71,11 +67,7 @@ def adapt(snapshot: dict[str, Any], *, source: str = "<unknown>") -> Implementat
         metadata.get("Generated Date & timestamp and timezone"),
     )
 
-    adapter_version = (
-        metadata.get("Tool Version")
-        or metadata.get("tool_version")
-        or "unknown"
-    )
+    adapter_version = metadata.get("Tool Version") or metadata.get("tool_version") or "unknown"
 
     derived_fields = _adapt_derived_fields(snapshot.get("derived_fields"))
     # The --include-all-inventory export shape echoes each derived field's
@@ -148,8 +140,8 @@ def _available_reference_ids(dimensions: list[Component]) -> set[str]:
     """
     available = {
         "metrics/occurrences",  # Events
-        "metrics/visits",       # Sessions
-        "metrics/visitors",     # People
+        "metrics/visits",  # Sessions
+        "metrics/visitors",  # People
     }
     available.update(_reference_aliases(dimensions))
     return available
@@ -204,8 +196,21 @@ def _component_from_record(
     data_type = record.get("dataType") or record.get("type")
     polarity = _normalize_polarity(record.get("polarity"))
 
-    handled = {"id", "name", "title", "description", "dataType", "type", "polarity",
-               "tags", "owner", "created", "modified", "created_at", "modified_at"}
+    handled = {
+        "id",
+        "name",
+        "title",
+        "description",
+        "dataType",
+        "type",
+        "polarity",
+        "tags",
+        "owner",
+        "created",
+        "modified",
+        "created_at",
+        "modified_at",
+    }
     platform_specific = {k: v for k, v in record.items() if k not in handled}
 
     return Component(
@@ -232,20 +237,14 @@ def _adapt_derived_fields(section: Any) -> list[Component]:
     if section is None:
         return []
     fields = _section_records(section, "fields")
-    return [
-        _derived_field_from_record(record, index=index)
-        for index, record in enumerate(fields)
-    ]
+    return [_derived_field_from_record(record, index=index) for index, record in enumerate(fields)]
 
 
-def _derived_field_from_record(
-    record: dict[str, Any], *, index: int | None = None
-) -> Component:
+def _derived_field_from_record(record: dict[str, Any], *, index: int | None = None) -> Component:
     context = _record_context("derived_fields", index)
     if not isinstance(record, dict):
         raise InvalidSnapshotError(
-            f"{context}: expected derived field record to be an object, "
-            f"got {type(record).__name__}"
+            f"{context}: expected derived field record to be an object, got {type(record).__name__}"
         )
     component_id = record.get("component_id") or record.get("id")
     if not component_id:
@@ -256,8 +255,19 @@ def _derived_field_from_record(
 
     name = record.get("component_name") or record.get("name") or component_id
     description = _normalize_description(record.get("description"))
-    handled = {"component_id", "component_name", "id", "name", "description",
-               "tags", "owner", "created", "modified", "created_at", "modified_at"}
+    handled = {
+        "component_id",
+        "component_name",
+        "id",
+        "name",
+        "description",
+        "tags",
+        "owner",
+        "created",
+        "modified",
+        "created_at",
+        "modified_at",
+    }
     platform_specific = {k: v for k, v in record.items() if k not in handled}
 
     return Component(
@@ -284,10 +294,7 @@ def _adapt_calculated_metrics(section: Any) -> list[CalculatedMetric]:
     if section is None:
         return []
     records = _section_records(section, "metrics")
-    return [
-        _calc_metric_from_record(record, index=index)
-        for index, record in enumerate(records)
-    ]
+    return [_calc_metric_from_record(record, index=index) for index, record in enumerate(records)]
 
 
 def _calc_metric_from_record(
@@ -319,11 +326,24 @@ def _calc_metric_from_record(
     attribution_model, allocation = _extract_attribution(formula)
 
     handled = {
-        "metric_id", "id", "metric_name", "name", "description",
-        "definition_json", "formula_summary", "definition_summary",
-        "metric_references", "segment_references", "complexity_score",
-        "created", "modified", "created_at", "modified_at", "owner",
-        "approved", "shared_to_count",
+        "metric_id",
+        "id",
+        "metric_name",
+        "name",
+        "description",
+        "definition_json",
+        "formula_summary",
+        "definition_summary",
+        "metric_references",
+        "segment_references",
+        "complexity_score",
+        "created",
+        "modified",
+        "created_at",
+        "modified_at",
+        "owner",
+        "approved",
+        "shared_to_count",
     }
     platform_specific = {k: v for k, v in record.items() if k not in handled}
 
@@ -377,9 +397,13 @@ def _inventory_references(
                 add("segment", value)
             if segment:
                 # CJA segment exporter also accepts these explicit ID slots.
-                for key, kind in (("dimension", "dimension"), ("dim", "dimension"),
-                                  ("metric", "metric"), ("segment", "segment"),
-                                  ("seg", "segment")):
+                for key, kind in (
+                    ("dimension", "dimension"),
+                    ("dim", "dimension"),
+                    ("metric", "metric"),
+                    ("segment", "segment"),
+                    ("seg", "segment"),
+                ):
                     add(kind, node.get(key))
             for key, value in node.items():
                 # Comparison literals are data, even if shaped like an AST.
@@ -418,8 +442,11 @@ def _calc_segment_reference_id(value: Any) -> str:
     if isinstance(value, str):
         return value.strip() if value.strip().lower() not in {"", "nan", "none", "null"} else ""
     if isinstance(value, dict):
-        value = [value[key] for key in ("segment_id", "id", "name", "metric", "value", "val")
-                 if key in value]
+        value = [
+            value[key]
+            for key in ("segment_id", "id", "name", "metric", "value", "val")
+            if key in value
+        ]
     if isinstance(value, list):
         for item in value:
             if reference := _calc_segment_reference_id(item):
@@ -451,8 +478,11 @@ def _inventory_ref_list(value: Any) -> list[str]:
             value = value.split(",")
     if not isinstance(value, list):
         return []
-    return [item.strip() for item in value
-            if isinstance(item, str) and item.strip() and item.strip() != "-"]
+    return [
+        item.strip()
+        for item in value
+        if isinstance(item, str) and item.strip() and item.strip() != "-"
+    ]
 
 
 def _extract_attribution(formula: dict[str, Any]) -> tuple[str | None, str | None]:
@@ -466,9 +496,7 @@ def _extract_attribution(formula: dict[str, Any]) -> tuple[str | None, str | Non
     if not isinstance(formula, dict):
         return None, None
     attribution_model = (
-        formula.get("attribution")
-        or formula.get("attribution_model")
-        or formula.get("model")
+        formula.get("attribution") or formula.get("attribution_model") or formula.get("model")
     )
     allocation = formula.get("allocation")
     func = formula.get("func")
@@ -490,18 +518,14 @@ def _adapt_segments(section: Any) -> list[Segment]:
     if section is None:
         return []
     records = _section_records(section, "segments")
-    return [
-        _segment_from_record(record, index=index)
-        for index, record in enumerate(records)
-    ]
+    return [_segment_from_record(record, index=index) for index, record in enumerate(records)]
 
 
 def _segment_from_record(record: dict[str, Any], *, index: int | None = None) -> Segment:
     context = _record_context("segments", index)
     if not isinstance(record, dict):
         raise InvalidSnapshotError(
-            f"{context}: expected segment record to be an object, "
-            f"got {type(record).__name__}"
+            f"{context}: expected segment record to be an object, got {type(record).__name__}"
         )
     segment_id = record.get("segment_id") or record.get("id")
     if not segment_id:
@@ -521,12 +545,25 @@ def _segment_from_record(record: dict[str, Any], *, index: int | None = None) ->
     references = _inventory_references(definition, record, segment=True)
 
     handled = {
-        "segment_id", "id", "segment_name", "name", "description",
-        "definition_json", "nesting_depth", "container_type",
-        "dimension_references", "metric_references", "other_segment_references",
+        "segment_id",
+        "id",
+        "segment_name",
+        "name",
+        "description",
+        "definition_json",
+        "nesting_depth",
+        "container_type",
+        "dimension_references",
+        "metric_references",
+        "other_segment_references",
         "segment_references",
-        "created", "modified", "created_at", "modified_at", "owner",
-        "approved", "shared_to_count",
+        "created",
+        "modified",
+        "created_at",
+        "modified_at",
+        "owner",
+        "approved",
+        "shared_to_count",
     }
     platform_specific = {k: v for k, v in record.items() if k not in handled}
 
@@ -547,9 +584,7 @@ def _segment_from_record(record: dict[str, Any], *, index: int | None = None) ->
     )
 
 
-def _extract_container_types(
-    declared_container: Any, definition: dict[str, Any]
-) -> list[str]:
+def _extract_container_types(declared_container: Any, definition: dict[str, Any]) -> list[str]:
     """Collect distinct container 'context' values from a CJA segment definition.
 
     Falls back to the upstream-declared container_type if the definition shape
@@ -655,9 +690,7 @@ def _section_records(section: Any, records_key: str) -> list[dict[str, Any]]:
                 f"section '{records_key}' must be a list, got {type(records).__name__}"
             )
         return records
-    raise InvalidSnapshotError(
-        f"section must be object or list, got {type(section).__name__}"
-    )
+    raise InvalidSnapshotError(f"section must be object or list, got {type(section).__name__}")
 
 
 def _record_context(collection: str, index: int | None) -> str:
@@ -783,11 +816,14 @@ def _safe_float(value: Any, default: float = 0.0) -> float:
     if isinstance(value, bool):
         return default
     if isinstance(value, (int, float)):
-        result = float(value)
+        try:
+            result = float(value)
+        except OverflowError:
+            return default
     elif isinstance(value, str):
         try:
             result = float(value.strip())
-        except ValueError:
+        except (ValueError, OverflowError):
             return default
     else:
         return default
@@ -810,15 +846,17 @@ def _normalize_description(value: Any) -> str | None:
     return stripped
 
 
-_OWNER_SENTINELS_EMPTY = frozenset({
-    "",
-    "-",
-    "unknown",
-    "unknown user",
-    "n/a",
-    "none",
-    "null",
-})
+_OWNER_SENTINELS_EMPTY = frozenset(
+    {
+        "",
+        "-",
+        "unknown",
+        "unknown user",
+        "n/a",
+        "none",
+        "null",
+    }
+)
 
 
 def _normalize_owner(value: Any) -> str | None:
@@ -858,7 +896,11 @@ def _governance_approved(record: dict[str, Any]) -> bool | None:
 def _governance_shared_to_count(record: dict[str, Any]) -> int | None:
     """Read CJA's first-class `shared_to_count`; None means absent."""
     value = record.get("shared_to_count")
-    if isinstance(value, (int, float)):
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float) and math.isfinite(value):
         return int(value)
     return None
 

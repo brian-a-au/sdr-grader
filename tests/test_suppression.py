@@ -18,6 +18,7 @@ from sdr_grader.rules.rubric import load_rubric
 from sdr_grader.rules.suppression import (
     SuppressedRule,
     Suppression,
+    _renormalize,
     apply_to_findings,
     apply_to_rubric,
     load_suppression,
@@ -202,6 +203,11 @@ def test_cli_malformed_suppression_is_exit_3_with_no_artifact(
 # ---------------------------------------------------------------------------
 
 
+def test_renormalize_returns_input_when_no_positive_weight():
+    weights = {"a": 0.0, "b": 0.0}
+    assert _renormalize(weights) is weights
+
+
 def test_apply_to_findings_drops_suppressed_rules():
     findings = [_finding("SCH-003"), _finding("CALC-014", severity="high")]
     suppression = Suppression(suppressed=[SuppressedRule("SCH-003", reason="quiet")])
@@ -298,13 +304,38 @@ def test_apply_to_rubric_clamps_nonpositive_category_weight_to_zero(override):
     assert sum(new_rubric.category_weights.values()) == pytest.approx(1.0)
 
 
-def test_apply_to_rubric_preserves_all_nonpositive_weights_without_dividing():
+def test_all_zero_category_weights_rejected():
     rubric = load_rubric(STRICT_PACK)
     overrides = dict.fromkeys(rubric.category_weights, 0.0)
 
-    new_rubric = apply_to_rubric(rubric, Suppression(category_weight_overrides=overrides))
+    with pytest.raises(RubricValidationError, match="category_weights leave no positive weight"):
+        apply_to_rubric(rubric, Suppression(category_weight_overrides=overrides))
 
-    assert new_rubric.category_weights == overrides
+
+def test_cli_all_zero_category_weights_is_exit_3_with_no_artifact(tmp_path, capsys):
+    rubric = load_rubric(STRICT_PACK)
+    config = tmp_path / ".sdr-grader.yaml"
+    config.write_text(
+        yaml.safe_dump({"category_weights": dict.fromkeys(rubric.category_weights, 0)}),
+        encoding="utf-8",
+    )
+    output = tmp_path / "report.html"
+
+    rc = main(
+        [
+            str(FIXTURES / "cja_snapshot_messy.json"),
+            "--output",
+            str(output),
+            "--suppress-config",
+            str(config),
+        ]
+    )
+
+    assert rc == RUBRIC_VALIDATION_FAILURE
+    assert not output.exists()
+    diagnostics = capsys.readouterr().err
+    assert "category_weights leave no positive weight" in diagnostics
+    assert "Traceback" not in diagnostics
 
 
 # ---------------------------------------------------------------------------

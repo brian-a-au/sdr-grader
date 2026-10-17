@@ -41,13 +41,23 @@ def load_distribution_data(path: str | Path | None = None) -> dict[str, Any]:
     if not p.exists():
         raise InvalidSnapshotError(f"distribution data file not found: {p}")
     try:
-        text = p.read_text(encoding="utf-8")
+        raw = p.read_bytes()
     except OSError as exc:
         raise InvalidSnapshotError(f"could not read {p}: {exc}") from exc
+    try:
+        text = raw.decode("utf-8")
+    except UnicodeError as exc:
+        raise InvalidSnapshotError(f"{p}: distribution data is not valid UTF-8") from exc
     try:
         data = json.loads(text)
     except json.JSONDecodeError as exc:
         raise InvalidSnapshotError(f"{p}: not valid JSON: {exc}") from exc
+    except RecursionError as exc:
+        raise InvalidSnapshotError(f"{p}: distribution data is nested too deeply") from exc
+    except ValueError as exc:
+        raise InvalidSnapshotError(
+            f"{p}: distribution data contains a number that is too large"
+        ) from exc
     if not isinstance(data, dict):
         raise InvalidSnapshotError(f"{p}: distribution data must be a JSON object")
 
@@ -55,15 +65,19 @@ def load_distribution_data(path: str | Path | None = None) -> dict[str, Any]:
     if overall is None:
         overall = {}
     if not isinstance(overall, dict):
-        raise InvalidSnapshotError(
-            f"{p}: distribution field overall must be an object"
-        )
+        raise InvalidSnapshotError(f"{p}: distribution field overall must be an object")
     categories = data.get("categories")
     if categories is None:
         categories = {}
     if not isinstance(categories, dict):
+        raise InvalidSnapshotError(f"{p}: distribution field categories must be an object")
+
+    n_instances = data.get("n_instances")
+    if n_instances is not None and (
+        isinstance(n_instances, bool) or not isinstance(n_instances, int) or n_instances < 0
+    ):
         raise InvalidSnapshotError(
-            f"{p}: distribution field categories must be an object"
+            f"{p}: distribution field n_instances must be a non-negative integer"
         )
 
     p25 = _require_pct(overall.get("p25", 0), "overall.p25", p)
@@ -71,8 +85,7 @@ def load_distribution_data(path: str | Path | None = None) -> dict[str, Any]:
     _require_pct(overall.get("median", 0), "overall.median", p)
     if p25 > p75:
         raise InvalidSnapshotError(
-            f"{p}: distribution overall.p25 ({p25}) is greater than "
-            f"overall.p75 ({p75})"
+            f"{p}: distribution overall.p25 ({p25}) is greater than overall.p75 ({p75})"
         )
     for slug, category in categories.items():
         if not isinstance(category, dict):
@@ -89,18 +102,15 @@ def load_distribution_data(path: str | Path | None = None) -> dict[str, Any]:
 
 def _require_pct(value: Any, field: str, source: Path) -> int | float:
     """Require a finite JSON number inside the inclusive percentage range."""
-    if (
-        isinstance(value, bool)
-        or not isinstance(value, (int, float))
-        or not isfinite(value)
-    ):
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise InvalidSnapshotError(
-            f"{source}: distribution field {field} must be a number, got {value!r}"
+            f"{source}: distribution field {field} must be a number, got {type(value).__name__}"
         )
+    if isinstance(value, float) and not isfinite(value):
+        raise InvalidSnapshotError(f"{source}: distribution field {field} must be a finite number")
     if not 0 <= value <= 100:
         raise InvalidSnapshotError(
-            f"{source}: distribution field {field} must be between 0 and 100, "
-            f"got {value}"
+            f"{source}: distribution field {field} must be between 0 and 100"
         )
     return value
 
@@ -115,9 +125,7 @@ def build_distribution(report: Report, data: dict[str, Any]) -> Distribution:
 
     overall_chart = DistributionChart(
         label="Overall score vs reference distribution",
-        svg=histogram_chart(
-            your_score=report.overall_pct, median=median, p25=p25, p75=p75
-        ),
+        svg=histogram_chart(your_score=report.overall_pct, median=median, p25=p25, p75=p75),
     )
 
     cat_data = data.get("categories") or {}
@@ -128,9 +136,7 @@ def build_distribution(report: Report, data: dict[str, Any]) -> Distribution:
         rows.append((CATEGORY_DISPLAY.get(slug, cat.name), cat.pct, median_pct))
 
     cat_label = (
-        f"Category scores vs median (n = {n} instances)"
-        if n
-        else "Category scores vs median"
+        f"Category scores vs median (n = {n} instances)" if n else "Category scores vs median"
     )
     cat_chart = DistributionChart(
         label=cat_label,

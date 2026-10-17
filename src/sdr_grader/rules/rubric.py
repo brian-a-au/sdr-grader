@@ -19,11 +19,10 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-import yaml
-
 from sdr_grader.core.exceptions import RubricValidationError
 from sdr_grader.core.reference_policy import POLICY_PARAM, REFERENCE_CHECKS
 from sdr_grader.rules.registry import _import_all_checks, get_check, registered_names
+from sdr_grader.rules.yaml_io import describe_value, load_config_yaml
 
 VALID_SEVERITIES = {"critical", "high", "medium", "low"}
 VALID_PLATFORMS = {"aa", "cja"}
@@ -103,28 +102,10 @@ def _load_meta(pack_path: Path) -> dict[str, Any]:
     meta_path = pack_path / "_meta.yaml"
     if not meta_path.exists():
         raise RubricValidationError(f"missing required _meta.yaml in {pack_path}")
-    meta = _load_yaml(meta_path)
+    meta = load_config_yaml(meta_path)
     if not isinstance(meta, dict):
         raise RubricValidationError(f"_meta.yaml must be a mapping, got {type(meta).__name__}")
     return meta
-
-
-def _load_yaml(path: Path) -> Any:
-    try:
-        with path.open(encoding="utf-8") as handle:
-            try:
-                loaded = yaml.safe_load(handle)
-            except UnicodeDecodeError:
-                raise
-            except ValueError as exc:
-                raise RubricValidationError(f"{path.name}: invalid YAML scalar") from exc
-            return {} if loaded is None else loaded
-    except UnicodeDecodeError as exc:
-        raise RubricValidationError(f"{path.name}: YAML must be UTF-8 encoded") from exc
-    except yaml.YAMLError as exc:
-        raise RubricValidationError(f"{path.name}: invalid YAML syntax") from exc
-    except OSError as exc:
-        raise RubricValidationError(f"{path.name}: could not read YAML") from exc
 
 
 def _validate_category_weights(value: Any) -> dict[str, float]:
@@ -133,16 +114,19 @@ def _validate_category_weights(value: Any) -> dict[str, float]:
     weights: dict[str, float] = {}
     for k, v in value.items():
         if isinstance(v, bool) or not isinstance(v, (int, float)):
-            raise RubricValidationError(f"category_weights[{k!r}] is not numeric ({v!r})")
+            raise RubricValidationError(
+                f"category_weights[{describe_value(k)}] is not numeric ({describe_value(v)})"
+            )
         try:
             number = float(v)
         except OverflowError as exc:
             raise RubricValidationError(
-                f"category_weights[{k!r}] must be a finite number between 0 and 1"
+                f"category_weights[{describe_value(k)}] must be a finite number between 0 and 1"
             ) from exc
         if not math.isfinite(number) or not 0 <= number <= 1:
             raise RubricValidationError(
-                f"category_weights[{k!r}] must be a finite number between 0 and 1 (got {v!r})"
+                f"category_weights[{describe_value(k)}] must be a finite "
+                f"number between 0 and 1 (got {describe_value(v)})"
             )
         weights[str(k)] = number
     seen_slugs: dict[str, str] = {}
@@ -150,14 +134,15 @@ def _validate_category_weights(value: Any) -> dict[str, float]:
         slug = key.lower().replace(" ", "_")
         if slug in seen_slugs:
             raise RubricValidationError(
-                f"category_weights keys {seen_slugs[slug]!r} and {key!r} collapse to "
+                f"category_weights keys {describe_value(seen_slugs[slug])} and "
+                f"{describe_value(key)} collapse to "
                 f"the same category slug {slug!r}"
             )
         seen_slugs[slug] = key
     total = math.fsum(weights.values())
     if abs(total - 1.0) > WEIGHT_TOLERANCE:
         raise RubricValidationError(
-            f"category_weights must sum to 1.0; got {total:.6f}: {weights!r}"
+            f"category_weights must sum to 1.0; got {total:.6f}: {describe_value(weights)}"
         )
     return weights
 
@@ -169,12 +154,13 @@ def _validate_severity_weights(value: Any) -> dict[str, int]:
     for k, v in value.items():
         if k not in VALID_SEVERITIES:
             raise RubricValidationError(
-                f"severity_weights[{k!r}] is not a valid severity "
+                f"severity_weights[{describe_value(k)}] is not a valid severity "
                 f"(expected one of {sorted(VALID_SEVERITIES)!r})"
             )
         if isinstance(v, bool) or not isinstance(v, int) or v <= 0:
             raise RubricValidationError(
-                f"severity_weights[{k!r}] must be an integer and a positive integer (got {v!r})"
+                f"severity_weights[{describe_value(k)}] must be an integer and a "
+                f"positive integer (got {describe_value(v)})"
             )
         weights[str(k)] = v
     missing = VALID_SEVERITIES - weights.keys()
@@ -190,14 +176,17 @@ def _validate_grade_scale(value: Any) -> list[GradeBand]:
     for entry in value:
         if not isinstance(entry, dict) or "min" not in entry or "grade" not in entry:
             raise RubricValidationError(
-                f"grade_scale entry must be a mapping with 'min' and 'grade': {entry!r}"
+                f"grade_scale entry must be a mapping with 'min' and 'grade':"
+                f" {describe_value(entry)}"
             )
         raw_min = entry["min"]
         if isinstance(raw_min, bool) or not isinstance(
             raw_min,
             (int, float),
         ):
-            raise RubricValidationError(f"grade_scale entry has non-numeric 'min': {entry!r}")
+            raise RubricValidationError(
+                f"grade_scale entry has non-numeric 'min': {describe_value(entry)}"
+            )
         try:
             min_score = float(raw_min)
         except OverflowError as exc:
@@ -206,12 +195,13 @@ def _validate_grade_scale(value: Any) -> list[GradeBand]:
             ) from exc
         if not math.isfinite(min_score) or not 0 <= min_score <= 100:
             raise RubricValidationError(
-                f"grade_scale entry 'min' must be a finite number between 0 and 100: {entry!r}"
+                f"grade_scale entry 'min' must be a finite number between 0 and 100:"
+                f" {describe_value(entry)}"
             )
         grade = entry["grade"]
         if not isinstance(grade, str) or not grade.strip():
             raise RubricValidationError(
-                f"grade_scale entry 'grade' must be a non-empty string: {entry!r}"
+                f"grade_scale entry 'grade' must be a non-empty string: {describe_value(entry)}"
             )
         bands.append(GradeBand(min_score=min_score, grade=grade.strip()))
     # Bands must be in descending order so score_to_letter can scan top-down.
@@ -240,7 +230,7 @@ def _load_rules(pack_path: Path, allowed_categories: set[str]) -> list[RuleDefin
     for category_file in sorted(pack_path.glob("*.yaml")):
         if category_file.name.startswith("_"):
             continue
-        content = _load_yaml(category_file)
+        content = load_config_yaml(category_file)
         if not isinstance(content, dict):
             raise RubricValidationError(
                 f"{category_file.name} must contain a mapping at the top level"
@@ -252,7 +242,7 @@ def _load_rules(pack_path: Path, allowed_categories: set[str]) -> list[RuleDefin
             )
         if category not in allowed_categories:
             raise RubricValidationError(
-                f"{category_file.name} declares category {category!r} "
+                f"{category_file.name} declares category {describe_value(category)} "
                 f"not present in _meta.yaml category_weights"
             )
         rule_entries = content.get("rules", [])
@@ -277,11 +267,12 @@ def _validate_rule_entry(entry: Any, *, category: str, source: str) -> RuleDefin
     rule_id = entry.get("id")
     if not isinstance(rule_id, str) or not rule_id:
         raise RubricValidationError(f"{source}: rule entry is missing 'id' string")
-    name = str(entry.get("name") or rule_id).strip()
+    name = (_text_field(entry, "name", source, rule_id) or rule_id).strip()
     severity = entry.get("severity")
     if not isinstance(severity, str) or severity not in VALID_SEVERITIES:
         raise RubricValidationError(
-            f"{source} {rule_id}: severity {severity!r} not one of {sorted(VALID_SEVERITIES)!r}"
+            f"{source} {rule_id}: severity {describe_value(severity)} not one of "
+            f"{sorted(VALID_SEVERITIES)!r}"
         )
     platforms_raw = entry.get("platforms")
     if not isinstance(platforms_raw, list) or not platforms_raw:
@@ -294,7 +285,7 @@ def _validate_rule_entry(entry: Any, *, category: str, source: str) -> RuleDefin
     if invalid_platforms:
         raise RubricValidationError(
             f"{source} {rule_id}: unsupported platform values "
-            f"{invalid_platforms!r}; expected values from {sorted(VALID_PLATFORMS)!r}"
+            f"{describe_value(invalid_platforms)}; expected values from {sorted(VALID_PLATFORMS)!r}"
         )
     platforms = list(platforms_raw)
     check_name = entry.get("check")
@@ -304,7 +295,7 @@ def _validate_rule_entry(entry: Any, *, category: str, source: str) -> RuleDefin
         get_check(check_name)
     except KeyError as exc:
         raise RubricValidationError(
-            f"{source} {rule_id}: check function {check_name!r} is not registered. "
+            f"{source} {rule_id}: check function {describe_value(check_name)} is not registered. "
             f"Known checks: {registered_names()!r}"
         ) from exc
     params = entry.get("params", {})
@@ -325,12 +316,23 @@ def _validate_rule_entry(entry: Any, *, category: str, source: str) -> RuleDefin
         check=check_name,
         category=category,
         params=params,
-        rationale=str(entry.get("rationale", "")).strip(),
-        remediation=str(entry.get("remediation", "")).strip(),
+        rationale=_text_field(entry, "rationale", source, rule_id).strip(),
+        remediation=_text_field(entry, "remediation", source, rule_id).strip(),
     )
 
 
 _KNOWN_TARGETS = {"metrics", "dimensions", "derived_fields", "calculated_metrics", "segments"}
+
+
+_NUMERIC_PARAMS: dict[str, tuple[type, float, float | None]] = {
+    "threshold": (float, 0.0, 1.0),
+    "min_consistency": (float, 0.0, 1.0),
+    "min_similarity": (float, 0.0, 1.0),
+    "max_complexity": (float, 0.0, None),
+    "max_depth": (int, 0, None),
+    "cap_days": (int, 0, None),
+    "max_age_days": (int, 0, None),
+}
 
 
 def _validate_common_params(params: dict[str, Any], *, rule_id: str, source: str) -> None:
@@ -357,9 +359,38 @@ def _validate_common_params(params: dict[str, Any], *, rule_id: str, source: str
         unknown = sorted(set(targets) - _KNOWN_TARGETS)
         if unknown:
             raise RubricValidationError(
-                f"{source} {rule_id}: unknown 'targets' {unknown!r}; "
+                f"{source} {rule_id}: unknown 'targets' {describe_value(unknown)}; "
                 f"expected names from {sorted(_KNOWN_TARGETS)!r}"
             )
+    for key, (kind, lo, hi) in _NUMERIC_PARAMS.items():
+        if key not in params:
+            continue
+        value = params[key]
+        kind_text = "a finite number" if kind is float else "an integer"
+        hi_text = "inf" if hi is None else f"{hi:g}"
+        message = f"{source} {rule_id}: '{key}' must be {kind_text} in [{lo:g}, {hi_text}]"
+        if isinstance(value, bool):
+            raise RubricValidationError(message)
+        if kind is int:
+            if not isinstance(value, int):
+                raise RubricValidationError(message)
+            number: float = value
+            try:
+                # float() rejects ints too large for a float (e.g. 400 digits)
+                number = float(value)
+            except OverflowError as exc:
+                raise RubricValidationError(message) from exc
+        else:
+            if not isinstance(value, (int, float)):
+                raise RubricValidationError(message)
+            try:
+                number = float(value)
+            except OverflowError as exc:
+                raise RubricValidationError(message) from exc
+            if not math.isfinite(number):
+                raise RubricValidationError(message)
+        if number < lo or (hi is not None and number > hi):
+            raise RubricValidationError(message)
 
 
 # ---------------------------------------------------------------------------
@@ -367,13 +398,22 @@ def _validate_common_params(params: dict[str, Any], *, rule_id: str, source: str
 # ---------------------------------------------------------------------------
 
 
+def _text_field(entry: dict[str, Any], field: str, source: str, rule_id: str) -> str:
+    value = entry.get(field)
+    if value is None:
+        return ""
+    if not isinstance(value, str):
+        raise RubricValidationError(f"{source} {rule_id}: '{field}' must be a string")
+    return value
+
+
 def _require_string(meta: dict[str, Any], key: str, *, coerce: bool = False) -> str:
     value = meta.get(key)
     if value is None or value == "":
         raise RubricValidationError(f"_meta.yaml is missing required string '{key}'")
-    if coerce:
+    if coerce and isinstance(value, (str, int, float)) and not isinstance(value, bool):
         return str(value)
-    if not isinstance(value, str):
+    if not isinstance(value, str) or coerce:
         raise RubricValidationError(
             f"_meta.yaml '{key}' must be a string, got {type(value).__name__}"
         )
