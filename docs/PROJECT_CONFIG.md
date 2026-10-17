@@ -44,7 +44,8 @@ All three top-level keys are optional; omit any you don't need.
 
 A list of suppression entries. Each entry must have:
 
-- `rule` *(required, string)* — the rule ID to suppress, e.g. `NAME-002`.
+- `rule` *(required, string)* — the rule ID to suppress, e.g. `NAME-002`. It must be
+  printable text of at most 64 characters.
 - `reason` *(optional, string)* — free-text explanation. Surfaces in the
   rendered report's methodology section under the rule ID, so reviewers
   can see *why* a rule was silenced rather than wondering whether it
@@ -65,7 +66,8 @@ exits with code 3.
 
 ### `severity_overrides`
 
-A mapping of rule ID → new severity. The value must be one of
+A mapping of rule ID → new severity. Each key must be printable text of at
+most 64 characters. The value must be one of
 `critical`, `high`, `medium`, `low`. Overrides affect the scoring math
 (severity weights come from the pack's `_meta.yaml`) and the rendered
 report's severity badge, but don't change whether the rule fires.
