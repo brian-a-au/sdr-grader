@@ -324,6 +324,17 @@ def _validate_rule_entry(entry: Any, *, category: str, source: str) -> RuleDefin
 _KNOWN_TARGETS = {"metrics", "dimensions", "derived_fields", "calculated_metrics", "segments"}
 
 
+_NUMERIC_PARAMS: dict[str, tuple[type, float, float | None]] = {
+    "threshold": (float, 0.0, 1.0),
+    "min_consistency": (float, 0.0, 1.0),
+    "min_similarity": (float, 0.0, 1.0),
+    "max_complexity": (float, 0.0, None),
+    "max_depth": (int, 0, None),
+    "cap_days": (int, 0, None),
+    "max_age_days": (int, 0, None),
+}
+
+
 def _validate_common_params(params: dict[str, Any], *, rule_id: str, source: str) -> None:
     """Validate the cross-check param conventions at load time.
 
@@ -351,6 +362,34 @@ def _validate_common_params(params: dict[str, Any], *, rule_id: str, source: str
                 f"{source} {rule_id}: unknown 'targets' {describe_value(unknown)}; "
                 f"expected names from {sorted(_KNOWN_TARGETS)!r}"
             )
+    for key, (kind, lo, hi) in _NUMERIC_PARAMS.items():
+        if key not in params:
+            continue
+        value = params[key]
+        kind_text = "a finite number" if kind is float else "an integer"
+        hi_text = "inf" if hi is None else f"{hi:g}"
+        message = f"{source} {rule_id}: '{key}' must be {kind_text} in [{lo:g}, {hi_text}]"
+        if isinstance(value, bool):
+            raise RubricValidationError(message)
+        if kind is int:
+            if not isinstance(value, int):
+                raise RubricValidationError(message)
+            number: float = value
+            try:
+                number = float(value)
+            except OverflowError as exc:
+                raise RubricValidationError(message) from exc
+        else:
+            if not isinstance(value, (int, float)):
+                raise RubricValidationError(message)
+            try:
+                number = float(value)
+            except OverflowError as exc:
+                raise RubricValidationError(message) from exc
+            if not math.isfinite(number):
+                raise RubricValidationError(message)
+        if number < lo or (hi is not None and number > hi):
+            raise RubricValidationError(message)
 
 
 # ---------------------------------------------------------------------------

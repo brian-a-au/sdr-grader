@@ -90,6 +90,46 @@ def test_valid_params_still_load(tmp_path):
     assert rubric.categories_in_use == ["naming_conventions"]
 
 
+def _load_with_params(tmp_path, params):
+    category_content = {
+        "category": "naming_conventions",
+        "rules": [_valid_rule(params=params)],
+    }
+    return load_rubric(_write_structured_pack(tmp_path, category_content=category_content))
+
+
+def test_param_bounds_are_inclusive(tmp_path):
+    _load_with_params(tmp_path, {"threshold": 0})
+    _load_with_params(tmp_path, {"threshold": 1.00})
+    _load_with_params(tmp_path, {"max_depth": 0})
+
+
+@pytest.mark.parametrize(
+    ("key", "value"),
+    [
+        ("max_depth", "abc"),
+        ("max_depth", float("nan")),
+        ("max_depth", 2.5),
+        ("max_depth", 5.0),
+        ("max_depth", True),
+        ("max_depth", -1),
+        ("max_depth", 10**400),
+        ("threshold", [1]),
+        ("threshold", float("nan")),
+        ("threshold", float("inf")),
+        ("threshold", 1.5),
+        ("threshold", -0.1),
+    ],
+)
+def test_invalid_numeric_params_rejected(tmp_path, key, value):
+    with pytest.raises(RubricValidationError) as exc:
+        _load_with_params(tmp_path, {key: value})
+    message = str(exc.value)
+    assert "NAME-T01" in message
+    assert f"'{key}'" in message
+    assert "'abc'" not in message
+
+
 def test_colliding_category_weight_keys_fail_at_load(tmp_path):
     """Spec F39: keys that normalize to one rendered slug are rejected."""
     meta = _valid_meta()

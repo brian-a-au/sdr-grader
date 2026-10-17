@@ -6,8 +6,10 @@ categories that matter more to you, or downgrading the severity of a
 rule you accept but want recorded. The file is opt-in. Without one, the
 selected rubric pack runs unmodified.
 
-Configuration YAML must use UTF-8 encoding. Malformed YAML, invalid scalar
-values, and numeric values outside the supported field ranges raise
+Configuration YAML must use UTF-8 encoding. Malformed YAML, YAML anchors/aliases,
+nesting deeper than 64 levels, invalid scalar values, numeric `_meta.yaml` fields
+outside their ranges, and the numeric rule params listed in
+[Rule params](RUBRIC_FORMAT.md#rule-params) outside their ranges raise
 `RubricValidationError` through the loader API. The CLI reports a configuration
 error with exit code 3 before publishing HTML or JSON reports.
 

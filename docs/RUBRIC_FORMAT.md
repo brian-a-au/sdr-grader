@@ -8,8 +8,10 @@ via `--rubric PATH`.
 
 This document is the contract. The format is the user-facing IP.
 
-Configuration YAML must use UTF-8 encoding. Malformed YAML, invalid scalar
-values, and numeric values outside the supported field ranges raise
+Configuration YAML must use UTF-8 encoding. Malformed YAML, YAML anchors/aliases,
+nesting deeper than 64 levels, invalid scalar values, numeric `_meta.yaml` fields
+outside their ranges, and the numeric rule params listed in
+[Rule params](RUBRIC_FORMAT.md#rule-params) outside their ranges raise
 `RubricValidationError` through the loader API. The CLI reports a configuration
 error with exit code 3 before publishing HTML or JSON reports.
 
@@ -144,6 +146,22 @@ When the grader loads a pack, it validates:
 
 Any failure raises `RubricValidationError` and exits 3. Failures are
 loud by design: a malformed rubric should never silently degrade.
+
+## Rule params
+
+These numeric `params` are validated when the rubric loads. Bounds are
+inclusive. Float params accept integers; integer params reject floats such as
+`5.0` and booleans.
+
+| Param | Type | Minimum | Maximum |
+| --- | --- | --- | --- |
+| `threshold` | number | 0 | 1 |
+| `min_consistency` | number | 0 | 1 |
+| `min_similarity` | number | 0 | 1 |
+| `max_complexity` | number | 0 | none |
+| `max_depth` | integer | 0 | none |
+| `cap_days` | integer | 0 | none |
+| `max_age_days` | integer | 0 | none |
 
 ## Multiple platforms
 
