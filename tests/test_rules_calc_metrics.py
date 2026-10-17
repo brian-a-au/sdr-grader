@@ -6,10 +6,14 @@ import random
 from collections import defaultdict
 
 import pytest
+from hypothesis import given, settings
+from hypothesis import strategies as st
 
 from _rule_test_helpers import calc, component, ctx, impl, segment
 from sdr_grader.rules.checks import calc_metrics
 from sdr_grader.rules.checks.calc_metrics import (
+    _jaccard,
+    _near_duplicate_candidates,
     check_calc_complexity_threshold,
     check_calc_deprecated_allocations,
     check_calc_formula_broken_refs,
@@ -210,8 +214,7 @@ def test_near_duplicate_index_matches_pairwise_oracle(threshold):
 
 def test_near_duplicate_index_avoids_all_pairs_for_10k_disjoint_metrics(monkeypatch):
     cms = [
-        calc(f"calc/{index}", references=[f"metrics/disjoint-{index}"])
-        for index in range(10_000)
+        calc(f"calc/{index}", references=[f"metrics/disjoint-{index}"]) for index in range(10_000)
     ]
     comparisons = 0
     original_jaccard = calc_metrics._jaccard
@@ -283,3 +286,34 @@ def test_deprecated_allocations_quiet_otherwise():
         ctx("CALC-022", category="calc_metric_maint"),
     )
     assert findings == []
+
+
+# CALC-014 candidate generation
+@settings(max_examples=300, deadline=None)
+@given(
+    sets=st.lists(
+        st.frozensets(st.integers(0, 11).map(lambda n: f"t{n}"), min_size=1),
+        max_size=40,
+        unique=True,
+    ),
+    threshold=st.sampled_from([0.0, 0.5, 0.81, 0.85, 0.95, 1.0]),
+)
+def test_candidates_match_bruteforce_order(sets, threshold):
+    got = [
+        (left, right)
+        for left, right in _near_duplicate_candidates(sets, threshold)
+        if _jaccard(sets[left], sets[right]) >= threshold
+    ]
+    expected = [
+        (left, right)
+        for left in range(len(sets))
+        for right in range(left + 1, len(sets))
+        if _jaccard(sets[left], sets[right]) >= threshold
+    ]
+    assert got == expected
+
+
+def test_shared_reference_scales_subquadratically():
+    sets = [frozenset({"metrics/visits", f"metrics/m{i}"}) for i in range(16_000)]
+    count = sum(1 for _ in _near_duplicate_candidates(sets, 0.85))
+    assert count < 100_000
