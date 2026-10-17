@@ -69,6 +69,7 @@ def _parse(raw: dict[str, Any], *, source: str) -> Suppression:
     suppressed_raw = raw.get("suppress", [])
     if not isinstance(suppressed_raw, list):
         raise RubricValidationError(f"{source}: suppress must be a list")
+    seen_rules: set[str] = set()
     for entry in suppressed_raw:
         if not isinstance(entry, dict):
             raise RubricValidationError(
@@ -77,6 +78,9 @@ def _parse(raw: dict[str, Any], *, source: str) -> Suppression:
         rule_id = entry.get("rule")
         if not isinstance(rule_id, str) or not rule_id:
             raise RubricValidationError(f"{source}: suppress entry missing 'rule' string")
+        if rule_id in seen_rules:
+            raise RubricValidationError(f"{source}: suppress lists {rule_id} more than once")
+        seen_rules.add(rule_id)
         reason_raw = entry.get("reason")
         if reason_raw is not None and not isinstance(reason_raw, str):
             raise RubricValidationError(f"{source} {rule_id}: 'reason' must be a string")
@@ -201,11 +205,13 @@ def apply_to_findings(findings: list[Finding], suppression: Suppression) -> list
     return out
 
 
-def summarize_suppressed(suppression: Suppression) -> list[SkippedRulesSummary]:
+def summarize_suppressed(
+    suppression: Suppression, applicable_ids: set[str]
+) -> list[SkippedRulesSummary]:
     """Group suppression entries for the rendered methodology section."""
     by_reason: dict[str, list[str]] = {}
     for s in suppression.suppressed:
-        if not s.rule_id or s.components:
+        if not s.rule_id or s.components or s.rule_id not in applicable_ids:
             continue
         key = s.reason or "(no reason recorded)"
         by_reason.setdefault(key, []).append(s.rule_id)
