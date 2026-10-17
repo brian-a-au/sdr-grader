@@ -408,6 +408,26 @@ def test_release_soak_is_frozen_least_privilege_and_self_terminating():
     assert "issues: write" in finalize
 
 
+def test_actionlint_exception_is_one_container_argument_and_scope_specific():
+    workflow = yaml.safe_load(_workflow_text("lint.yml"))
+    step = next(
+        step
+        for step in workflow["jobs"]["actionlint"]["steps"]
+        if step.get("uses", "").startswith("rhysd/actionlint@")
+    )
+    # Docker action args are process arguments, not shell text: avoid quoting.
+    args = step["with"]["args"].split()
+    assert len(args) == 2 and args[0] == "-ignore"
+    assert not any(quote in args[1] for quote in ("'", '"'))
+    diagnostic = (
+        'unknown permission scope "vulnerability-alerts". '
+        'all available permission scopes are "contents", "security-events"'
+    )
+    assert re.fullmatch(args[1], diagnostic)
+    assert not re.fullmatch(args[1], diagnostic.replace("vulnerability-alerts", "unknown"))
+    assert not re.fullmatch(args[1], '"write" is invalid as permission of scope "contents"')
+
+
 def test_vulnerability_alerts_permissions_are_read_only():
     # actionlint 1.7.12 predates GitHub's supported read/none permission.
     for path in sorted([*WORKFLOWS.glob("*.yml"), *WORKFLOWS.glob("*.yaml")]):

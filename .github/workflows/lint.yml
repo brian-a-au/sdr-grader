@@ -47,7 +47,7 @@ jobs:
         # https://github.com/rhysd/actionlint/issues/713
         with:
           args: >-
-            -ignore '^unknown permission scope "vulnerability-alerts"\. all available permission scopes are .+$'
+            -ignore ^unknown\x20permission\x20scope\x20\x22vulnerability-alerts\x22\.\x20all\x20available\x20permission\x20scopes\x20are\x20.+$
   lockfile:
     runs-on: ubuntu-latest
     timeout-minutes: 5
