@@ -221,7 +221,7 @@ def summarize_suppressed(suppression: Suppression) -> list[SkippedRulesSummary]:
 
 def _renormalize(weights: dict[str, float]) -> dict[str, float]:
     total = math.fsum(w for w in weights.values() if w > 0)
-    if total <= 0:
+    if total <= 0:  # defensive: apply_to_rubric rejects all-zero weights first
         return weights
     return {k: (v / total if v > 0 else 0.0) for k, v in weights.items()}
 

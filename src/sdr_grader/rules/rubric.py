@@ -376,6 +376,7 @@ def _validate_common_params(params: dict[str, Any], *, rule_id: str, source: str
                 raise RubricValidationError(message)
             number: float = value
             try:
+                # float() rejects ints too large for a float (e.g. 400 digits)
                 number = float(value)
             except OverflowError as exc:
                 raise RubricValidationError(message) from exc

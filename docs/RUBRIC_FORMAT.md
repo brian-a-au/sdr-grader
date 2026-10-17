@@ -8,7 +8,7 @@ via `--rubric PATH`.
 
 This document is the contract. The format is the user-facing IP.
 
-Configuration YAML must use UTF-8 encoding. Malformed YAML, YAML anchors/aliases,
+Configuration YAML must use UTF-8 encoding. Malformed YAML, YAML aliases (`*name` references to an anchor; a plain anchor with no alias still loads),
 nesting deeper than 64 levels, invalid scalar values, numeric `_meta.yaml` fields
 outside their ranges, and the numeric rule params listed in
 [Rule params](RUBRIC_FORMAT.md#rule-params) outside their ranges raise

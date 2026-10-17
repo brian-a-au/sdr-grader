@@ -407,3 +407,13 @@ def test_distribution_rejects_malformed_inputs(tmp_path, content):
     with pytest.raises(InvalidSnapshotError) as excinfo:
         load_distribution_data(path)
     assert "abc" not in str(excinfo.value)
+
+
+def test_load_distribution_rejects_huge_integer_without_echoing_digits(tmp_path):
+    data_path = tmp_path / "distribution.json"
+    digits = "0" * 5000
+    data_path.write_text('{"overall": {"median": 1' + digits + "}}", encoding="utf-8")
+
+    with pytest.raises(InvalidSnapshotError) as exc_info:
+        load_distribution_data(data_path)
+    assert digits not in str(exc_info.value)

@@ -660,3 +660,20 @@ def test_validation_messages_do_not_repr_collections(tmp_path):
         load_suppression(cfg)
     assert "list" in str(exc.value)
     assert "['a'" not in str(exc.value)
+
+
+def test_describe_value_truncates_long_strings_and_names_containers():
+    from sdr_grader.rules.yaml_io import describe_value
+
+    result = describe_value("x" * 200)
+    assert len(result) == 80
+    assert result.endswith("...")
+    assert describe_value([1, 2]) == "list"
+
+
+def test_boolean_meta_version_is_rejected(tmp_path):
+    meta = _valid_meta()
+    meta["version"] = True
+    _write_structured_pack(tmp_path, meta=meta)
+    with pytest.raises(RubricValidationError):
+        load_rubric(tmp_path)
