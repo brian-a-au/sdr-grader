@@ -324,8 +324,9 @@ def test_grader_with_suppression_skips_suppressed_findings(tmp_path):
     suppression = Suppression(suppressed=[SuppressedRule("SCH-003", reason="working through it")])
     suppressed_report = grade(impl, rubric, suppression=suppression)
     assert all(f.id != "SCH-003" for f in suppressed_report.findings)
-    assert "scores 26 rules across 6 active categories" in (
-        suppressed_report.methodology.paragraphs[0]
+    assert (
+        "scores 26 rules across 6 active categories"
+        in (suppressed_report.methodology.paragraphs[0])
     )
     # Suppression appears in methodology skipped section.
     assert any("SCH-003" in s.ids for s in suppressed_report.methodology.skipped)
@@ -480,3 +481,28 @@ def test_component_requests_are_unapplied_and_skipped_count_counts_ids():
     )
     count = sum(len(s.ids) for s in whole.methodology.skipped)
     assert f"{count} rules skipped during this run" in render(whole)
+
+
+@pytest.mark.parametrize("severity", [[], {}, None, True, 7, "urgent"])
+def test_suppression_severity_rejects_noncanonical_values(tmp_path, severity):
+    config = _write_suppression(tmp_path, {"severity_overrides": {"NAME-002": severity}})
+    with pytest.raises(RubricValidationError, match="severity"):
+        load_suppression(config)
+
+
+@pytest.mark.parametrize("severity", ["critical", "high", "medium", "low"])
+def test_suppression_valid_yaml_neighbors_remain_accepted(tmp_path, severity):
+    config = _write_suppression(
+        tmp_path,
+        {
+            "severity_overrides": {"NAME-002": severity},
+            "category_weights": {"schema_hygiene": 0, "naming_conventions": 1},
+            "suppress": [{"rule": "SCH-003", "reason": "café 日本語"}],
+        },
+    )
+    with config.open("a", encoding="utf-8") as handle:
+        handle.write("unused_scalar: 2026-10-16\nunused_integer: !!int 12\n")
+    suppression = load_suppression(config)
+    assert suppression.severity_overrides == {"NAME-002": severity}
+    assert suppression.category_weight_overrides == {"schema_hygiene": 0, "naming_conventions": 1}
+    assert suppression.suppressed[0].reason == "café 日本語"

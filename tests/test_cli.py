@@ -96,9 +96,7 @@ def test_cli_rejects_invalid_json(tmp_path, capsys):
 
 
 def test_cli_surrogate_snapshot_is_controlled_and_writes_no_artifact(tmp_path, capsys):
-    snapshot = json.loads(
-        (FIXTURES / "cja_snapshot_clean.json").read_text(encoding="utf-8")
-    )
+    snapshot = json.loads((FIXTURES / "cja_snapshot_clean.json").read_text(encoding="utf-8"))
     snapshot["metrics"][0]["description"] = "\ud800"
     source = tmp_path / "surrogate.json"
     source.write_text(json.dumps(snapshot), encoding="utf-8")
@@ -114,9 +112,7 @@ def test_cli_surrogate_snapshot_is_controlled_and_writes_no_artifact(tmp_path, c
     assert not any(0xD800 <= ord(character) <= 0xDFFF for character in diagnostics)
 
 
-def test_cli_adapter_error_does_not_echo_snapshot_values_or_private_path(
-    tmp_path, capsys
-):
+def test_cli_adapter_error_does_not_echo_snapshot_values_or_private_path(tmp_path, capsys):
     private_dir = tmp_path / "PRIVATE-CLI-PATH"
     private_dir.mkdir()
     snapshot = private_dir / "PRIVATE-CLI-SNAPSHOT.json"
@@ -319,12 +315,7 @@ def test_cli_invalid_numeric_rubric_is_exit_3_with_no_artifact(
     capsys,
 ):
     source_pack = (
-        Path(__file__).resolve().parent.parent
-        / "src"
-        / "sdr_grader"
-        / "rules"
-        / "packs"
-        / "strict"
+        Path(__file__).resolve().parent.parent / "src" / "sdr_grader" / "rules" / "packs" / "strict"
     )
     pack = tmp_path / "invalid_numeric_pack"
     shutil.copytree(source_pack, pack)
@@ -741,9 +732,7 @@ def _write_directory_snapshot(
     instance_id: str | None = None,
 ) -> Path:
     snapshot = json.loads(
-        (FIXTURES / f"{platform}_snapshot_messy.json").read_text(
-            encoding="utf-8"
-        )
+        (FIXTURES / f"{platform}_snapshot_messy.json").read_text(encoding="utf-8")
     )
     if platform == "cja":
         snapshot["metadata"]["Data View ID"] = instance_id or "shared-instance"
@@ -881,9 +870,7 @@ def test_cli_warns_once_for_newer_generator_without_snapshot_data(
     version,
 ):
     snapshot = json.loads(
-        (FIXTURES / f"{platform}_snapshot_messy.json").read_text(
-            encoding="utf-8"
-        )
+        (FIXTURES / f"{platform}_snapshot_messy.json").read_text(encoding="utf-8")
     )
     canary = "PRIVATE-GENERATOR-WARNING-CANARY"
     if platform == "cja":
@@ -1119,3 +1106,135 @@ def test_aa_structured_attribution_is_controlled(tmp_path, capsys, alias, value)
     assert main([str(source), "--output", str(output)]) == RUNTIME_ERROR
     assert output.read_text() == "previous report"
     assert "PRIVATE" not in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("target", ["suppression", "meta", "category"])
+@pytest.mark.parametrize(
+    "defect",
+    [
+        "utf8",
+        "date",
+        "integer",
+        "digit_limit",
+        "syntax",
+        "tag",
+        "key",
+        "severity_list",
+        "severity_mapping",
+        "weight_positive",
+        "weight_negative",
+        "grade_positive",
+        "grade_negative",
+    ],
+)
+def test_yaml_validation_api_and_process_preserve_outputs(tmp_path, target, defect):
+    import os
+    import subprocess
+    import sys
+
+    from sdr_grader.core.exceptions import RubricValidationError
+    from sdr_grader.rules.rubric import load_rubric
+    from sdr_grader.rules.suppression import load_suppression
+
+    if defect.startswith("severity") and target == "meta":
+        pytest.skip("severity values belong to rules or suppression")
+    if defect.startswith("weight") and target == "category":
+        pytest.skip("category weights belong to metadata or suppression")
+    if defect.startswith("grade") and target != "meta":
+        pytest.skip("grade minima belong to metadata")
+    root = Path(__file__).resolve().parent.parent
+    pack = tmp_path / "pack"
+    shutil.copytree(root / "src/sdr_grader/rules/packs/strict", pack)
+    config = tmp_path / "suppression.yaml"
+    config.write_text("{}", encoding="utf-8")
+    path = (
+        config
+        if target == "suppression"
+        else pack / ("_meta.yaml" if target == "meta" else "naming.yaml")
+    )
+    payloads = {
+        "utf8": b"\xff",
+        "date": b"unused: 2026-99-99\n",
+        "integer": b"unused: !!int nope\n",
+        "syntax": b"unused: [unterminated\n",
+        "tag": b"unused: !unknown value\n",
+        "key": b"? [a, b]\n: value\n",
+    }
+    field = path.name
+    forbidden = None
+    if defect == "digit_limit":
+        limit = sys.get_int_max_str_digits()
+        if not limit:
+            pytest.skip("interpreter integer conversion limit disabled")
+        forbidden = "9" * (limit + 1)
+        path.write_text("unused: " + forbidden + "\n", encoding="utf-8")
+    elif defect in payloads:
+        path.write_bytes(payloads[defect])
+    else:
+        content = yaml.safe_load(path.read_text(encoding="utf-8"))
+        if defect.startswith("severity"):
+            severity = ["high"] if defect.endswith("list") else {"level": "high"}
+            if target == "suppression":
+                content["severity_overrides"] = {"NAME-002": severity}
+            else:
+                content["rules"][0]["severity"] = severity
+            field = "severity"
+        else:
+            value = 10**400 * (-1 if defect.endswith("negative") else 1)
+            forbidden = str(value)
+            if defect.startswith("grade"):
+                content["grade_scale"][0]["min"] = value
+                field = "grade_scale"
+            else:
+                content.setdefault("category_weights", {})["schema_hygiene"] = value
+                field = "category_weights"
+        path.write_text(yaml.safe_dump(content), encoding="utf-8")
+    with pytest.raises(RubricValidationError, match=field) as error:
+        load_suppression(config) if target == "suppression" else load_rubric(pack)
+    assert len(str(error.value)) < 500
+    if defect == "utf8":
+        assert "UTF-8" in str(error.value)
+    if forbidden:
+        assert forbidden not in str(error.value)
+    html, report = tmp_path / "out.html", tmp_path / "out.json"
+    command = [
+        sys.executable,
+        "-m",
+        "sdr_grader",
+        str(FIXTURES.resolve() / "cja_snapshot_messy.json"),
+        "--rubric",
+        str(pack),
+        "--suppress-config",
+        str(config),
+        "--output",
+        str(html),
+        "--json",
+        str(report),
+        "--quiet",
+    ]
+    for existing in (True, False):
+        if existing:
+            html.write_bytes(b"old HTML\x00")
+            report.write_bytes(b"old JSON\x00")
+        result = subprocess.run(
+            command,
+            cwd=tmp_path,
+            env=dict(os.environ, PYTHONPATH=str(root / "src")),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert result.returncode == RUBRIC_VALIDATION_FAILURE, result.stderr
+        assert "Traceback" not in result.stderr
+        assert field in result.stderr
+        assert len(result.stderr) < 500
+        if forbidden:
+            assert forbidden not in result.stderr
+        if existing:
+            assert html.read_bytes() == b"old HTML\x00"
+            assert report.read_bytes() == b"old JSON\x00"
+            html.unlink()
+            report.unlink()
+        else:
+            assert not html.exists()
+            assert not report.exists()

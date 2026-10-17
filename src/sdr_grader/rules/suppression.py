@@ -49,11 +49,7 @@ class Suppression:
 
     @property
     def component_suppressions(self) -> dict[str, set[str]]:
-        return {
-            s.rule_id: set(s.components)
-            for s in self.suppressed
-            if s.components
-        }
+        return {s.rule_id: set(s.components) for s in self.suppressed if s.components}
 
 
 def load_suppression(path: str | Path) -> Suppression:
@@ -63,16 +59,19 @@ def load_suppression(path: str | Path) -> Suppression:
         return Suppression()
     try:
         with p.open(encoding="utf-8") as handle:
-            loaded = yaml.safe_load(handle)
+            try:
+                loaded = yaml.safe_load(handle)
+            except UnicodeDecodeError:
+                raise
+            except ValueError as exc:
+                raise RubricValidationError(f"{p.name}: invalid YAML scalar") from exc
             raw = {} if loaded is None else loaded
+    except UnicodeDecodeError as exc:
+        raise RubricValidationError(f"{p.name}: YAML must be UTF-8 encoded") from exc
     except yaml.YAMLError as exc:
-        raise RubricValidationError(
-            f"{p.name}: invalid YAML syntax"
-        ) from exc
+        raise RubricValidationError(f"{p.name}: invalid YAML syntax") from exc
     except OSError as exc:
-        raise RubricValidationError(
-            f"{p.name}: could not read YAML"
-        ) from exc
+        raise RubricValidationError(f"{p.name}: could not read YAML") from exc
     if not isinstance(raw, dict):
         raise RubricValidationError(
             f"{path}: suppression config must be a mapping, got {type(raw).__name__}"
@@ -112,7 +111,7 @@ def _parse(raw: dict[str, Any], *, source: str) -> Suppression:
         raise RubricValidationError(f"{source}: severity_overrides must be a mapping")
     severity_overrides: dict[str, str] = {}
     for rule_id, sev in severity_overrides_raw.items():
-        if sev not in VALID_SEVERITIES:
+        if not isinstance(sev, str) or sev not in VALID_SEVERITIES:
             raise RubricValidationError(
                 f"{source}: severity_overrides[{rule_id!r}] = {sev!r} is not a valid severity"
             )
@@ -127,7 +126,12 @@ def _parse(raw: dict[str, Any], *, source: str) -> Suppression:
             raise RubricValidationError(
                 f"{source}: category_weights[{cat!r}] is not numeric ({w!r})"
             )
-        number = float(w)
+        try:
+            number = float(w)
+        except OverflowError as exc:
+            raise RubricValidationError(
+                f"{source}: category_weights[{cat!r}] must be a finite number between 0 and 1"
+            ) from exc
         if not math.isfinite(number) or not 0 <= number <= 1:
             raise RubricValidationError(
                 f"{source}: category_weights[{cat!r}] must be a finite "
@@ -156,28 +160,17 @@ def apply_to_rubric(rubric: Rubric, suppression: Suppression) -> Rubric:
     1.0.
     """
     rule_ids = {rule.id for rule in rubric.rules}
-    unknown_suppressed = sorted(
-        {entry.rule_id for entry in suppression.suppressed} - rule_ids
-    )
+    unknown_suppressed = sorted({entry.rule_id for entry in suppression.suppressed} - rule_ids)
     if unknown_suppressed:
-        raise RubricValidationError(
-            f"unknown suppressed rule ID: {unknown_suppressed[0]}"
-        )
-    unknown_severity = sorted(
-        set(suppression.severity_overrides) - rule_ids
-    )
+        raise RubricValidationError(f"unknown suppressed rule ID: {unknown_suppressed[0]}")
+    unknown_severity = sorted(set(suppression.severity_overrides) - rule_ids)
     if unknown_severity:
-        raise RubricValidationError(
-            f"unknown severity override rule ID: {unknown_severity[0]}"
-        )
+        raise RubricValidationError(f"unknown severity override rule ID: {unknown_severity[0]}")
     unknown_categories = sorted(
-        set(suppression.category_weight_overrides)
-        - set(rubric.category_weights)
+        set(suppression.category_weight_overrides) - set(rubric.category_weights)
     )
     if unknown_categories:
-        raise RubricValidationError(
-            f"unknown category weight override: {unknown_categories[0]}"
-        )
+        raise RubricValidationError(f"unknown category weight override: {unknown_categories[0]}")
 
     new_rules = [
         replace(r, severity=suppression.severity_overrides.get(r.id, r.severity))
@@ -190,9 +183,7 @@ def apply_to_rubric(rubric: Rubric, suppression: Suppression) -> Rubric:
     return replace(rubric, rules=new_rules, category_weights=new_weights)
 
 
-def apply_to_findings(
-    findings: list[Finding], suppression: Suppression
-) -> list[Finding]:
+def apply_to_findings(findings: list[Finding], suppression: Suppression) -> list[Finding]:
     """Drop findings for fully-suppressed rules; keep others.
 
     Component-level suppressions are honored only when the finding has a
@@ -224,8 +215,7 @@ def summarize_suppressed(suppression: Suppression) -> list[SkippedRulesSummary]:
         key = s.reason or "(no reason recorded)"
         by_reason.setdefault(key, []).append(s.rule_id)
     return [
-        SkippedRulesSummary(ids=sorted(ids), reason=reason)
-        for reason, ids in by_reason.items()
+        SkippedRulesSummary(ids=sorted(ids), reason=reason) for reason, ids in by_reason.items()
     ]
 
 
