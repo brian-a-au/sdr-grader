@@ -2,10 +2,10 @@
 
 **Status: unverified — no candidate-specific beta exit decision is recorded.**
 
-Current preparation: [1.5.4](releases/1.5.4-readiness.md), with prospective
-candidate-specific beta evidence pending. The latest published release is
-[1.5.3](releases/1.5.3-readiness.md); its immutable artifact identities and
-historical engineering checks remain in that ledger.
+The latest published release is [1.5.4](releases/1.5.4-readiness.md).
+Candidate-specific beta evidence for it is pending. Release
+[1.5.3](releases/1.5.3-readiness.md) is historical; its immutable artifact
+identities and engineering checks remain in that ledger.
 The owner confirms independent testing of prior releases. The candidate-specific
 beta protocol, participation details, findings, and exit decision remain unrecorded.
 
