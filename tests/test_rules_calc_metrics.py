@@ -316,4 +316,5 @@ def test_candidates_match_bruteforce_order(sets, threshold):
 def test_shared_reference_scales_subquadratically():
     sets = [frozenset({"metrics/visits", f"metrics/m{i}"}) for i in range(16_000)]
     count = sum(1 for _ in _near_duplicate_candidates(sets, 0.85))
-    assert count < 100_000
+    # Each set's rarest token is unique (prefix length 1), so no pairs are generated.
+    assert count == 0
