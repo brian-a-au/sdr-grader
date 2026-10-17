@@ -208,8 +208,9 @@ def _validate_grade_scale(value: Any) -> list[GradeBand]:
     for prev, curr in zip(bands[:-1], bands[1:], strict=True):
         if curr.min_score >= prev.min_score:
             raise RubricValidationError(
-                f"grade_scale must be strictly descending; got {prev.grade} ({prev.min_score}) "
-                f"-> {curr.grade} ({curr.min_score})"
+                f"grade_scale must be strictly descending; "
+                f"got {describe_value(prev.grade)} ({prev.min_score}) "
+                f"-> {describe_value(curr.grade)} ({curr.min_score})"
             )
     if bands[-1].min_score > 0:
         lowest = bands[-1].min_score
@@ -359,7 +360,8 @@ def _validate_common_params(params: dict[str, Any], *, rule_id: str, source: str
             re.compile(pattern)
         except re.error as exc:
             raise RubricValidationError(
-                f"{source} {rule_id}: 'pattern' is not a valid regex: {exc}"
+                f"{source} {rule_id}: 'pattern' is not a valid regex "
+                f"({describe_value(exc.msg)} at position {exc.pos})"
             ) from exc
     targets = params.get("targets")
     if targets is not None:

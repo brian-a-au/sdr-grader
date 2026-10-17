@@ -720,3 +720,29 @@ def test_duplicate_rule_id_message_is_bounded(tmp_path):
     with pytest.raises(RubricValidationError) as exc:
         load_rubric(pack)
     assert len(str(exc.value)) < 300
+
+
+def test_invalid_regex_message_is_bounded(tmp_path):
+    pattern = "(\x1b" + "a" * 10_000
+    pack = _write_structured_pack(
+        tmp_path,
+        category_content={
+            "category": "naming_conventions",
+            "rules": [_valid_rule(params={"pattern": pattern})],
+        },
+    )
+    with pytest.raises(RubricValidationError) as exc:
+        load_rubric(pack)
+    assert len(str(exc.value)) < 300
+    assert "\x1b" not in str(exc.value)
+
+
+def test_grade_scale_descending_message_is_bounded(tmp_path):
+    label = "\x1b" + "G" * 10_000
+    meta = _valid_meta()
+    meta["grade_scale"] = [{"min": 90, "grade": label}, {"min": 90, "grade": label}]
+    _write_structured_pack(tmp_path, meta=meta)
+    with pytest.raises(RubricValidationError) as exc:
+        load_rubric(tmp_path)
+    assert len(str(exc.value)) < 300
+    assert "\x1b" not in str(exc.value)

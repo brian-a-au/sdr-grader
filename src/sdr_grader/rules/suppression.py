@@ -82,6 +82,7 @@ def _parse(raw: dict[str, Any], *, source: str) -> Suppression:
         if rule_id in seen_rules:
             raise RubricValidationError(f"{source}: suppress lists {rule_id} more than once")
         seen_rules.add(rule_id)
+        # rule_id was checked by _validate_identifier, so it is safe to echo below.
         reason_raw = entry.get("reason")
         if reason_raw is not None and not isinstance(reason_raw, str):
             raise RubricValidationError(f"{source} {rule_id}: 'reason' must be a string")
