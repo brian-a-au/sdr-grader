@@ -3,6 +3,22 @@
 All notable changes follow the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
+## 1.5.4 — 2026-10-17
+
+Patch source preparation recorded October 17, 2026; not yet published. See the
+[release record](docs/releases/1.5.4-readiness.md) for pending candidate evidence
+and separate source/tag, publication, and announcement gates.
+
+- Report malformed suppression and rubric YAML as controlled validation errors
+  (CLI exit 3), without a traceback or changes to existing reports. This covers
+  list/mapping severities, invalid UTF-8, the reproduced scalar-construction
+  failures, and overflowing numeric weights or grade-band minima.
+
+Accepted-input findings, scores, thresholds, severities, denominators, and
+renderer behavior remain unchanged. Component-scoped suppression remains
+unapplied. Default strict/pragmatic packs remain 3.0, standalone aa-admin remains
+1.0, and report schema remains 1. Generated report version text changes to 1.5.4.
+
 ## 1.5.3 — 2026-10-16
 
 Patch preparation recorded October 16, 2026. See the
