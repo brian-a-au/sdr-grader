@@ -339,7 +339,9 @@ Keep required checks and security scans enabled. Restore the recorded automation
 state only after the human decision or abandonment, retaining the restoration
 receipt outside the frozen branch during observation.
 
-Hourly observations provide margin against the four-hour maximum. Start evidence
+GitHub scheduled runs are best-effort and have skipped for 5–13 hours. During a window, run the external driver in [the soak runbook](RELEASE_SOAK.md#keep-observations-within-the-gap-limit).
+
+Start evidence
 must prove that all required public surfaces actually passed; the 48 hours run
 from that successful observation, not from publication time or a configured
 clock value alone. New or updated grader issues block until a maintainer applies

@@ -87,7 +87,7 @@ actual start. A planned 48-hour end does not shorten the real observation window
 
 ## Observe, triage, and retain
 
-- The schedule runs hourly. Successful observations may never be more than four
+- The hourly schedule is a backup; the external driver is the primary cadence. Successful observations may never be more than four
   hours apart. Checkpoints must satisfy the verifier's two-hour tolerance.
 - Use new manual dispatches if needed; never rerun an observation. A rerun can
   hide the first attempt and invalidates the timeline.
@@ -125,3 +125,52 @@ After the human announcement decision or explicit abandonment, restore the
 recorded auto-merge state and retain the restoration receipt. Keep it paused
 throughout a live observation window. Store ongoing evidence outside the frozen
 branch; editing the readiness ledger on main would invalidate the window.
+
+## Keep observations within the gap limit
+
+GitHub scheduled runs are best-effort. In the 1.5.3 window the hourly cron fired
+only a few times, leaving gaps of 17,748 s and 18,912 s against the 14,400 s
+limit, which invalidated the window. Run the external driver from a machine you
+control for the whole window:
+
+```bash
+python3 scripts/release_soak_driver.py --notify
+```
+
+Each run is one tick. It dispatches a new observation on `main` only when no run
+is pending and the newest run is at least 30 minutes old, and it alerts when no
+successful observation has finished in 3 hours. It never reruns a run. Use
+`--dry-run` to print the decision without dispatching. Exit code 2 means an
+alert, and 1 means a `gh` failure.
+
+Run it every 10 minutes with launchd. Save this as
+`~/Library/LaunchAgents/com.example.sdr-grader-soak.plist` and replace the
+placeholders:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.example.sdr-grader-soak</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/ABSOLUTE/PATH/TO/python3</string>
+    <string>/ABSOLUTE/PATH/TO/sdr-grader/scripts/release_soak_driver.py</string>
+    <string>--notify</string>
+  </array>
+  <key>StartInterval</key>
+  <integer>600</integer>
+  <key>StandardOutPath</key>
+  <string>/ABSOLUTE/PATH/TO/soak-driver.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>/ABSOLUTE/PATH/TO/soak-driver.err.log</string>
+</dict>
+</plist>
+```
+
+Keep the machine awake, for example with `caffeinate -s`, or the ticks stop.
+Start the driver before the activation merge and stop it only after
+finalization. During a window, never rerun a run and never loosen
+`MAX_GAP_SECONDS`.
