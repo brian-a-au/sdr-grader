@@ -83,14 +83,14 @@ def test_load_distribution_rejects_invalid_json(tmp_path):
 def test_load_distribution_wraps_read_error(tmp_path, monkeypatch):
     data_path = tmp_path / "distribution.json"
     data_path.write_text("{}", encoding="utf-8")
-    original_read_text = Path.read_text
+    original_read_bytes = Path.read_bytes
 
     def fail_target_read(path, *args, **kwargs):
         if path == data_path:
             raise OSError("simulated read failure")
-        return original_read_text(path, *args, **kwargs)
+        return original_read_bytes(path, *args, **kwargs)
 
-    monkeypatch.setattr(Path, "read_text", fail_target_read)
+    monkeypatch.setattr(Path, "read_bytes", fail_target_read)
 
     with pytest.raises(InvalidSnapshotError, match="simulated read failure") as exc_info:
         load_distribution_data(data_path)
@@ -388,3 +388,22 @@ def test_extra_input_rejects_duplicate_keys(tmp_path):
         ]
     )
     assert rc == RUNTIME_ERROR
+
+
+@pytest.mark.parametrize(
+    "content",
+    [
+        b"\xff{}",
+        "[" * 100000,
+        '{"overall": {"median": 1' + "0" * 400 + "}}",
+        '{"n_instances": "abc"}',
+        '{"n_instances": 1e999}',
+        '{"n_instances": -1}',
+    ],
+)
+def test_distribution_rejects_malformed_inputs(tmp_path, content):
+    path = tmp_path / "dist.json"
+    path.write_bytes(content if isinstance(content, bytes) else content.encode())
+    with pytest.raises(InvalidSnapshotError) as excinfo:
+        load_distribution_data(path)
+    assert "abc" not in str(excinfo.value)

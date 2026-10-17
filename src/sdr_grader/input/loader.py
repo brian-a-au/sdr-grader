@@ -37,9 +37,7 @@ _TIMESTAMP_RE = re.compile(
 _TIMESTAMP_CONTINUATION_RE = re.compile(r"[A-Za-z\d+:.]|[-_](?:[\d+:.\-_]|$)")
 
 
-def load_snapshot(
-    path_or_token: str, *, at: str | None = None
-) -> tuple[dict[str, Any], str]:
+def load_snapshot(path_or_token: str, *, at: str | None = None) -> tuple[dict[str, Any], str]:
     """Read and parse a snapshot from a file path, directory, or stdin token.
 
     Returns (parsed_snapshot, source_label).
@@ -90,9 +88,7 @@ def _load_from_file(path: Path) -> tuple[dict[str, Any], str]:
     return snapshot, str(path)
 
 
-def _load_from_directory(
-    directory: Path, *, at: str | None
-) -> tuple[dict[str, Any], str]:
+def _load_from_directory(directory: Path, *, at: str | None) -> tuple[dict[str, Any], str]:
     candidates = list_snapshot_candidates(directory)
     if not candidates:
         raise InvalidSnapshotError(f"no .json snapshots found in {directory}")
@@ -103,16 +99,14 @@ def _load_from_directory(
 def list_snapshot_candidates(directory: Path) -> list[Path]:
     """Return every ``*.json`` directory candidate in stable path order."""
     try:
-        return sorted(Path(directory).glob("*.json"))
+        return sorted(p for p in Path(directory).glob("*.json") if p.is_file())
     except OSError as exc:
         raise InvalidSnapshotError(
             f"could not inspect snapshot directory {directory}: {exc}"
         ) from exc
 
 
-def _pick_snapshot(
-    candidates: list[Path], *, at: str | None
-) -> Path:
+def _pick_snapshot(candidates: list[Path], *, at: str | None) -> Path:
     """Pick a single snapshot file from a directory.
 
     Without `at`: use the most recent by extracted timestamp, falling back
@@ -122,10 +116,7 @@ def _pick_snapshot(
     # Every candidate lands on the same aware UTC scale: filename timestamp
     # when the name carries one, else file mtime. A fresh file without a
     # timestamped name therefore beats a stale timestamped one.
-    has_timestamp: list[tuple[Path, datetime]] = [
-        (p, _candidate_timestamp(p))
-        for p in candidates
-    ]
+    has_timestamp: list[tuple[Path, datetime]] = [(p, _candidate_timestamp(p)) for p in candidates]
 
     if at is None:
         return max(has_timestamp, key=lambda pair: pair[1])[0]
@@ -139,9 +130,7 @@ def _pick_snapshot(
     not_after = [(p, ts) for p, ts in has_timestamp if ts <= target]
     if not_after:
         return max(not_after, key=lambda pair: pair[1])[0]
-    raise InvalidSnapshotError(
-        f"no snapshot in directory is at or before {at!r}"
-    )
+    raise InvalidSnapshotError(f"no snapshot in directory is at or before {at!r}")
 
 
 def _candidate_timestamp(path: Path) -> datetime:
@@ -171,7 +160,7 @@ def _extract_timestamp(path: Path) -> datetime | None:
         zone = zone[:1] + zone[1:].replace("-", ":").replace("_", ":")
         token += "T" + clock + (parts["fraction"] or "") + zone
     timestamp = parse_timestamp(token)
-    if timestamp is None or _TIMESTAMP_CONTINUATION_RE.match(path.stem[match.end():]):
+    if timestamp is None or _TIMESTAMP_CONTINUATION_RE.match(path.stem[match.end() :]):
         raise InvalidSnapshotError(f"{path}: malformed filename timestamp")
     return timestamp
 

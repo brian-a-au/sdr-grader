@@ -138,9 +138,7 @@ def test_aa_adapter_rejects_snapshot_without_rsid():
         ("segments", {"name": "PRIVATE-AA-VALUE"}, "missing"),
     ],
 )
-def test_aa_adapter_record_errors_are_structural(
-    collection: str, record, expected: str
-) -> None:
+def test_aa_adapter_record_errors_are_structural(collection: str, record, expected: str) -> None:
     snapshot = {
         "report_suite": {"rsid": "rs1"},
         "dimensions": [],
@@ -681,3 +679,11 @@ def test_attribution_aliases_preserve_supported_evidence(primary, secondary, exp
     impl = adapt(snapshot)
     assert impl.calculated_metrics[0].attribution_model == expected
     grade(impl, load_rubric(STRICT_PACK))
+
+
+def test_oversized_integer_numeric_field_uses_default_aa():
+    snap = json.loads((FIXTURES / "aa_snapshot_messy.json").read_text(encoding="utf-8"))
+    snap["calculated_metrics"][0]["complexity_score"] = "N/A"
+    expected = adapt(snap).calculated_metrics[0].complexity_score
+    snap["calculated_metrics"][0]["complexity_score"] = 10**400
+    assert adapt(snap).calculated_metrics[0].complexity_score == expected

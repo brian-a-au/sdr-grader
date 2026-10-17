@@ -32,9 +32,7 @@ from sdr_grader.core.timeparse import select_snapshot_timestamp
 def adapt(snapshot: dict[str, Any], *, source: str = "<unknown>") -> Implementation:
     """Convert a parsed aa_auto_sdr JSON snapshot into an Implementation."""
     if not isinstance(snapshot, dict):
-        raise InvalidSnapshotError(
-            f"expected top-level JSON object, got {type(snapshot).__name__}"
-        )
+        raise InvalidSnapshotError(f"expected top-level JSON object, got {type(snapshot).__name__}")
     validate_snapshot_structure(snapshot, label="AA snapshot")
 
     if "report_suite" in snapshot:
@@ -42,9 +40,7 @@ def adapt(snapshot: dict[str, Any], *, source: str = "<unknown>") -> Implementat
     elif "reportSuite" in snapshot:
         rs = snapshot["reportSuite"]
     else:
-        raise InvalidSnapshotError(
-            "AA snapshot missing 'report_suite' object; not an AA snapshot?"
-        )
+        raise InvalidSnapshotError("AA snapshot missing 'report_suite' object; not an AA snapshot?")
     if not isinstance(rs, dict):
         raise InvalidSnapshotError(
             f"AA snapshot 'report_suite' must be an object; got {type(rs).__name__}"
@@ -54,7 +50,8 @@ def adapt(snapshot: dict[str, Any], *, source: str = "<unknown>") -> Implementat
         raise InvalidSnapshotError("AA snapshot 'report_suite' missing 'rsid'")
     instance_name = rs.get("name") or instance_id
     snapshot_taken_at = select_snapshot_timestamp(
-        snapshot.get("captured_at"), snapshot.get("captured"),
+        snapshot.get("captured_at"),
+        snapshot.get("captured"),
     )
     adapter_version = str(snapshot.get("tool_version") or "unknown")
 
@@ -151,8 +148,10 @@ def _component_from_record(
         # Preserve source separation so selected AA admin checks can reject
         # conflicts without changing legacy pack input acceptance.
         aliases = {
-            "allocationType": "allocation", "expirationType": "expiration",
-            "expirationCustomDays": "expiration_days", "bindingEvents": "binding_events",
+            "allocationType": "allocation",
+            "expirationType": "expiration",
+            "expirationCustomDays": "expiration_days",
+            "bindingEvents": "binding_events",
             "merchandisingSyntax": "merchandising_syntax",
         }
         extra = record.get("extra")
@@ -160,8 +159,11 @@ def _component_from_record(
         # API nulls mean unavailable/not applicable, never a configured default.
         # Supplementary protocol nulls remain malformed in evidence validation.
         platform_specific["aa_admin_sources"] = [
-            {target: source[key] for key, target in aliases.items()
-             if key in source and source[key] is not None}
+            {
+                target: source[key]
+                for key, target in aliases.items()
+                if key in source and source[key] is not None
+            }
             for source in sources
         ]
 
@@ -231,14 +233,11 @@ def _calc_from_record(record: Any, *, index: int | None = None) -> CalculatedMet
     context = _record_context("calculated_metrics", index)
     if not isinstance(record, dict):
         raise InvalidSnapshotError(
-            f"{context}: expected calculated metric to be an object, "
-            f"got {type(record).__name__}"
+            f"{context}: expected calculated metric to be an object, got {type(record).__name__}"
         )
     metric_id = record.get("id")
     if not metric_id:
-        raise InvalidSnapshotError(
-            f"{context}: calc metric missing 'id' (required key)"
-        )
+        raise InvalidSnapshotError(f"{context}: calc metric missing 'id' (required key)")
     name = record.get("name") or metric_id
     description = _normalize_description(record.get("description"))
     definition = record.get("definition") or {}
@@ -307,8 +306,7 @@ def _aa_node_refs(node: dict[str, Any], *, include_args: bool = True) -> list[st
     args = node.get("args")
     if include_args and isinstance(args, list):
         refs.extend(
-            arg for arg in args
-            if isinstance(arg, str) and arg.startswith(_AA_REF_PREFIXES)
+            arg for arg in args if isinstance(arg, str) and arg.startswith(_AA_REF_PREFIXES)
         )
     return refs
 
@@ -375,9 +373,7 @@ def _segment_from_record(record: Any, *, index: int | None = None) -> Segment:
             definition,
             label=f"segment definition {segment_id!r}",
         )
-    nesting_depth, container_types, references = _analyze_segment_definition(
-        definition
-    )
+    nesting_depth, container_types, references = _analyze_segment_definition(definition)
 
     extra = record.get("extra") if isinstance(record.get("extra"), dict) else {}
     approved, shared_to_count = _aa_governance_signals(extra)
@@ -564,11 +560,14 @@ def _safe_float(value: Any, default: float = 0.0) -> float:
     if isinstance(value, bool):
         return default
     if isinstance(value, (int, float)):
-        result = float(value)
+        try:
+            result = float(value)
+        except OverflowError:
+            return default
     elif isinstance(value, str):
         try:
             result = float(value.strip())
-        except ValueError:
+        except (ValueError, OverflowError):
             return default
     else:
         return default

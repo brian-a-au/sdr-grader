@@ -132,9 +132,13 @@ def test_build_trend_report_rejects_mixed_platforms_for_same_instance(tmp_path, 
 
 def test_build_trend_report_reports_snapshot_read_failure(tmp_path, strict_rubric):
     unreadable = tmp_path / "snapshot_2026-01-01.json"
-    unreadable.mkdir()
-    with pytest.raises(InvalidSnapshotError, match="could not read"):
-        build_trend_report(tmp_path, strict_rubric)
+    unreadable.write_text("{}", encoding="utf-8")
+    unreadable.chmod(0)
+    try:
+        with pytest.raises(InvalidSnapshotError, match="could not read"):
+            build_trend_report(tmp_path, strict_rubric)
+    finally:
+        unreadable.chmod(0o600)
 
 
 def test_build_trend_report_reports_invalid_json(tmp_path, strict_rubric):
