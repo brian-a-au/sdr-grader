@@ -66,15 +66,12 @@ def test_build_trend_report_orders_chronologically(tmp_path):
     assert trend.instance_id == "dv_messy_prod_web"
     assert trend.platform == "cja"
     assert all(
-        all(finding.id != "GOV-001" for finding in point.report.findings)
-        for point in trend.points
+        all(finding.id != "GOV-001" for finding in point.report.findings) for point in trend.points
     )
 
 
 def test_single_point_trend_does_not_claim_history(tmp_path, strict_rubric):
-    snapshot = json.loads(
-        (FIXTURES / "cja_snapshot_messy.json").read_text(encoding="utf-8")
-    )
+    snapshot = json.loads((FIXTURES / "cja_snapshot_messy.json").read_text(encoding="utf-8"))
     (tmp_path / "snapshot_2026-04-25.json").write_text(
         json.dumps(snapshot),
         encoding="utf-8",
@@ -233,9 +230,7 @@ def test_render_trend_rejects_invalid_pack_before_building_view(tmp_path, monkey
 
     _build_series(tmp_path)
     trend = build_trend_report(tmp_path, load_rubric(STRICT_PACK))
-    monkeypatch.setattr(
-        trend_renderer, "_build_view", lambda *_args: pytest.fail("view built")
-    )
+    monkeypatch.setattr(trend_renderer, "_build_view", lambda *_args: pytest.fail("view built"))
 
     with pytest.raises(ValueError, match="available color packs"):
         render_trend(trend, color_pack="blue")
