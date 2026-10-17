@@ -170,6 +170,10 @@ def apply_to_rubric(rubric: Rubric, suppression: Suppression) -> Rubric:
     new_weights = dict(rubric.category_weights)
     for cat, w in suppression.category_weight_overrides.items():
         new_weights[cat] = w
+    if math.fsum(w for w in new_weights.values() if w > 0) <= 0:
+        raise RubricValidationError(
+            "category_weights leave no positive weight; keep at least one category above 0"
+        )
     new_weights = _renormalize(new_weights)
     return replace(rubric, rules=new_rules, category_weights=new_weights)
 
