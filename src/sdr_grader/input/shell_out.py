@@ -29,6 +29,7 @@ MAX_STDOUT_BYTES = 32 * 1024 * 1024
 MAX_STDERR_BYTES = 256 * 1024
 _READ_CHUNK_BYTES = 64 * 1024
 _READER_JOIN_SECONDS = 1.0
+_POST_EXIT_PIPE_GRACE_SECONDS = 5.0
 
 
 def shell_cja(
@@ -226,10 +227,19 @@ def _communicate_bounded(
 
     deadline = time.monotonic() + SHELL_OUT_TIMEOUT_SECONDS
     timed_out = False
+    lingering = False
+    exited_at: float | None = None
     while process.poll() is None or any(reader.is_alive() for reader in readers):
-        remaining = deadline - time.monotonic()
+        now = time.monotonic()
+        remaining = deadline - now
         if remaining <= 0:
             timed_out = True
+            _terminate_process_tree(process)
+            break
+        if exited_at is None and process.poll() is not None:
+            exited_at = now
+        if exited_at is not None and now >= exited_at + _POST_EXIT_PIPE_GRACE_SECONDS:
+            lingering = True
             _terminate_process_tree(process)
             break
         if stop_requested.wait(min(0.05, remaining)):
@@ -250,10 +260,14 @@ def _communicate_bounded(
     if readers_still_alive:
         for reader in readers:
             reader.join(timeout=0.1)
-    if any(reader.is_alive() for reader in readers):
-        raise InvalidSnapshotError(f"shell error [io-failed]: {tool} output pipes did not close")
     if timed_out:
         raise InvalidSnapshotError(f"shell error [timeout]: {tool} exceeded the execution deadline")
+    if lingering:
+        raise InvalidSnapshotError(
+            f"shell error [io-failed]: {tool} descendants kept output pipes open after exit"
+        )
+    if any(reader.is_alive() for reader in readers):
+        raise InvalidSnapshotError(f"shell error [io-failed]: {tool} output pipes did not close")
     if over_limit:
         stream_name = "stdout" if "stdout" in over_limit else "stderr"
         raise InvalidSnapshotError(
@@ -266,6 +280,7 @@ def _communicate_bounded(
 
 def _popen_options(platform_name: str) -> dict[str, Any]:
     options: dict[str, Any] = {
+        "stdin": subprocess.DEVNULL,
         "stdout": subprocess.PIPE,
         "stderr": subprocess.PIPE,
     }

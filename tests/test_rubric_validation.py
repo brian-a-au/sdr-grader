@@ -90,6 +90,54 @@ def test_valid_params_still_load(tmp_path):
     assert rubric.categories_in_use == ["naming_conventions"]
 
 
+def _load_with_params(tmp_path, params):
+    category_content = {
+        "category": "naming_conventions",
+        "rules": [_valid_rule(params=params)],
+    }
+    return load_rubric(_write_structured_pack(tmp_path, category_content=category_content))
+
+
+def test_float_param_rejects_integer_too_large_for_float(tmp_path):
+    with pytest.raises(RubricValidationError) as exc:
+        _load_with_params(tmp_path, {"threshold": 10**400})
+    message = str(exc.value)
+    assert "NAME-T01" in message
+    assert "'threshold'" in message
+
+
+def test_param_bounds_are_inclusive(tmp_path):
+    _load_with_params(tmp_path, {"threshold": 0})
+    _load_with_params(tmp_path, {"threshold": 1.00})
+    _load_with_params(tmp_path, {"max_depth": 0})
+
+
+@pytest.mark.parametrize(
+    ("key", "value"),
+    [
+        ("max_depth", "abc"),
+        ("max_depth", float("nan")),
+        ("max_depth", 2.5),
+        ("max_depth", 5.0),
+        ("max_depth", True),
+        ("max_depth", -1),
+        ("max_depth", 10**400),
+        ("threshold", [1]),
+        ("threshold", float("nan")),
+        ("threshold", float("inf")),
+        ("threshold", 1.5),
+        ("threshold", -0.1),
+    ],
+)
+def test_invalid_numeric_params_rejected(tmp_path, key, value):
+    with pytest.raises(RubricValidationError) as exc:
+        _load_with_params(tmp_path, {key: value})
+    message = str(exc.value)
+    assert "NAME-T01" in message
+    assert f"'{key}'" in message
+    assert "'abc'" not in message
+
+
 def test_colliding_category_weight_keys_fail_at_load(tmp_path):
     """Spec F39: keys that normalize to one rendered slug are rejected."""
     meta = _valid_meta()
@@ -503,3 +551,137 @@ def test_valid_yaml_neighbors_remain_accepted(tmp_path, severity):
     assert rubric.description == meta["description"]
     assert rubric.category_weights == meta["category_weights"]
     assert [band.min_score for band in rubric.grade_scale] == [100, 0]
+
+
+def test_yaml_alias_rejected_with_named_file(tmp_path):
+    from sdr_grader.rules.suppression import load_suppression
+
+    _write_structured_pack(tmp_path)
+    (tmp_path / "_meta.yaml").write_text("a: &x foo\nb: *x\n", encoding="utf-8")
+    with pytest.raises(RubricValidationError, match=r"_meta\.yaml.*aliases are not supported"):
+        load_rubric(tmp_path)
+    cfg = tmp_path / ".sdr-grader.yaml"
+    cfg.write_text("a: &x foo\nb: *x\n", encoding="utf-8")
+    with pytest.raises(
+        RubricValidationError, match=r"\.sdr-grader\.yaml.*aliases are not supported"
+    ):
+        load_suppression(cfg)
+
+
+def test_yaml_alias_bomb_fails_fast(tmp_path, capsys):
+    from sdr_grader.cli.exit_codes import RUBRIC_VALIDATION_FAILURE
+    from sdr_grader.cli.main import main
+
+    lines = ["a0: &a0 [x,x,x,x,x,x,x,x,x]"]
+    for i in range(1, 7):
+        lines.append(f"a{i}: &a{i} [" + ",".join([f"*a{i - 1}"] * 9) + "]")
+    lines.append("suppress: [{rule: CALC-001, reason: *a6}]")
+    cfg = tmp_path / "cfg.yaml"
+    cfg.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    out = tmp_path / "out.html"
+    rc = main(
+        [
+            str(REPO_ROOT / "tests/fixtures/cja_snapshot_clean.json"),
+            "--output",
+            str(out),
+            "--suppress-config",
+            str(cfg),
+        ]
+    )
+    err = capsys.readouterr().err
+    assert rc == RUBRIC_VALIDATION_FAILURE
+    assert len(err) < 1000
+    assert not out.exists()
+
+
+def test_yaml_deep_nesting_is_validation_error(tmp_path, capsys):
+    from sdr_grader.cli.exit_codes import RUBRIC_VALIDATION_FAILURE
+    from sdr_grader.cli.main import main
+
+    cfg = tmp_path / "cfg.yaml"
+    cfg.write_text("suppress: " + "[" * 5000 + "]" * 5000, encoding="utf-8")
+    rc = main(
+        [
+            str(REPO_ROOT / "tests/fixtures/cja_snapshot_clean.json"),
+            "--output",
+            str(tmp_path / "out.html"),
+            "--suppress-config",
+            str(cfg),
+        ]
+    )
+    err = capsys.readouterr().err
+    assert rc == RUBRIC_VALIDATION_FAILURE
+    assert "Traceback" not in err
+
+
+@pytest.mark.parametrize(
+    "where,field,value",
+    [
+        ("rule", "name", {"a": 1}),
+        ("rule", "rationale", ["x"]),
+        ("rule", "remediation", ["x"]),
+        ("meta", "version", [1, 2]),
+        ("supp", "reason", [1, 2]),
+    ],
+)
+def test_text_fields_require_strings(tmp_path, where, field, value):
+    from sdr_grader.rules.suppression import load_suppression
+
+    if where == "rule":
+        _write_structured_pack(
+            tmp_path,
+            category_content={
+                "category": "naming_conventions",
+                "rules": [_valid_rule(**{field: value})],
+            },
+        )
+        with pytest.raises(RubricValidationError):
+            load_rubric(tmp_path)
+    elif where == "meta":
+        meta = _valid_meta()
+        meta[field] = value
+        _write_structured_pack(tmp_path, meta=meta)
+        with pytest.raises(RubricValidationError):
+            load_rubric(tmp_path)
+    else:
+        cfg = tmp_path / ".sdr-grader.yaml"
+        cfg.write_text(
+            yaml.safe_dump({"suppress": [{"rule": "X-1", field: value}]}), encoding="utf-8"
+        )
+        with pytest.raises(RubricValidationError):
+            load_suppression(cfg)
+
+
+def test_version_accepts_numeric_scalar(tmp_path):
+    meta = _valid_meta()
+    meta["version"] = 3.0
+    _write_structured_pack(tmp_path, meta=meta)
+    assert load_rubric(tmp_path).version == "3.0"
+
+
+def test_validation_messages_do_not_repr_collections(tmp_path):
+    from sdr_grader.rules.suppression import load_suppression
+
+    cfg = tmp_path / ".sdr-grader.yaml"
+    cfg.write_text("severity_overrides: {CALC-001: [a, b, c]}\n", encoding="utf-8")
+    with pytest.raises(RubricValidationError) as exc:
+        load_suppression(cfg)
+    assert "list" in str(exc.value)
+    assert "['a'" not in str(exc.value)
+
+
+def test_describe_value_truncates_long_strings_and_names_containers():
+    from sdr_grader.rules.yaml_io import describe_value
+
+    result = describe_value("x" * 200)
+    assert len(result) == 80
+    assert result.endswith("...")
+    assert describe_value([1, 2]) == "list"
+
+
+def test_boolean_meta_version_is_rejected(tmp_path):
+    meta = _valid_meta()
+    meta["version"] = True
+    _write_structured_pack(tmp_path, meta=meta)
+    with pytest.raises(RubricValidationError):
+        load_rubric(tmp_path)

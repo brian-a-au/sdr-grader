@@ -14,10 +14,13 @@ from sdr_grader.cli.main import main
 from sdr_grader.core.exceptions import RubricValidationError
 from sdr_grader.core.grader import grade
 from sdr_grader.render import Finding, FindingBlock
+from sdr_grader.render.renderer import render
 from sdr_grader.rules.rubric import load_rubric
 from sdr_grader.rules.suppression import (
     SuppressedRule,
     Suppression,
+    _parse,
+    _renormalize,
     apply_to_findings,
     apply_to_rubric,
     load_suppression,
@@ -202,6 +205,11 @@ def test_cli_malformed_suppression_is_exit_3_with_no_artifact(
 # ---------------------------------------------------------------------------
 
 
+def test_renormalize_returns_input_when_no_positive_weight():
+    weights = {"a": 0.0, "b": 0.0}
+    assert _renormalize(weights) is weights
+
+
 def test_apply_to_findings_drops_suppressed_rules():
     findings = [_finding("SCH-003"), _finding("CALC-014", severity="high")]
     suppression = Suppression(suppressed=[SuppressedRule("SCH-003", reason="quiet")])
@@ -235,7 +243,7 @@ def test_suppression_summary_groups_reasons_and_omits_empty_rule_ids():
         ]
     )
 
-    summaries = summarize_suppressed(suppression)
+    summaries = summarize_suppressed(suppression, {"NAME-002", "SCH-003", "CALC-014"})
     assert [(summary.reason, summary.ids) for summary in summaries] == [
         ("legacy", ["NAME-002", "SCH-003"]),
         ("(no reason recorded)", ["CALC-014"]),
@@ -298,13 +306,38 @@ def test_apply_to_rubric_clamps_nonpositive_category_weight_to_zero(override):
     assert sum(new_rubric.category_weights.values()) == pytest.approx(1.0)
 
 
-def test_apply_to_rubric_preserves_all_nonpositive_weights_without_dividing():
+def test_all_zero_category_weights_rejected():
     rubric = load_rubric(STRICT_PACK)
     overrides = dict.fromkeys(rubric.category_weights, 0.0)
 
-    new_rubric = apply_to_rubric(rubric, Suppression(category_weight_overrides=overrides))
+    with pytest.raises(RubricValidationError, match="category_weights leave no positive weight"):
+        apply_to_rubric(rubric, Suppression(category_weight_overrides=overrides))
 
-    assert new_rubric.category_weights == overrides
+
+def test_cli_all_zero_category_weights_is_exit_3_with_no_artifact(tmp_path, capsys):
+    rubric = load_rubric(STRICT_PACK)
+    config = tmp_path / ".sdr-grader.yaml"
+    config.write_text(
+        yaml.safe_dump({"category_weights": dict.fromkeys(rubric.category_weights, 0)}),
+        encoding="utf-8",
+    )
+    output = tmp_path / "report.html"
+
+    rc = main(
+        [
+            str(FIXTURES / "cja_snapshot_messy.json"),
+            "--output",
+            str(output),
+            "--suppress-config",
+            str(config),
+        ]
+    )
+
+    assert rc == RUBRIC_VALIDATION_FAILURE
+    assert not output.exists()
+    diagnostics = capsys.readouterr().err
+    assert "category_weights leave no positive weight" in diagnostics
+    assert "Traceback" not in diagnostics
 
 
 # ---------------------------------------------------------------------------
@@ -449,8 +482,6 @@ def test_cli_can_use_pragmatic_pack(tmp_path):
 
 
 def test_component_requests_are_unapplied_and_skipped_count_counts_ids():
-    from sdr_grader.render.renderer import render
-
     impl = adapt(json.loads((FIXTURES / "cja_snapshot_messy.json").read_text()))
     rubric = load_rubric(STRICT_PACK)
     baseline = grade(impl, rubric)
@@ -466,9 +497,10 @@ def test_component_requests_are_unapplied_and_skipped_count_counts_ids():
     assert scoped.findings == baseline.findings
     assert scoped.overall_pct == baseline.overall_pct
     assert scoped.methodology.skipped == baseline.methodology.skipped
-    assert "component-scoped suppression requests were not applied" in " ".join(
-        scoped.methodology.paragraphs
-    )
+    assert (
+        "Component-scoped suppression requests were not applied for CALC-014; "
+        "these rules remain active and included in scoring."
+    ) in scoped.methodology.paragraphs
     whole = grade(
         impl,
         rubric,
@@ -506,3 +538,47 @@ def test_suppression_valid_yaml_neighbors_remain_accepted(tmp_path, severity):
     assert suppression.severity_overrides == {"NAME-002": severity}
     assert suppression.category_weight_overrides == {"schema_hygiene": 0, "naming_conventions": 1}
     assert suppression.suppressed[0].reason == "café 日本語"
+
+
+def test_duplicate_suppress_rule_rejected():
+    with pytest.raises(RubricValidationError, match="suppress lists CALC-001 more than once"):
+        _parse({"suppress": [{"rule": "CALC-001"}, {"rule": "CALC-001"}]}, source="s.yaml")
+
+
+def test_component_suppression_sentence_names_rules():
+    impl = adapt(json.loads((FIXTURES / "cja_snapshot_messy.json").read_text()))
+    rubric = load_rubric(STRICT_PACK)
+    report = grade(
+        impl,
+        rubric,
+        suppression=Suppression(suppressed=[SuppressedRule("CALC-001", "r", ["x"])]),
+    )
+    assert (
+        "Component-scoped suppression requests were not applied for CALC-001; "
+        "these rules remain active and included in scoring."
+    ) in report.methodology.paragraphs
+
+
+def test_inapplicable_suppressed_rule_not_reported_skipped():
+    impl = adapt(json.loads((FIXTURES / "cja_snapshot_messy.json").read_text()))
+    rubric = load_rubric(STRICT_PACK)
+    report = grade(
+        impl,
+        rubric,
+        suppression=Suppression(
+            suppressed=[SuppressedRule("AA-001", "r"), SuppressedRule("CALC-014", "r")]
+        ),
+    )
+    skipped_ids = [rule_id for s in report.methodology.skipped for rule_id in s.ids]
+    assert "CALC-014" in skipped_ids
+    assert "AA-001" not in skipped_ids
+
+
+def test_single_skipped_rule_is_singular():
+    impl = adapt(json.loads((FIXTURES / "cja_snapshot_messy.json").read_text()))
+    rubric = load_rubric(STRICT_PACK)
+    report = grade(
+        impl, rubric, suppression=Suppression(suppressed=[SuppressedRule("CALC-014", "r")])
+    )
+    assert sum(len(s.ids) for s in report.methodology.skipped) == 1
+    assert "1 rule skipped during this run" in render(report)

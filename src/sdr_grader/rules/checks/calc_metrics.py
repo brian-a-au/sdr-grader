@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import json
-from collections import defaultdict
+import math
+from collections import Counter, defaultdict
 from collections.abc import Iterator
 from typing import TYPE_CHECKING
 
@@ -152,10 +153,9 @@ def check_orphan_calc_metrics(impl: Implementation, ctx: RuleContext) -> list[Fi
 def check_calc_near_duplicates(impl: Implementation, ctx: RuleContext) -> list[Finding]:
     """Find identical and near-identical reference sets.
 
-    Distinct reference sets are compared only when they share at least one
-    reference. For the positive thresholds used by bundled packs, disjoint
-    sets can never meet the Jaccard threshold, so an inverted index avoids
-    the old all-pairs scan without changing finding semantics.
+    Candidate pairs use prefix and size filtering: for positive thresholds,
+    sets that cannot reach the Jaccard threshold are never compared, so the
+    old all-pairs scan is avoided without changing finding semantics.
     """
     threshold = float(ctx.params.get("min_similarity", 0.85))
     metrics = [cm for cm in impl.calculated_metrics if cm.references]
@@ -291,21 +291,27 @@ def _near_duplicate_candidates(
                 yield left, right
         return
 
-    postings: dict[str, list[int]] = defaultdict(list)
-    for index, references in enumerate(reference_sets):
-        for reference in sorted(references):
-            postings[reference].append(index)
+    freq = Counter(ref for refs in reference_sets for ref in refs)
+    ordered = [sorted(refs, key=lambda ref: (freq[ref], ref)) for refs in reference_sets]
 
-    for left, references in enumerate(reference_sets):
-        rights: set[int] = set()
-        for reference in sorted(references):
-            rights.update(
-                right
-                for right in postings[reference]
-                if right > left
-            )
-        for right in sorted(rights):
-            yield left, right
+    def prefix_len(size: int) -> int:
+        return max(1, min(size, size - math.ceil(threshold * size - 1e-9) + 1))
+
+    postings: dict[str, list[int]] = defaultdict(list)
+    for index, refs in enumerate(ordered):
+        for ref in refs[: prefix_len(len(refs))]:
+            postings[ref].append(index)
+    for left, refs in enumerate(ordered):
+        size = len(refs)
+        rights = {
+            right
+            for ref in refs[: prefix_len(size)]
+            for right in postings[ref]
+            if right > left
+            and threshold * size - 1e-9 <= len(ordered[right])
+            and threshold * len(ordered[right]) - 1e-9 <= size
+        }
+        yield from ((left, right) for right in sorted(rights))
 
 
 def _jaccard(left: frozenset[str], right: frozenset[str]) -> float:

@@ -13,11 +13,10 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
-import yaml
-
 from sdr_grader.core.exceptions import RubricValidationError
 from sdr_grader.render import Finding
 from sdr_grader.rules.rubric import VALID_SEVERITIES, Rubric
+from sdr_grader.rules.yaml_io import describe_value, load_config_yaml
 
 DEFAULT_SUPPRESSION_FILENAME = ".sdr-grader.yaml"
 
@@ -57,21 +56,7 @@ def load_suppression(path: str | Path) -> Suppression:
     p = Path(path)
     if not p.exists():
         return Suppression()
-    try:
-        with p.open(encoding="utf-8") as handle:
-            try:
-                loaded = yaml.safe_load(handle)
-            except UnicodeDecodeError:
-                raise
-            except ValueError as exc:
-                raise RubricValidationError(f"{p.name}: invalid YAML scalar") from exc
-            raw = {} if loaded is None else loaded
-    except UnicodeDecodeError as exc:
-        raise RubricValidationError(f"{p.name}: YAML must be UTF-8 encoded") from exc
-    except yaml.YAMLError as exc:
-        raise RubricValidationError(f"{p.name}: invalid YAML syntax") from exc
-    except OSError as exc:
-        raise RubricValidationError(f"{p.name}: could not read YAML") from exc
+    raw = load_config_yaml(p)
     if not isinstance(raw, dict):
         raise RubricValidationError(
             f"{path}: suppression config must be a mapping, got {type(raw).__name__}"
@@ -84,15 +69,22 @@ def _parse(raw: dict[str, Any], *, source: str) -> Suppression:
     suppressed_raw = raw.get("suppress", [])
     if not isinstance(suppressed_raw, list):
         raise RubricValidationError(f"{source}: suppress must be a list")
+    seen_rules: set[str] = set()
     for entry in suppressed_raw:
         if not isinstance(entry, dict):
             raise RubricValidationError(
-                f"{source}: suppress entries must be mappings; got {entry!r}"
+                f"{source}: suppress entries must be mappings; got {describe_value(entry)}"
             )
         rule_id = entry.get("rule")
         if not isinstance(rule_id, str) or not rule_id:
             raise RubricValidationError(f"{source}: suppress entry missing 'rule' string")
-        reason = str(entry.get("reason", "")).strip()
+        if rule_id in seen_rules:
+            raise RubricValidationError(f"{source}: suppress lists {rule_id} more than once")
+        seen_rules.add(rule_id)
+        reason_raw = entry.get("reason")
+        if reason_raw is not None and not isinstance(reason_raw, str):
+            raise RubricValidationError(f"{source} {rule_id}: 'reason' must be a string")
+        reason = (reason_raw or "").strip()
         components = entry.get("components", [])
         if not isinstance(components, list):
             raise RubricValidationError(
@@ -113,7 +105,8 @@ def _parse(raw: dict[str, Any], *, source: str) -> Suppression:
     for rule_id, sev in severity_overrides_raw.items():
         if not isinstance(sev, str) or sev not in VALID_SEVERITIES:
             raise RubricValidationError(
-                f"{source}: severity_overrides[{rule_id!r}] = {sev!r} is not a valid severity"
+                f"{source}: severity_overrides[{describe_value(rule_id)}] = "
+                f"{describe_value(sev)} is not a valid severity"
             )
         severity_overrides[str(rule_id)] = str(sev)
 
@@ -124,18 +117,20 @@ def _parse(raw: dict[str, Any], *, source: str) -> Suppression:
     for cat, w in weight_overrides_raw.items():
         if isinstance(w, bool) or not isinstance(w, (int, float)):
             raise RubricValidationError(
-                f"{source}: category_weights[{cat!r}] is not numeric ({w!r})"
+                f"{source}: category_weights[{describe_value(cat)}] is not numeric ("
+                f"{describe_value(w)})"
             )
         try:
             number = float(w)
         except OverflowError as exc:
             raise RubricValidationError(
-                f"{source}: category_weights[{cat!r}] must be a finite number between 0 and 1"
+                f"{source}: category_weights[{describe_value(cat)}] must be a finite"
+                f" number between 0 and 1"
             ) from exc
         if not math.isfinite(number) or not 0 <= number <= 1:
             raise RubricValidationError(
-                f"{source}: category_weights[{cat!r}] must be a finite "
-                f"number between 0 and 1 (got {w!r})"
+                f"{source}: category_weights[{describe_value(cat)}] must be a finite "
+                f"number between 0 and 1 (got {describe_value(w)})"
             )
         weight_overrides[str(cat)] = number
 
@@ -179,6 +174,10 @@ def apply_to_rubric(rubric: Rubric, suppression: Suppression) -> Rubric:
     new_weights = dict(rubric.category_weights)
     for cat, w in suppression.category_weight_overrides.items():
         new_weights[cat] = w
+    if math.fsum(w for w in new_weights.values() if w > 0) <= 0:
+        raise RubricValidationError(
+            "category_weights leave no positive weight; keep at least one category above 0"
+        )
     new_weights = _renormalize(new_weights)
     return replace(rubric, rules=new_rules, category_weights=new_weights)
 
@@ -206,11 +205,13 @@ def apply_to_findings(findings: list[Finding], suppression: Suppression) -> list
     return out
 
 
-def summarize_suppressed(suppression: Suppression) -> list[SkippedRulesSummary]:
+def summarize_suppressed(
+    suppression: Suppression, applicable_ids: set[str]
+) -> list[SkippedRulesSummary]:
     """Group suppression entries for the rendered methodology section."""
     by_reason: dict[str, list[str]] = {}
     for s in suppression.suppressed:
-        if not s.rule_id or s.components:
+        if not s.rule_id or s.components or s.rule_id not in applicable_ids:
             continue
         key = s.reason or "(no reason recorded)"
         by_reason.setdefault(key, []).append(s.rule_id)
@@ -226,7 +227,7 @@ def summarize_suppressed(suppression: Suppression) -> list[SkippedRulesSummary]:
 
 def _renormalize(weights: dict[str, float]) -> dict[str, float]:
     total = math.fsum(w for w in weights.values() if w > 0)
-    if total <= 0:
+    if total <= 0:  # defensive: apply_to_rubric rejects all-zero weights first
         return weights
     return {k: (v / total if v > 0 else 0.0) for k, v in weights.items()}
 

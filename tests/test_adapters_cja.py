@@ -338,9 +338,7 @@ def test_adapt_rejects_non_list_metrics() -> None:
         ("segments", {"name": "PRIVATE-CJA-VALUE"}, "missing"),
     ],
 )
-def test_cja_adapter_record_errors_are_structural(
-    collection: str, record, expected: str
-) -> None:
+def test_cja_adapter_record_errors_are_structural(collection: str, record, expected: str) -> None:
     snapshot = {
         "metadata": {"Data View ID": "dv_x"},
         "metrics": [],
@@ -740,7 +738,9 @@ def test_definition_parser_wraps_json_recursion_error(monkeypatch):
         cja._parse_definition_json('{"nested": true}')
 
 
-@pytest.mark.parametrize("error", [ValueError("integer limit"), RecursionError("decoder recursion")])
+@pytest.mark.parametrize(
+    "error", [ValueError("integer limit"), RecursionError("decoder recursion")]
+)
 def test_embedded_json_resource_errors_are_invalid_snapshot(monkeypatch, error):
     from sdr_grader.adapters import cja
 
@@ -886,3 +886,47 @@ def test_aa_snapshot_forced_through_cja_keeps_platform_validation_failure():
 
     with pytest.raises(InvalidSnapshotError, match="metadata"):
         adapt(aa)
+
+
+def _snapshot_with_shared_to_count(messy_snapshot: dict, value: float) -> dict:
+    snap = json.loads(json.dumps(messy_snapshot))
+    snap["segments"]["segments"][0]["shared_to_count"] = value
+    return json.loads(json.dumps(snap, allow_nan=True))
+
+
+def test_nan_numeric_fields_keep_default_values(messy_snapshot) -> None:
+    snap = _snapshot_with_shared_to_count(messy_snapshot, float("nan"))
+    impl = adapt(snap)
+    assert impl.segments[0].shared_to_count is None
+
+
+def test_infinite_shared_to_count_is_absent(messy_snapshot) -> None:
+    snap = _snapshot_with_shared_to_count(messy_snapshot, float("inf"))
+    impl = adapt(snap)
+    assert impl.segments[0].shared_to_count is None
+
+
+def test_boolean_shared_to_count_is_absent(messy_snapshot) -> None:
+    snap = _snapshot_with_shared_to_count(messy_snapshot, True)
+    impl = adapt(snap)
+    assert impl.segments[0].shared_to_count is None
+
+
+def test_cli_nan_snapshot_grades_without_traceback(messy_snapshot, tmp_path) -> None:
+    from sdr_grader.cli.main import main
+
+    snap = json.loads(json.dumps(messy_snapshot))
+    snap["segments"]["segments"][0]["shared_to_count"] = float("nan")
+    path = tmp_path / "nan.json"
+    path.write_text(json.dumps(snap, allow_nan=True), encoding="utf-8")
+    out = tmp_path / "out.html"
+    assert main([str(path), "--output", str(out), "--quiet"]) == 0
+
+
+def test_oversized_integer_numeric_field_uses_default_cja(messy_snapshot) -> None:
+    snap = json.loads(json.dumps(messy_snapshot))
+    record = snap["calculated_metrics"]["metrics"][0]
+    record["complexity_score"] = "N/A"
+    expected = adapt(snap).calculated_metrics[0].complexity_score
+    record["complexity_score"] = 10**400
+    assert adapt(snap).calculated_metrics[0].complexity_score == expected

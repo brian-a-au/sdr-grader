@@ -6,8 +6,10 @@ categories that matter more to you, or downgrading the severity of a
 rule you accept but want recorded. The file is opt-in. Without one, the
 selected rubric pack runs unmodified.
 
-Configuration YAML must use UTF-8 encoding. Malformed YAML, invalid scalar
-values, and numeric values outside the supported field ranges raise
+Configuration YAML must use UTF-8 encoding. Malformed YAML, YAML aliases (`*name` references to an anchor; a plain anchor with no alias still loads),
+nesting deeper than 64 levels, invalid scalar values, numeric `_meta.yaml` fields
+outside their ranges, and the numeric rule params listed in
+[Rule params](RUBRIC_FORMAT.md#rule-params) outside their ranges raise
 `RubricValidationError` through the loader API. The CLI reports a configuration
 error with exit code 3 before publishing HTML or JSON reports.
 
@@ -74,6 +76,8 @@ Categories with weight 0 are excluded from the overall score entirely,
 which is useful when a whole category doesn't apply to your project.
 Override values must be finite YAML numbers from 0 through 1. Booleans,
 quoted numeric strings, negative values, NaN, and infinity are rejected.
+Overriding weights so that no category keeps a positive weight is a
+configuration error and exits with code 3.
 
 ## Validation
 
@@ -88,7 +92,8 @@ References are validated against the selected rubric before grading:
 
 - every `suppress[].rule` must name a rule in that pack;
 - every `severity_overrides` key must name a rule in that pack; and
-- every `category_weights` key must exactly match a pack category slug.
+- every `category_weights` key must exactly match a pack category slug; and
+- the resulting weights must leave at least one category with a positive weight.
 
 An unknown reference exits with code 3 before HTML or JSON output is
 published. When moving to bundled pack `2.0`, remove suppressions or

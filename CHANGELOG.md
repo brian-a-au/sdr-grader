@@ -5,9 +5,9 @@ spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
 ## 1.5.4 — 2026-10-17
 
-Patch source preparation recorded October 17, 2026; not yet published. See the
-[release record](docs/releases/1.5.4-readiness.md) for pending candidate evidence
-and separate source/tag, publication, and announcement gates.
+Published October 17, 2026 as a scoped public preview; announcement on hold. See
+the [release record](docs/releases/1.5.4-readiness.md) for evidence and unverified
+gaps.
 
 - Report malformed suppression and rubric YAML as controlled validation errors
   (CLI exit 3), without a traceback or changes to existing reports. This covers

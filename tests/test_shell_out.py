@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import contextlib
 import os
+import signal
 import subprocess
 import sys
 import time
@@ -184,9 +185,7 @@ def test_shell_out_timeout_terminates_descendant_process_group(
 ) -> None:
     marker = tmp_path / "descendant-survived"
     child_code = (
-        "import pathlib,time;"
-        "time.sleep(.35);"
-        f"pathlib.Path({str(marker)!r}).write_text('survived')"
+        f"import pathlib,time;time.sleep(.35);pathlib.Path({str(marker)!r}).write_text('survived')"
     )
     parent_code = (
         "import subprocess,sys,time;"
@@ -266,8 +265,6 @@ def test_non_posix_process_cleanup_kills_direct_child(
 
 @pytest.mark.skipif(os.name != "posix", reason="POSIX process-group cleanup")
 def test_deadline_covers_descendant_pipes_after_leader_exit(tmp_path):
-    import signal
-
     pid_file = tmp_path / "descendant.pid"
     output = tmp_path / "report.html"
     output.write_text("previous report")
@@ -297,27 +294,92 @@ def test_deadline_covers_descendant_pipes_after_leader_exit(tmp_path):
         assert "shell error [timeout]" in result.stderr
         assert "Traceback" not in result.stderr
         assert output.read_text() == "previous report"
-        deadline = time.monotonic() + 2
-        while time.monotonic() < deadline:
-            try:
-                os.kill(pid, 0)
-            except ProcessLookupError:
-                break
-            status = subprocess.run(
-                ["ps", "-o", "stat=", "-p", str(pid)],
-                capture_output=True, text=True, check=False, timeout=1,
-            ).stdout.strip()
-            if status.startswith("Z"):
-                break  # Dead descendants can await init's reap on Linux.
-            time.sleep(0.05)
-        else:
-            pytest.fail("descendant survived deadline cleanup")
+        _assert_gone(pid)
     finally:
         if pid is None and pid_file.exists():
             pid = int(pid_file.read_text())
         if pid is not None:
             with contextlib.suppress(ProcessLookupError):
                 os.kill(pid, signal.SIGKILL)
+
+
+def test_child_stdin_is_devnull():
+    for name in ("posix", "nt"):
+        assert shell_out._popen_options(name)["stdin"] is subprocess.DEVNULL  # noqa: SLF001
+
+
+def _kill_pid_file(pid_file: Path) -> int | None:
+    if not pid_file.exists() or not pid_file.read_text():
+        return None
+    pid = int(pid_file.read_text())
+    with contextlib.suppress(ProcessLookupError):
+        os.kill(pid, signal.SIGKILL)
+    return pid
+
+
+def _assert_gone(pid: int) -> None:
+    deadline = time.monotonic() + 2
+    while time.monotonic() < deadline:
+        try:
+            os.kill(pid, 0)
+        except ProcessLookupError:
+            return
+        status = subprocess.run(
+            ["ps", "-o", "stat=", "-p", str(pid)],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=1,
+        ).stdout.strip()
+        if status.startswith("Z"):
+            return
+        time.sleep(0.05)
+    pytest.fail("descendant survived cleanup")
+
+
+@pytest.mark.skipif(os.name != "posix", reason="POSIX session semantics")
+def test_timeout_reported_before_pipe_failure(monkeypatch, tmp_path):
+    pid_file = tmp_path / "grandchild.pid"
+    monkeypatch.setattr(shell_out, "SHELL_OUT_TIMEOUT_SECONDS", 1.0)
+    code = (
+        "import subprocess,sys,time; from pathlib import Path; "
+        "p=subprocess.Popen([sys.executable,'-c','import time; time.sleep(20)'],"
+        "start_new_session=True); "
+        f"f=Path({str(pid_file)!r}); f.write_text(str(p.pid)); "
+        "exec('while not f.exists() or not f.read_text(): time.sleep(0.01)'); time.sleep(5)"
+    )
+    try:
+        with pytest.raises(InvalidSnapshotError) as raised:
+            _run_python(monkeypatch, code)
+        assert "[timeout]" in str(raised.value)
+        assert pid_file.exists()
+    finally:
+        _kill_pid_file(pid_file)
+
+
+@pytest.mark.skipif(os.name != "posix", reason="POSIX process-group cleanup")
+def test_background_helper_after_exit_fails_fast(monkeypatch, tmp_path):
+    pid_file = tmp_path / "helper.pid"
+    monkeypatch.setattr(shell_out, "SHELL_OUT_TIMEOUT_SECONDS", 30)
+    monkeypatch.setattr(shell_out, "_POST_EXIT_PIPE_GRACE_SECONDS", 0.3)
+    code = (
+        "import subprocess,sys; from pathlib import Path; "
+        "p=subprocess.Popen([sys.executable,'-c','import time; time.sleep(20)']); "
+        f"Path({str(pid_file)!r}).write_text(str(p.pid))"
+    )
+    started = time.monotonic()
+    pid = None
+    try:
+        with pytest.raises(InvalidSnapshotError) as raised:
+            _run_python(monkeypatch, code)
+        elapsed = time.monotonic() - started
+        pid = int(pid_file.read_text())
+        assert "[io-failed]" in str(raised.value)
+        assert "kept output pipes open after exit" in str(raised.value)
+        assert elapsed < 5
+        _assert_gone(pid)
+    finally:
+        _kill_pid_file(pid_file)
 
 
 def test_shell_numeric_conversion_is_controlled(monkeypatch):

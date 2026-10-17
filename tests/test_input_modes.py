@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 import json
+import os
 import shutil
 import sys
 from datetime import UTC, datetime
@@ -664,3 +665,13 @@ def test_load_file_with_utf8_bom(tmp_path):
     p.write_bytes(b'\xef\xbb\xbf{"a": 1}')
     snapshot, _source = load_snapshot(str(p))
     assert snapshot == {"a": 1}
+
+
+@pytest.mark.skipif(not hasattr(os, "symlink"), reason="no symlink support")
+def test_directory_ignores_broken_symlink_and_subdirectory_candidates(tmp_path):
+    shutil.copy(FIXTURES / "cja_snapshot_clean.json", tmp_path / "a.json")
+    os.symlink("/nonexistent", tmp_path / "b.json")
+    (tmp_path / "z.json").mkdir()
+    snap, source = load_snapshot(str(tmp_path))
+    assert snap["metadata"]["Data View ID"] == "dv_clean_prod_web"
+    assert source.endswith("a.json")
