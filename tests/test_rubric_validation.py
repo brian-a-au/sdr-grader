@@ -437,20 +437,69 @@ def test_rubric_audit_inventory_matches_both_shipped_pack_definitions():
 @pytest.mark.parametrize("value", ["true", "false", 1, 0, None, [], {}])
 def test_reference_policy_flag_requires_a_literal_boolean(tmp_path, check, value):
     flag = "exclude_unresolved_calculated_metric_segments"
-    pack = _write_structured_pack(tmp_path, category_content={
-        "category": "naming_conventions",
-        "rules": [_valid_rule(id="CUSTOM-REFERENCE", check=check, params={flag: value})],
-    })
+    pack = _write_structured_pack(
+        tmp_path,
+        category_content={
+            "category": "naming_conventions",
+            "rules": [_valid_rule(id="CUSTOM-REFERENCE", check=check, params={flag: value})],
+        },
+    )
     with pytest.raises(RubricValidationError, match=f"CUSTOM-REFERENCE.*{flag}.*boolean"):
         load_rubric(pack)
 
 
 @pytest.mark.parametrize("check", ["broken_references", "calc_formula_broken_refs"])
-@pytest.mark.parametrize("params", [{}, {"exclude_unresolved_calculated_metric_segments": False},
-                                    {"exclude_unresolved_calculated_metric_segments": True}])
+@pytest.mark.parametrize(
+    "params",
+    [
+        {},
+        {"exclude_unresolved_calculated_metric_segments": False},
+        {"exclude_unresolved_calculated_metric_segments": True},
+    ],
+)
 def test_reference_policy_flag_accepts_opt_in_opt_out_and_legacy(tmp_path, check, params):
-    pack = _write_structured_pack(tmp_path, category_content={
-        "category": "naming_conventions",
-        "rules": [_valid_rule(id="CUSTOM-REFERENCE", check=check, params=params)],
-    })
+    pack = _write_structured_pack(
+        tmp_path,
+        category_content={
+            "category": "naming_conventions",
+            "rules": [_valid_rule(id="CUSTOM-REFERENCE", check=check, params=params)],
+        },
+    )
     assert load_rubric(pack).rules[0].params == params
+
+
+@pytest.mark.parametrize("severity", [[], {}, None, True, 7, "urgent"])
+def test_rule_severity_rejects_noncanonical_values(tmp_path, severity):
+    pack = _write_structured_pack(
+        tmp_path,
+        category_content={
+            "category": "naming_conventions",
+            "rules": [_valid_rule(severity=severity)],
+        },
+    )
+    with pytest.raises(RubricValidationError, match="severity"):
+        load_rubric(pack)
+
+
+@pytest.mark.parametrize("severity", ["critical", "high", "medium", "low"])
+def test_valid_yaml_neighbors_remain_accepted(tmp_path, severity):
+    meta = _valid_meta()
+    meta["description"] = "Unicode café 日本語"
+    meta["category_weights"] = {"naming_conventions": 1, "unused": 0}
+    meta["grade_scale"] = [{"min": 100, "grade": "A"}, {"min": 0, "grade": "F"}]
+    pack = _write_structured_pack(
+        tmp_path,
+        meta=meta,
+        category_content={
+            "category": "naming_conventions",
+            "rules": [_valid_rule(severity=severity)],
+        },
+    )
+    for name in ("_meta.yaml", "naming.yaml"):
+        with (pack / name).open("a", encoding="utf-8") as handle:
+            handle.write("unused_scalar: 2026-10-16\nunused_integer: !!int 12\n")
+    rubric = load_rubric(pack)
+    assert rubric.rules[0].severity == severity
+    assert rubric.description == meta["description"]
+    assert rubric.category_weights == meta["category_weights"]
+    assert [band.min_score for band in rubric.grade_scale] == [100, 0]

@@ -6,6 +6,11 @@ categories that matter more to you, or downgrading the severity of a
 rule you accept but want recorded. The file is opt-in. Without one, the
 selected rubric pack runs unmodified.
 
+Configuration YAML must use UTF-8 encoding. Malformed YAML, invalid scalar
+values, and numeric values outside the supported field ranges raise
+`RubricValidationError` through the loader API. The CLI reports a configuration
+error with exit code 3 before publishing HTML or JSON reports.
+
 ## Discovery
 
 By default the grader looks for `./.sdr-grader.yaml` in the working

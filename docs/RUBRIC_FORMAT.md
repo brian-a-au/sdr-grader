@@ -8,6 +8,11 @@ via `--rubric PATH`.
 
 This document is the contract. The format is the user-facing IP.
 
+Configuration YAML must use UTF-8 encoding. Malformed YAML, invalid scalar
+values, and numeric values outside the supported field ranges raise
+`RubricValidationError` through the loader API. The CLI reports a configuration
+error with exit code 3 before publishing HTML or JSON reports.
+
 ## Pack layout
 
 ```
