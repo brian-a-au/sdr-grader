@@ -409,6 +409,14 @@ def test_distribution_rejects_malformed_inputs(tmp_path, content):
     assert "abc" not in str(excinfo.value)
 
 
+def test_load_distribution_rejects_non_finite_percentile(tmp_path):
+    data_path = tmp_path / "distribution.json"
+    data_path.write_text('{"overall": {"median": NaN}}', encoding="utf-8")
+
+    with pytest.raises(InvalidSnapshotError, match="must be a finite number"):
+        load_distribution_data(data_path)
+
+
 def test_load_distribution_rejects_huge_integer_without_echoing_digits(tmp_path):
     data_path = tmp_path / "distribution.json"
     digits = "0" * 5000

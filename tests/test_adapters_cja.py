@@ -906,6 +906,12 @@ def test_infinite_shared_to_count_is_absent(messy_snapshot) -> None:
     assert impl.segments[0].shared_to_count is None
 
 
+def test_boolean_shared_to_count_is_absent(messy_snapshot) -> None:
+    snap = _snapshot_with_shared_to_count(messy_snapshot, True)
+    impl = adapt(snap)
+    assert impl.segments[0].shared_to_count is None
+
+
 def test_cli_nan_snapshot_grades_without_traceback(messy_snapshot, tmp_path) -> None:
     from sdr_grader.cli.main import main
 

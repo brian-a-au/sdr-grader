@@ -18,6 +18,7 @@ from sdr_grader.rules.rubric import load_rubric
 from sdr_grader.rules.suppression import (
     SuppressedRule,
     Suppression,
+    _renormalize,
     apply_to_findings,
     apply_to_rubric,
     load_suppression,
@@ -200,6 +201,11 @@ def test_cli_malformed_suppression_is_exit_3_with_no_artifact(
 # ---------------------------------------------------------------------------
 # apply_to_findings
 # ---------------------------------------------------------------------------
+
+
+def test_renormalize_returns_input_when_no_positive_weight():
+    weights = {"a": 0.0, "b": 0.0}
+    assert _renormalize(weights) is weights
 
 
 def test_apply_to_findings_drops_suppressed_rules():

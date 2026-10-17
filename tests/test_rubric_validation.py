@@ -98,6 +98,14 @@ def _load_with_params(tmp_path, params):
     return load_rubric(_write_structured_pack(tmp_path, category_content=category_content))
 
 
+def test_float_param_rejects_integer_too_large_for_float(tmp_path):
+    with pytest.raises(RubricValidationError) as exc:
+        _load_with_params(tmp_path, {"threshold": 10**400})
+    message = str(exc.value)
+    assert "NAME-T01" in message
+    assert "'threshold'" in message
+
+
 def test_param_bounds_are_inclusive(tmp_path):
     _load_with_params(tmp_path, {"threshold": 0})
     _load_with_params(tmp_path, {"threshold": 1.00})
