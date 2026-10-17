@@ -136,7 +136,7 @@ def _validate_category_weights(value: Any) -> dict[str, float]:
             raise RubricValidationError(
                 f"category_weights keys {describe_value(seen_slugs[slug])} and "
                 f"{describe_value(key)} collapse to "
-                f"the same category slug {slug!r}"
+                "the same category slug"
             )
         seen_slugs[slug] = key
     total = math.fsum(weights.values())
@@ -252,11 +252,19 @@ def _load_rules(pack_path: Path, allowed_categories: set[str]) -> list[RuleDefin
             rule = _validate_rule_entry(entry, category=category, source=category_file.name)
             if rule.id in seen_ids:
                 raise RubricValidationError(
-                    f"duplicate rule id {rule.id!r} in pack (in {category_file.name})"
+                    f"duplicate rule id {describe_value(rule.id)} in pack (in {category_file.name})"
                 )
             seen_ids.add(rule.id)
             rules.append(rule)
     return rules
+
+
+def _validate_identifier(value: Any, *, field: str, source: str) -> str:
+    if not isinstance(value, str) or not value.isprintable() or len(value) > 64:
+        raise RubricValidationError(
+            f"{source}: {field} must be printable text of at most 64 characters"
+        )
+    return value
 
 
 def _validate_rule_entry(entry: Any, *, category: str, source: str) -> RuleDefinition:
@@ -267,6 +275,7 @@ def _validate_rule_entry(entry: Any, *, category: str, source: str) -> RuleDefin
     rule_id = entry.get("id")
     if not isinstance(rule_id, str) or not rule_id:
         raise RubricValidationError(f"{source}: rule entry is missing 'id' string")
+    _validate_identifier(rule_id, field="rule id", source=source)
     name = (_text_field(entry, "name", source, rule_id) or rule_id).strip()
     severity = entry.get("severity")
     if not isinstance(severity, str) or severity not in VALID_SEVERITIES:

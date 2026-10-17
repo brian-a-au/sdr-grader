@@ -661,3 +661,25 @@ def test_partial_suppression_still_grades(tmp_path):
     snapshot = json.loads((FIXTURES / "cja_snapshot_messy.json").read_text(encoding="utf-8"))
     report = grade(adapt(snapshot, source="test"), rubric, suppression)
     assert isinstance(report.overall_pct, int)
+
+
+@pytest.mark.parametrize("bad_id", ["\x1b[2J", "X" * 65])
+@pytest.mark.parametrize(
+    "raw",
+    [
+        lambda i: {"suppress": [{"rule": i}]},
+        lambda i: {"severity_overrides": {i: "low"}},
+    ],
+)
+def test_suppression_identifiers_are_bounded_printable_text(raw, bad_id):
+    with pytest.raises(RubricValidationError) as exc:
+        _parse(raw(bad_id), source=".sdr-grader.yaml")
+    message = str(exc.value)
+    assert "must be printable text of at most 64 characters" in message
+    assert "\x1b" not in message
+    assert len(message) < 200
+
+
+def test_severity_overrides_reject_non_string_key():
+    with pytest.raises(RubricValidationError, match="severity_overrides key must be printable"):
+        _parse({"severity_overrides": {5: "low"}}, source=".sdr-grader.yaml")

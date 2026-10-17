@@ -15,7 +15,7 @@ from typing import Any
 
 from sdr_grader.core.exceptions import RubricValidationError
 from sdr_grader.render import Finding
-from sdr_grader.rules.rubric import VALID_SEVERITIES, Rubric
+from sdr_grader.rules.rubric import VALID_SEVERITIES, Rubric, _validate_identifier
 from sdr_grader.rules.yaml_io import describe_value, load_config_yaml
 
 DEFAULT_SUPPRESSION_FILENAME = ".sdr-grader.yaml"
@@ -78,6 +78,7 @@ def _parse(raw: dict[str, Any], *, source: str) -> Suppression:
         rule_id = entry.get("rule")
         if not isinstance(rule_id, str) or not rule_id:
             raise RubricValidationError(f"{source}: suppress entry missing 'rule' string")
+        _validate_identifier(rule_id, field="suppress rule", source=source)
         if rule_id in seen_rules:
             raise RubricValidationError(f"{source}: suppress lists {rule_id} more than once")
         seen_rules.add(rule_id)
@@ -103,6 +104,7 @@ def _parse(raw: dict[str, Any], *, source: str) -> Suppression:
         raise RubricValidationError(f"{source}: severity_overrides must be a mapping")
     severity_overrides: dict[str, str] = {}
     for rule_id, sev in severity_overrides_raw.items():
+        _validate_identifier(rule_id, field="severity_overrides key", source=source)
         if not isinstance(sev, str) or sev not in VALID_SEVERITIES:
             raise RubricValidationError(
                 f"{source}: severity_overrides[{describe_value(rule_id)}] = "
