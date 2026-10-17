@@ -33,6 +33,8 @@ Its grades are review aids, not certification.
 The bundled thresholds and severities reflect maintainer judgment, and no
 implementation has been admitted to grading calibration yet. Review every finding
 against the source implementation before you change any production configuration.
+Component-scoped suppression (`components:` in `.sdr-grader.yaml`) is recorded but
+not applied. No candidate-specific independent beta exit is recorded for this release.
 
 The default rubric packs include 27 checks for AA and 27 for CJA, drawn from a
 shared catalog of 31. The report identifies explicitly unassessed checks and
