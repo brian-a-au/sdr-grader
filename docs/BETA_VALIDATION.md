@@ -2,8 +2,10 @@
 
 **Status: unverified — no candidate-specific beta exit decision is recorded.**
 
-Current preparation target: [unpublished, unfrozen 1.5.3](releases/1.5.3-readiness.md).
-The protocol, participants, exact artifact identities, and exit decision remain pending.
+Current release: [published 1.5.3](releases/1.5.3-readiness.md); its immutable
+artifact identities and engineering checks are recorded in the readiness ledger.
+The owner confirms independent testing of prior releases. The candidate-specific
+beta protocol, participation details, findings, and exit decision remain unrecorded.
 
 Historical statements that beta rounds occurred are not an acceptance record.
 The documented 108 compatibility snapshots (100 CJA, 8 AA) are not counts of

@@ -375,8 +375,6 @@ def test_release_soak_is_frozen_least_privilege_and_self_terminating():
     assert "pypi-attestations==0.0.30" in text
     assert '--source-digest "${GRADER_COMMIT}"' in text
     assert "security-events: read" in text
-    # This is not a supported GITHUB_TOKEN permission scope.
-    assert "vulnerability-alerts:" not in text
     assert "retention-days: 90" in text
     assert "actions/workflows/release-soak.yml/disable" in text
     assert "timeline.json" in text
@@ -397,8 +395,49 @@ def test_release_soak_is_frozen_least_privilege_and_self_terminating():
     assert "npm install" not in hosted
     assert "uvx" not in hosted
     assert "issues: read" in hosted
+    document = yaml.safe_load(text)
+    assert document["jobs"]["hosted-state"]["permissions"] == {
+        "contents": "read",
+        "issues": "read",
+        "security-events": "read",
+        "vulnerability-alerts": "read",
+    }
+    assert "vulnerability-alerts:" not in verify
+    assert "vulnerability-alerts:" not in finalize
     assert "actions: write" in finalize
     assert "issues: write" in finalize
+
+
+def test_actionlint_exception_is_one_container_argument_and_scope_specific():
+    workflow = yaml.safe_load(_workflow_text("lint.yml"))
+    step = next(
+        step
+        for step in workflow["jobs"]["actionlint"]["steps"]
+        if step.get("uses", "").startswith("rhysd/actionlint@")
+    )
+    # Docker action args are process arguments, not shell text: avoid quoting.
+    args = step["with"]["args"].split()
+    assert len(args) == 2 and args[0] == "-ignore"
+    assert not any(quote in args[1] for quote in ("'", '"'))
+    diagnostic = (
+        'unknown permission scope "vulnerability-alerts". '
+        'all available permission scopes are "contents", "security-events"'
+    )
+    assert re.fullmatch(args[1], diagnostic)
+    assert not re.fullmatch(args[1], diagnostic.replace("vulnerability-alerts", "unknown"))
+    assert not re.fullmatch(args[1], '"write" is invalid as permission of scope "contents"')
+
+
+def test_vulnerability_alerts_permissions_are_read_only():
+    # actionlint 1.7.12 predates GitHub's supported read/none permission.
+    for path in sorted([*WORKFLOWS.glob("*.yml"), *WORKFLOWS.glob("*.yaml")]):
+        workflow = yaml.safe_load(path.read_text(encoding="utf-8"))
+        scopes = [workflow.get("permissions", {})] + [
+            job.get("permissions", {}) for job in workflow.get("jobs", {}).values()
+        ]
+        for permissions in scopes:
+            if isinstance(permissions, dict) and "vulnerability-alerts" in permissions:
+                assert permissions["vulnerability-alerts"] in {"read", "none"}, path.name
 
 
 def test_codeql_dependency_updates_and_governance_files_are_configured():

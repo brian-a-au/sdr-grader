@@ -42,6 +42,12 @@ jobs:
         with:
           persist-credentials: false
       - uses: rhysd/actionlint@914e7df21a07ef503a81201c76d2b11c789d3fca # v1.7.12
+        # GitHub added this read/none scope after actionlint 1.7.12.
+        # test_workflow_security.py validates its values; other errors stay fatal.
+        # https://github.com/rhysd/actionlint/issues/713
+        with:
+          args: >-
+            -ignore ^unknown\x20permission\x20scope\x20\x22vulnerability-alerts\x22\.\x20all\x20available\x20permission\x20scopes\x20are\x20.+$
   lockfile:
     runs-on: ubuntu-latest
     timeout-minutes: 5
