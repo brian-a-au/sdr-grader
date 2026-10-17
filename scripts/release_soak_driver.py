@@ -18,6 +18,7 @@ from datetime import UTC, datetime
 
 WORKFLOW = "release-soak.yml"
 PENDING_STATUSES = frozenset({"queued", "in_progress", "waiting", "pending", "requested"})
+OBSERVATION_EVENTS = frozenset({"schedule", "workflow_dispatch"})
 FIELDS = "databaseId,status,conclusion,createdAt,updatedAt,event,headBranch"
 
 
@@ -28,7 +29,8 @@ class Decision:
 
 
 def _parse(value: str) -> datetime:
-    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    return parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)
 
 
 def decide(
@@ -39,12 +41,16 @@ def decide(
     alert_after_seconds: int = 10800,
 ) -> Decision:
     main_runs = [r for r in runs if r.get("headBranch") == "main"]
-    pending = any(r.get("status") in PENDING_STATUSES for r in main_runs)
+    pending = any(r.get("status") != "completed" for r in main_runs)
     dispatch = not pending
     if dispatch and main_runs:
         newest = max(_parse(r["createdAt"]) for r in main_runs)
         dispatch = (now - newest).total_seconds() >= interval_seconds
-    successes = [_parse(r["updatedAt"]) for r in main_runs if r.get("conclusion") == "success"]
+    successes = [
+        _parse(r["updatedAt"])
+        for r in main_runs
+        if r.get("conclusion") == "success" and r.get("event") in OBSERVATION_EVENTS
+    ]
     alert = None
     if not successes:
         alert = "no successful observation in listed history"

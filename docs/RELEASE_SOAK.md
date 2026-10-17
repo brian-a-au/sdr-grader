@@ -87,8 +87,9 @@ actual start. A planned 48-hour end does not shorten the real observation window
 
 ## Observe, triage, and retain
 
-- The hourly schedule is a backup; the external driver is the primary cadence. Successful observations may never be more than four
-  hours apart. Checkpoints must satisfy the verifier's two-hour tolerance.
+- The hourly schedule is a backup; the external driver is the primary cadence.
+  Successful observations may never be more than four hours apart. Checkpoints
+  must satisfy the verifier's two-hour tolerance.
 - Use new manual dispatches if needed; never rerun an observation. A rerun can
   hide the first attempt and invalidates the timeline.
 - Review every new or updated inbound report. The workflow checks the labels
