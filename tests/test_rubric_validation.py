@@ -127,6 +127,11 @@ def test_param_bounds_are_inclusive(tmp_path):
         ("threshold", float("inf")),
         ("threshold", 1.5),
         ("threshold", -0.1),
+        ("min_consistency", 1.5),
+        ("min_similarity", -0.1),
+        ("max_complexity", -1),
+        ("cap_days", 2.5),
+        ("max_age_days", True),
     ],
 )
 def test_invalid_numeric_params_rejected(tmp_path, key, value):

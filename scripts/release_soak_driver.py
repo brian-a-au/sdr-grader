@@ -17,7 +17,6 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 
 WORKFLOW = "release-soak.yml"
-PENDING_STATUSES = frozenset({"queued", "in_progress", "waiting", "pending", "requested"})
 OBSERVATION_EVENTS = frozenset({"schedule", "workflow_dispatch"})
 FIELDS = "databaseId,status,conclusion,createdAt,updatedAt,event,headBranch"
 
