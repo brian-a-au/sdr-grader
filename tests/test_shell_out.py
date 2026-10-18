@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import json
 import os
 import signal
 import subprocess
@@ -109,6 +110,16 @@ def test_shell_out_invalid_json_hides_parser_and_child_output(
 def test_shell_out_rejects_non_object_json(monkeypatch: pytest.MonkeyPatch) -> None:
     with pytest.raises(InvalidSnapshotError, match=r"shell error \[invalid-shape\]"):
         _run_python(monkeypatch, "print('[]')")
+
+
+def test_shell_out_duplicate_keys_are_value_free(monkeypatch, capsys):
+    key = json.dumps(STDOUT_CANARY + CONTROL_CANARY + "x" * 10000)
+    payload = '{"nested": {' + key + ": 1, " + key + ": 2}}"
+    with pytest.raises(InvalidSnapshotError, match="duplicate object keys") as raised:
+        _run_python(monkeypatch, f"print({payload!r})")
+    visible = str(raised.value) + capsys.readouterr().err
+    _assert_private_values_absent(visible)
+    assert len(visible) < 200
 
 
 @pytest.mark.parametrize(

@@ -755,7 +755,7 @@ def test_directory_same_instance_sibling_supplies_history_evidence(tmp_path):
     assert "No snapshot history detected" not in output.read_text(encoding="utf-8")
 
 
-@pytest.mark.parametrize("sibling_kind", ["unrelated", "mixed", "malformed", "none"])
+@pytest.mark.parametrize("sibling_kind", ["unrelated", "mixed", "malformed", "duplicate", "none"])
 def test_directory_nonmatching_sibling_does_not_supply_history(
     tmp_path,
     sibling_kind,
@@ -782,6 +782,14 @@ def test_directory_nonmatching_sibling_does_not_supply_history(
         )
     elif sibling_kind == "malformed":
         (snapshots / "snapshot_2026-01-01.json").write_text("{", encoding="utf-8")
+    elif sibling_kind == "duplicate":
+        sibling = _write_directory_snapshot(
+            snapshots,
+            "snapshot_2026-01-01.json",
+            instance_id="selected-instance",
+        )
+        payload = sibling.read_text().rstrip()
+        sibling.write_text(payload[:-1] + ', "duplicate": 1, "duplicate": 2}')
     output = tmp_path / "report.html"
 
     assert main([str(snapshots), "--output", str(output), "--quiet"]) == SUCCESS
@@ -1089,6 +1097,50 @@ def test_malformed_consumed_json_is_controlled(tmp_path, monkeypatch, capsys, ro
     err = capsys.readouterr().err
     assert "PRIVATE" not in err
     assert "Traceback" not in err
+
+
+@pytest.mark.parametrize("route", ["file", "stdin", "extra", "trend"])
+@pytest.mark.parametrize("existing", [False, True])
+def test_duplicate_json_preserves_output_set(tmp_path, monkeypatch, capsys, route, existing):
+    import io
+
+    key = json.dumps("PRIVATE\x1b\x07" + "x" * 10000)
+    snapshot = (FIXTURES / "cja_snapshot_clean.json").read_text().rstrip()
+    payload = snapshot[:-1] + ', "duplicate_evidence": {' + key + ": 1, " + key + ": 2}}"
+    snapshots = tmp_path / "snapshots"
+    snapshots.mkdir()
+    source = snapshots / "snapshot_2026-04-25.json"
+    source.write_text(payload)
+    output = tmp_path / "report.html"
+    json_output = tmp_path / "report.json"
+    if existing:
+        output.write_text("previous report")
+        json_output.write_text("previous JSON")
+    args = [str(source)]
+    if route == "stdin":
+        monkeypatch.setattr("sys.stdin", io.StringIO(payload))
+        args = ["-"]
+    elif route == "extra":
+        args = [str(FIXTURES / "cja_snapshot_messy.json"), "--extra-input", f"usage={source}"]
+    elif route == "trend":
+        args = [str(snapshots), "--trend"]
+    args += ["--output", str(output)]
+    if route != "trend":
+        args += ["--json", str(json_output)]
+    assert main(args) == RUNTIME_ERROR
+    if existing:
+        assert output.read_text() == "previous report"
+        assert json_output.read_text() == "previous JSON"
+    else:
+        assert not output.exists()
+        assert not json_output.exists()
+    err = capsys.readouterr().err
+    assert "duplicate object keys" in err
+    assert "PRIVATE" not in err
+    assert "\x1b" not in err
+    assert "\x07" not in err
+    assert "Traceback" not in err
+    assert len(err) < 200
 
 
 def test_extra_input_over_depth_is_controlled_on_every_interpreter(tmp_path, capsys):

@@ -39,6 +39,43 @@ def test_load_snapshot_from_file_returns_dict(tmp_path):
     assert source.endswith("cja_snapshot_clean.json")
 
 
+@pytest.mark.parametrize("route", ["file", "stdin"])
+@pytest.mark.parametrize(
+    "payload",
+    [
+        '{"metrics": [{"id": "lost"}], "metrics": []}',
+        '{"metrics": [], "metrics": []}',
+        '{"metrics": [{"id": "first", "id": "last"}]}',
+        r'{"metrics": [], "\u006detrics": []}',
+    ],
+    ids=["inventory", "equal-values", "nested", "escaped-name"],
+)
+def test_snapshot_duplicate_keys_are_rejected(tmp_path, monkeypatch, route, payload):
+    source = tmp_path / "snapshot.json"
+    source.write_text(payload)
+    monkeypatch.setattr(sys, "stdin", io.StringIO(payload))
+    with pytest.raises(InvalidSnapshotError, match="duplicate object keys"):
+        load_snapshot("-" if route == "stdin" else str(source))
+
+
+@pytest.mark.parametrize("route", ["file", "stdin"])
+def test_snapshot_keys_can_repeat_in_separate_objects(tmp_path, monkeypatch, route):
+    payload = '{"metrics": [{"id": "one"}, {"id": "two"}], "other": {"id": "three"}}'
+    source = tmp_path / "snapshot.json"
+    source.write_text(payload)
+    monkeypatch.setattr(sys, "stdin", io.StringIO(payload))
+    snapshot, _ = load_snapshot("-" if route == "stdin" else str(source))
+    assert snapshot == {"metrics": [{"id": "one"}, {"id": "two"}], "other": {"id": "three"}}
+
+
+@pytest.mark.parametrize("at", [None, "2026-04-25"])
+def test_selected_duplicate_snapshot_does_not_fall_back(tmp_path, at):
+    (tmp_path / "snapshot_2026-04-01.json").write_text('{"metrics": []}')
+    (tmp_path / "snapshot_2026-04-25.json").write_text('{"metrics": [], "metrics": []}')
+    with pytest.raises(InvalidSnapshotError, match="duplicate object keys"):
+        load_snapshot(str(tmp_path), at=at)
+
+
 def test_load_snapshot_rejects_missing_path(tmp_path):
     missing = tmp_path / "missing.json"
 
@@ -50,7 +87,7 @@ def test_file_json_recursion_error_is_domain_error(tmp_path, monkeypatch):
     snapshot = tmp_path / "snapshot.json"
     snapshot.write_text("{}", encoding="utf-8")
 
-    def recurse(_value):
+    def recurse(_value, **_kwargs):
         raise RecursionError("decoder recursion")
 
     monkeypatch.setattr("sdr_grader.input.loader.json.loads", recurse)
@@ -60,7 +97,7 @@ def test_file_json_recursion_error_is_domain_error(tmp_path, monkeypatch):
 
 
 def test_stdin_json_recursion_error_is_domain_error(monkeypatch):
-    def recurse(_value):
+    def recurse(_value, **_kwargs):
         raise RecursionError("decoder recursion")
 
     monkeypatch.setattr("sdr_grader.input.loader.json.loads", recurse)
@@ -412,7 +449,7 @@ def test_shell_cja_json_recursion_error_is_domain_error(monkeypatch):
     monkeypatch.setattr(
         shell_out.json,
         "loads",
-        lambda _value: (_ for _ in ()).throw(RecursionError("decoder recursion")),
+        lambda _value, **_kwargs: (_ for _ in ()).throw(RecursionError("decoder recursion")),
     )
 
     with pytest.raises(InvalidSnapshotError, match="invalid-json-depth"):
@@ -496,6 +533,24 @@ def test_shell_cja_raises_on_non_json_output(monkeypatch):
     )
 
     with pytest.raises(InvalidSnapshotError, match=r"invalid-json"):
+        shell_out.shell_cja("dv_test")
+    assert not captured["output_dir"].exists()
+
+
+def test_shell_cja_rejects_duplicate_keys_and_cleans_output(monkeypatch):
+    from sdr_grader.input import shell_out
+
+    captured = {}
+
+    def fake_popen(cmd, **_kwargs):
+        captured["output_dir"] = _write_cja_json_output(
+            cmd, '{"metrics": [{"id": "lost"}], "metrics": []}'
+        )
+        return _FakeShellProcess(cmd, stdout=b"SDR JSON written to disk\n")
+
+    monkeypatch.setattr(shell_out.shutil, "which", lambda tool: f"/fake/{tool}")
+    monkeypatch.setattr(shell_out.subprocess, "Popen", fake_popen)
+    with pytest.raises(InvalidSnapshotError, match="duplicate object keys"):
         shell_out.shell_cja("dv_test")
     assert not captured["output_dir"].exists()
 
