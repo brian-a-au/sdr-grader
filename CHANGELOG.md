@@ -5,8 +5,8 @@ spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
 ## 1.5.5 — 2026-10-17
 
-Patch source preparation recorded October 17, 2026; not yet published. See the
-[release record](docs/releases/1.5.5-readiness.md).
+Published October 17, 2026 as a scoped public preview. Announcement remains on
+HOLD; see the [release record](docs/releases/1.5.5-readiness.md).
 
 - (#119) Reject YAML aliases (`*name` references to an anchor) and YAML nested
   deeper than 64 levels in rubric packs and `.sdr-grader.yaml`. A plain anchor
