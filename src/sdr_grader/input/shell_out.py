@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Any, BinaryIO
 
 from sdr_grader.core.exceptions import InvalidSnapshotError
+from sdr_grader.input.json_io import DuplicateJSONKeyError, unique_object
 
 # Upstream tools make live Adobe API calls; a stalled connection should
 # fail loudly, not hang a CI job forever.
@@ -126,7 +127,11 @@ def _shell_out(
             f"shell error [invalid-encoding]: {tool} output was not UTF-8"
         ) from None
     try:
-        snapshot = json.loads(decoded)
+        snapshot = json.loads(decoded, object_pairs_hook=unique_object)
+    except DuplicateJSONKeyError:
+        raise InvalidSnapshotError(
+            f"shell error [invalid-json]: {tool} output contains duplicate object keys"
+        ) from None
     except ValueError:
         raise InvalidSnapshotError(
             f"shell error [invalid-json]: {tool} output was not valid JSON"

@@ -38,6 +38,9 @@ sdr-grader snapshot.json --extra-input KEY=path/to/data.json
 
 Each `--extra-input` file is limited to nesting depth 100 and 250,000 nodes and
 must not contain surrogate code points; larger or deeper inputs exit 1.
+Keys must be unique within each JSON object, including nested objects.
+Duplicate keys exit 1 before grading and preserve existing reports, even if
+the repeated values are identical. Repeated keys in separate objects are valid.
 
 The flag is repeatable; pass it once per attached file:
 
