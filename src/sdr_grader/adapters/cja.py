@@ -619,10 +619,11 @@ def _walk_for_contexts(node: Any, out: list[str]) -> None:
 # ---------------------------------------------------------------------------
 
 
-# The newest cja_auto_sdr version this release was validated against
-# (bundled fixtures + the private real corpus; re-derive at each release:
-# grep -rho '"Tool Version": "[^"]*"|"tool_version": "[^"]*"' over corpus
-# and fixtures, take the max). Q5 (SPEC §14): warn only — never refuse.
+# The newest cja_auto_sdr version this release was validated against.
+# Advance from recorded release validation with that exact generator version
+# and the historical compatibility corpus; snapshot declarations alone do not
+# establish this marker. Undeclared versions stay unknown and do not warn.
+# The compatibility policy warns about newer declared versions, never refuses.
 TESTED_THROUGH_GENERATOR_VERSION = "3.11.7"
 
 
