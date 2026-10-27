@@ -84,6 +84,7 @@ def test_specs_accept_valid_values(spec, value):
         (P.SYNONYM_GROUPS, [["visit"]], "at least 2 non-empty strings"),
         (P.SYNONYM_GROUPS, [["visit", ""]], "at least 2 non-empty strings"),
         (P.SYNONYM_GROUPS, ["visit", "session"], "at least 2 non-empty strings"),
+        (P.SYNONYM_GROUPS, "visit session", "at least 2 non-empty strings"),
         (P.OPTIONAL_TIMESTAMP, "not a date", "must be a date or timestamp"),
         (P.OPTIONAL_TIMESTAMP, 20260101, "must be a date or timestamp"),
         (P.LITERAL_BOOLEAN, "true", "must be a boolean"),
