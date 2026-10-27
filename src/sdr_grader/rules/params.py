@@ -125,6 +125,9 @@ def _synonym_groups(value: Any, label: str) -> None:
 
 def _timestamp(value: Any, label: str) -> None:
     # YAML loads unquoted dates as date/datetime; checks call str() first.
+    # The checks treat "" like null (not given), so accept it the same way.
+    if value == "":
+        return
     if not isinstance(value, (str, date)) or parse_timestamp(str(value)) is None:
         raise RubricValidationError(f"{label} must be a date or timestamp the grader can parse")
 
@@ -150,7 +153,7 @@ OPTIONAL_STRING_LIST = ParamSpec("list of strings, or null", _string_list, nulla
 SYNONYM_GROUPS = ParamSpec(
     "list of word groups (2+ words each), or null", _synonym_groups, nullable=True
 )
-OPTIONAL_TIMESTAMP = ParamSpec("date or timestamp, or null", _timestamp, nullable=True)
+OPTIONAL_TIMESTAMP = ParamSpec("date or timestamp, or null or empty", _timestamp, nullable=True)
 LITERAL_BOOLEAN = ParamSpec("true or false", _literal_boolean)
 TEXT_BOOLEAN = ParamSpec('true or false (or "true"/"false"), or null', _text_boolean, nullable=True)
 

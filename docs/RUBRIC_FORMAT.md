@@ -90,10 +90,10 @@ Governance boolean parameters (`history_present` / `History Present` and
 `sdr_doc_present` / `SDR Doc Present`) accept booleans and trimmed,
 case-insensitive `true` / `false` strings. Null falls through to runtime or
 metadata evidence; false stops fallback. Aliases within a selected source
-must agree. Unsupported consumed parameter values or conflicting aliases
-produce a rubric error (CLI exit 3) without publishing a new report. Validation
-occurs when the check consumes the parameter, so disabled rules do not validate
-unused overrides.
+must agree. Unsupported values or conflicting aliases produce a rubric error
+(CLI exit 3) without publishing a new report. Validation happens when the pack
+loads, so it also applies to rules that are suppressed or that do not run for
+the snapshot's platform.
 
 Opt-in custom `snapshot_age` (GOV-002) and `doc_drift` (GOV-006) checks use
 the shared UTC timestamp parser. ISO numeric offsets and fractional seconds
@@ -179,7 +179,7 @@ Checks not listed take no params.
 | `casing_consistency` | `min_consistency` | number in [0, 1] |
 | `casing_consistency` | `tag_filter` | string, or null |
 | `casing_consistency` | `target` | one collection name |
-| `doc_drift` | `last_sdr_update_at` | date or timestamp, or null |
+| `doc_drift` | `last_sdr_update_at` | date or timestamp, or null or empty |
 | `doc_drift` | `threshold` | number in [0, 1] |
 | `duplicate_component_names` | `targets` | non-empty list of collection names |
 | `launch_required_data_elements` | `required` | list of strings, or null |
@@ -201,7 +201,7 @@ Checks not listed take no params.
 | `segments_missing_descriptions` | `threshold` | number in [0, 1] |
 | `semantic_consistency` | `synonym_groups` | list of word groups (2+ words each), or null |
 | `snapshot_age` | `max_age_days` | integer >= 0 |
-| `snapshot_age` | `reference_date` | date or timestamp, or null |
+| `snapshot_age` | `reference_date` | date or timestamp, or null or empty |
 | `snapshot_history_absent` | `History Present` | true or false (or "true"/"false"), or null |
 | `snapshot_history_absent` | `history_present` | true or false (or "true"/"false"), or null |
 <!-- param-contracts:end -->

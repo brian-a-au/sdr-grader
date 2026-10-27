@@ -919,3 +919,25 @@ def test_bundled_packs_load_under_strict_keys():
     for pack in ("strict", "pragmatic", "aa-admin"):
         rubric = load_rubric(REPO_ROOT / "src" / "sdr_grader" / "rules" / "packs" / pack)
         assert rubric.rules
+
+
+@pytest.mark.parametrize(
+    ("check", "key"), [("snapshot_age", "reference_date"), ("doc_drift", "last_sdr_update_at")]
+)
+def test_blank_timestamp_params_mean_not_given(tmp_path, check, key):
+    # The checks treat "" like null (snapshot_age no-ops; doc_drift falls through).
+    rubric = _load_with_params(tmp_path, {key: ""}, check=check)
+    assert rubric.rules[0].params == {key: ""}
+
+
+def test_governance_overrides_validated_at_load_even_when_rule_cannot_run(tmp_path):
+    # An AA-only rule never runs on a CJA snapshot, but a bad override in it
+    # still fails when the pack loads.
+    rule = _valid_rule(
+        check="sdr_doc_absent", platforms=["aa"], params={"sdr_doc_present": "maybe"}
+    )
+    pack = _write_structured_pack(
+        tmp_path, category_content={"category": "naming_conventions", "rules": [rule]}
+    )
+    with pytest.raises(RubricValidationError, match="expected boolean"):
+        load_rubric(pack)
