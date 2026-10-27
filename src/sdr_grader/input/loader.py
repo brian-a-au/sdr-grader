@@ -21,6 +21,7 @@ from typing import Any
 
 from sdr_grader.core.exceptions import InvalidSnapshotError
 from sdr_grader.core.timeparse import parse_timestamp
+from sdr_grader.input.json_io import DuplicateJSONKeyError, unique_object
 
 STDIN_TOKEN = "-"
 
@@ -60,7 +61,9 @@ def _load_stdin() -> tuple[dict[str, Any], str]:
     if not raw.strip():
         raise InvalidSnapshotError("stdin is empty; expected JSON snapshot")
     try:
-        snapshot = json.loads(raw)
+        snapshot = json.loads(raw, object_pairs_hook=unique_object)
+    except DuplicateJSONKeyError:
+        raise InvalidSnapshotError("stdin JSON contains duplicate object keys") from None
     except json.JSONDecodeError as exc:
         raise InvalidSnapshotError(f"stdin is not valid JSON: {exc}") from exc
     except RecursionError as exc:
@@ -78,7 +81,9 @@ def _load_from_file(path: Path) -> tuple[dict[str, Any], str]:
     except (OSError, RuntimeError) as exc:
         raise InvalidSnapshotError(f"could not read {path}: {exc}") from exc
     try:
-        snapshot = json.loads(text)
+        snapshot = json.loads(text, object_pairs_hook=unique_object)
+    except DuplicateJSONKeyError:
+        raise InvalidSnapshotError("snapshot JSON contains duplicate object keys") from None
     except json.JSONDecodeError as exc:
         raise InvalidSnapshotError(f"{path}: not valid JSON: {exc}") from exc
     except RecursionError as exc:

@@ -33,6 +33,7 @@ from sdr_grader.core.exceptions import (
 from sdr_grader.core.grader import grade
 from sdr_grader.core.structure_limits import validate_snapshot_structure
 from sdr_grader.input.adapt import adapt_snapshot as _adapt_snapshot
+from sdr_grader.input.json_io import DuplicateJSONKeyError, unique_object
 from sdr_grader.input.loader import STDIN_TOKEN, load_snapshot
 from sdr_grader.input.shell_out import shell_aa, shell_cja
 from sdr_grader.render import cap_component_items, render
@@ -336,7 +337,11 @@ def _attach_extra_inputs(impl, raw_specs: list[str]) -> None:
                 f"--extra-input {key}: could not read {path}: {exc}"
             ) from exc
         try:
-            payload = _json.loads(text)
+            payload = _json.loads(text, object_pairs_hook=unique_object)
+        except DuplicateJSONKeyError:
+            raise InvalidSnapshotError(
+                "--extra-input JSON contains duplicate object keys"
+            ) from None
         except _json.JSONDecodeError as exc:
             raise InvalidSnapshotError(f"--extra-input {key}: not valid JSON: {exc}") from exc
         except (ValueError, RecursionError):
