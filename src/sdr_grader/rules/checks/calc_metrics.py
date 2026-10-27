@@ -8,12 +8,13 @@ from collections import Counter, defaultdict
 from collections.abc import Iterator
 from typing import TYPE_CHECKING
 
-from sdr_grader.core.reference_policy import assess_references
+from sdr_grader.core.reference_policy import POLICY_PARAM, assess_references
 from sdr_grader.render import Finding, FindingBlock
 from sdr_grader.rules.checks._helpers import (
     collect_referenced_ids,
     make_finding,
 )
+from sdr_grader.rules.params import LITERAL_BOOLEAN, NON_NEGATIVE_FLOAT, RATIO, STRING_LIST
 from sdr_grader.rules.registry import register_check
 
 if TYPE_CHECKING:
@@ -26,7 +27,7 @@ if TYPE_CHECKING:
 # ---------------------------------------------------------------------------
 
 
-@register_check("calc_metrics_missing_descriptions")
+@register_check("calc_metrics_missing_descriptions", params={"threshold": RATIO})
 def check_calc_metrics_missing_descriptions(
     impl: Implementation, ctx: RuleContext
 ) -> list[Finding]:
@@ -57,7 +58,7 @@ def check_calc_metrics_missing_descriptions(
 # ---------------------------------------------------------------------------
 
 
-@register_check("calc_formula_broken_refs")
+@register_check("calc_formula_broken_refs", params={POLICY_PARAM: LITERAL_BOOLEAN})
 def check_calc_formula_broken_refs(impl: Implementation, ctx: RuleContext) -> list[Finding]:
     assessment = assess_references(impl, check_name="calc_formula_broken_refs", params=ctx.params)
     broken = [(ref.consumer_id, ref.target_id) for ref in assessment.unresolved_scoring]
@@ -88,7 +89,7 @@ def check_calc_formula_broken_refs(impl: Implementation, ctx: RuleContext) -> li
 # ---------------------------------------------------------------------------
 
 
-@register_check("calc_complexity_threshold")
+@register_check("calc_complexity_threshold", params={"max_complexity": NON_NEGATIVE_FLOAT})
 def check_calc_complexity_threshold(impl: Implementation, ctx: RuleContext) -> list[Finding]:
     max_complexity = float(ctx.params.get("max_complexity", 75.0))
     over = [cm for cm in impl.calculated_metrics if cm.complexity_score > max_complexity]
@@ -116,7 +117,7 @@ def check_calc_complexity_threshold(impl: Implementation, ctx: RuleContext) -> l
 # ---------------------------------------------------------------------------
 
 
-@register_check("orphan_calc_metrics")
+@register_check("orphan_calc_metrics", params={"threshold": RATIO})
 def check_orphan_calc_metrics(impl: Implementation, ctx: RuleContext) -> list[Finding]:
     threshold = float(ctx.params.get("threshold", 0.50))
     if not impl.calculated_metrics:
@@ -149,7 +150,7 @@ def check_orphan_calc_metrics(impl: Implementation, ctx: RuleContext) -> list[Fi
 # ---------------------------------------------------------------------------
 
 
-@register_check("calc_near_duplicates")
+@register_check("calc_near_duplicates", params={"min_similarity": RATIO})
 def check_calc_near_duplicates(impl: Implementation, ctx: RuleContext) -> list[Finding]:
     """Find identical and near-identical reference sets.
 
@@ -245,7 +246,7 @@ def check_calc_identical_formula_text(impl: Implementation, ctx: RuleContext) ->
 _DEPRECATED_ALLOCATIONS = {"linear-deprecated", "even-deprecated"}
 
 
-@register_check("calc_deprecated_allocations")
+@register_check("calc_deprecated_allocations", params={"deprecated_allocations": STRING_LIST})
 def check_calc_deprecated_allocations(impl: Implementation, ctx: RuleContext) -> list[Finding]:
     """Fire on calc metrics still using deprecated allocation values.
 

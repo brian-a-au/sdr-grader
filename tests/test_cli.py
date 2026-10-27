@@ -1315,3 +1315,80 @@ def test_yaml_validation_api_and_process_preserve_outputs(tmp_path, target, defe
         else:
             assert not html.exists()
             assert not report.exists()
+
+
+def _copy_strict(tmp_path):
+    pack = tmp_path / "pack"
+    strict = Path(__file__).resolve().parent.parent / "src/sdr_grader/rules/packs/strict"
+    shutil.copytree(strict, pack)
+    return pack
+
+
+def test_cli_unknown_rule_param_is_exit_3_with_no_report(tmp_path, capsys):
+    pack = _copy_strict(tmp_path)
+    naming = pack / "naming.yaml"
+    text = naming.read_text(encoding="utf-8")
+    assert "min_consistency:" in text
+    naming.write_text(text.replace("min_consistency:", "min_consistancy:", 1), encoding="utf-8")
+    output = tmp_path / "out.html"
+    json_path = tmp_path / "out.json"
+
+    rc = main(
+        [
+            str(FIXTURES / "cja_snapshot_messy.json"),
+            "--rubric",
+            str(pack),
+            "--output",
+            str(output),
+            "--json",
+            str(json_path),
+        ]
+    )
+
+    assert rc == RUBRIC_VALIDATION_FAILURE
+    assert not output.exists()
+    assert not json_path.exists()
+    assert "did you mean 'min_consistency'" in capsys.readouterr().err
+
+
+def test_cli_unknown_project_config_section_is_exit_3(tmp_path, capsys):
+    config = tmp_path / "cfg.yaml"
+    config.write_text("supress:\n  - rule: NAME-002\n", encoding="utf-8")
+    output = tmp_path / "out.html"
+
+    rc = main(
+        [
+            str(FIXTURES / "cja_snapshot_clean.json"),
+            "--output",
+            str(output),
+            "--suppress-config",
+            str(config),
+        ]
+    )
+
+    assert rc == RUBRIC_VALIDATION_FAILURE
+    assert not output.exists()
+    assert "unknown key 'supress'" in capsys.readouterr().err
+
+
+def test_x_extension_keys_do_not_change_report_bytes(tmp_path):
+    pack = _copy_strict(tmp_path)
+    args = [str(FIXTURES / "cja_snapshot_messy.json"), "--rubric", str(pack)]
+    first = [*args, "--output", str(tmp_path / "a.html"), "--json", str(tmp_path / "a.json")]
+    assert main(first) == SUCCESS
+
+    meta = yaml.safe_load((pack / "_meta.yaml").read_text(encoding="utf-8"))
+    meta["x_owner"] = "analytics"
+    (pack / "_meta.yaml").write_text(yaml.safe_dump(meta, sort_keys=False), encoding="utf-8")
+    for category_file in sorted(pack.glob("[!_]*.yaml")):
+        content = yaml.safe_load(category_file.read_text(encoding="utf-8"))
+        content["x_reviewed"] = "2026-10-27"
+        for rule in content["rules"]:
+            rule["x_ticket"] = "SDR-1"
+            rule.setdefault("params", {})["x_why"] = "note"
+        category_file.write_text(yaml.safe_dump(content, sort_keys=False), encoding="utf-8")
+    second = [*args, "--output", str(tmp_path / "b.html"), "--json", str(tmp_path / "b.json")]
+    assert main(second) == SUCCESS
+
+    assert (tmp_path / "a.json").read_bytes() == (tmp_path / "b.json").read_bytes()
+    assert (tmp_path / "a.html").read_bytes() == (tmp_path / "b.html").read_bytes()

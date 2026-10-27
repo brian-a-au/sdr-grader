@@ -90,10 +90,22 @@ def test_valid_params_still_load(tmp_path):
     assert rubric.categories_in_use == ["naming_conventions"]
 
 
-def _load_with_params(tmp_path, params):
+_CHECK_FOR_KEY = {
+    "threshold": "missing_descriptions",
+    "min_consistency": "prefix_consistency",
+    "min_similarity": "calc_near_duplicates",
+    "max_complexity": "calc_complexity_threshold",
+    "max_depth": "segment_nesting_depth",
+    "cap_days": "persistence_lookback_exceeds_cap",
+    "max_age_days": "snapshot_age",
+}
+
+
+def _load_with_params(tmp_path, params, check=None):
+    check = check or _CHECK_FOR_KEY[next(iter(params))]
     category_content = {
         "category": "naming_conventions",
-        "rules": [_valid_rule(params=params)],
+        "rules": [_valid_rule(check=check, params=params)],
     }
     return load_rubric(_write_structured_pack(tmp_path, category_content=category_content))
 
@@ -140,6 +152,7 @@ def test_invalid_numeric_params_rejected(tmp_path, key, value):
     message = str(exc.value)
     assert "NAME-T01" in message
     assert f"'{key}'" in message
+    assert "must be" in message
     assert "'abc'" not in message
 
 
@@ -440,7 +453,7 @@ def test_duplicate_rule_ids_are_rejected_with_file_context(tmp_path):
         (_valid_rule(params={"pattern": 42}), "NAME-T01: 'pattern' must be a string"),
         (
             _valid_rule(params={"targets": "metrics"}),
-            "NAME-T01: 'targets' must be a list of strings",
+            "NAME-T01: 'targets' must be a non-empty list of strings",
         ),
     ],
 )
@@ -550,7 +563,7 @@ def test_valid_yaml_neighbors_remain_accepted(tmp_path, severity):
     )
     for name in ("_meta.yaml", "naming.yaml"):
         with (pack / name).open("a", encoding="utf-8") as handle:
-            handle.write("unused_scalar: 2026-10-16\nunused_integer: !!int 12\n")
+            handle.write("x_unused_scalar: 2026-10-16\nx_unused_integer: !!int 12\n")
     rubric = load_rubric(pack)
     assert rubric.rules[0].severity == severity
     assert rubric.description == meta["description"]
@@ -751,3 +764,191 @@ def test_grade_scale_descending_message_is_bounded(tmp_path):
         load_rubric(tmp_path)
     assert len(str(exc.value)) < 300
     assert "\x1b" not in str(exc.value)
+
+
+def test_param_not_declared_by_its_check_is_rejected(tmp_path):
+    with pytest.raises(RubricValidationError) as exc:
+        _load_with_params(tmp_path, {"threshold": 0.2}, check="regex_match_id")
+    message = str(exc.value)
+    assert "NAME-T01 params: unknown key 'threshold'" in message
+    assert "'pattern'" in message and "'targets'" in message
+
+
+def test_misspelled_param_gets_hint(tmp_path):
+    with pytest.raises(RubricValidationError, match="did you mean 'threshold'"):
+        _load_with_params(tmp_path, {"treshold": 0.2}, check="missing_descriptions")
+
+
+def test_singular_target_typo_fails_at_load(tmp_path):
+    with pytest.raises(RubricValidationError, match="'target'.*did you mean 'dimensions'"):
+        _load_with_params(tmp_path, {"target": "dimensons"}, check="prefix_consistency")
+
+
+@pytest.mark.parametrize(
+    ("check", "params", "fragment"),
+    [
+        ("calc_deprecated_allocations", {"deprecated_allocations": "linear"}, "list of strings"),
+        ("semantic_consistency", {"synonym_groups": [["visit"]]}, "at least 2"),
+        ("snapshot_age", {"reference_date": "someday"}, "date or timestamp"),
+        ("doc_drift", {"last_sdr_update_at": "soon"}, "date or timestamp"),
+        ("prefix_consistency", {"tag_filter": 3}, "must be a string"),
+        ("launch_required_data_elements", {"required": "page_name"}, "list of strings"),
+        ("sdr_doc_absent", {"sdr_doc_present": "maybe"}, "expected boolean"),
+        ("sdr_doc_absent", {"sdr_doc_present": True, "SDR Doc Present": "false"}, "conflicting"),
+        ("regex_match_id", {"targets": []}, "non-empty list"),
+    ],
+)
+def test_specialized_params_validated_at_load(tmp_path, check, params, fragment):
+    with pytest.raises(RubricValidationError, match=fragment):
+        _load_with_params(tmp_path, params, check=check)
+
+
+def test_null_pattern_and_targets_fail_at_load(tmp_path):
+    with pytest.raises(RubricValidationError, match="'pattern' must be a string"):
+        _load_with_params(tmp_path, {"pattern": None}, check="regex_match_id")
+    with pytest.raises(RubricValidationError, match="'targets' must be a non-empty list"):
+        _load_with_params(tmp_path, {"targets": None}, check="regex_match_id")
+
+
+def test_unquoted_yaml_dates_load_for_timestamp_params(tmp_path):
+    (tmp_path / "_meta.yaml").write_text(
+        yaml.safe_dump(_valid_meta(), sort_keys=False), encoding="utf-8"
+    )
+    (tmp_path / "naming.yaml").write_text(
+        "category: naming_conventions\n"
+        "rules:\n"
+        "  - id: GOV-T01\n"
+        "    name: t\n"
+        "    severity: low\n"
+        "    platforms: [cja]\n"
+        "    check: snapshot_age\n"
+        "    params:\n"
+        "      reference_date: 2026-01-01\n",
+        encoding="utf-8",
+    )
+    rubric = load_rubric(tmp_path)
+    assert str(rubric.rules[0].params["reference_date"]) == "2026-01-01"
+
+
+def test_nullable_params_accept_null(tmp_path):
+    _load_with_params(tmp_path, {"synonym_groups": None}, check="semantic_consistency")
+    _load_with_params(tmp_path, {"tag_filter": None}, check="prefix_consistency")
+    _load_with_params(tmp_path, {"sdr_doc_present": None}, check="sdr_doc_absent")
+
+
+def test_x_param_keys_are_accepted_and_preserved(tmp_path):
+    rubric = _load_with_params(
+        tmp_path, {"x_owner": "team", "threshold": 0.2}, check="missing_descriptions"
+    )
+    assert rubric.rules[0].params == {"x_owner": "team", "threshold": 0.2}
+
+
+@pytest.mark.parametrize(
+    ("meta", "category_content", "fragment"),
+    [
+        ({**_valid_meta(), "grade_scal": []}, _DEFAULT, "_meta.yaml: unknown key 'grade_scal'"),
+        (
+            {
+                **_valid_meta(),
+                "grade_scale": [
+                    {"min": 90, "grade": "A", "label": "x"},
+                    {"min": 0, "grade": "F"},
+                ],
+            },
+            _DEFAULT,
+            "grade_scale entry: unknown key 'label'",
+        ),
+        (
+            _DEFAULT,
+            {"category": "naming_conventions", "rule": [], "rules": [_valid_rule()]},
+            "naming.yaml: unknown key 'rule'; did you mean 'rules'?",
+        ),
+        (
+            _DEFAULT,
+            {"category": "naming_conventions", "rules": [_valid_rule(severty="low")]},
+            "naming.yaml NAME-T01: unknown key 'severty'; did you mean 'severity'?",
+        ),
+    ],
+)
+def test_unknown_keys_rejected_at_each_pack_level(tmp_path, meta, category_content, fragment):
+    pack = _write_structured_pack(tmp_path, meta=meta, category_content=category_content)
+    with pytest.raises(RubricValidationError) as exc:
+        load_rubric(pack)
+    assert fragment in str(exc.value)
+
+
+def test_x_keys_accepted_at_every_pack_level(tmp_path):
+    meta = {**_valid_meta(), "x_owner": "team"}
+    meta["grade_scale"] = [{"min": 90, "grade": "A", "x_note": "n"}, {"min": 0, "grade": "F"}]
+    category_content = {
+        "category": "naming_conventions",
+        "x_reviewed": "2026-10-27",
+        "rules": [_valid_rule(x_ticket="SDR-1", params={"x_why": "n"})],
+    }
+    pack = _write_structured_pack(tmp_path, meta=meta, category_content=category_content)
+    rubric = load_rubric(pack)
+    assert [r.id for r in rubric.rules] == ["NAME-T01"]
+
+
+def test_x_key_in_category_weights_is_read_as_a_category_name(tmp_path):
+    # Data-keyed maps are not skipped: an x_ key there is an ordinary name.
+    meta = {**_valid_meta(), "category_weights": {"naming_conventions": 1.0, "x_other": 0.0}}
+    rubric = load_rubric(_write_structured_pack(tmp_path, meta=meta))
+    assert "x_other" in rubric.category_weights
+
+
+def test_non_string_rule_entry_key_is_config_error(tmp_path):
+    (tmp_path / "_meta.yaml").write_text(
+        yaml.safe_dump(_valid_meta(), sort_keys=False), encoding="utf-8"
+    )
+    (tmp_path / "naming.yaml").write_text(
+        "category: naming_conventions\n"
+        "rules:\n"
+        "  - id: NAME-T01\n"
+        "    severity: low\n"
+        "    platforms: [cja]\n"
+        "    check: regex_match_id\n"
+        "    yes: 1\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(RubricValidationError, match="NAME-T01: unknown key True"):
+        load_rubric(tmp_path)
+
+
+def test_bundled_packs_load_under_strict_keys():
+    for pack in ("strict", "pragmatic", "aa-admin"):
+        rubric = load_rubric(REPO_ROOT / "src" / "sdr_grader" / "rules" / "packs" / pack)
+        assert rubric.rules
+
+
+@pytest.mark.parametrize(
+    ("check", "key"), [("snapshot_age", "reference_date"), ("doc_drift", "last_sdr_update_at")]
+)
+def test_blank_timestamp_params_mean_not_given(tmp_path, check, key):
+    # The checks treat "" like null (snapshot_age no-ops; doc_drift falls through).
+    rubric = _load_with_params(tmp_path, {key: ""}, check=check)
+    assert rubric.rules[0].params == {key: ""}
+
+
+def test_governance_overrides_validated_at_load_even_when_rule_cannot_run(tmp_path):
+    # An AA-only rule never runs on a CJA snapshot, but a bad override in it
+    # still fails when the pack loads.
+    rule = _valid_rule(
+        check="sdr_doc_absent", platforms=["aa"], params={"sdr_doc_present": "maybe"}
+    )
+    pack = _write_structured_pack(
+        tmp_path, category_content={"category": "naming_conventions", "rules": [rule]}
+    )
+    with pytest.raises(RubricValidationError, match="expected boolean"):
+        load_rubric(pack)
+
+
+@pytest.mark.parametrize(
+    ("check", "key"),
+    [("sdr_doc_absent", "sdr_doc_present"), ("snapshot_history_absent", "history_present")],
+)
+def test_governance_override_diagnostic_matches_published_runtime_text(tmp_path, check, key):
+    # The release-compatibility contract pins this exact text from run time.
+    with pytest.raises(RubricValidationError) as exc:
+        _load_with_params(tmp_path, {key: {"invalid": True}}, check=check)
+    assert str(exc.value) == f"params.{key}: expected boolean or true/false string (or null)"

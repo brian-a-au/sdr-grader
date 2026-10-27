@@ -14,19 +14,31 @@ See SPEC §6 for the YAML shapes.
 from __future__ import annotations
 
 import math
-import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 from sdr_grader.core.exceptions import RubricValidationError
-from sdr_grader.core.reference_policy import POLICY_PARAM, REFERENCE_CHECKS
-from sdr_grader.rules.registry import _import_all_checks, get_check, registered_names
+from sdr_grader.rules.params import reject_unknown_keys, validate_params
+from sdr_grader.rules.registry import (
+    _import_all_checks,
+    get_check,
+    get_contract,
+    registered_names,
+)
 from sdr_grader.rules.yaml_io import describe_value, load_config_yaml
 
 VALID_SEVERITIES = {"critical", "high", "medium", "low"}
 VALID_PLATFORMS = {"aa", "cja"}
 WEIGHT_TOLERANCE = 1e-6
+META_KEYS = frozenset(
+    {"pack", "version", "description", "category_weights", "severity_weights", "grade_scale"}
+)
+GRADE_BAND_KEYS = frozenset({"min", "grade"})
+CATEGORY_FILE_KEYS = frozenset({"category", "description", "rules"})
+RULE_ENTRY_KEYS = frozenset(
+    {"id", "name", "severity", "platforms", "check", "params", "rationale", "remediation"}
+)
 
 
 @dataclass(frozen=True)
@@ -72,6 +84,7 @@ def load_rubric(pack_dir: str | Path) -> Rubric:
         raise RubricValidationError(f"rubric pack directory not found: {pack_path}")
 
     meta = _load_meta(pack_path)
+    reject_unknown_keys(meta, META_KEYS, where="_meta.yaml")
     pack_name = _require_string(meta, "pack")
     version = _require_string(meta, "version", coerce=True)
     description = str(meta.get("description", "")).strip()
@@ -179,6 +192,7 @@ def _validate_grade_scale(value: Any) -> list[GradeBand]:
                 f"grade_scale entry must be a mapping with 'min' and 'grade':"
                 f" {describe_value(entry)}"
             )
+        reject_unknown_keys(entry, GRADE_BAND_KEYS, where="_meta.yaml grade_scale entry")
         raw_min = entry["min"]
         if isinstance(raw_min, bool) or not isinstance(
             raw_min,
@@ -236,6 +250,7 @@ def _load_rules(pack_path: Path, allowed_categories: set[str]) -> list[RuleDefin
             raise RubricValidationError(
                 f"{category_file.name} must contain a mapping at the top level"
             )
+        reject_unknown_keys(content, CATEGORY_FILE_KEYS, where=category_file.name)
         category = content.get("category")
         if not isinstance(category, str) or not category:
             raise RubricValidationError(
@@ -277,6 +292,7 @@ def _validate_rule_entry(entry: Any, *, category: str, source: str) -> RuleDefin
     if not isinstance(rule_id, str) or not rule_id:
         raise RubricValidationError(f"{source}: rule entry is missing 'id' string")
     _validate_identifier(rule_id, field="rule id", source=source)
+    reject_unknown_keys(entry, RULE_ENTRY_KEYS, where=f"{source} {rule_id}")
     name = (_text_field(entry, "name", source, rule_id) or rule_id).strip()
     severity = entry.get("severity")
     if not isinstance(severity, str) or severity not in VALID_SEVERITIES:
@@ -311,13 +327,8 @@ def _validate_rule_entry(entry: Any, *, category: str, source: str) -> RuleDefin
     params = entry.get("params", {})
     if not isinstance(params, dict):
         raise RubricValidationError(f"{source} {rule_id}: 'params' must be a mapping")
-    if (
-        check_name in REFERENCE_CHECKS
-        and POLICY_PARAM in params
-        and not isinstance(params[POLICY_PARAM], bool)
-    ):
-        raise RubricValidationError(f"{source} {rule_id}: '{POLICY_PARAM}' must be a boolean")
-    _validate_common_params(params, rule_id=rule_id, source=source)
+    contract = get_contract(check_name)
+    validate_params(params, contract.params, contract.alias_groups, where=f"{source} {rule_id}")
     return RuleDefinition(
         id=rule_id,
         name=name,
@@ -329,79 +340,6 @@ def _validate_rule_entry(entry: Any, *, category: str, source: str) -> RuleDefin
         rationale=_text_field(entry, "rationale", source, rule_id).strip(),
         remediation=_text_field(entry, "remediation", source, rule_id).strip(),
     )
-
-
-_KNOWN_TARGETS = {"metrics", "dimensions", "derived_fields", "calculated_metrics", "segments"}
-
-
-_NUMERIC_PARAMS: dict[str, tuple[type, float, float | None]] = {
-    "threshold": (float, 0.0, 1.0),
-    "min_consistency": (float, 0.0, 1.0),
-    "min_similarity": (float, 0.0, 1.0),
-    "max_complexity": (float, 0.0, None),
-    "max_depth": (int, 0, None),
-    "cap_days": (int, 0, None),
-    "max_age_days": (int, 0, None),
-}
-
-
-def _validate_common_params(params: dict[str, Any], *, rule_id: str, source: str) -> None:
-    """Validate the cross-check param conventions at load time.
-
-    'pattern' params must compile as a regex and 'targets' params must
-    name Implementation collections — a YAML typo should fail as a
-    rubric error, not crash halfway through a grading run.
-    """
-    pattern = params.get("pattern")
-    if pattern is not None:
-        if not isinstance(pattern, str):
-            raise RubricValidationError(f"{source} {rule_id}: 'pattern' must be a string")
-        try:
-            re.compile(pattern)
-        except re.error as exc:
-            raise RubricValidationError(
-                f"{source} {rule_id}: 'pattern' is not a valid regex "
-                f"({describe_value(exc.msg)} at position {exc.pos})"
-            ) from exc
-    targets = params.get("targets")
-    if targets is not None:
-        if not isinstance(targets, list) or not all(isinstance(t, str) for t in targets):
-            raise RubricValidationError(f"{source} {rule_id}: 'targets' must be a list of strings")
-        unknown = sorted(set(targets) - _KNOWN_TARGETS)
-        if unknown:
-            raise RubricValidationError(
-                f"{source} {rule_id}: unknown 'targets' {describe_value(unknown)}; "
-                f"expected names from {sorted(_KNOWN_TARGETS)!r}"
-            )
-    for key, (kind, lo, hi) in _NUMERIC_PARAMS.items():
-        if key not in params:
-            continue
-        value = params[key]
-        kind_text = "a finite number" if kind is float else "an integer"
-        hi_text = "inf" if hi is None else f"{hi:g}"
-        message = f"{source} {rule_id}: '{key}' must be {kind_text} in [{lo:g}, {hi_text}]"
-        if isinstance(value, bool):
-            raise RubricValidationError(message)
-        if kind is int:
-            if not isinstance(value, int):
-                raise RubricValidationError(message)
-            number: float = value
-            try:
-                # float() rejects ints too large for a float (e.g. 400 digits)
-                number = float(value)
-            except OverflowError as exc:
-                raise RubricValidationError(message) from exc
-        else:
-            if not isinstance(value, (int, float)):
-                raise RubricValidationError(message)
-            try:
-                number = float(value)
-            except OverflowError as exc:
-                raise RubricValidationError(message) from exc
-            if not math.isfinite(number):
-                raise RubricValidationError(message)
-        if number < lo or (hi is not None and number > hi):
-            raise RubricValidationError(message)
 
 
 # ---------------------------------------------------------------------------

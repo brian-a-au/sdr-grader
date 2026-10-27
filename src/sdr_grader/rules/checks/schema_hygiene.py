@@ -17,7 +17,7 @@ from markupsafe import Markup
 
 from sdr_grader.core.booleans import parse_boolean
 from sdr_grader.core.exceptions import InvalidSnapshotError
-from sdr_grader.core.reference_policy import assess_references
+from sdr_grader.core.reference_policy import POLICY_PARAM, assess_references
 from sdr_grader.render import Finding, FindingBlock
 from sdr_grader.rules.checks._helpers import (
     all_component_ids,
@@ -30,6 +30,7 @@ from sdr_grader.rules.checks._helpers import (
     pct,
     platform_noun,
 )
+from sdr_grader.rules.params import LITERAL_BOOLEAN, NON_NEGATIVE_INT, RATIO, TARGETS
 from sdr_grader.rules.registry import register_check
 
 if TYPE_CHECKING:
@@ -42,7 +43,7 @@ if TYPE_CHECKING:
 # ---------------------------------------------------------------------------
 
 
-@register_check("missing_descriptions")
+@register_check("missing_descriptions", params={"threshold": RATIO, "targets": TARGETS})
 def check_missing_descriptions(
     impl: Implementation, ctx: RuleContext
 ) -> list[Finding]:
@@ -99,7 +100,7 @@ def missing_description_breakdown(
 # ---------------------------------------------------------------------------
 
 
-@register_check("duplicate_component_names")
+@register_check("duplicate_component_names", params={"targets": TARGETS})
 def check_duplicate_component_names(
     impl: Implementation, ctx: RuleContext
 ) -> list[Finding]:
@@ -149,7 +150,7 @@ def check_duplicate_component_names(
 # ---------------------------------------------------------------------------
 
 
-@register_check("broken_references")
+@register_check("broken_references", params={POLICY_PARAM: LITERAL_BOOLEAN})
 def check_broken_references(
     impl: Implementation, ctx: RuleContext
 ) -> list[Finding]:
@@ -349,7 +350,7 @@ def _lookback_days(node: dict) -> int | None:
     return None
 
 
-@register_check("persistence_lookback_exceeds_cap")
+@register_check("persistence_lookback_exceeds_cap", params={"cap_days": NON_NEGATIVE_INT})
 def check_persistence_lookback_cap(
     impl: Implementation, ctx: RuleContext
 ) -> list[Finding]:
