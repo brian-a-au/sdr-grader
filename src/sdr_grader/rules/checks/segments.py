@@ -11,6 +11,7 @@ from sdr_grader.rules.checks._helpers import (
     cycle_groups,
     make_finding,
 )
+from sdr_grader.rules.params import NON_NEGATIVE_INT, RATIO
 from sdr_grader.rules.registry import register_check
 
 if TYPE_CHECKING:
@@ -56,7 +57,7 @@ def check_container_mixing(
 # ---------------------------------------------------------------------------
 
 
-@register_check("orphan_segments")
+@register_check("orphan_segments", params={"threshold": RATIO})
 def check_orphan_segments(
     impl: Implementation, ctx: RuleContext
 ) -> list[Finding]:
@@ -126,7 +127,7 @@ def check_circular_segments(
 # ---------------------------------------------------------------------------
 
 
-@register_check("segments_missing_descriptions")
+@register_check("segments_missing_descriptions", params={"threshold": RATIO})
 def check_segments_missing_descriptions(
     impl: Implementation, ctx: RuleContext
 ) -> list[Finding]:
@@ -204,7 +205,7 @@ def check_duplicate_segments(
 # ---------------------------------------------------------------------------
 
 
-@register_check("segment_nesting_depth")
+@register_check("segment_nesting_depth", params={"max_depth": NON_NEGATIVE_INT})
 def check_segment_nesting_depth(
     impl: Implementation, ctx: RuleContext
 ) -> list[Finding]:

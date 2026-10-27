@@ -13,6 +13,7 @@ from sdr_grader.rules.checks._helpers import (
     make_finding,
     parse_platform_setting,
 )
+from sdr_grader.rules.params import RATIO
 from sdr_grader.rules.registry import register_check
 
 if TYPE_CHECKING:
@@ -62,7 +63,7 @@ def check_attribution_default_last_touch(
 # ---------------------------------------------------------------------------
 
 
-@register_check("attribution_missing")
+@register_check("attribution_missing", params={"threshold": RATIO})
 def check_attribution_missing(
     impl: Implementation, ctx: RuleContext
 ) -> list[Finding]:

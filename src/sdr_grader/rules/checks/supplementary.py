@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 
 from sdr_grader.render import Finding, FindingBlock
 from sdr_grader.rules.checks._helpers import category_display, compact, pct
+from sdr_grader.rules.params import OPTIONAL_STRING_LIST
 from sdr_grader.rules.registry import register_check
 
 if TYPE_CHECKING:
@@ -23,7 +24,7 @@ if TYPE_CHECKING:
 # ---------------------------------------------------------------------------
 
 
-@register_check("launch_required_data_elements")
+@register_check("launch_required_data_elements", params={"required": OPTIONAL_STRING_LIST})
 def check_launch_required_data_elements(
     impl: Implementation, ctx: RuleContext
 ) -> list[Finding]:

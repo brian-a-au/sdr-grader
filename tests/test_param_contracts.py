@@ -2,12 +2,24 @@
 
 from __future__ import annotations
 
+import dataclasses
 import datetime as dt
+import json
+from pathlib import Path
 
 import pytest
 
 from sdr_grader.core.exceptions import RubricValidationError
+from sdr_grader.input.adapt import adapt_snapshot
 from sdr_grader.rules import params as P
+from sdr_grader.rules.engine import RuleContext
+from sdr_grader.rules.registry import (
+    _import_all_checks,
+    get_check,
+    get_contract,
+    register_check,
+    registered_names,
+)
 
 LABEL = "naming.yaml NAME-T01: 'key'"
 
@@ -156,3 +168,78 @@ def test_validate_params_scopes_rejects_and_checks_aliases():
         P.validate_params({"threshold": 2}, specs, groups, where="f R")
     with pytest.raises(RubricValidationError, match="conflicting boolean aliases"):
         P.validate_params({"flag": True, "Flag Alias": "false"}, specs, groups, where="f R")
+
+
+FIXTURES = Path(__file__).parent / "fixtures"
+
+
+class _RecordingParams(dict):
+    """Empty params that record every key a check asks for."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.read: set[str] = set()
+
+    def get(self, key, default=None):
+        self.read.add(key)
+        return super().get(key, default)
+
+    def __getitem__(self, key):
+        self.read.add(key)
+        return super().__getitem__(key)
+
+    def __contains__(self, key):
+        self.read.add(key)
+        return super().__contains__(key)
+
+
+def _honesty_impls():
+    impls = [
+        adapt_snapshot(
+            json.loads((FIXTURES / name).read_text(encoding="utf-8")),
+            source=name,
+            platform_override=None,
+        )
+        for name in ("cja_snapshot_messy.json", "aa_snapshot_messy.json", "cja_snapshot_clean.json")
+    ]
+    # launch_required_data_elements returns before reading params without launch data.
+    impls.append(
+        dataclasses.replace(impls[0], supplementary_data={"launch": {"data_elements": []}})
+    )
+    return impls
+
+
+def test_every_check_declares_exactly_the_params_it_reads():
+    _import_all_checks()
+    impls = _honesty_impls()
+    mismatches = {}
+    for name in registered_names():
+        read: set[str] = set()
+        for impl in impls:
+            params = _RecordingParams()
+            ctx = RuleContext(
+                rule_id="T",
+                rule_name="T",
+                severity="low",
+                category="naming_conventions",
+                platforms=["cja", "aa"],
+                params=params,
+                rationale="",
+                remediation="",
+            )
+            get_check(name)(impl, ctx)
+            read |= params.read
+        declared = set(get_contract(name).params)
+        if read != declared:
+            mismatches[name] = {"read": sorted(read), "declared": sorted(declared)}
+    assert mismatches == {}
+
+
+def test_alias_groups_must_name_declared_params():
+    with pytest.raises(ValueError, match="alias group"):
+        register_check("_test_bad_alias", params={"a": P.TEXT_BOOLEAN}, alias_groups=[("a", "b")])
+
+
+def test_contract_lookup_for_unknown_check_raises_key_error():
+    with pytest.raises(KeyError):
+        get_contract("no_such_check")

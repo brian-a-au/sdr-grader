@@ -19,6 +19,7 @@ from sdr_grader.rules.checks._helpers import (
     make_finding,
     pct,
 )
+from sdr_grader.rules.params import NON_NEGATIVE_INT, OPTIONAL_TIMESTAMP, RATIO, TEXT_BOOLEAN
 from sdr_grader.rules.registry import register_check
 
 if TYPE_CHECKING:
@@ -31,7 +32,11 @@ if TYPE_CHECKING:
 # ---------------------------------------------------------------------------
 
 
-@register_check("snapshot_history_absent")
+@register_check(
+    "snapshot_history_absent",
+    params={"history_present": TEXT_BOOLEAN, "History Present": TEXT_BOOLEAN},
+    alias_groups=[("history_present", "History Present")],
+)
 def check_snapshot_history_absent(
     impl: Implementation, ctx: RuleContext
 ) -> list[Finding]:
@@ -63,7 +68,10 @@ def check_snapshot_history_absent(
 # ---------------------------------------------------------------------------
 
 
-@register_check("snapshot_age")
+@register_check(
+    "snapshot_age",
+    params={"max_age_days": NON_NEGATIVE_INT, "reference_date": OPTIONAL_TIMESTAMP},
+)
 def check_snapshot_age(
     impl: Implementation, ctx: RuleContext
 ) -> list[Finding]:
@@ -104,7 +112,11 @@ def check_snapshot_age(
 # ---------------------------------------------------------------------------
 
 
-@register_check("sdr_doc_absent")
+@register_check(
+    "sdr_doc_absent",
+    params={"sdr_doc_present": TEXT_BOOLEAN, "SDR Doc Present": TEXT_BOOLEAN},
+    alias_groups=[("sdr_doc_present", "SDR Doc Present")],
+)
 def check_sdr_doc_absent(
     impl: Implementation, ctx: RuleContext
 ) -> list[Finding]:
@@ -137,7 +149,7 @@ def check_sdr_doc_absent(
 # ---------------------------------------------------------------------------
 
 
-@register_check("missing_owners")
+@register_check("missing_owners", params={"threshold": RATIO})
 def check_missing_owners(
     impl: Implementation, ctx: RuleContext
 ) -> list[Finding]:
@@ -169,7 +181,7 @@ def check_missing_owners(
 # ---------------------------------------------------------------------------
 
 
-@register_check("missing_tags")
+@register_check("missing_tags", params={"threshold": RATIO})
 def check_missing_tags(
     impl: Implementation, ctx: RuleContext
 ) -> list[Finding]:
@@ -201,7 +213,7 @@ def check_missing_tags(
 # ---------------------------------------------------------------------------
 
 
-@register_check("doc_drift")
+@register_check("doc_drift", params={"threshold": RATIO, "last_sdr_update_at": OPTIONAL_TIMESTAMP})
 def check_doc_drift(
     impl: Implementation, ctx: RuleContext
 ) -> list[Finding]:

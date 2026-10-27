@@ -14,6 +14,7 @@ from sdr_grader.rules.checks._helpers import (
     make_finding,
     pct,
 )
+from sdr_grader.rules.params import OPTIONAL_STRING, RATIO, REGEX, SYNONYM_GROUPS, TARGET, TARGETS
 from sdr_grader.rules.registry import register_check
 
 if TYPE_CHECKING:
@@ -29,7 +30,10 @@ if TYPE_CHECKING:
 _PREFIX_RE = re.compile(r"^([a-z]{1,5}[_-])", re.IGNORECASE)
 
 
-@register_check("prefix_consistency")
+@register_check(
+    "prefix_consistency",
+    params={"target": TARGET, "tag_filter": OPTIONAL_STRING, "min_consistency": RATIO},
+)
 def check_prefix_consistency(
     impl: Implementation, ctx: RuleContext
 ) -> list[Finding]:
@@ -90,7 +94,7 @@ def check_prefix_consistency(
 _DEFAULT_ID_PATTERN = r"^[A-Za-z0-9_/.\-]+$"
 
 
-@register_check("regex_match_id")
+@register_check("regex_match_id", params={"pattern": REGEX, "targets": TARGETS})
 def check_regex_match_id(
     impl: Implementation, ctx: RuleContext
 ) -> list[Finding]:
@@ -139,7 +143,10 @@ def check_regex_match_id(
 # ---------------------------------------------------------------------------
 
 
-@register_check("casing_consistency")
+@register_check(
+    "casing_consistency",
+    params={"target": TARGET, "tag_filter": OPTIONAL_STRING, "min_consistency": RATIO},
+)
 def check_casing_consistency(
     impl: Implementation, ctx: RuleContext
 ) -> list[Finding]:
@@ -204,7 +211,7 @@ _DEFAULT_SYNONYM_GROUPS: list[list[str]] = [
 ]
 
 
-@register_check("semantic_consistency")
+@register_check("semantic_consistency", params={"synonym_groups": SYNONYM_GROUPS})
 def check_semantic_consistency(
     impl: Implementation, ctx: RuleContext
 ) -> list[Finding]:
