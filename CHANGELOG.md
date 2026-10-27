@@ -3,6 +3,42 @@
 All notable changes follow the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
+## 1.6.0 — 2026-10-27
+
+Prepared October 27, 2026. Not yet published; see the
+[readiness record](docs/releases/1.6.0-readiness.md).
+
+This release narrows the accepted input. Custom rubric packs and
+`.sdr-grader.yaml` files that loaded with 1.5.5 can now fail with exit code 3.
+The bundled `strict`, `pragmatic` and `aa-admin` packs are unchanged, and their
+grades and report bytes are the same apart from the version footer.
+
+- (#133) Each check declares the params it reads. A rule param that its check
+  does not declare is a configuration error (exit 3), and the message suggests
+  the closest valid key. Before this change, a misspelled param such as
+  `min_consistancy` was ignored and the check ran with its default.
+- (#133) Declared param values are checked when the pack loads, e.g.,
+  `target: dimensons` and `deprecated_allocations: "linear"` are now errors.
+  `targets: []` is rejected because it grades nothing. `null` is rejected on
+  params whose check does not treat null as "not given". A `reference_date` or
+  `last_sdr_update_at` that the grader cannot parse is an error. A blank value
+  (`""`) still loads.
+- (#133) Unknown keys are rejected in `_meta.yaml`, in `grade_scale` entries, in
+  category files, in rule entries, at the top level of `.sdr-grader.yaml` and in
+  its `suppress` entries, e.g., a misspelled `supress:` section.
+- (#133) Any string key that starts with `x_` is ignored at all of those levels
+  and inside `params`. Use it for your own notes. To migrate a pack or config
+  that now fails, correct the key, delete it, or add the `x_` prefix.
+- (#133) Every rule's params are checked when the pack loads, including rules
+  that are suppressed and rules whose `platforms` exclude the snapshot. A bad
+  `sdr_doc_present` or `history_present` override in such a rule now fails;
+  before, it was checked only when the rule ran. The error text is unchanged.
+- (#127) A duplicate key within one JSON object is rejected before grading
+  (exit 1) instead of silently keeping the last value, even if the repeated
+  values are identical. This applies to snapshot files, stdin, child-generator
+  output, trend inputs and `--extra-input` files. Malformed optional history
+  siblings are ignored and do not count as history evidence.
+
 ## 1.5.5 — 2026-10-17
 
 Published October 17, 2026 as a scoped public preview. Announcement remains on

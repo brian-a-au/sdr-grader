@@ -98,6 +98,21 @@ App if triggering those downstream workflows becomes necessary.
 To pause automatic merging, disable `dependabot-auto-merge.yml`. Keep the policy and existing required CI checks.
 Change the allowlist only through a reviewed repository PR.
 
+### Release-validation lock
+
+`requirements/release-validation.txt` is a universal, hash-locked file used
+only by CI release tooling. Dependabot's pip updater cannot regenerate it
+correctly. In #131 it dropped the environment markers and a Windows-only
+package. The `pip` entry in `.github/dependabot.yml` therefore ignores every
+dependency in `/requirements`, and this is meant to cover security updates too.
+Security alerts for this file still appear. To fix one, raise the floor in
+`requirements/release-validation.in` if needed and regenerate the lock:
+
+```bash
+uv pip compile requirements/release-validation.in --universal --generate-hashes \
+  --python-version 3.12 --output-file requirements/release-validation.txt
+```
+
 ## Frozen-main release window
 
 The release owner pauses only the merge workflow before a release-soak freeze.
