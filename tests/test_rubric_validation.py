@@ -90,10 +90,22 @@ def test_valid_params_still_load(tmp_path):
     assert rubric.categories_in_use == ["naming_conventions"]
 
 
-def _load_with_params(tmp_path, params):
+_CHECK_FOR_KEY = {
+    "threshold": "missing_descriptions",
+    "min_consistency": "prefix_consistency",
+    "min_similarity": "calc_near_duplicates",
+    "max_complexity": "calc_complexity_threshold",
+    "max_depth": "segment_nesting_depth",
+    "cap_days": "persistence_lookback_exceeds_cap",
+    "max_age_days": "snapshot_age",
+}
+
+
+def _load_with_params(tmp_path, params, check=None):
+    check = check or _CHECK_FOR_KEY[next(iter(params))]
     category_content = {
         "category": "naming_conventions",
-        "rules": [_valid_rule(params=params)],
+        "rules": [_valid_rule(check=check, params=params)],
     }
     return load_rubric(_write_structured_pack(tmp_path, category_content=category_content))
 
@@ -140,6 +152,7 @@ def test_invalid_numeric_params_rejected(tmp_path, key, value):
     message = str(exc.value)
     assert "NAME-T01" in message
     assert f"'{key}'" in message
+    assert "must be" in message
     assert "'abc'" not in message
 
 
@@ -440,7 +453,7 @@ def test_duplicate_rule_ids_are_rejected_with_file_context(tmp_path):
         (_valid_rule(params={"pattern": 42}), "NAME-T01: 'pattern' must be a string"),
         (
             _valid_rule(params={"targets": "metrics"}),
-            "NAME-T01: 'targets' must be a list of strings",
+            "NAME-T01: 'targets' must be a non-empty list of strings",
         ),
     ],
 )
@@ -751,3 +764,80 @@ def test_grade_scale_descending_message_is_bounded(tmp_path):
         load_rubric(tmp_path)
     assert len(str(exc.value)) < 300
     assert "\x1b" not in str(exc.value)
+
+
+def test_param_not_declared_by_its_check_is_rejected(tmp_path):
+    with pytest.raises(RubricValidationError) as exc:
+        _load_with_params(tmp_path, {"threshold": 0.2}, check="regex_match_id")
+    message = str(exc.value)
+    assert "NAME-T01 params: unknown key 'threshold'" in message
+    assert "'pattern'" in message and "'targets'" in message
+
+
+def test_misspelled_param_gets_hint(tmp_path):
+    with pytest.raises(RubricValidationError, match="did you mean 'threshold'"):
+        _load_with_params(tmp_path, {"treshold": 0.2}, check="missing_descriptions")
+
+
+def test_singular_target_typo_fails_at_load(tmp_path):
+    with pytest.raises(RubricValidationError, match="'target'.*did you mean 'dimensions'"):
+        _load_with_params(tmp_path, {"target": "dimensons"}, check="prefix_consistency")
+
+
+@pytest.mark.parametrize(
+    ("check", "params", "fragment"),
+    [
+        ("calc_deprecated_allocations", {"deprecated_allocations": "linear"}, "list of strings"),
+        ("semantic_consistency", {"synonym_groups": [["visit"]]}, "at least 2"),
+        ("snapshot_age", {"reference_date": "someday"}, "date or timestamp"),
+        ("doc_drift", {"last_sdr_update_at": "soon"}, "date or timestamp"),
+        ("prefix_consistency", {"tag_filter": 3}, "must be a string"),
+        ("launch_required_data_elements", {"required": "page_name"}, "list of strings"),
+        ("sdr_doc_absent", {"sdr_doc_present": "maybe"}, "expected boolean"),
+        ("sdr_doc_absent", {"sdr_doc_present": True, "SDR Doc Present": "false"}, "conflicting"),
+        ("regex_match_id", {"targets": []}, "non-empty list"),
+    ],
+)
+def test_specialized_params_validated_at_load(tmp_path, check, params, fragment):
+    with pytest.raises(RubricValidationError, match=fragment):
+        _load_with_params(tmp_path, params, check=check)
+
+
+def test_null_pattern_and_targets_fail_at_load(tmp_path):
+    with pytest.raises(RubricValidationError, match="'pattern' must be a string"):
+        _load_with_params(tmp_path, {"pattern": None}, check="regex_match_id")
+    with pytest.raises(RubricValidationError, match="'targets' must be a non-empty list"):
+        _load_with_params(tmp_path, {"targets": None}, check="regex_match_id")
+
+
+def test_unquoted_yaml_dates_load_for_timestamp_params(tmp_path):
+    (tmp_path / "_meta.yaml").write_text(
+        yaml.safe_dump(_valid_meta(), sort_keys=False), encoding="utf-8"
+    )
+    (tmp_path / "naming.yaml").write_text(
+        "category: naming_conventions\n"
+        "rules:\n"
+        "  - id: GOV-T01\n"
+        "    name: t\n"
+        "    severity: low\n"
+        "    platforms: [cja]\n"
+        "    check: snapshot_age\n"
+        "    params:\n"
+        "      reference_date: 2026-01-01\n",
+        encoding="utf-8",
+    )
+    rubric = load_rubric(tmp_path)
+    assert str(rubric.rules[0].params["reference_date"]) == "2026-01-01"
+
+
+def test_nullable_params_accept_null(tmp_path):
+    _load_with_params(tmp_path, {"synonym_groups": None}, check="semantic_consistency")
+    _load_with_params(tmp_path, {"tag_filter": None}, check="prefix_consistency")
+    _load_with_params(tmp_path, {"sdr_doc_present": None}, check="sdr_doc_absent")
+
+
+def test_x_param_keys_are_accepted_and_preserved(tmp_path):
+    rubric = _load_with_params(
+        tmp_path, {"x_owner": "team", "threshold": 0.2}, check="missing_descriptions"
+    )
+    assert rubric.rules[0].params == {"x_owner": "team", "threshold": 0.2}
