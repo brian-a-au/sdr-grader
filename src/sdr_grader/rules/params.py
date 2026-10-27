@@ -186,8 +186,10 @@ def validate_params(
 ) -> None:
     """Validate one rule's params against its check's declared contract."""
     reject_unknown_keys(params, specs, where=f"{where} params")
+    # Alias groups use the check's own run-time path ("params.<key>"), so these
+    # diagnostics stay identical to earlier releases' published text.
+    for group in alias_groups:
+        boolean_aliases(params, group, path="params", error=RubricValidationError)
     for key in sorted(specs):
         if key in params:
             specs[key].check(params[key], label=f"{where}: '{key}'")
-    for group in alias_groups:
-        boolean_aliases(params, group, path=f"{where}: params", error=RubricValidationError)

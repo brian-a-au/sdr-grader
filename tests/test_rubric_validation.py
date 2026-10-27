@@ -941,3 +941,14 @@ def test_governance_overrides_validated_at_load_even_when_rule_cannot_run(tmp_pa
     )
     with pytest.raises(RubricValidationError, match="expected boolean"):
         load_rubric(pack)
+
+
+@pytest.mark.parametrize(
+    ("check", "key"),
+    [("sdr_doc_absent", "sdr_doc_present"), ("snapshot_history_absent", "history_present")],
+)
+def test_governance_override_diagnostic_matches_published_runtime_text(tmp_path, check, key):
+    # The release-compatibility contract pins this exact text from run time.
+    with pytest.raises(RubricValidationError) as exc:
+        _load_with_params(tmp_path, {key: {"invalid": True}}, check=check)
+    assert str(exc.value) == f"params.{key}: expected boolean or true/false string (or null)"
