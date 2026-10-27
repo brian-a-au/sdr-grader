@@ -243,3 +243,25 @@ def test_alias_groups_must_name_declared_params():
 def test_contract_lookup_for_unknown_check_raises_key_error():
     with pytest.raises(KeyError):
         get_contract("no_such_check")
+
+
+DOCS = Path(__file__).resolve().parent.parent / "docs"
+_START = "<!-- param-contracts:start -->"
+_END = "<!-- param-contracts:end -->"
+
+
+def _contract_rows() -> list[str]:
+    _import_all_checks()
+    return [
+        f"| `{name}` | `{key}` | {spec.summary} |"
+        for name in registered_names()
+        for key, spec in sorted(get_contract(name).params.items())
+    ]
+
+
+def test_rubric_format_param_table_matches_registry():
+    text = (DOCS / "RUBRIC_FORMAT.md").read_text(encoding="utf-8")
+    assert _START in text and _END in text
+    body = text.split(_START, 1)[1].split(_END, 1)[0]
+    rows = [line for line in body.splitlines() if line.startswith("| `")]
+    assert rows == _contract_rows()

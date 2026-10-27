@@ -11,14 +11,15 @@ and contributor helpers are not installed workflows.
 ## The contract
 
 A check function lives in `src/sdr_grader/rules/checks/<category>.py`.
-It is registered with `@register_check("name")` and has the shape:
+It is registered with `@register_check("name", params={...})` and has the shape:
 
 ```python
 from sdr_grader.rules.checks._helpers import category_display, compact
 from sdr_grader.render import Finding, FindingBlock
+from sdr_grader.rules.params import RATIO, TARGETS
 from sdr_grader.rules.registry import register_check
 
-@register_check("missing_descriptions")
+@register_check("missing_descriptions", params={"threshold": RATIO, "targets": TARGETS})
 def check_missing_descriptions(impl, ctx) -> list[Finding]:
     threshold = float(ctx.params.get("threshold", 0.10))
     # … pure logic against impl …
@@ -32,6 +33,14 @@ def check_missing_descriptions(impl, ctx) -> list[Finding]:
         )
     ]
 ```
+
+Declare every key the check reads from `ctx.params`, using the specs in
+`rules/params.py`, and keep defaults in the check body. The rubric loader
+rejects any param a check does not declare, and
+`tests/test_param_contracts.py::test_every_check_declares_exactly_the_params_it_reads`
+fails if the declaration and the code disagree. Add the new rows to the
+param table in [Rubric format](RUBRIC_FORMAT.md#rule-params); a test keeps
+that table in sync with the registry.
 
 ## Properties
 

@@ -8,8 +8,9 @@ selected rubric pack runs unmodified.
 
 Configuration YAML must use UTF-8 encoding. Malformed YAML, YAML aliases (`*name` references to an anchor; a plain anchor with no alias still loads),
 nesting deeper than 64 levels, invalid scalar values, numeric `_meta.yaml` fields
-outside their ranges, and the numeric rule params listed in
-[Rule params](RUBRIC_FORMAT.md#rule-params) outside their ranges raise
+outside their ranges, invalid or undeclared rule params (see
+[Rule params](RUBRIC_FORMAT.md#rule-params)), and unknown keys (see
+[Unknown keys](RUBRIC_FORMAT.md#unknown-keys-and-x_-extensions)) raise
 `RubricValidationError` through the loader API. The CLI reports a configuration
 error with exit code 3 before publishing HTML or JSON reports.
 
@@ -39,6 +40,14 @@ category_weights:
 ```
 
 All three top-level keys are optional; omit any you don't need.
+
+The top level accepts only `suppress`, `severity_overrides` and
+`category_weights`; each `suppress` entry accepts only `rule`, `reason` and
+`components`. Any other key, such as a misspelled `supress:`, exits with
+code 3 before any report is written. Keys starting with `x_` (for example
+`x_owner:`) are ignored, so you can keep notes in the file. Inside
+`severity_overrides` and `category_weights` an `x_` key is not skipped: it
+is read as a rule ID or category name, so an unknown one is rejected.
 
 ### `suppress`
 
