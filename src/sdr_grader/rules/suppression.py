@@ -15,10 +15,13 @@ from typing import Any
 
 from sdr_grader.core.exceptions import RubricValidationError
 from sdr_grader.render import Finding
+from sdr_grader.rules.params import reject_unknown_keys
 from sdr_grader.rules.rubric import VALID_SEVERITIES, Rubric, _validate_identifier
 from sdr_grader.rules.yaml_io import describe_value, load_config_yaml
 
 DEFAULT_SUPPRESSION_FILENAME = ".sdr-grader.yaml"
+PROJECT_CONFIG_KEYS = frozenset({"suppress", "severity_overrides", "category_weights"})
+SUPPRESS_ENTRY_KEYS = frozenset({"rule", "reason", "components"})
 
 
 @dataclass(frozen=True)
@@ -65,6 +68,7 @@ def load_suppression(path: str | Path) -> Suppression:
 
 
 def _parse(raw: dict[str, Any], *, source: str) -> Suppression:
+    reject_unknown_keys(raw, PROJECT_CONFIG_KEYS, where=source)
     suppressed: list[SuppressedRule] = []
     suppressed_raw = raw.get("suppress", [])
     if not isinstance(suppressed_raw, list):
@@ -82,6 +86,7 @@ def _parse(raw: dict[str, Any], *, source: str) -> Suppression:
         if rule_id in seen_rules:
             raise RubricValidationError(f"{source}: suppress lists {rule_id} more than once")
         seen_rules.add(rule_id)
+        reject_unknown_keys(entry, SUPPRESS_ENTRY_KEYS, where=f"{source}: suppress[{rule_id}]")
         # rule_id was checked by _validate_identifier, so it is safe to echo below.
         reason_raw = entry.get("reason")
         if reason_raw is not None and not isinstance(reason_raw, str):

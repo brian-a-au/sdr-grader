@@ -533,7 +533,7 @@ def test_suppression_valid_yaml_neighbors_remain_accepted(tmp_path, severity):
         },
     )
     with config.open("a", encoding="utf-8") as handle:
-        handle.write("unused_scalar: 2026-10-16\nunused_integer: !!int 12\n")
+        handle.write("x_unused_scalar: 2026-10-16\nx_unused_integer: !!int 12\n")
     suppression = load_suppression(config)
     assert suppression.severity_overrides == {"NAME-002": severity}
     assert suppression.category_weight_overrides == {"schema_hygiene": 0, "naming_conventions": 1}
@@ -683,3 +683,35 @@ def test_suppression_identifiers_are_bounded_printable_text(raw, bad_id):
 def test_severity_overrides_reject_non_string_key():
     with pytest.raises(RubricValidationError, match="severity_overrides key must be printable"):
         _parse({"severity_overrides": {5: "low"}}, source=".sdr-grader.yaml")
+
+
+@pytest.mark.parametrize(
+    ("content", "fragment"),
+    [
+        ("supress:\n  - rule: NAME-002\n", "unknown key 'supress'; did you mean 'suppress'?"),
+        (
+            "suppress:\n  - rule: NAME-002\n    reasn: legacy\n",
+            "suppress[NAME-002]: unknown key 'reasn'; did you mean 'reason'?",
+        ),
+    ],
+)
+def test_suppression_rejects_unknown_keys(tmp_path, content, fragment):
+    path = tmp_path / ".sdr-grader.yaml"
+    path.write_text(content, encoding="utf-8")
+    with pytest.raises(RubricValidationError) as exc:
+        load_suppression(path)
+    assert fragment in str(exc.value)
+
+
+def test_suppression_accepts_x_keys(tmp_path):
+    path = tmp_path / ".sdr-grader.yaml"
+    path.write_text(
+        "x_owner: analytics\n"
+        "suppress:\n"
+        "  - rule: NAME-002\n"
+        "    reason: legacy\n"
+        "    x_ticket: SDR-1\n",
+        encoding="utf-8",
+    )
+    suppression = load_suppression(path)
+    assert [s.rule_id for s in suppression.suppressed] == ["NAME-002"]

@@ -563,7 +563,7 @@ def test_valid_yaml_neighbors_remain_accepted(tmp_path, severity):
     )
     for name in ("_meta.yaml", "naming.yaml"):
         with (pack / name).open("a", encoding="utf-8") as handle:
-            handle.write("unused_scalar: 2026-10-16\nunused_integer: !!int 12\n")
+            handle.write("x_unused_scalar: 2026-10-16\nx_unused_integer: !!int 12\n")
     rubric = load_rubric(pack)
     assert rubric.rules[0].severity == severity
     assert rubric.description == meta["description"]
@@ -841,3 +841,81 @@ def test_x_param_keys_are_accepted_and_preserved(tmp_path):
         tmp_path, {"x_owner": "team", "threshold": 0.2}, check="missing_descriptions"
     )
     assert rubric.rules[0].params == {"x_owner": "team", "threshold": 0.2}
+
+
+@pytest.mark.parametrize(
+    ("meta", "category_content", "fragment"),
+    [
+        ({**_valid_meta(), "grade_scal": []}, _DEFAULT, "_meta.yaml: unknown key 'grade_scal'"),
+        (
+            {
+                **_valid_meta(),
+                "grade_scale": [
+                    {"min": 90, "grade": "A", "label": "x"},
+                    {"min": 0, "grade": "F"},
+                ],
+            },
+            _DEFAULT,
+            "grade_scale entry: unknown key 'label'",
+        ),
+        (
+            _DEFAULT,
+            {"category": "naming_conventions", "rule": [], "rules": [_valid_rule()]},
+            "naming.yaml: unknown key 'rule'; did you mean 'rules'?",
+        ),
+        (
+            _DEFAULT,
+            {"category": "naming_conventions", "rules": [_valid_rule(severty="low")]},
+            "naming.yaml NAME-T01: unknown key 'severty'; did you mean 'severity'?",
+        ),
+    ],
+)
+def test_unknown_keys_rejected_at_each_pack_level(tmp_path, meta, category_content, fragment):
+    pack = _write_structured_pack(tmp_path, meta=meta, category_content=category_content)
+    with pytest.raises(RubricValidationError) as exc:
+        load_rubric(pack)
+    assert fragment in str(exc.value)
+
+
+def test_x_keys_accepted_at_every_pack_level(tmp_path):
+    meta = {**_valid_meta(), "x_owner": "team"}
+    meta["grade_scale"] = [{"min": 90, "grade": "A", "x_note": "n"}, {"min": 0, "grade": "F"}]
+    category_content = {
+        "category": "naming_conventions",
+        "x_reviewed": "2026-10-27",
+        "rules": [_valid_rule(x_ticket="SDR-1", params={"x_why": "n"})],
+    }
+    pack = _write_structured_pack(tmp_path, meta=meta, category_content=category_content)
+    rubric = load_rubric(pack)
+    assert [r.id for r in rubric.rules] == ["NAME-T01"]
+
+
+def test_x_key_in_category_weights_is_read_as_a_category_name(tmp_path):
+    # Data-keyed maps are not skipped: an x_ key there is an ordinary name.
+    meta = {**_valid_meta(), "category_weights": {"naming_conventions": 1.0, "x_other": 0.0}}
+    rubric = load_rubric(_write_structured_pack(tmp_path, meta=meta))
+    assert "x_other" in rubric.category_weights
+
+
+def test_non_string_rule_entry_key_is_config_error(tmp_path):
+    (tmp_path / "_meta.yaml").write_text(
+        yaml.safe_dump(_valid_meta(), sort_keys=False), encoding="utf-8"
+    )
+    (tmp_path / "naming.yaml").write_text(
+        "category: naming_conventions\n"
+        "rules:\n"
+        "  - id: NAME-T01\n"
+        "    severity: low\n"
+        "    platforms: [cja]\n"
+        "    check: regex_match_id\n"
+        "    yes: 1\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(RubricValidationError, match="NAME-T01: unknown key True"):
+        load_rubric(tmp_path)
+
+
+def test_bundled_packs_load_under_strict_keys():
+    for pack in ("strict", "pragmatic", "aa-admin"):
+        rubric = load_rubric(REPO_ROOT / "src" / "sdr_grader" / "rules" / "packs" / pack)
+        assert rubric.rules

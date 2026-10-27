@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Any
 
 from sdr_grader.core.exceptions import RubricValidationError
-from sdr_grader.rules.params import validate_params
+from sdr_grader.rules.params import reject_unknown_keys, validate_params
 from sdr_grader.rules.registry import (
     _import_all_checks,
     get_check,
@@ -31,6 +31,14 @@ from sdr_grader.rules.yaml_io import describe_value, load_config_yaml
 VALID_SEVERITIES = {"critical", "high", "medium", "low"}
 VALID_PLATFORMS = {"aa", "cja"}
 WEIGHT_TOLERANCE = 1e-6
+META_KEYS = frozenset(
+    {"pack", "version", "description", "category_weights", "severity_weights", "grade_scale"}
+)
+GRADE_BAND_KEYS = frozenset({"min", "grade"})
+CATEGORY_FILE_KEYS = frozenset({"category", "description", "rules"})
+RULE_ENTRY_KEYS = frozenset(
+    {"id", "name", "severity", "platforms", "check", "params", "rationale", "remediation"}
+)
 
 
 @dataclass(frozen=True)
@@ -76,6 +84,7 @@ def load_rubric(pack_dir: str | Path) -> Rubric:
         raise RubricValidationError(f"rubric pack directory not found: {pack_path}")
 
     meta = _load_meta(pack_path)
+    reject_unknown_keys(meta, META_KEYS, where="_meta.yaml")
     pack_name = _require_string(meta, "pack")
     version = _require_string(meta, "version", coerce=True)
     description = str(meta.get("description", "")).strip()
@@ -183,6 +192,7 @@ def _validate_grade_scale(value: Any) -> list[GradeBand]:
                 f"grade_scale entry must be a mapping with 'min' and 'grade':"
                 f" {describe_value(entry)}"
             )
+        reject_unknown_keys(entry, GRADE_BAND_KEYS, where="_meta.yaml grade_scale entry")
         raw_min = entry["min"]
         if isinstance(raw_min, bool) or not isinstance(
             raw_min,
@@ -240,6 +250,7 @@ def _load_rules(pack_path: Path, allowed_categories: set[str]) -> list[RuleDefin
             raise RubricValidationError(
                 f"{category_file.name} must contain a mapping at the top level"
             )
+        reject_unknown_keys(content, CATEGORY_FILE_KEYS, where=category_file.name)
         category = content.get("category")
         if not isinstance(category, str) or not category:
             raise RubricValidationError(
@@ -281,6 +292,7 @@ def _validate_rule_entry(entry: Any, *, category: str, source: str) -> RuleDefin
     if not isinstance(rule_id, str) or not rule_id:
         raise RubricValidationError(f"{source}: rule entry is missing 'id' string")
     _validate_identifier(rule_id, field="rule id", source=source)
+    reject_unknown_keys(entry, RULE_ENTRY_KEYS, where=f"{source} {rule_id}")
     name = (_text_field(entry, "name", source, rule_id) or rule_id).strip()
     severity = entry.get("severity")
     if not isinstance(severity, str) or severity not in VALID_SEVERITIES:
