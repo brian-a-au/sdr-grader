@@ -707,8 +707,8 @@ def test_pages_preview_caveat_preserves_six_synthetic_example_links():
 
 def test_published_patch_records_are_not_marked_unpublished() -> None:
     changelog = (REPO_ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
-    section = changelog.split("## 1.5.5", 1)[1].split("\n## ", 1)[0]
+    section = changelog.split("## 1.6.0", 1)[1].split("\n## ", 1)[0]
     assert "not yet published" not in section
     assert "scoped public preview" in section
     beta = (REPO_ROOT / "docs/BETA_VALIDATION.md").read_text(encoding="utf-8")
-    assert "The latest published release is [1.5.5](releases/1.5.5-readiness.md)" in beta
+    assert "The latest published release is [1.6.0](releases/1.6.0-readiness.md)" in beta

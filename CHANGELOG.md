@@ -5,8 +5,8 @@ spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
 ## 1.6.0 — 2026-10-27
 
-Prepared October 27, 2026. Not yet published; see the
-[readiness record](docs/releases/1.6.0-readiness.md).
+Published October 27, 2026 as a scoped public preview. Announcement remains on
+HOLD; see the [release record](docs/releases/1.6.0-readiness.md).
 
 This release narrows the accepted input. Custom rubric packs and
 `.sdr-grader.yaml` files that loaded with 1.5.5 can now fail with exit code 3.
