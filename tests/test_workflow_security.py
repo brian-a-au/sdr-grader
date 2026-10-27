@@ -449,7 +449,11 @@ def test_codeql_dependency_updates_and_governance_files_are_configured():
         (REPO_ROOT / ".github" / "dependabot.yml").read_text(encoding="utf-8")
     )
     ecosystems = {update["package-ecosystem"] for update in dependabot["updates"]}
-    assert ecosystems == {"github-actions", "uv"}
+    assert ecosystems == {"github-actions", "uv", "pip"}
+    pip = next(u for u in dependabot["updates"] if u["package-ecosystem"] == "pip")
+    assert pip["directory"] == "/requirements"
+    assert pip["open-pull-requests-limit"] == 0
+    assert pip["ignore"] == [{"dependency-name": "*"}]
 
     codeowners = (REPO_ROOT / ".github" / "CODEOWNERS").read_text(encoding="utf-8")
     assert "* @brian-a-au" in codeowners
