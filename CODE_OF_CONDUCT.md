@@ -2,45 +2,36 @@
 
 ## Our commitment
 
-We are committed to a respectful, harassment-free community for
-everyone, regardless of experience, identity, background, disability,
-appearance, or personal characteristics.
+This project adopts the
+[Contributor Covenant, version 2.1](https://www.contributor-covenant.org/version/2/1/code_of_conduct/)
+as its community Code of Conduct.
 
-Examples of welcome behavior include constructive technical feedback,
-clear disagreement without personal attacks, respect for privacy, and
-helping others participate. Harassment, threats, discrimination,
-doxxing, sexualized attention, sustained disruption, and publishing
-another person's private information are not acceptable.
-
-## Scope
-
-This policy applies in this repository and in public spaces where
-someone is representing the project, including issue discussions,
-pull-request reviews, community events, and project-related messages.
-
-## Reporting
-
-Do not put confidential conduct reports in a public issue. Contact the
-maintainer through a private channel listed on the
-[`brian-a-au` GitHub profile](https://github.com/brian-a-au). If no
-private channel is available, use a
-[private repository advisory](https://github.com/brian-a-au/sdr-grader/security/advisories/new)
-with `Code of Conduct` in the title. For conduct governed by GitHub's
-platform rules, you may also use GitHub's abuse-reporting mechanism.
-
-The maintainer will acknowledge a report within seven days when
-possible, protect the reporter's privacy, avoid conflicts of interest,
-and share only the information needed to investigate and respond.
+Everyone participating in the repository, issue tracker, pull requests,
+reviews, project discussions, and other spaces where they represent the
+project is expected to follow that covenant. We are committed to a
+harassment-free, welcoming, inclusive, and healthy community.
 
 ## Enforcement
 
-Depending on impact, intent, and recurrence, responses may include:
+Report abusive, harassing, or otherwise unacceptable behavior privately
+through the repository's
+[private reporting channel](https://github.com/brian-a-au/sdr-grader/security/advisories/new).
+Do not disclose a conduct report in a public issue or pull request.
 
-1. A private correction and request to stop.
-2. A formal warning with a stated consequence for recurrence.
-3. Temporary removal from project spaces or interactions.
-4. Permanent removal for severe or repeated violations.
+The maintainer is responsible for clarifying and enforcing the standards and
+will review reports fairly and promptly. Privacy will be respected to the
+extent possible while investigating and resolving a report. The maintainer may
+remove or edit contributions and may issue a correction, warning, temporary
+ban, or permanent ban consistent with the Contributor Covenant's community
+impact guidelines.
 
-Retaliation against a reporter or participant in an investigation is a
-separate violation. The maintainer is responsible for consistent
-enforcement and for documenting decisions privately.
+Anyone handling a report must disclose a conflict of interest and recuse
+themselves when they cannot act impartially. A reporter or affected participant
+may request reconsideration through the same private channel.
+
+## Attribution
+
+This Code of Conduct adopts the
+[Contributor Covenant, version 2.1](https://www.contributor-covenant.org/version/2/1/code_of_conduct/),
+whose community impact guidelines were inspired by Mozilla's code of conduct
+enforcement ladder.

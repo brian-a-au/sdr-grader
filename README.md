@@ -4,7 +4,7 @@
 [![Tests](https://github.com/brian-a-au/sdr-grader/actions/workflows/test.yml/badge.svg)](https://github.com/brian-a-au/sdr-grader/actions/workflows/test.yml)
 [![Lint](https://github.com/brian-a-au/sdr-grader/actions/workflows/lint.yml/badge.svg)](https://github.com/brian-a-au/sdr-grader/actions/workflows/lint.yml)
 [![Version Sync](https://github.com/brian-a-au/sdr-grader/actions/workflows/version-sync.yml/badge.svg)](https://github.com/brian-a-au/sdr-grader/actions/workflows/version-sync.yml)
-[![Python 3.11+ requirement](https://img.shields.io/badge/python-requires%203.11%2B-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 [![Coverage](https://img.shields.io/badge/coverage-99%25-brightgreen.svg)](https://github.com/brian-a-au/sdr-grader/tree/v1.6.1/tests)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
@@ -28,22 +28,18 @@ that child calls Adobe APIs before the local grader runs.
 
 ## Public preview scope
 
-This project is in public preview.
-Its grades are review aids, not certification.
+This project is in public preview. A grade is a review aid, not certification.
 The bundled thresholds and severities reflect maintainer judgment, and no
-implementation has been admitted to grading calibration yet. Review every finding
-against the source implementation before you change any production configuration.
-Component-scoped suppression (`components:` in `.sdr-grader.yaml`) is recorded but
-not applied. No candidate-specific independent beta exit is recorded for this release.
+implementation has been admitted to grading calibration yet. Review each finding
+against the source implementation before you change a production configuration.
 
-The default rubric packs include 27 checks for AA and 27 for CJA, drawn from a
-shared catalog of 31. The report identifies explicitly unassessed checks and
-their scoring treatment. Missing required configuration can still produce
-findings, so the number of available checks is not the number that ran on your
-snapshot. These checks read configuration only. They do not confirm runtime
-event-ID delivery or product binding. For the full check list and platform
-coverage, see the
-[platform coverage guide](https://github.com/brian-a-au/sdr-grader/blob/v1.6.1/docs/PLATFORM_COVERAGE.md).
+The default packs run 27 checks for AA and 27 for CJA, from a shared catalog of
+31. The checks read configuration only, so they do not confirm runtime event-ID
+delivery or product binding. The report marks any check it could not assess.
+Component-scoped suppression (`components:` in `.sdr-grader.yaml`) is recorded
+but not applied. See the
+[platform coverage guide](https://github.com/brian-a-au/sdr-grader/blob/v1.6.1/docs/PLATFORM_COVERAGE.md)
+for the full check list.
 
 The tool is verified on Ubuntu with Python 3.11 and 3.12. Other platforms and
 later Python versions are not yet verified. The package installs on Python 3.11
