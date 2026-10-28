@@ -5,8 +5,8 @@ spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
 ## 1.6.1 — 2026-10-27
 
-Prepared October 27, 2026. Not yet published; see the
-[readiness record](docs/releases/1.6.1-readiness.md).
+Published October 27, 2026 as a scoped public preview. Announcement remains on
+HOLD; see the [release record](docs/releases/1.6.1-readiness.md).
 
 This patch changes no grading behavior. The bundled `strict`, `pragmatic` and
 `aa-admin` packs are unchanged, and grades and report bytes are the same apart
