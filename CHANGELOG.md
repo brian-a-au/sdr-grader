@@ -3,6 +3,21 @@
 All notable changes follow the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
+## 1.6.1 — 2026-10-27
+
+Prepared October 27, 2026. Not yet published; see the
+[readiness record](docs/releases/1.6.1-readiness.md).
+
+This patch changes no grading behavior. The bundled `strict`, `pragmatic` and
+`aa-admin` packs are unchanged, and grades and report bytes are the same apart
+from the version footer.
+
+- (#137) Advance the tested-through generator markers to `cja_auto_sdr` 3.13.2
+  and `aa_auto_sdr` 1.24.1. Snapshots that declare those versions no longer
+  print a newer-than-tested warning. Later versions are still accepted with the
+  warning. Real `cja_auto_sdr` exports do not declare a tool version, so they
+  never warn.
+
 ## 1.6.0 — 2026-10-27
 
 Published October 27, 2026 as a scoped public preview. Announcement remains on
