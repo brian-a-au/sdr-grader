@@ -2,8 +2,7 @@
 
 **Status: unverified — no candidate-specific beta exit decision is recorded.**
 
-Current preparation: [1.6.1](releases/1.6.1-readiness.md), with
-prospective candidate-specific beta evidence pending. The latest published release is [1.6.0](releases/1.6.0-readiness.md).
+The latest published release is [1.6.1](releases/1.6.1-readiness.md).
 Candidate-specific beta evidence for it is pending. Earlier release records are
 historical; their artifact identities and engineering checks remain in those ledgers.
 The owner confirms independent testing of prior releases. The candidate-specific
