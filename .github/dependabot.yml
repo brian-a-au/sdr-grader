@@ -22,6 +22,16 @@ updates:
     commit-message:
       prefix: "chore"
 
+  # The actionlint Docker action pins its image by tag and digest.
+  - package-ecosystem: "docker"
+    directory: "/.github/actionlint"
+    target-branch: "main"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "ci"
+
   # requirements/release-validation.txt is a universal, hash-locked file that
   # only `uv pip compile --universal` can regenerate correctly. Dependabot's pip
   # updater drops its environment markers (#131), so ignore every dependency

@@ -41,9 +41,9 @@ but not applied. See the
 [platform coverage guide](https://github.com/brian-a-au/sdr-grader/blob/v1.6.1/docs/PLATFORM_COVERAGE.md)
 for the full check list.
 
-The tool is verified on Ubuntu with Python 3.11 and 3.12. Other platforms and
-later Python versions are not yet verified. The package installs on Python 3.11
-or newer.
+The tool is verified on Ubuntu with Python 3.11 through 3.14. Other platforms
+and later Python versions are not yet verified. The package installs on Python
+3.11 or newer.
 
 **See what the rubric marks healthy. Review what to fix.**
 
@@ -94,7 +94,7 @@ for details.
 This auth-free quickstart grades a tagged synthetic fixture, so you can confirm
 the installation before using production data or configuring Adobe credentials.
 It requires Python 3.11 or newer. The commands are verified on Ubuntu with
-Python 3.11 and 3.12; the macOS path has historical local exercise on Python
+Python 3.11 through 3.14; the macOS path has historical local exercise on Python
 3.12, and the Windows commands are unverified guidance.
 
 Install the released grader with `uv` (or use `pipx` or another isolated Python

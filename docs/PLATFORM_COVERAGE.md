@@ -7,7 +7,7 @@ judgment, and zero implementations are currently admitted to grading
 calibration. Treat findings as review prompts: verify each one against the
 source implementation before changing production configuration.
 
-The tested preview matrix is Ubuntu with Python 3.11 and 3.12. macOS with
+The tested preview matrix is Ubuntu with Python 3.11 through 3.14. macOS with
 Python 3.12 has historical local exercise only. Windows and later Python
 versions are unverified, although the README retains Windows examples as
 guidance. The package metadata's Python 3.11-or-newer requirement is an

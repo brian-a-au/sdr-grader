@@ -12,11 +12,15 @@ from pathlib import Path
 REQUIRED_JOBS = (
     'Artifact smoke / Python 3.11',
     'Artifact smoke / Python 3.12',
+    'Artifact smoke / Python 3.13',
+    'Artifact smoke / Python 3.14',
     'Frozen wheel Claude plugin smoke',
     'Verify tagged README before publication',
     'Verify PyPI publication before announcement',
     'Public endpoints / Python 3.11',
     'Public endpoints / Python 3.12',
+    'Public endpoints / Python 3.13',
+    'Public endpoints / Python 3.14',
 )
 
 
