@@ -13,7 +13,9 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 WORKFLOWS = REPO_ROOT / ".github" / "workflows"
 ACTIONS = REPO_ROOT / ".github" / "actions"
 FULL_SHA_USE = re.compile(
-    r"^\s*(?:-\s+)?uses:\s+[^@\s]+@[0-9a-f]{40}(?:\s+#\s+.+)?$",
+    r"^\s*(?:-\s+)?uses:\s+"
+    r"(?:[^@\s]+@[0-9a-f]{40}|docker://[^@\s]+@sha256:[0-9a-f]{64})"
+    r"(?:\s+#\s+.+)?$",
     re.MULTILINE,
 )
 ANY_USE = re.compile(
@@ -413,7 +415,7 @@ def test_actionlint_exception_is_one_container_argument_and_scope_specific():
     step = next(
         step
         for step in workflow["jobs"]["actionlint"]["steps"]
-        if step.get("uses", "").startswith("rhysd/actionlint@")
+        if step.get("uses", "").startswith("docker://rhysd/actionlint:")
     )
     # Docker action args are process arguments, not shell text: avoid quoting.
     args = step["with"]["args"].split()

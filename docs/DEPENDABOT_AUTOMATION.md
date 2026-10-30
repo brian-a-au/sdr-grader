@@ -57,7 +57,7 @@ Adobe credential, or external review service is needed.
 The deployment enables **Allow auto-merge** and adds `dependabot-policy` to the
 existing required checks, with the GitHub Actions app as the check source:
 
-`Lint`, `Tests / Python 3.11`, `Tests / Python 3.12`, `Examples drift`, `Version identity`, `Dependency review`, `CodeQL / Python`, `Public README and installed wheel`, `actionlint`, `lockfile`, `dependabot-policy`.
+`Lint`, `Tests / Python 3.11`, `Tests / Python 3.12`, `Tests / Python 3.13`, `Tests / Python 3.14`, `Examples drift`, `Version identity`, `Dependency review`, `CodeQL / Python`, `Public README and installed wheel`, `actionlint`, `lockfile`, `dependabot-policy`.
 
 Branch protection continues to require up-to-date branches and enforce the
 requirements for administrators. Existing review requirements are preserved;

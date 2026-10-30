@@ -34,6 +34,8 @@ REQUIRED_CHECKS = frozenset(
         "Examples drift",
         "lockfile",
         "Tests / Python 3.12",
+        "Tests / Python 3.13",
+        "Tests / Python 3.14",
         "actionlint",
     }
 )
