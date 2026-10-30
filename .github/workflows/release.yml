@@ -51,7 +51,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
-          version: 0.11.16
+          version: 0.13.6
           enable-cache: true
           prune-cache: false
 
@@ -97,7 +97,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
-          version: 0.11.16
+          version: 0.13.6
 
       - name: Set up Python
         run: uv python install 3.12
@@ -250,7 +250,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
-          version: 0.11.16
+          version: 0.13.6
 
       - name: Fetch frozen release candidate
         uses: ./.github/actions/fetch-release-candidate
@@ -320,7 +320,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
-          version: 0.11.16
+          version: 0.13.6
 
       - name: Set up Python
         run: uv python install 3.12
@@ -420,7 +420,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
-          version: 0.11.16
+          version: 0.13.6
 
       - name: Set up Python
         run: uv python install 3.12
@@ -592,7 +592,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
-          version: 0.11.16
+          version: 0.13.6
 
       - name: Set up Python
         run: uv python install 3.12
@@ -667,7 +667,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
-          version: 0.11.16
+          version: 0.13.6
 
       - name: Fetch frozen release candidate
         uses: ./.github/actions/fetch-release-candidate

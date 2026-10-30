@@ -18,6 +18,10 @@ ABSENT = '''  × No solution found when resolving dependencies:
       sdr-grader==1.3.0, we can conclude that your requirements are
       unsatisfiable.
 '''
+# Captured from uv 0.13.6 running the installer's exact command against PyPI.
+ABSENT_0_13 = '''error: No solution found when resolving dependencies
+  cause: Because there is no version of sdr-grader==1.3.0 and you require sdr-grader==1.3.0, we can conclude that your requirements are unsatisfiable.
+'''
 
 
 def exercise(tmp_path, outputs, validate=lambda: None):
@@ -85,11 +89,23 @@ def test_timeout_never_retries_and_retains_sanitized_diagnostic(tmp_path):
     assert 'secret' not in evidence and 'timeout' in evidence
 
 
-def test_observed_uv_environment_preamble_is_supported():
+@pytest.mark.parametrize('absent', [ABSENT, ABSENT_0_13])
+def test_observed_uv_environment_preamble_is_supported(absent):
     assert installer.version_not_discovered(
-        'Using Python 3.12.3 environment at: /home/runner/work/_temp/public-venv\n' + ABSENT,
+        'Using Python 3.12.3 environment at: /home/runner/work/_temp/public-venv\n' + absent,
         '1.3.0',
     )
+
+
+@pytest.mark.parametrize('diagnostic', [
+    ABSENT_0_13.replace('1.3.0', '1.3.1', 1),
+    ABSENT_0_13.replace('error: ', 'warning: '),
+    ABSENT_0_13.replace('cause: ', ''),
+    ABSENT_0_13 + '  hint: network unreachable\n',
+    ABSENT.replace('×', 'error:'),
+])
+def test_near_miss_uv_diagnostics_are_fatal(diagnostic):
+    assert not installer.version_not_discovered(diagnostic, '1.3.0')
 
 
 def test_real_hung_subprocess_is_reaped():

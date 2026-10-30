@@ -31,15 +31,21 @@ def sanitize(value: str | bytes | None) -> str:
 
 
 def version_not_discovered(output: str, version: str) -> bool:
-    """Only the uv 0.11.16 grammar observed in run 34165517834 is retriable."""
+    """Only uv's exact "no such version" diagnostic is retriable.
+
+    The 0.11.16 form was observed in run 34165517834; uv 0.12+ prints the same
+    sentence with ``error:``/``cause:`` markers and no trailing colon.
+    """
     output = re.sub(r'^Using Python [0-9.]+ environment at: [^\n]+\n', '', output)
     normalized = ' '.join(output.split())
-    expected = (
-        '× No solution found when resolving dependencies: '
-        f'╰─▶ Because there is no version of sdr-grader=={version} and you require '
+    cause = (
+        f'Because there is no version of sdr-grader=={version} and you require '
         f'sdr-grader=={version}, we can conclude that your requirements are unsatisfiable.'
     )
-    return normalized == expected
+    return normalized in {
+        f'× No solution found when resolving dependencies: ╰─▶ {cause}',
+        f'error: No solution found when resolving dependencies cause: {cause}',
+    }
 
 
 def run_process(command: list[str], *, capture_output: bool, text: bool,

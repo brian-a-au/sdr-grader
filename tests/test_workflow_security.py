@@ -250,7 +250,7 @@ def test_release_workflow_pins_validation_and_builds_candidate_only_once():
         text,
     )
     assert setup_blocks
-    assert all("version: 0.11.16" in block for block in setup_blocks)
+    assert all("version: 0.13.6" in block for block in setup_blocks)
 
     for job_name in (
         "install-smoke",
