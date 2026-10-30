@@ -58,6 +58,8 @@ Record the successful run URLs for these stable checks:
 - [ ] `Lint`: `________`
 - [ ] `Tests / Python 3.11`: `________`
 - [ ] `Tests / Python 3.12`: `________`
+- [ ] `Tests / Python 3.13`: `________`
+- [ ] `Tests / Python 3.14`: `________`
 - [ ] `Examples drift`: `________`
 - [ ] `Version identity`: `________`
 - [ ] `Dependency review`: `________`
