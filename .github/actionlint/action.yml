@@ -1,0 +1,12 @@
+name: actionlint
+description: Lint workflows with the digest-pinned actionlint image.
+
+runs:
+  using: docker
+  image: Dockerfile
+  # GitHub added this read/none scope after actionlint 1.7.12.
+  # test_workflow_security.py validates its values; other errors stay fatal.
+  # https://github.com/rhysd/actionlint/issues/713
+  args:
+    - -ignore
+    - ^unknown\x20permission\x20scope\x20\x22vulnerability-alerts\x22\.\x20all\x20available\x20permission\x20scopes\x20are\x20.+$

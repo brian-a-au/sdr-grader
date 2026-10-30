@@ -13,9 +13,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 WORKFLOWS = REPO_ROOT / ".github" / "workflows"
 ACTIONS = REPO_ROOT / ".github" / "actions"
 FULL_SHA_USE = re.compile(
-    r"^\s*(?:-\s+)?uses:\s+"
-    r"(?:[^@\s]+@[0-9a-f]{40}|docker://[^@\s]+@sha256:[0-9a-f]{64})"
-    r"(?:\s+#\s+.+)?$",
+    r"^\s*(?:-\s+)?uses:\s+[^@\s]+@[0-9a-f]{40}(?:\s+#\s+.+)?$",
     re.MULTILINE,
 )
 ANY_USE = re.compile(
@@ -410,15 +408,29 @@ def test_release_soak_is_frozen_least_privilege_and_self_terminating():
     assert "issues: write" in finalize
 
 
-def test_actionlint_exception_is_one_container_argument_and_scope_specific():
+def test_actionlint_image_is_digest_pinned_and_tracked_by_dependabot():
     workflow = yaml.safe_load(_workflow_text("lint.yml"))
-    step = next(
-        step
-        for step in workflow["jobs"]["actionlint"]["steps"]
-        if step.get("uses", "").startswith("docker://rhysd/actionlint:")
+    uses = [step.get("uses") for step in workflow["jobs"]["actionlint"]["steps"]]
+    assert "./.github/actionlint" in uses
+    dockerfile = (REPO_ROOT / ".github" / "actionlint" / "Dockerfile").read_text(encoding="utf-8")
+    images = re.findall(r"^FROM\s+(\S+)\s*$", dockerfile, re.MULTILINE)
+    assert len(images) == 1
+    assert re.fullmatch(r"rhysd/actionlint:\d+\.\d+\.\d+@sha256:[0-9a-f]{64}", images[0])
+    dependabot = yaml.safe_load(
+        (REPO_ROOT / ".github" / "dependabot.yml").read_text(encoding="utf-8")
     )
+    assert {"package-ecosystem": "docker", "directory": "/.github/actionlint"}.items() <= next(
+        update for update in dependabot["updates"] if update["package-ecosystem"] == "docker"
+    ).items()
+
+
+def test_actionlint_exception_is_one_container_argument_and_scope_specific():
+    action = yaml.safe_load(
+        (REPO_ROOT / ".github" / "actionlint" / "action.yml").read_text(encoding="utf-8")
+    )
+    assert action["runs"]["using"] == "docker"
     # Docker action args are process arguments, not shell text: avoid quoting.
-    args = step["with"]["args"].split()
+    args = action["runs"]["args"]
     assert len(args) == 2 and args[0] == "-ignore"
     assert not any(quote in args[1] for quote in ("'", '"'))
     diagnostic = (
@@ -451,7 +463,7 @@ def test_codeql_dependency_updates_and_governance_files_are_configured():
         (REPO_ROOT / ".github" / "dependabot.yml").read_text(encoding="utf-8")
     )
     ecosystems = {update["package-ecosystem"] for update in dependabot["updates"]}
-    assert ecosystems == {"github-actions", "uv", "pip"}
+    assert ecosystems == {"github-actions", "uv", "pip", "docker"}
     pip = next(u for u in dependabot["updates"] if u["package-ecosystem"] == "pip")
     assert pip["directory"] == "/requirements"
     assert pip["open-pull-requests-limit"] == 0

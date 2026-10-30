@@ -14,11 +14,15 @@ REQUIRED_JOBS = completion.REQUIRED_JOBS
 EXPECTED_JOBS = {
     'Artifact smoke / Python 3.11',
     'Artifact smoke / Python 3.12',
+    'Artifact smoke / Python 3.13',
+    'Artifact smoke / Python 3.14',
     'Frozen wheel Claude plugin smoke',
     'Verify tagged README before publication',
     'Verify PyPI publication before announcement',
     'Public endpoints / Python 3.11',
     'Public endpoints / Python 3.12',
+    'Public endpoints / Python 3.13',
+    'Public endpoints / Python 3.14',
 }
 CompletionError = completion.CompletionError
 list_jobs = completion.list_jobs
@@ -92,7 +96,7 @@ def test_incomplete_or_ambiguous_evidence_fails(change):
     elif change == 'duplicate':
         entries.append(dict(entries[-1], id=99))
     elif change == 'unknown':
-        entries[-1]['name'] = 'Public endpoints / Python 3.13'
+        entries[-1]['name'] = 'Public endpoints / Python 3.15'
     else:
         key, value = {'sha': ('head_sha', 'c' * 40), 'run': ('run_id', 43),
                       'pending': ('status', 'queued'), 'attempt': ('run_attempt', 3)}[change]

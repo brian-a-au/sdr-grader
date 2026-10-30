@@ -14,6 +14,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+from concurrent.futures import ThreadPoolExecutor
 from itertools import groupby
 from pathlib import Path
 from typing import Any
@@ -901,10 +902,16 @@ def _verify_policy_correctness_case(name, baseline, candidate, legacy_contract, 
 def _run_correctness_matrix(*, environment_root, environment, work_root, fixture_root):
     console, python = _environment_paths(environment_root)
     cases = json.loads((fixture_root / "correctness_1_3/cases.json").read_text())
-    return {case["name"]: _run_correctness_case(
-        console=console, python=python, environment=environment,
-        case_root=work_root / case["name"], fixture_root=fixture_root, case=case)
-        for case in cases}
+
+    def run(case):
+        return _run_correctness_case(
+            console=console, python=python, environment=environment,
+            case_root=work_root / case["name"], fixture_root=fixture_root, case=case)
+
+    # Each case owns its directory and subprocesses, so cases run concurrently;
+    # map() keeps contract order and re-raises the first failing case.
+    with ThreadPoolExecutor(max_workers=os.cpu_count() or 1) as executor:
+        return {case["name"]: outcome for case, outcome in zip(cases, executor.map(run, cases), strict=True)}
 
 
 def _verify_default_aa_admin_full_evidence(
