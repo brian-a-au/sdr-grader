@@ -40,6 +40,9 @@ REQUIRED_CHECKS = frozenset(
     }
 )
 REPOSITORY = "brian-a-au/sdr-grader"
+# Lockfile formats the pinned uv 0.11.16 reads and syncs. uv 0.12+ (Dependabot)
+# writes revision 5 on any relock; 0.11.16 writes 3. Either may replace the other.
+LOCK_REVISIONS = frozenset({3, 5})
 
 
 def gh_json(endpoint: str, payload: dict[str, Any] | None = None) -> Any:
@@ -130,9 +133,9 @@ def _valid_artifact(artifact: dict[str, Any], name: str, version: str, *, wheel:
 
 def review_locks(before: dict[str, Any], after: dict[str, Any]) -> tuple[bool, str]:
     """Conservatively approve only direct dev patches with no other changes."""
-    if {key: value for key, value in before.items() if key != "package"} != {
-        key: value for key, value in after.items() if key != "package"
-    }:
+    if {key: value for key, value in before.items() if key not in {"package", "revision"}} != {
+        key: value for key, value in after.items() if key not in {"package", "revision"}
+    } or not {before.get("revision"), after.get("revision")} <= LOCK_REVISIONS:
         return False, "Lockfile settings changed"
     old, new = _packages(before), _packages(after)
     if old.keys() != new.keys():

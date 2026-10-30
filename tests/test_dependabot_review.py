@@ -43,6 +43,7 @@ def package(name: str, version: str) -> dict:
 def locks() -> tuple[dict, dict]:
     before = {
         "version": 1,
+        "revision": 3,
         "requires-python": ">=3.11",
         "package": [
             {
@@ -122,6 +123,23 @@ def test_reject_allowlisted_package_if_used_at_runtime(locks, runtime_path):
         else:
             sdk["optional-dependencies"] = {"extra": [{"name": "ruff"}]}
     assert not review.review_locks(before, after)[0]
+
+
+@pytest.mark.parametrize(("before_revision", "after_revision"), [(3, 5), (5, 3), (5, 5)])
+def test_known_lock_revisions_may_replace_each_other(locks, before_revision, after_revision):
+    before, after = locks
+    before["revision"], after["revision"] = before_revision, after_revision
+    assert review.review_locks(before, after) == (True, "ruff 0.16.8 → 0.16.9")
+
+
+@pytest.mark.parametrize("after_revision", [None, 2, 4, 6, "5"])
+def test_unknown_or_missing_lock_revision_is_rejected(locks, after_revision):
+    before, after = locks
+    if after_revision is None:
+        del after["revision"]
+    else:
+        after["revision"] = after_revision
+    assert review.review_locks(before, after) == (False, "Lockfile settings changed")
 
 
 @pytest.mark.parametrize("change", ["settings", "addition", "removal", "dependencies", "registry"])
