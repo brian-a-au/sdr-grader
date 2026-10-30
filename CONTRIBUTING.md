@@ -93,7 +93,8 @@ Choose checks that cover the changed contract: run focused tests for the
 affected adapter, rule, renderer, or script while iterating, and run the full
 suite with coverage before marking a code change ready. For prose-only changes,
 check links and documented commands; run documentation tests when applicable.
-CI tests Python 3.11 and 3.12 and runs Ruff lint; it currently has no format gate.
+CI tests Python 3.11 and 3.12, enforces the coverage gate on 3.12, and runs Ruff
+lint; it currently has no format gate.
 Limit local formatting to changed Python files.
 
 Changes that can affect generated output also need the
