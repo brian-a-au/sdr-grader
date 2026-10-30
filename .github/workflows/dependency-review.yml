@@ -6,6 +6,11 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  # Superseded PR pushes cancel; every main push runs to completion.
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   dependency-review:
     name: Dependency review
