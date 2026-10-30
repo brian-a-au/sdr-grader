@@ -82,7 +82,8 @@ installed with the wheel.
 ```bash
 uv sync --locked --all-extras --dev  # set up the locked development environment
 uv run pytest                       # full test suite
-uv run pytest --cov=src/sdr_grader --cov-report=term  # CI coverage gate
+uv run pytest -n auto              # full suite across all CPU cores
+uv run pytest -n auto --cov=src/sdr_grader --cov-report=term  # CI coverage gate
 uv run ruff check                   # lint (also run in CI)
 uv run ruff format --check <paths>   # check formatting of changed Python files
 uv run ruff format <paths>           # auto-format those files
