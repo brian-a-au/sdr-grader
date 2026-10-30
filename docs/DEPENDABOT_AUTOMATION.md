@@ -22,6 +22,9 @@ The reviewer parses the base and head lockfiles and requires:
   Transitive updates and new packages require manual review. Unchanged alternative
   platform/Python resolutions are retained exactly; runtime exclusion traverses
   every alternative. Changes to a multiply resolved package require manual review.
+  The one exception is the lockfile format `revision`: 3 and 5 may replace each
+  other, because Dependabot's uv (0.12 or newer) writes 5 on every relock, the
+  pinned uv 0.11.16 writes 3, and 0.11.16 reads both. Any other revision fails.
 - Artifacts use the expected PyPI URLs and filenames with SHA-256 hashes. Every
   URL, hash, and size must match PyPI's release metadata; yanked files are rejected.
 
