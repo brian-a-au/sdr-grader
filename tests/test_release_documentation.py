@@ -257,7 +257,7 @@ def test_pull_request_package_gate_is_read_only_isolated_and_complete():
         if str(step.get("uses", "")).startswith("actions/checkout@")
     )
     assert checkout["with"]["persist-credentials"] is False
-    assert by_name["Install uv"]["with"]["version"] == "0.11.16"
+    assert by_name["Install uv"]["with"]["version"] == "0.13.6"
     assert "--require-hashes" in by_name["Install release validators"]["run"]
     assert "check --strict dist/*" in by_name["Validate public distributions"]["run"]
     assert "scripts/verify_release_artifacts.py" in by_name["Validate public distributions"]["run"]
@@ -518,7 +518,7 @@ def test_public_ci_example_uses_reviewed_pins_and_opt_in_artifacts():
         step for step in steps if str(step.get("uses", "")).startswith("actions/checkout@")
     )
     assert checkout["with"]["persist-credentials"] is False
-    assert by_name["Install uv"]["with"]["version"] == "0.11.16"
+    assert by_name["Install uv"]["with"]["version"] == "0.13.6"
     assert by_name["Install sdr-grader"]["run"] == "uv tool install sdr-grader==1.6.1"
 
     grader_command = by_name["Run grader"]["run"].replace("\\\n", " ")

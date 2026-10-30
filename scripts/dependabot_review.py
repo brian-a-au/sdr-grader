@@ -40,8 +40,9 @@ REQUIRED_CHECKS = frozenset(
     }
 )
 REPOSITORY = "brian-a-au/sdr-grader"
-# Lockfile formats the pinned uv 0.11.16 reads and syncs. uv 0.12+ (Dependabot)
-# writes revision 5 on any relock; 0.11.16 writes 3. Either may replace the other.
+# Lockfile formats the pinned uv reads and syncs. uv 0.12+ (CI and Dependabot)
+# writes revision 5; contributors on uv 0.11 still write 3. Either may replace
+# the other.
 LOCK_REVISIONS = frozenset({3, 5})
 
 

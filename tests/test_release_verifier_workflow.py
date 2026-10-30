@@ -287,8 +287,8 @@ def test_index_transport_preserves_installer_budget_and_validation(
             body = response.read().decode()
         calls.append(body)
         if '0.0.0' in body:
-            diagnostic = ('× No solution found when resolving dependencies:\n'
-                          f'╰─▶ Because there is no version of sdr-grader=={existing.VERSION} and you require '
+            diagnostic = ('error: No solution found when resolving dependencies\n'
+                          f'  cause: Because there is no version of sdr-grader=={existing.VERSION} and you require '
                           f'sdr-grader=={existing.VERSION}, we can conclude that your requirements are unsatisfiable.')
             return subprocess.CompletedProcess(command, 1, '', diagnostic)
         assert _wheel.name in body

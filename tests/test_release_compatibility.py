@@ -33,7 +33,7 @@ def test_compatibility_baseline_and_normalization_are_explicit_and_narrow():
 
     assert module.BASELINE_TAG == "v1.2.2"
     assert module.BASELINE_COMMIT == "1978eb6d6e8d865e66f2dd464624db9a377417de"
-    assert module.UV_VERSION == "0.11.16"
+    assert module.UV_VERSION == "0.13.6"
     assert module.NORMALIZED_COPY_FIELDS == (
         "methodology.paragraphs",
         "distribution.charts[].label",
