@@ -133,6 +133,15 @@ grade and review the resulting findings before using them as a gate.
 Do not silence the warning by editing the snapshot's version field; that would
 make its provenance inaccurate.
 
+## Degraded AA fetch warning
+
+`warning [aa-fetch-status]` means aa_auto_sdr recorded in the snapshot's
+`fetch_status` that it could not fully fetch a component family. Grading still
+runs, and the grade is computed the same way. When the classifications fetch
+is degraded, classification tags may be missing from the snapshot, so findings
+about untagged dimensions can be overstated. Regenerate the snapshot when the
+Adobe API is healthy before you use the grade as a gate.
+
 ## Output-path error
 
 HTML and JSON destinations must resolve to different regular files. A symlink,
@@ -152,8 +161,11 @@ sdr-grader snapshot.json --output reports\grade.html --json reports\grade.json
 ```
 
 The grader creates missing parent directories, but it cannot bypass operating
-system permissions. Avoid network shares while diagnosing a write failure, and
-do not choose either input snapshot as an output destination.
+system permissions. Avoid network shares while diagnosing a write failure.
+Do not choose an input file as an output destination. This includes a snapshot
+inside a snapshot directory or trend directory and a YAML file inside a
+`--rubric` directory. The grader rejects these with "collides with an input
+path" and exit code 1.
 
 ## Privacy and safe diagnostics
 

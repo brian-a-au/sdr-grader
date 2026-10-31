@@ -380,8 +380,8 @@ def _minimal_snapshot(*, dim_tags, metric_tags=None):
         ([{"name": "", "id": "tag-id"}], ["tag-id"]),
         ([{}, {"name": ""}, {"id": ""}], []),
         (
-            ["first", 7, None, False, {"name": "Named"}, {"id": "last"}],
-            ["first", "7", "None", "False", "Named", "last"],
+            ["first", 7, None, False, "", {"name": "Named"}, {"id": "last"}],
+            ["first", "Named", "last"],
         ),
     ],
     ids=["strings", "named-object", "id-fallback", "empty-objects", "mixed-order"],
@@ -732,7 +732,7 @@ def test_definition_parser_wraps_json_recursion_error(monkeypatch):
     monkeypatch.setattr(
         cja.json,
         "loads",
-        lambda _value: (_ for _ in ()).throw(RecursionError("decoder recursion")),
+        lambda _value, **_kwargs: (_ for _ in ()).throw(RecursionError("decoder recursion")),
     )
 
     with pytest.raises(InvalidSnapshotError, match="definition JSON exceeds decoder limits"):
@@ -745,7 +745,7 @@ def test_definition_parser_wraps_json_recursion_error(monkeypatch):
 def test_embedded_json_resource_errors_are_invalid_snapshot(monkeypatch, error):
     from sdr_grader.adapters import cja
 
-    monkeypatch.setattr(cja.json, "loads", lambda _value: (_ for _ in ()).throw(error))
+    monkeypatch.setattr(cja.json, "loads", lambda _value, **_kwargs: (_ for _ in ()).throw(error))
 
     for parser in (cja._parse_definition_json, cja._parse_tag_list, cja._parse_ref_list):
         with pytest.raises(InvalidSnapshotError, match="JSON exceeds decoder limits"):
@@ -859,7 +859,7 @@ def test_component_normalizers_preserve_owner_description_polarity_and_governanc
     assert component.description is None
     assert component.polarity == "negative"
     assert component.owner == "owner@example.com"
-    assert component.tags == ["governed", "7"]
+    assert component.tags == ["governed"]
     assert component.platform_specific == {"component_id": "variables/d1", "schema": "web"}
 
     assert _normalize_owner(7) is None
@@ -933,6 +933,74 @@ def test_oversized_integer_numeric_field_uses_default_cja(messy_snapshot) -> Non
     assert adapt(snap).calculated_metrics[0].complexity_score == expected
 
 
+@pytest.mark.parametrize(
+    ("parser", "value", "message"),
+    [
+        ("cja._parse_definition_json", '{"context": "hits", "context": "visitors"}', "definition"),
+        ("cja._parse_tag_list", '[{"name": "a", "name": "b"}]', "tag list"),
+        ("cja._parse_ref_list", '[{"id": "a", "id": "b"}]', "reference list"),
+        ("cja._inventory_ref_list", '[{"id": "a", "id": "b"}]', "reference list"),
+        ("aa._parse_tag_list", '[{"name": "a", "name": "b"}]', "tag list"),
+    ],
+)
+def test_embedded_json_rejects_duplicate_keys_like_the_outer_document(parser, value, message):
+    from sdr_grader.adapters import aa, cja
+
+    module_name, function_name = parser.split(".")
+    function = getattr({"aa": aa, "cja": cja}[module_name], function_name)
+
+    with pytest.raises(
+        InvalidSnapshotError, match=f"^{message} JSON contains duplicate object keys$"
+    ):
+        function(value)
+
+
+_NAN = float("nan")
+
+
+@pytest.mark.parametrize("missing", [_NAN, float("inf"), float("-inf")])
+def test_non_finite_names_and_types_count_as_missing(missing):
+    from sdr_grader.adapters import cja
+
+    component = cja._component_from_record(
+        {"id": "metrics/m1", "name": missing, "title": "Title", "type": missing}, "metric"
+    )
+    derived = cja._derived_field_from_record({"component_id": "variables/df1", "component_name": missing})
+    calc = cja._calc_metric_from_record({"metric_id": "cm1", "metric_name": missing})
+    segment = cja._segment_from_record({"segment_id": "s1", "segment_name": missing})
+
+    assert (component.name, component.data_type) == ("Title", None)
+    assert derived.name == "variables/df1"
+    assert calc.name == "cm1"
+    assert segment.name == "s1"
+
+
+def test_components_with_only_scalar_tags_count_as_untagged_for_gov_005():
+    from sdr_grader.rules.checks.governance import check_missing_tags
+    from sdr_grader.rules.engine import RuleContext
+
+    impl = adapt(
+        {
+            "metadata": {"Data View ID": "dv_x"},
+            "metrics": [{"id": f"metrics/m{i}", "name": f"M{i}", "tags": "[null, 7, false]"} for i in range(3)],
+            "dimensions": [{"id": "variables/d1", "name": "D1", "tags": ["governed"]}],
+        }
+    )
+    ctx = RuleContext(
+        rule_id="GOV-005",
+        rule_name="Missing tags",
+        severity="medium",
+        category="governance",
+        platforms=["cja"],
+        params={"threshold": 0.5},
+    )
+
+    findings = check_missing_tags(impl, ctx)
+
+    assert [finding.id for finding in findings] == ["GOV-005"]
+    assert "3 of 4 components" in str(findings[0].body)
+
+
 def test_segment_nesting_depth_counts_containers_like_the_aa_adapter(messy_impl: Implementation) -> None:
     from sdr_grader.adapters.aa import _analyze_segment_definition
 
@@ -974,4 +1042,3 @@ def test_segment_nesting_depth_ignores_predicate_and_step_levels(definition, exp
 def test_segment_without_definition_keeps_the_exported_nesting_depth() -> None:
     assert _segment_from_record({"segment_id": "s1", "nesting_depth": 4}).nesting_depth == 4
     assert _segment_from_record({"segment_id": "s1", "nesting_depth": 4, "definition_json": "{}"}).nesting_depth == 4
-

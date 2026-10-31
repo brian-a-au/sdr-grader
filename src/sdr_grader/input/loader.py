@@ -54,8 +54,15 @@ def load_snapshot(path_or_token: str, *, at: str | None = None) -> tuple[dict[st
 
 
 def _load_stdin() -> tuple[dict[str, Any], str]:
+    # Decode stdin bytes as UTF-8 with an optional BOM, like file input,
+    # instead of the locale encoding of sys.stdin. A text-only stream (no
+    # .buffer) is already decoded; drop one BOM there for the same result.
     try:
-        raw = sys.stdin.read()
+        buffer = getattr(sys.stdin, "buffer", None)
+        if buffer is not None:
+            raw = buffer.read().decode("utf-8-sig")
+        else:
+            raw = sys.stdin.read().removeprefix("\ufeff")
     except UnicodeError:
         raise InvalidSnapshotError("stdin is not valid UTF-8") from None
     if not raw.strip():
@@ -103,8 +110,12 @@ def _load_from_directory(directory: Path, *, at: str | None) -> tuple[dict[str, 
 
 def list_snapshot_candidates(directory: Path) -> list[Path]:
     """Return every ``*.json`` directory candidate in stable path order."""
+    # iterdir() raises when the directory cannot be read; glob() returns no
+    # matches instead, which reported an unreadable directory as empty.
     try:
-        return sorted(p for p in Path(directory).glob("*.json") if p.is_file())
+        return sorted(
+            p for p in Path(directory).iterdir() if p.name.endswith(".json") and p.is_file()
+        )
     except OSError as exc:
         raise InvalidSnapshotError(
             f"could not inspect snapshot directory {directory}: {exc}"

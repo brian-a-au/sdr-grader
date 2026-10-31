@@ -255,6 +255,9 @@ shared helpers must be mirrored to the sibling repository in the same cycle:
   resource failures raise `InvalidSnapshotError`. Every successful decode is
   limited to depth 100 and 10,000 nodes before shape fallback or coercion;
   this decoded-structure guard is part of the required sibling parity behavior.
+  A tag list keeps non-empty strings and the `name` (or else `id`) of tag
+  objects. Null, numbers, booleans and empty strings are dropped, so they never
+  count a component as tagged.
 - Snapshot structure validation rejects surrogate code points in string values
   and mapping keys before normalization. Embedded JSON helpers repeat that
   Unicode-scalar check after decoding, when escaped surrogates first materialize.

@@ -8,7 +8,7 @@ from typing import Any
 from sdr_grader.core.exceptions import InvalidSnapshotError
 
 MAX_STRUCTURE_DEPTH = 100
-MAX_STRUCTURE_NODES = 250_000
+MAX_STRUCTURE_NODES = 1_000_000
 MAX_DEFINITION_NODES = 10_000
 _SURROGATE_RE = re.compile(r"[\ud800-\udfff]")
 
@@ -73,7 +73,8 @@ def validate_unicode_scalars(value: Any, *, label: str) -> None:
 
 
 def _validate_string(value: Any, *, label: str) -> None:
-    if isinstance(value, str) and _SURROGATE_RE.search(value):
+    # Surrogates are never ASCII, and isascii() is O(1) on CPython strings.
+    if isinstance(value, str) and not value.isascii() and _SURROGATE_RE.search(value):
         raise InvalidSnapshotError(f"{label} contains a Unicode surrogate code point")
 
 

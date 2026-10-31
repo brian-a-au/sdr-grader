@@ -13,7 +13,7 @@ from pathlib import Path
 from sdr_grader.core.exceptions import InvalidSnapshotError
 from sdr_grader.core.grader import grade
 from sdr_grader.core.models import Implementation
-from sdr_grader.input.adapt import adapt_snapshot
+from sdr_grader.input.adapt import adapt_snapshot, input_warnings
 from sdr_grader.input.history import same_history_identity
 from sdr_grader.input.loader import (
     _extract_timestamp,
@@ -57,6 +57,7 @@ def build_trend_report(
             "trend reports require timestamped filenames "
             "(e.g. snapshot_2026-04-25.json)."
         )
+    timestamped_candidates = _one_name_per_file(timestamped_candidates)
 
     points: list[TrendPoint] = []
     first_impl: Implementation | None = None
@@ -93,7 +94,12 @@ def build_trend_report(
         impl.history_present = history_present
         report = grade(impl, rubric, suppression=suppression)
         points.append(
-            TrendPoint(timestamp=timestamp, source=str(path), report=report)
+            TrendPoint(
+                timestamp=timestamp,
+                source=str(path),
+                report=report,
+                input_warnings=tuple(input_warnings(impl)),
+            )
         )
 
     points.sort(key=lambda p: p.timestamp)
@@ -106,3 +112,23 @@ def build_trend_report(
         pack_version=rubric.version,
         points=points,
     )
+
+
+def _one_name_per_file(
+    candidates: list[tuple[datetime, Path]],
+) -> list[tuple[datetime, Path]]:
+    """Keep one entry per resolved file, at its earliest (timestamp, path).
+
+    Several timestamped names for one file (e.g. a symlink) are one snapshot,
+    as in directory mode. Kept entries stay in their original order.
+    """
+    try:
+        resolved = [path.resolve() for _timestamp, path in candidates]
+    except (OSError, RuntimeError) as exc:
+        raise InvalidSnapshotError(f"could not inspect a trend snapshot path: {exc}") from exc
+    first: dict[Path, tuple[datetime, Path]] = {}
+    for entry, identity in zip(candidates, resolved, strict=True):
+        if identity not in first or entry < first[identity]:
+            first[identity] = entry
+    kept = set(first.values())
+    return [entry for entry in candidates if entry in kept]

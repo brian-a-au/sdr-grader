@@ -111,3 +111,18 @@ def test_platform_agnostic_rule_applies_to_any_implementation():
         category="schema_hygiene",
     )
     assert _applies_to_platform(rule, impl(platform="cja")) is True
+
+
+@pytest.mark.parametrize("primary", [None, {}, "", []])
+def test_detection_reads_the_same_report_suite_key_as_the_adapter(primary):
+    # The adapter uses `report_suite` whenever the key is present, so
+    # detection must not fall back to `reportSuite` and call it AA.
+    snapshot = {
+        "report_suite": primary,
+        "reportSuite": {"rsid": "rs1", "name": "Main suite"},
+        "dimensions": [],
+        "metrics": [],
+    }
+
+    with pytest.raises(UnknownPlatformError, match="could not auto-detect platform"):
+        detect_platform(snapshot)

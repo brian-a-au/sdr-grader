@@ -30,6 +30,7 @@ from sdr_grader.core.structure_limits import (
     validate_unicode_scalars,
 )
 from sdr_grader.core.timeparse import select_snapshot_timestamp
+from sdr_grader.input.json_io import DuplicateJSONKeyError, unique_object
 
 
 def adapt(snapshot: dict[str, Any], *, source: str = "<unknown>") -> Implementation:
@@ -191,9 +192,9 @@ def _component_from_record(
             "(required identifier key: 'id', 'component_id', or 'metric_id')"
         )
 
-    name = record.get("name") or record.get("title") or component_id
+    name = _present(record.get("name")) or _present(record.get("title")) or component_id
     description = _normalize_description(record.get("description"))
-    data_type = record.get("dataType") or record.get("type")
+    data_type = _present(record.get("dataType")) or _present(record.get("type"))
     polarity = _normalize_polarity(record.get("polarity"))
 
     handled = {
@@ -253,7 +254,7 @@ def _derived_field_from_record(record: dict[str, Any], *, index: int | None = No
             "(required identifier key: 'component_id' or 'id')"
         )
 
-    name = record.get("component_name") or record.get("name") or component_id
+    name = _present(record.get("component_name")) or _present(record.get("name")) or component_id
     description = _normalize_description(record.get("description"))
     handled = {
         "component_id",
@@ -313,7 +314,7 @@ def _calc_metric_from_record(
             "(required identifier key: 'metric_id' or 'id')"
         )
 
-    name = record.get("metric_name") or record.get("name") or metric_id
+    name = _present(record.get("metric_name")) or _present(record.get("name")) or metric_id
     description = _normalize_description(record.get("description"))
     formula = _parse_definition_json(
         record.get("definition_json"),
@@ -467,9 +468,13 @@ def _inventory_ref_list(value: Any) -> list[str]:
             return []
         if value[0] in '[{"' or value in {"null", "true", "false"}:
             try:
-                value = json.loads(value)
+                value = json.loads(value, object_pairs_hook=unique_object)
             except json.JSONDecodeError:
                 return []
+            except DuplicateJSONKeyError:
+                raise InvalidSnapshotError(
+                    "reference list JSON contains duplicate object keys"
+                ) from None
             except (ValueError, RecursionError) as exc:
                 raise InvalidSnapshotError("reference list JSON exceeds decoder limits") from exc
             validate_decoded_structure(value, label="reference list")
@@ -534,7 +539,7 @@ def _segment_from_record(record: dict[str, Any], *, index: int | None = None) ->
             "(required identifier key: 'segment_id' or 'id')"
         )
 
-    name = record.get("segment_name") or record.get("name") or segment_id
+    name = _present(record.get("segment_name")) or _present(record.get("name")) or segment_id
     description = _normalize_description(record.get("description"))
     definition = _parse_definition_json(
         record.get("definition_json"),
@@ -731,9 +736,11 @@ def _parse_definition_json(value: Any, *, label: str = "definition") -> dict[str
         parsed = value
     elif isinstance(value, str):
         try:
-            parsed = json.loads(value)
+            parsed = json.loads(value, object_pairs_hook=unique_object)
         except json.JSONDecodeError:
             return {}
+        except DuplicateJSONKeyError:
+            raise InvalidSnapshotError(f"{label} JSON contains duplicate object keys") from None
         except (ValueError, RecursionError) as exc:
             raise InvalidSnapshotError(f"{label} JSON exceeds decoder limits") from exc
         validate_unicode_scalars(parsed, label=label)
@@ -788,9 +795,11 @@ def _parse_tag_list(value: Any) -> list[str]:
         return _tag_names(value)
     if isinstance(value, str):
         try:
-            parsed = json.loads(value)
+            parsed = json.loads(value, object_pairs_hook=unique_object)
         except json.JSONDecodeError:
             return []
+        except DuplicateJSONKeyError:
+            raise InvalidSnapshotError("tag list JSON contains duplicate object keys") from None
         except (ValueError, RecursionError) as exc:
             raise InvalidSnapshotError("tag list JSON exceeds decoder limits") from exc
         validate_decoded_structure(parsed, label="tag list")
@@ -802,14 +811,17 @@ def _parse_tag_list(value: Any) -> list[str]:
 
 
 def _tag_names(values: list[Any]) -> list[str]:
-    """Keep string tags and reduce API tag objects to their useful identity."""
+    """Keep string tags and reduce API tag objects to their useful identity.
+
+    Null, numbers, booleans and empty strings are not tags. Turning them into
+    "None", "7" or "False" would count an untagged component as tagged.
+    """
     tags = []
     for value in values:
         if isinstance(value, dict):
             value = value.get("name") or value.get("id")
-            if not isinstance(value, str) or not value:
-                continue
-        tags.append(str(value))
+        if isinstance(value, str) and value:
+            tags.append(value)
     return tags
 
 
@@ -822,9 +834,13 @@ def _parse_ref_list(value: Any) -> list[str]:
         return [str(t) for t in value]
     if isinstance(value, str):
         try:
-            parsed = json.loads(value)
+            parsed = json.loads(value, object_pairs_hook=unique_object)
         except json.JSONDecodeError:
             return []
+        except DuplicateJSONKeyError:
+            raise InvalidSnapshotError(
+                "reference list JSON contains duplicate object keys"
+            ) from None
         except (ValueError, RecursionError) as exc:
             raise InvalidSnapshotError("reference list JSON exceeds decoder limits") from exc
         validate_decoded_structure(parsed, label="reference list")
@@ -832,6 +848,13 @@ def _parse_ref_list(value: Any) -> list[str]:
         if isinstance(parsed, list):
             return [str(t) for t in parsed]
     return []
+
+
+def _present(value: Any) -> Any:
+    """Treat a non-finite float as missing; pandas writes NaN for empty cells."""
+    if isinstance(value, float) and not math.isfinite(value):
+        return None
+    return value
 
 
 def _safe_float(value: Any, default: float = 0.0) -> float:

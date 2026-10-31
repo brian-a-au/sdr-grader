@@ -16,7 +16,7 @@ from sdr_grader.cli.exit_codes import (
     RUNTIME_ERROR,
     SUCCESS,
 )
-from sdr_grader.cli.main import main
+from sdr_grader.cli.main import BUNDLED_PACKS_DIR, main
 from sdr_grader.core.exceptions import UnknownPlatformError
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -459,6 +459,44 @@ def test_cli_rejects_output_colliding_with_snapshot(tmp_path, capsys):
     err = capsys.readouterr().err
     assert "collides with an input path" in err
     assert "Wrote " not in err
+
+
+def _snapshot_directory(tmp_path: Path) -> tuple[Path, Path, str]:
+    directory = tmp_path / "snapshots"
+    directory.mkdir()
+    original = (FIXTURES / "cja_snapshot_clean.json").read_text(encoding="utf-8")
+    (directory / "snapshot_2026-04-01.json").write_text(original, encoding="utf-8")
+    latest = directory / "snapshot_2026-04-03.json"
+    latest.write_text(original, encoding="utf-8")
+    return directory, latest, original
+
+
+@pytest.mark.parametrize("trend", [False, True])
+def test_cli_rejects_output_colliding_with_snapshot_in_directory(tmp_path, capsys, trend):
+    directory, latest, original = _snapshot_directory(tmp_path)
+
+    rc = main([str(directory), *(["--trend"] if trend else []), "--output", str(latest)])
+
+    assert rc == RUNTIME_ERROR
+    assert latest.read_text(encoding="utf-8") == original
+    err = capsys.readouterr().err
+    assert "collides with an input path" in err
+    assert "Wrote " not in err
+
+
+def test_cli_rejects_output_colliding_with_rubric_file(tmp_path, capsys):
+    pack = tmp_path / "pack"
+    shutil.copytree(BUNDLED_PACKS_DIR / "strict", pack)
+    meta = pack / "_meta.yaml"
+    original = meta.read_text(encoding="utf-8")
+
+    rc = main(
+        [str(FIXTURES / "cja_snapshot_clean.json"), "--rubric", str(pack), "--output", str(meta)]
+    )
+
+    assert rc == RUNTIME_ERROR
+    assert meta.read_text(encoding="utf-8") == original
+    assert "collides with an input path" in capsys.readouterr().err
 
 
 def test_cli_rejects_html_json_destination_alias(tmp_path, capsys):
@@ -1398,3 +1436,133 @@ def test_x_extension_keys_do_not_change_report_bytes(tmp_path):
 
     assert (tmp_path / "a.json").read_bytes() == (tmp_path / "b.json").read_bytes()
     assert (tmp_path / "a.html").read_bytes() == (tmp_path / "b.html").read_bytes()
+
+
+@pytest.mark.parametrize(
+    "flag",
+    [
+        "--dataview",
+        "--rsid",
+        "--at",
+        "--rubric",
+        "--pack",
+        "--output",
+        "--json",
+        "--suppress-config",
+        "--distribution-data",
+        "--fail-below",
+    ],
+)
+def test_cli_rejects_empty_option_values(tmp_path, capsys, monkeypatch, flag):
+    monkeypatch.chdir(tmp_path)
+    snapshot = [] if flag in ("--dataview", "--rsid") else [str(FIXTURES / "cja_snapshot_clean.json")]
+
+    rc = main([*snapshot, flag, ""])
+
+    assert rc == RUNTIME_ERROR
+    assert capsys.readouterr().err == f"error: {flag} requires a non-empty value\n"
+    assert list(tmp_path.iterdir()) == []
+
+
+@pytest.mark.parametrize(
+    "inputs",
+    [
+        [str(FIXTURES / "cja_snapshot_clean.json")],
+        ["-"],
+        ["--rsid", "prod.rsid"],
+        ["--dataview", "dv_prod"],
+    ],
+)
+def test_cli_rejects_at_outside_directory_mode(tmp_path, capsys, monkeypatch, inputs):
+    import sdr_grader.cli.main as cli_main
+
+    def _no_shell_out(*_args, **_kwargs):
+        raise AssertionError("--at must be rejected before shelling out")
+
+    monkeypatch.setattr(cli_main, "shell_aa", _no_shell_out)
+    monkeypatch.setattr(cli_main, "shell_cja", _no_shell_out)
+    monkeypatch.setattr("sys.stdin", __import__("io").StringIO("{}"))
+
+    rc = main([*inputs, "--at", "2026-04-25", "--output", str(tmp_path / "out.html")])
+
+    assert rc == RUNTIME_ERROR
+    assert capsys.readouterr().err == "error: --at requires a snapshot directory\n"
+    assert not (tmp_path / "out.html").exists()
+
+
+@pytest.mark.parametrize(
+    "pack",
+    ["../packs/strict", "__pycache__", "strict/", "./strict", "STRICT", "missing"],
+)
+def test_cli_pack_accepts_only_bundled_pack_names(tmp_path, capsys, pack):
+    rc = main([str(FIXTURES / "cja_snapshot_clean.json"), "--pack", pack, "--output", str(tmp_path / "o.html")])
+
+    assert rc == RUNTIME_ERROR
+    assert capsys.readouterr().err == (
+        f"error: bundled pack {pack!r} not found; choose one of: aa-admin, pragmatic, "
+        "strict, or pass --rubric PATH to use a custom pack.\n"
+    )
+    assert not (tmp_path / "o.html").exists()
+
+
+@pytest.mark.parametrize("pack", ["aa-admin", "pragmatic", "strict"])
+def test_cli_pack_loads_each_bundled_pack_by_name(tmp_path, pack):
+    snapshot = "aa_snapshot_clean.json" if pack == "aa-admin" else "cja_snapshot_clean.json"
+
+    rc = main([str(FIXTURES / snapshot), "--pack", pack, "--output", str(tmp_path / "o.html"), "--quiet"])
+
+    assert rc in (SUCCESS, GRADE_BELOW_THRESHOLD)
+
+
+def _aa_snapshot_with_degraded_classifications(path: Path) -> Path:
+    snapshot = json.loads((FIXTURES / "aa_snapshot_clean.json").read_text(encoding="utf-8"))
+    snapshot["fetch_status"] = {"classifications": {"status": "degraded", "expansion_level": None}}
+    path.write_text(json.dumps(snapshot), encoding="utf-8")
+    return path
+
+
+_DEGRADED_WARNING = (
+    "warning [aa-fetch-status]: aa_auto_sdr reported the classifications fetch as degraded; "
+    "classification tags may be missing, so findings about untagged dimensions can be overstated\n"
+)
+
+
+def test_cli_warns_about_a_degraded_aa_fetch_without_changing_the_report(tmp_path, capsys):
+    degraded = _aa_snapshot_with_degraded_classifications(tmp_path / "degraded.json")
+
+    rc_clean = main([str(FIXTURES / "aa_snapshot_clean.json"), "--json", str(tmp_path / "clean.json"), "--output", str(tmp_path / "clean.html"), "--quiet"])
+    capsys.readouterr()
+    rc = main([str(degraded), "--json", str(tmp_path / "degraded-report.json"), "--output", str(tmp_path / "degraded.html"), "--quiet"])
+
+    assert rc == rc_clean
+    assert capsys.readouterr().err == _DEGRADED_WARNING
+    clean_report = json.loads((tmp_path / "clean.json").read_text(encoding="utf-8"))
+    degraded_report = json.loads((tmp_path / "degraded-report.json").read_text(encoding="utf-8"))
+    for key in ("grade", "overall_pct", "categories", "findings"):
+        assert degraded_report[key] == clean_report[key]
+
+
+def test_cli_trend_warns_once_about_a_degraded_aa_fetch(tmp_path, capsys):
+    directory = tmp_path / "trend"
+    directory.mkdir()
+    _aa_snapshot_with_degraded_classifications(directory / "snap_2026-04-01.json")
+    _aa_snapshot_with_degraded_classifications(directory / "snap_2026-04-02.json")
+
+    rc = main([str(directory), "--trend", "--output", str(tmp_path / "trend.html"), "--quiet"])
+
+    assert rc == SUCCESS
+    assert capsys.readouterr().err == _DEGRADED_WARNING
+
+
+def test_extra_input_accepts_a_utf8_bom_like_snapshot_files(tmp_path):
+    from types import SimpleNamespace
+
+    from sdr_grader.cli.main import _attach_extra_inputs
+
+    source = tmp_path / "usage.json"
+    source.write_bytes(b"\xef\xbb\xbf" + json.dumps({"rows": [1, 2]}).encode("utf-8"))
+    impl = SimpleNamespace(supplementary_data={})
+
+    _attach_extra_inputs(impl, [f"usage={source}"])
+
+    assert impl.supplementary_data == {"usage": {"rows": [1, 2]}}

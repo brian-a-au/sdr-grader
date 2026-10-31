@@ -188,8 +188,8 @@ def test_missing_dimensions_key_raises():
         ([{"name": "", "id": "tag-id"}], ["tag-id"]),
         ([{}, {"name": ""}, {"id": ""}], []),
         (
-            ["first", 7, None, False, {"name": "Named"}, {"id": "last"}],
-            ["first", "7", "None", "False", "Named", "last"],
+            ["first", 7, None, False, "", {"name": "Named"}, {"id": "last"}],
+            ["first", "Named", "last"],
         ),
     ],
     ids=["strings", "named-object", "id-fallback", "empty-objects", "mixed-order"],
@@ -610,7 +610,7 @@ def test_aa_embedded_tags_reject_resource_errors_and_decoded_surrogates(monkeypa
     monkeypatch.setattr(
         aa.json,
         "loads",
-        lambda _value: (_ for _ in ()).throw(ValueError("integer limit")),
+        lambda _value, **_kwargs: (_ for _ in ()).throw(ValueError("integer limit")),
     )
     with pytest.raises(InvalidSnapshotError, match="JSON exceeds decoder limits"):
         aa._parse_tag_list('["value"]')
@@ -687,3 +687,79 @@ def test_oversized_integer_numeric_field_uses_default_aa():
     expected = adapt(snap).calculated_metrics[0].complexity_score
     snap["calculated_metrics"][0]["complexity_score"] = 10**400
     assert adapt(snap).calculated_metrics[0].complexity_score == expected
+
+
+@pytest.mark.parametrize("allocation", [{"type": "linear"}, ["linear"], 7, True])
+def test_calc_metric_allocation_must_be_string_or_null(allocation):
+    snapshot = _minimal_snapshot(calculated_metrics=[{"id": "cm1", "allocation": allocation}])
+
+    with pytest.raises(
+        InvalidSnapshotError, match="^calculated metric allocation must be a string or null$"
+    ):
+        adapt(snapshot, source="allocation.json")
+
+
+@pytest.mark.parametrize("allocation", ["linear", None])
+def test_calc_metric_string_or_null_allocation_is_kept(allocation):
+    snapshot = _minimal_snapshot(calculated_metrics=[{"id": "cm1", "allocation": allocation}])
+
+    impl = adapt(snapshot, source="allocation.json")
+
+    assert impl.calculated_metrics[0].allocation == allocation
+
+
+@pytest.mark.parametrize("missing", [float("nan"), float("inf")])
+def test_non_finite_names_and_types_count_as_missing(missing):
+    from sdr_grader.adapters.aa import (
+        _calc_from_record,
+        _component_from_record,
+        _segment_from_record,
+    )
+
+    component = _component_from_record({"id": "evar1", "name": missing, "type": missing}, "dimension", {})
+    calc = _calc_from_record({"id": "cm1", "name": missing})
+    segment = _segment_from_record({"id": "s1", "name": missing})
+    impl = adapt(_minimal_snapshot(report_suite={"rsid": "rs1", "name": missing}), source="nan.json")
+
+    assert (component.name, component.data_type) == ("evar1", None)
+    assert calc.name == "cm1"
+    assert segment.name == "s1"
+    assert impl.instance_name == "rs1"
+
+
+@pytest.mark.parametrize(
+    ("fetch_status", "expected"),
+    [
+        (None, []),
+        ({}, []),
+        ("degraded", []),
+        ({"classifications": {"status": "healthy", "expansion_level": None}}, []),
+        (
+            {
+                "virtual_report_suites": {"status": "partial", "expansion_level": "basic"},
+                "classifications": {"status": "degraded", "expansion_level": None},
+            },
+            [
+                "aa_auto_sdr reported the classifications fetch as degraded; classification "
+                "tags may be missing, so findings about untagged dimensions can be overstated",
+                "aa_auto_sdr reported the virtual_report_suites fetch as partial; the snapshot "
+                "may be missing virtual_report_suites data",
+            ],
+        ),
+        (
+            {"\x1b]8;;x\x07family": {"status": "degraded"}, "classifications": {"status": "\x1b[31m"}},
+            [
+                "aa_auto_sdr reported a component fetch that was not healthy; "
+                "the snapshot may be incomplete",
+            ],
+        ),
+        ({"classifications": "degraded", "virtual_report_suites": {"status": 3}}, []),
+    ],
+    ids=["absent", "empty", "not-a-mapping", "healthy", "degraded-and-partial", "unknown-values", "malformed"],
+)
+def test_fetch_status_warnings_name_only_known_families(fetch_status, expected):
+    from sdr_grader.adapters.aa import fetch_status_warnings
+
+    snapshot = _minimal_snapshot() if fetch_status is None else _minimal_snapshot(fetch_status=fetch_status)
+
+    assert fetch_status_warnings(snapshot) == expected
