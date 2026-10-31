@@ -476,6 +476,13 @@ def _load_snapshot_for_args(args) -> tuple[dict, str]:
         raise InvalidSnapshotError(
             "multiple input modes specified; pick one of snapshot / --dataview / --rsid."
         )
+    if args.at is not None and (
+        args.dataview
+        or args.rsid
+        or args.snapshot == STDIN_TOKEN
+        or (Path(args.snapshot).exists() and not Path(args.snapshot).is_dir())
+    ):
+        raise InvalidSnapshotError("--at requires a snapshot directory")
     if args.dataview:
         return shell_cja(args.dataview)
     if args.rsid:

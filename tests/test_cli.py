@@ -1462,3 +1462,29 @@ def test_cli_rejects_empty_option_values(tmp_path, capsys, monkeypatch, flag):
     assert rc == RUNTIME_ERROR
     assert capsys.readouterr().err == f"error: {flag} requires a non-empty value\n"
     assert list(tmp_path.iterdir()) == []
+
+
+@pytest.mark.parametrize(
+    "inputs",
+    [
+        [str(FIXTURES / "cja_snapshot_clean.json")],
+        ["-"],
+        ["--rsid", "prod.rsid"],
+        ["--dataview", "dv_prod"],
+    ],
+)
+def test_cli_rejects_at_outside_directory_mode(tmp_path, capsys, monkeypatch, inputs):
+    import sdr_grader.cli.main as cli_main
+
+    def _no_shell_out(*_args, **_kwargs):
+        raise AssertionError("--at must be rejected before shelling out")
+
+    monkeypatch.setattr(cli_main, "shell_aa", _no_shell_out)
+    monkeypatch.setattr(cli_main, "shell_cja", _no_shell_out)
+    monkeypatch.setattr("sys.stdin", __import__("io").StringIO("{}"))
+
+    rc = main([*inputs, "--at", "2026-04-25", "--output", str(tmp_path / "out.html")])
+
+    assert rc == RUNTIME_ERROR
+    assert capsys.readouterr().err == "error: --at requires a snapshot directory\n"
+    assert not (tmp_path / "out.html").exists()
