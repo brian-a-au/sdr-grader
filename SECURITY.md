@@ -82,10 +82,10 @@ intake workflow and privacy-review checklist.
 
 | Version | Security support |
 |---|---|
-| Latest published `1.6.x` patch | Supported |
-| Earlier patches and `<1.6` | Not supported |
+| Latest published `1.7.x` patch | Supported |
+| Earlier patches and `<1.7` | Not supported |
 
-As of 2026-10-27, only the latest published patch in the supported minor line
+As of 2026-10-31, only the latest published patch in the supported minor line
 receives new security fixes. Upgrade to that patch when reproducing an issue.
 Reports against older versions are still welcome; include the version and
 whether the behavior reproduces on the supported patch.
