@@ -196,8 +196,11 @@ rejects mixed-platform or mixed-instance input rather than combining it.
 
 Snapshot JSON must have unique keys within each object, including nested
 objects. Duplicate keys are rejected before grading instead of silently keeping
-the last value. This applies to files, stdin, and child-generator output.
-Repeated keys in separate objects are valid. Invalid selected snapshots and
+the last value. This applies to files, stdin, and child-generator output. It
+also applies to definitions, tag lists, and reference lists that a snapshot
+stores as JSON-encoded strings. Repeated keys in separate objects are valid.
+Files and stdin are read as UTF-8, with or without a byte order mark, whatever
+the terminal's locale. Invalid selected snapshots and
 trend inputs exit 1 and preserve existing reports; malformed optional history
 siblings are ignored and do not count as history evidence.
 
