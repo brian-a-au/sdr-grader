@@ -33,8 +33,9 @@ from sdr_grader.core.exceptions import (
 from sdr_grader.core.grader import grade
 from sdr_grader.core.structure_limits import validate_snapshot_structure
 from sdr_grader.input.adapt import adapt_snapshot as _adapt_snapshot
+from sdr_grader.input.adapt import input_warnings
 from sdr_grader.input.json_io import DuplicateJSONKeyError, unique_object
-from sdr_grader.input.loader import STDIN_TOKEN, load_snapshot
+from sdr_grader.input.loader import STDIN_TOKEN, list_snapshot_candidates, load_snapshot
 from sdr_grader.input.shell_out import shell_aa, shell_cja
 from sdr_grader.render import cap_component_items, render
 from sdr_grader.render.color_packs import COLOR_PACK_CODES
@@ -50,6 +51,10 @@ BUNDLED_PACKS_DIR = Path(__file__).resolve().parent.parent / "rules" / "packs"
 def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
+    for flag, value in _string_option_values(args):
+        if value == "":
+            print(f"error: {flag} requires a non-empty value", file=sys.stderr)
+            return RUNTIME_ERROR
 
     rubric_dir = _resolve_rubric_dir(args)
     if rubric_dir is None:
@@ -116,6 +121,7 @@ def main(argv: list[str] | None = None) -> int:
         impl.platform,
         impl.adapter_version,
     )
+    _emit_input_warnings(input_warnings(impl))
 
     if args.snapshot and Path(args.snapshot).is_dir():
         from sdr_grader.input.history import matching_snapshot_sibling_exists
@@ -329,7 +335,7 @@ def _attach_extra_inputs(impl, raw_specs: list[str]) -> None:
         if not path.is_file():
             raise InvalidSnapshotError(f"--extra-input {key}: file not found at {path}")
         try:
-            text = path.read_text(encoding="utf-8")
+            text = path.read_text(encoding="utf-8-sig")
         except UnicodeError:
             raise InvalidSnapshotError("--extra-input is not valid UTF-8") from None
         except OSError as exc:
@@ -421,6 +427,9 @@ def _run_trend(args, rubric, suppression, rubric_dir, suppression_path) -> int:
             continue
         warned_generators.add(key)
         _emit_generator_version_warning(*key)
+    _emit_input_warnings(
+        list(dict.fromkeys(warning for point in trend.points for warning in point.input_warnings))
+    )
 
     output_path = Path(args.output) if args.output else _default_trend_output_path(trend)
     read_paths = _read_paths_for_args(args, rubric_dir, suppression_path)
@@ -472,6 +481,13 @@ def _load_snapshot_for_args(args) -> tuple[dict, str]:
         raise InvalidSnapshotError(
             "multiple input modes specified; pick one of snapshot / --dataview / --rsid."
         )
+    if args.at is not None and (
+        args.dataview
+        or args.rsid
+        or args.snapshot == STDIN_TOKEN
+        or (Path(args.snapshot).exists() and not Path(args.snapshot).is_dir())
+    ):
+        raise InvalidSnapshotError("--at requires a snapshot directory")
     if args.dataview:
         return shell_cja(args.dataview)
     if args.rsid:
@@ -496,15 +512,26 @@ def _resolve_rubric_dir(args) -> Path | None:
             print(f"error: rubric directory not found: {path}", file=sys.stderr)
             return None
         return path
-    bundled = BUNDLED_PACKS_DIR / args.pack
-    if not bundled.is_dir():
+    # --pack takes a pack name, never a path: match it exactly against the
+    # bundled pack directories so "../x", "strict/" or a case variant on a
+    # case-insensitive filesystem cannot select another directory.
+    names = _bundled_pack_names()
+    if args.pack not in names:
         print(
-            f"error: bundled pack {args.pack!r} not found at {bundled}; "
-            f"pass --rubric PATH to use a custom pack.",
+            f"error: bundled pack {args.pack!r} not found; choose one of: "
+            f"{', '.join(names)}, or pass --rubric PATH to use a custom pack.",
             file=sys.stderr,
         )
         return None
-    return bundled
+    return BUNDLED_PACKS_DIR / args.pack
+
+
+def _bundled_pack_names() -> list[str]:
+    return sorted(
+        entry.name
+        for entry in BUNDLED_PACKS_DIR.iterdir()
+        if entry.is_dir() and (entry / "_meta.yaml").is_file()
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -526,10 +553,33 @@ def _default_trend_output_path(trend) -> Path:
     return Path(portable_leaf("trend-", identity, ".html"))
 
 
+def _string_option_values(args) -> list[tuple[str, str | None]]:
+    """Options whose empty value would otherwise be dropped as if unset."""
+    return [
+        ("--dataview", args.dataview),
+        ("--rsid", args.rsid),
+        ("--at", args.at),
+        ("--rubric", args.rubric),
+        ("--pack", args.pack),
+        ("--output", args.output),
+        ("--json", args.json_output),
+        ("--suppress-config", args.suppress_config),
+        ("--distribution-data", args.distribution_data),
+        ("--fail-below", args.fail_below),
+    ]
+
+
 def _read_paths_for_args(args, rubric_dir: Path, suppression_path: Path) -> list[Path]:
     paths = [Path(rubric_dir), Path(suppression_path)]
+    # Protect the files read from inside input directories, not only the
+    # directories themselves: the rubric pack's YAML files and every snapshot
+    # candidate a directory or trend run may read.
+    paths.extend(sorted(Path(rubric_dir).glob("*.yaml")))
     if args.snapshot and args.snapshot != STDIN_TOKEN:
-        paths.append(Path(args.snapshot))
+        snapshot_path = Path(args.snapshot)
+        paths.append(snapshot_path)
+        if snapshot_path.is_dir():
+            paths.extend(list_snapshot_candidates(snapshot_path))
     for spec in args.extra_input:
         if "=" in spec:
             _key, _separator, path = spec.partition("=")
@@ -559,6 +609,11 @@ def _grade_to_min_pct(grade_label: str, rubric) -> float | None:
         if band.grade == normalized or band.grade == grade_label:
             return band.min_score
     return None
+
+
+def _emit_input_warnings(warnings: list[str]) -> None:
+    for warning in warnings:
+        print(f"warning [aa-fetch-status]: {warning}", file=sys.stderr)
 
 
 def _emit_generator_version_warning(

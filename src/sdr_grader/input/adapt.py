@@ -27,3 +27,12 @@ def adapt_snapshot(
     raise UnknownPlatformError(
         f"unknown platform {platform!r}; expected 'cja' or 'aa'"
     )
+
+
+def input_warnings(impl: Implementation) -> list[str]:
+    """Warnings about gaps that the generator reported in the snapshot."""
+    if impl.platform == "aa":
+        from sdr_grader.adapters.aa import fetch_status_warnings
+
+        return fetch_status_warnings(impl.raw)
+    return []

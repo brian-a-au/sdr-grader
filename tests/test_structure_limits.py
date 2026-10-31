@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+from sdr_grader.core import structure_limits
 from sdr_grader.core.exceptions import InvalidSnapshotError
 from sdr_grader.core.structure_limits import (
     MAX_DEFINITION_NODES,
@@ -13,6 +14,7 @@ from sdr_grader.core.structure_limits import (
     validate_decoded_structure,
     validate_definition_structure,
     validate_snapshot_structure,
+    validate_unicode_scalars,
 )
 
 
@@ -41,11 +43,28 @@ def test_snapshot_depth_boundary_accepts_100_and_rejects_101():
         validate_snapshot_structure(_nested(MAX_STRUCTURE_DEPTH + 1), label="test snapshot")
 
 
-def test_snapshot_node_boundary_accepts_250000_and_rejects_next():
+def test_snapshot_node_boundary_accepts_the_limit_and_rejects_next():
     validate_snapshot_structure([0] * (MAX_STRUCTURE_NODES - 1), label="test snapshot")
 
-    with pytest.raises(InvalidSnapshotError, match=r"test snapshot.*250,000 nodes"):
+    with pytest.raises(InvalidSnapshotError, match=rf"test snapshot.*{MAX_STRUCTURE_NODES:,} nodes"):
         validate_snapshot_structure([0] * MAX_STRUCTURE_NODES, label="test snapshot")
+
+
+def test_snapshot_budget_admits_data_views_well_beyond_the_largest_observed():
+    # The largest private-corpus snapshot is about 130,000 nodes (3,772
+    # components). A data view several times larger must still grade.
+    from sdr_grader.adapters.cja import adapt
+
+    snapshot = {
+        "metadata": {"Data View ID": "dv_large"},
+        "metrics": [{"id": f"metrics/m{i}", "name": f"Metric {i}"} for i in range(150_000)],
+        "dimensions": [],
+    }
+    assert measure_structure(snapshot)[0] > 450_000
+
+    impl = adapt(snapshot, source="large.json")
+
+    assert len(impl.metrics) == 150_000
 
 
 def test_definition_node_boundary_accepts_10000_and_rejects_next():
@@ -93,3 +112,26 @@ def test_snapshot_structure_accepts_valid_non_bmp_unicode_without_changing_count
     validate_snapshot_structure(value, label="test snapshot")
 
     assert measure_structure(value) == (5, 2)
+
+
+class _CountingPattern:
+    def __init__(self, pattern):
+        self.pattern = pattern
+        self.searched: list[str] = []
+
+    def search(self, value: str):
+        self.searched.append(value)
+        return self.pattern.search(value)
+
+
+@pytest.mark.parametrize(
+    "validate",
+    [validate_snapshot_structure, validate_decoded_structure, validate_unicode_scalars],
+)
+def test_surrogate_scan_skips_ascii_strings_and_keys(monkeypatch, validate):
+    counting = _CountingPattern(structure_limits._SURROGATE_RE)
+    monkeypatch.setattr(structure_limits, "_SURROGATE_RE", counting)
+
+    validate({"ascii-key": ["plain", "café"], "東京": "value"}, label="test snapshot")
+
+    assert sorted(counting.searched) == ["café", "東京"]
