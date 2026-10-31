@@ -1436,3 +1436,29 @@ def test_x_extension_keys_do_not_change_report_bytes(tmp_path):
 
     assert (tmp_path / "a.json").read_bytes() == (tmp_path / "b.json").read_bytes()
     assert (tmp_path / "a.html").read_bytes() == (tmp_path / "b.html").read_bytes()
+
+
+@pytest.mark.parametrize(
+    "flag",
+    [
+        "--dataview",
+        "--rsid",
+        "--at",
+        "--rubric",
+        "--pack",
+        "--output",
+        "--json",
+        "--suppress-config",
+        "--distribution-data",
+        "--fail-below",
+    ],
+)
+def test_cli_rejects_empty_option_values(tmp_path, capsys, monkeypatch, flag):
+    monkeypatch.chdir(tmp_path)
+    snapshot = [] if flag in ("--dataview", "--rsid") else [str(FIXTURES / "cja_snapshot_clean.json")]
+
+    rc = main([*snapshot, flag, ""])
+
+    assert rc == RUNTIME_ERROR
+    assert capsys.readouterr().err == f"error: {flag} requires a non-empty value\n"
+    assert list(tmp_path.iterdir()) == []

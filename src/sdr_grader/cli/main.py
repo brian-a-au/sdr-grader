@@ -50,6 +50,10 @@ BUNDLED_PACKS_DIR = Path(__file__).resolve().parent.parent / "rules" / "packs"
 def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
+    for flag, value in _string_option_values(args):
+        if value == "":
+            print(f"error: {flag} requires a non-empty value", file=sys.stderr)
+            return RUNTIME_ERROR
 
     rubric_dir = _resolve_rubric_dir(args)
     if rubric_dir is None:
@@ -524,6 +528,22 @@ def _default_output_path(report) -> Path:
 def _default_trend_output_path(trend) -> Path:
     identity = f"{trend.instance_id}-{trend.latest.timestamp:%Y%m%d}"
     return Path(portable_leaf("trend-", identity, ".html"))
+
+
+def _string_option_values(args) -> list[tuple[str, str | None]]:
+    """Options whose empty value would otherwise be dropped as if unset."""
+    return [
+        ("--dataview", args.dataview),
+        ("--rsid", args.rsid),
+        ("--at", args.at),
+        ("--rubric", args.rubric),
+        ("--pack", args.pack),
+        ("--output", args.output),
+        ("--json", args.json_output),
+        ("--suppress-config", args.suppress_config),
+        ("--distribution-data", args.distribution_data),
+        ("--fail-below", args.fail_below),
+    ]
 
 
 def _read_paths_for_args(args, rubric_dir: Path, suppression_path: Path) -> list[Path]:
