@@ -60,7 +60,8 @@ severity_weights:
   low:      1
 
 # Letter grade thresholds. Score is 0-100. Bands MUST be strictly
-# descending and the lowest band MUST start at 0.
+# descending, the lowest band MUST start at 0, and grade labels MUST be
+# unique ("-" and "−" count as the same character).
 grade_scale:
   - { min: 93, grade: "A"  }
   - { min: 90, grade: "A−" }
@@ -77,9 +78,11 @@ Numeric fields are deliberately strict:
 - category weights are finite numbers from 0 through 1 and must sum to
   1.0;
 - severity weights are positive YAML integers (booleans and fractional
-  values are not integers); and
+  values are not integers);
 - grade-band minima are finite numbers from 0 through 100, in strictly
-  descending order, with a final band at 0.
+  descending order, with a final band at 0; and
+- grade labels are unique. `--fail-below` treats `-` and `−` as the same
+  character, so `B-` and `B−` in one scale are a duplicate.
 
 Quoted numeric strings, booleans, negative values, NaN, and infinity
 are rejected rather than coerced.

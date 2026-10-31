@@ -323,6 +323,14 @@ def test_severity_weights_require_positive_literal_integers(tmp_path, value):
             [{"min": 90, "grade": "A"}, {"min": 1, "grade": "F"}],
             "band starting at 0; lowest band starts at 1.0",
         ),
+        (
+            [{"min": 90, "grade": "A"}, {"min": 0, "grade": "A"}],
+            "grade labels must be unique; 'A' appears more than once",
+        ),
+        (
+            [{"min": 90, "grade": "B-"}, {"min": 0, "grade": " B\u2212 "}],
+            "grade labels must be unique; 'B\u2212' appears more than once",
+        ),
     ],
 )
 def test_grade_scale_rejects_malformed_and_invalid_boundaries(tmp_path, grade_scale, message):

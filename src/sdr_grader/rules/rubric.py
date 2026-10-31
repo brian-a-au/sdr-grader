@@ -218,6 +218,17 @@ def _validate_grade_scale(value: Any) -> list[GradeBand]:
                 f"grade_scale entry 'grade' must be a non-empty string: {describe_value(entry)}"
             )
         bands.append(GradeBand(min_score=min_score, grade=grade.strip()))
+    # --fail-below looks a label up by name and treats "-" and U+2212 alike,
+    # so labels that match after that normalization would be ambiguous.
+    seen_labels: set[str] = set()
+    for band in bands:
+        label_key = band.grade.replace("-", "−")
+        if label_key in seen_labels:
+            raise RubricValidationError(
+                f"grade_scale grade labels must be unique; "
+                f"{describe_value(band.grade)} appears more than once"
+            )
+        seen_labels.add(label_key)
     # Bands must be in descending order so score_to_letter can scan top-down.
     for prev, curr in zip(bands[:-1], bands[1:], strict=True):
         if curr.min_score >= prev.min_score:
