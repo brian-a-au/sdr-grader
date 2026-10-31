@@ -67,6 +67,11 @@ The adapter must:
    container contexts, calc metric reference lists, complexity scores.
    Some of these come from the upstream snapshot directly; others
    require parsing JSON-encoded `definition_json` strings.
+   `Segment.nesting_depth` counts nested `func: container` levels that
+   declare a `context`, on both platforms. A single container is depth 1.
+   The CJA adapter computes it from the definition. It does not copy
+   cja_auto_sdr's `nesting_depth`, which also counts predicate and sequence
+   step levels, except when a segment has no definition.
 4. **Preserve raw JSON for provenance and compatibility.** Set
    `Implementation.raw = snapshot`, but do not make arbitrary snapshot paths a
    new rule contract. Promote a stable signal into an explicit normalized
