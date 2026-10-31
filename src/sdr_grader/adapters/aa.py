@@ -49,7 +49,7 @@ def adapt(snapshot: dict[str, Any], *, source: str = "<unknown>") -> Implementat
     instance_id = rs.get("rsid") or rs.get("RSID")
     if not instance_id:
         raise InvalidSnapshotError("AA snapshot 'report_suite' missing 'rsid'")
-    instance_name = rs.get("name") or instance_id
+    instance_name = _present(rs.get("name")) or instance_id
     snapshot_taken_at = select_snapshot_timestamp(
         snapshot.get("captured_at"),
         snapshot.get("captured"),
@@ -132,9 +132,9 @@ def _component_from_record(
             f"{context}: {component_type} record is missing 'id' (required key)"
         )
 
-    name = record.get("name") or component_id
+    name = _present(record.get("name")) or component_id
     description = _normalize_description(record.get("description"))
-    data_type = record.get("type")
+    data_type = _present(record.get("type"))
     polarity = _normalize_polarity(record.get("polarity"))
     tags = _parse_tag_list(record.get("tags"))
     # Pick up classifications attached to this component as tags.
@@ -239,7 +239,7 @@ def _calc_from_record(record: Any, *, index: int | None = None) -> CalculatedMet
     metric_id = record.get("id")
     if not metric_id:
         raise InvalidSnapshotError(f"{context}: calc metric missing 'id' (required key)")
-    name = record.get("name") or metric_id
+    name = _present(record.get("name")) or metric_id
     description = _normalize_description(record.get("description"))
     definition = record.get("definition") or {}
     if not isinstance(definition, dict):
@@ -369,7 +369,7 @@ def _segment_from_record(record: Any, *, index: int | None = None) -> Segment:
     segment_id = record.get("id")
     if not segment_id:
         raise InvalidSnapshotError(f"{context}: segment missing 'id' (required key)")
-    name = record.get("name") or segment_id
+    name = _present(record.get("name")) or segment_id
     description = _normalize_description(record.get("description"))
     definition = record.get("definition") or {}
     if isinstance(definition, dict):
@@ -481,6 +481,45 @@ def _extract_aa_segment_refs(definition: Any) -> list[str]:
 TESTED_THROUGH_GENERATOR_VERSION = "1.24.5"
 
 
+# aa_auto_sdr writes `fetch_status` entries only for component families whose
+# fetch was not healthy. Only these known families and statuses are named in a
+# warning; anything else from the snapshot is summarized, never echoed.
+_FETCH_FAMILY_EFFECTS = {
+    "classifications": (
+        "classification tags may be missing, so findings about untagged "
+        "dimensions can be overstated"
+    ),
+    "virtual_report_suites": "the snapshot may be missing virtual_report_suites data",
+}
+_FETCH_STATUSES = frozenset({"degraded", "partial"})
+
+
+def fetch_status_warnings(snapshot: Any) -> list[str]:
+    """Describe the non-healthy fetches an aa_auto_sdr snapshot reports."""
+    status_by_family = snapshot.get("fetch_status") if isinstance(snapshot, dict) else None
+    if not isinstance(status_by_family, dict):
+        return []
+    warnings: list[str] = []
+    unrecognized = False
+    for family, entry in status_by_family.items():
+        status = entry.get("status") if isinstance(entry, dict) else None
+        if not isinstance(status, str) or status == "healthy":
+            continue
+        if family in _FETCH_FAMILY_EFFECTS and status in _FETCH_STATUSES:
+            warnings.append(
+                f"aa_auto_sdr reported the {family} fetch as {status}; "
+                f"{_FETCH_FAMILY_EFFECTS[family]}"
+            )
+        else:
+            unrecognized = True
+    if unrecognized:
+        warnings.append(
+            "aa_auto_sdr reported a component fetch that was not healthy; "
+            "the snapshot may be incomplete"
+        )
+    return sorted(warnings)
+
+
 def generator_version_warning(adapter_version: str) -> str | None:
     """Return warning text when the snapshot's generator is newer than the
     newest version this release was tested against, else None. Unparseable
@@ -559,6 +598,13 @@ def _tag_names(values: list[Any]) -> list[str]:
                 continue
         tags.append(str(value))
     return tags
+
+
+def _present(value: Any) -> Any:
+    """Treat a non-finite float as missing; pandas writes NaN for empty cells."""
+    if isinstance(value, float) and not math.isfinite(value):
+        return None
+    return value
 
 
 def _safe_float(value: Any, default: float = 0.0) -> float:

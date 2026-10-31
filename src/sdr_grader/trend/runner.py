@@ -13,7 +13,7 @@ from pathlib import Path
 from sdr_grader.core.exceptions import InvalidSnapshotError
 from sdr_grader.core.grader import grade
 from sdr_grader.core.models import Implementation
-from sdr_grader.input.adapt import adapt_snapshot
+from sdr_grader.input.adapt import adapt_snapshot, input_warnings
 from sdr_grader.input.history import same_history_identity
 from sdr_grader.input.loader import (
     _extract_timestamp,
@@ -94,7 +94,12 @@ def build_trend_report(
         impl.history_present = history_present
         report = grade(impl, rubric, suppression=suppression)
         points.append(
-            TrendPoint(timestamp=timestamp, source=str(path), report=report)
+            TrendPoint(
+                timestamp=timestamp,
+                source=str(path),
+                report=report,
+                input_warnings=tuple(input_warnings(impl)),
+            )
         )
 
     points.sort(key=lambda p: p.timestamp)

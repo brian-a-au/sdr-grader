@@ -952,3 +952,23 @@ def test_embedded_json_rejects_duplicate_keys_like_the_outer_document(parser, va
         InvalidSnapshotError, match=f"^{message} JSON contains duplicate object keys$"
     ):
         function(value)
+
+
+_NAN = float("nan")
+
+
+@pytest.mark.parametrize("missing", [_NAN, float("inf"), float("-inf")])
+def test_non_finite_names_and_types_count_as_missing(missing):
+    from sdr_grader.adapters import cja
+
+    component = cja._component_from_record(
+        {"id": "metrics/m1", "name": missing, "title": "Title", "type": missing}, "metric"
+    )
+    derived = cja._derived_field_from_record({"component_id": "variables/df1", "component_name": missing})
+    calc = cja._calc_metric_from_record({"metric_id": "cm1", "metric_name": missing})
+    segment = cja._segment_from_record({"segment_id": "s1", "segment_name": missing})
+
+    assert (component.name, component.data_type) == ("Title", None)
+    assert derived.name == "variables/df1"
+    assert calc.name == "cm1"
+    assert segment.name == "s1"

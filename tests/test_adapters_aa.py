@@ -706,3 +706,60 @@ def test_calc_metric_string_or_null_allocation_is_kept(allocation):
     impl = adapt(snapshot, source="allocation.json")
 
     assert impl.calculated_metrics[0].allocation == allocation
+
+
+@pytest.mark.parametrize("missing", [float("nan"), float("inf")])
+def test_non_finite_names_and_types_count_as_missing(missing):
+    from sdr_grader.adapters.aa import (
+        _calc_from_record,
+        _component_from_record,
+        _segment_from_record,
+    )
+
+    component = _component_from_record({"id": "evar1", "name": missing, "type": missing}, "dimension", {})
+    calc = _calc_from_record({"id": "cm1", "name": missing})
+    segment = _segment_from_record({"id": "s1", "name": missing})
+    impl = adapt(_minimal_snapshot(report_suite={"rsid": "rs1", "name": missing}), source="nan.json")
+
+    assert (component.name, component.data_type) == ("evar1", None)
+    assert calc.name == "cm1"
+    assert segment.name == "s1"
+    assert impl.instance_name == "rs1"
+
+
+@pytest.mark.parametrize(
+    ("fetch_status", "expected"),
+    [
+        (None, []),
+        ({}, []),
+        ("degraded", []),
+        ({"classifications": {"status": "healthy", "expansion_level": None}}, []),
+        (
+            {
+                "virtual_report_suites": {"status": "partial", "expansion_level": "basic"},
+                "classifications": {"status": "degraded", "expansion_level": None},
+            },
+            [
+                "aa_auto_sdr reported the classifications fetch as degraded; classification "
+                "tags may be missing, so findings about untagged dimensions can be overstated",
+                "aa_auto_sdr reported the virtual_report_suites fetch as partial; the snapshot "
+                "may be missing virtual_report_suites data",
+            ],
+        ),
+        (
+            {"\x1b]8;;x\x07family": {"status": "degraded"}, "classifications": {"status": "\x1b[31m"}},
+            [
+                "aa_auto_sdr reported a component fetch that was not healthy; "
+                "the snapshot may be incomplete",
+            ],
+        ),
+        ({"classifications": "degraded", "virtual_report_suites": {"status": 3}}, []),
+    ],
+    ids=["absent", "empty", "not-a-mapping", "healthy", "degraded-and-partial", "unknown-values", "malformed"],
+)
+def test_fetch_status_warnings_name_only_known_families(fetch_status, expected):
+    from sdr_grader.adapters.aa import fetch_status_warnings
+
+    snapshot = _minimal_snapshot() if fetch_status is None else _minimal_snapshot(fetch_status=fetch_status)
+
+    assert fetch_status_warnings(snapshot) == expected

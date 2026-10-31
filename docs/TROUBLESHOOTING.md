@@ -133,6 +133,15 @@ grade and review the resulting findings before using them as a gate.
 Do not silence the warning by editing the snapshot's version field; that would
 make its provenance inaccurate.
 
+## Degraded AA fetch warning
+
+`warning [aa-fetch-status]` means aa_auto_sdr recorded in the snapshot's
+`fetch_status` that it could not fully fetch a component family. Grading still
+runs, and the grade is computed the same way. When the classifications fetch
+is degraded, classification tags may be missing from the snapshot, so findings
+about untagged dimensions can be overstated. Regenerate the snapshot when the
+Adobe API is healthy before you use the grade as a gate.
+
 ## Output-path error
 
 HTML and JSON destinations must resolve to different regular files. A symlink,
