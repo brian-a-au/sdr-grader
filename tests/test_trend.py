@@ -578,3 +578,50 @@ def test_header_classes_have_top_level_css_rules():
     assert re.search(r"^\.delta \{", css, flags=re.M), (
         "the bare .delta rule that styles the header delta must exist"
     )
+
+
+def test_trend_counts_each_snapshot_file_once(tmp_path, strict_rubric):
+    # Two timestamped names for one file are one snapshot, as in directory
+    # mode, where a sibling that resolves to the selection is not history.
+    real = tmp_path / "snap_2026-04-01.json"
+    real.write_text((FIXTURES / "cja_snapshot_clean.json").read_text(encoding="utf-8"))
+    (tmp_path / "snap_2026-04-02.json").symlink_to(real)
+
+    trend = build_trend_report(tmp_path, strict_rubric)
+
+    assert [point.source for point in trend.points] == [str(real)]
+    assert any(finding.id == "GOV-001" for finding in trend.latest.report.findings)
+
+
+def test_trend_keeps_distinct_files_with_identical_content(tmp_path, strict_rubric):
+    text = (FIXTURES / "cja_snapshot_clean.json").read_text(encoding="utf-8")
+    (tmp_path / "snap_2026-04-01.json").write_text(text)
+    (tmp_path / "snap_2026-04-02.json").write_text(text)
+
+    trend = build_trend_report(tmp_path, strict_rubric)
+
+    assert len(trend.points) == 2
+    assert not any(finding.id == "GOV-001" for finding in trend.latest.report.findings)
+
+
+def test_trend_keeps_the_earliest_name_for_one_file(tmp_path, strict_rubric):
+    real = tmp_path / "snap_2026-04-01.json"
+    real.write_text((FIXTURES / "cja_snapshot_clean.json").read_text(encoding="utf-8"))
+    earlier = tmp_path / "snap_2026-03-01.json"
+    earlier.symlink_to(real)
+
+    trend = build_trend_report(tmp_path, strict_rubric)
+
+    assert [point.source for point in trend.points] == [str(earlier)]
+
+
+def test_trend_reports_unresolvable_snapshot_paths(tmp_path, strict_rubric, monkeypatch):
+    (tmp_path / "snap_2026-04-01.json").write_text("{}", encoding="utf-8")
+
+    def fail_resolve(_path, strict=False):
+        raise OSError("simulated resolve failure")
+
+    monkeypatch.setattr(Path, "resolve", fail_resolve)
+
+    with pytest.raises(InvalidSnapshotError, match="could not inspect a trend snapshot path"):
+        build_trend_report(tmp_path, strict_rubric)
