@@ -3,6 +3,77 @@
 All notable changes follow the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
+## 1.7.0 — 2026-10-31
+
+Prepared October 31, 2026. Not yet published; see the
+[readiness record](docs/releases/1.7.0-readiness.md).
+
+This minor release fixes grading bugs, tightens several input contracts and
+speeds up grading of large snapshots. The bundled `strict`, `pragmatic` and
+`aa-admin` packs are unchanged at 3.0, 3.0 and 1.0, and the report schema is
+unchanged at 1. Some CJA grades change, as described under "Grading changes".
+
+### Grading changes
+
+- (#167) CJA segment nesting depth now counts nested containers, as the AA
+  adapter already did. The CJA adapter used to copy `cja_auto_sdr`'s
+  `nesting_depth`, which also counts predicate and sequence step levels, so a
+  single-container segment had a depth of 2 to 4. SEG-007 now gives the same
+  result for the same definition on both platforms. CJA segments report a
+  lower depth, SEG-007 fires less often under `strict`, and SEG-002 lists the
+  new depths. The exported value is still used for a segment with no
+  definition.
+- (#166) Null, number, boolean and empty-string tag values are dropped
+  instead of becoming the tags "None", "7" and "False". A component whose only
+  tags are such values now counts as untagged for GOV-005. sdr-visualizer
+  makes the same change.
+- (#164) Trend mode counts each snapshot file once. A symlink to another
+  snapshot in the directory no longer adds a second point or counts as
+  history, so trend and directory mode agree.
+
+### Input contract changes
+
+- (#164) A rubric `grade_scale` with a repeated grade label is a rubric error
+  (exit 3). `-` and `−` count as the same character, as they do in
+  `--fail-below`.
+- (#164) `--pack` accepts only the name of a bundled pack. A path such as
+  `../packs/strict`, a trailing slash or a case variant now exits 1 and lists
+  the available packs. Use `--rubric PATH` for other packs.
+- (#155) Path, ID and grade options reject an empty value with exit 1. Before,
+  `--fail-below ""` turned the threshold off.
+- (#155) `--at` is rejected unless the input is a snapshot directory.
+- (#155) `--rsid` and `--dataview` reject an ID that starts with `-`.
+- (#155) `--output` and `--json` can no longer replace a snapshot inside a
+  snapshot or trend directory, or a YAML file inside a `--rubric` directory.
+- (#156) Duplicate keys inside JSON-encoded definitions, tag lists and
+  reference lists are rejected, as they already are in the snapshot itself.
+- (#156) An AA calculated metric whose `allocation` is not a string or null is
+  rejected with a clean error instead of a traceback.
+- (#165) The snapshot structure budget is raised from 250,000 to 1,000,000
+  nodes. The largest snapshot in the private compatibility corpus has about
+  130,000 nodes.
+
+### Fixes
+
+- (#156) Snapshots on stdin are read as UTF-8 whatever the terminal's locale,
+  and they may start with a byte order mark, like files.
+- (#165) `--extra-input` files may start with a byte order mark.
+- (#165) A NaN name or type in a snapshot counts as missing instead of
+  becoming the text "nan".
+- (#165) Platform detection reads the same AA report suite key as the
+  adapter.
+- (#165) The CLI prints `warning [aa-fetch-status]` when an AA snapshot
+  records a degraded or partial fetch. Grading is unchanged.
+- (#155) An unreadable snapshot directory is reported as unreadable instead of
+  empty.
+
+### Performance
+
+- (#154) NAME-004 counts synonym words in one pass, and structure validation
+  skips the surrogate check for ASCII strings. On the largest test snapshot a
+  run takes about a third less time, and a six-snapshot trend run about 40%
+  less. Output is unchanged.
+
 ## 1.6.3 — 2026-10-30
 
 Published October 30, 2026 as a scoped public preview. Announcement remains on
