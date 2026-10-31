@@ -3,6 +3,26 @@
 All notable changes follow the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
+## 1.6.2 — 2026-10-30
+
+Prepared October 30, 2026. Not yet published; see the
+[readiness record](docs/releases/1.6.2-readiness.md).
+
+This patch changes no grading behavior. The bundled `strict`, `pragmatic` and
+`aa-admin` packs are unchanged, and grades and report bytes are the same apart
+from the version footer.
+
+- (#144, #145) Python 3.13 and 3.14 join the verified matrix. The source suite
+  runs on Python 3.11 through 3.14, and the release workflow installs the built
+  wheel and sdist and the published package on all four versions. The README,
+  platform coverage guide and package classifiers now name Python 3.11 through
+  3.14. The installation requirement is still Python 3.11 or newer.
+- (#140) The README preview notice is shorter, and its Python badge matches
+  `sdr-visualizer`.
+- Maintainer tooling only: CI runs tests in parallel (#143), and the pinned uv
+  moves to 0.13.6 (#147, #148). The release installer's PyPI retry accepts the
+  newer uv wording of the same "no such version" diagnostic.
+
 ## 1.6.1 — 2026-10-27
 
 Published October 27, 2026 as a scoped public preview. Announcement remains on
