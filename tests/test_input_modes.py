@@ -183,13 +183,48 @@ def test_list_snapshot_candidates_returns_complete_sorted_json_set(tmp_path):
 def test_list_snapshot_candidates_wraps_discovery_errors(tmp_path, monkeypatch):
     from sdr_grader.input.loader import list_snapshot_candidates
 
-    def fail_glob(_path, _pattern):
+    def fail_iterdir(_path):
         raise OSError("simulated discovery failure")
 
-    monkeypatch.setattr(Path, "glob", fail_glob)
+    monkeypatch.setattr(Path, "iterdir", fail_iterdir)
 
     with pytest.raises(InvalidSnapshotError, match="could not inspect snapshot directory"):
         list_snapshot_candidates(tmp_path)
+
+
+def test_list_snapshot_candidates_keeps_json_glob_matching(tmp_path):
+    from sdr_grader.input.loader import list_snapshot_candidates
+
+    (tmp_path / "sub.json").mkdir()
+    for name in ["a.json", ".hidden.json", ".json", "UPPER.JSON", "b.json.bak", "c d.json", "é.json"]:
+        (tmp_path / name).write_text("{}", encoding="utf-8")
+    (tmp_path / "link.json").symlink_to(tmp_path / "a.json")
+    (tmp_path / "dangling.json").symlink_to(tmp_path / "missing")
+
+    names = [path.name for path in list_snapshot_candidates(tmp_path)]
+
+    assert names == [".hidden.json", ".json", "a.json", "c d.json", "link.json", "é.json"]
+
+
+@pytest.mark.skipif(
+    sys.platform == "win32" or os.geteuid() == 0,
+    reason="needs POSIX permissions enforced for a non-root user",
+)
+@pytest.mark.parametrize("trend", [False, True])
+def test_unreadable_snapshot_directory_reports_inspection_error(tmp_path, capsys, trend):
+    directory = tmp_path / "snapshots"
+    directory.mkdir()
+    (directory / "snapshot_2026-04-01.json").write_text("{}", encoding="utf-8")
+    directory.chmod(0)
+    try:
+        rc = main([str(directory), *(["--trend"] if trend else []), "--output", str(tmp_path / "o.html")])
+    finally:
+        directory.chmod(0o755)
+
+    assert rc == RUNTIME_ERROR
+    err = capsys.readouterr().err
+    assert "could not inspect snapshot directory" in err
+    assert "no .json snapshots" not in err
 
 
 def test_directory_pick_prefers_fresh_untimestamped_file(tmp_path):
@@ -730,3 +765,46 @@ def test_directory_ignores_broken_symlink_and_subdirectory_candidates(tmp_path):
     snap, source = load_snapshot(str(tmp_path))
     assert snap["metadata"]["Data View ID"] == "dv_clean_prod_web"
     assert source.endswith("a.json")
+
+
+def _stdin_bytes(data: bytes, *, encoding: str) -> io.TextIOWrapper:
+    # A text stream whose locale encoding is not UTF-8, as on a Latin-1
+    # terminal or a Windows pipe; .buffer still holds the raw bytes.
+    return io.TextIOWrapper(io.BytesIO(data), encoding=encoding)
+
+
+def _aa_snapshot_named(name: str) -> dict:
+    snapshot = json.loads((FIXTURES / "aa_snapshot_clean.json").read_text(encoding="utf-8"))
+    snapshot["report_suite"]["name"] = name
+    return snapshot
+
+
+def test_stdin_is_decoded_as_utf8_regardless_of_locale_encoding(monkeypatch):
+    payload = json.dumps(_aa_snapshot_named("Café Ünïcode"), ensure_ascii=False).encode("utf-8")
+    monkeypatch.setattr(sys, "stdin", _stdin_bytes(payload, encoding="latin-1"))
+
+    snapshot, source = load_snapshot("-")
+
+    assert source == "stdin"
+    assert snapshot["report_suite"]["name"] == "Café Ünïcode"
+
+
+@pytest.mark.parametrize("stream", ["bytes", "text"])
+def test_stdin_accepts_a_utf8_bom_like_file_input(monkeypatch, stream):
+    payload = json.dumps(_aa_snapshot_named("Clean Production"))
+    if stream == "bytes":
+        stdin = _stdin_bytes(b"\xef\xbb\xbf" + payload.encode("utf-8"), encoding="utf-8")
+    else:
+        stdin = io.StringIO("﻿" + payload)
+    monkeypatch.setattr(sys, "stdin", stdin)
+
+    snapshot, _ = load_snapshot("-")
+
+    assert snapshot["report_suite"]["name"] == "Clean Production"
+
+
+def test_stdin_rejects_bytes_that_are_not_utf8(monkeypatch):
+    monkeypatch.setattr(sys, "stdin", _stdin_bytes(b'{"name": "\xff"}', encoding="latin-1"))
+
+    with pytest.raises(InvalidSnapshotError, match="^stdin is not valid UTF-8$"):
+        load_snapshot("-")

@@ -34,7 +34,7 @@ from sdr_grader.core.grader import grade
 from sdr_grader.core.structure_limits import validate_snapshot_structure
 from sdr_grader.input.adapt import adapt_snapshot as _adapt_snapshot
 from sdr_grader.input.json_io import DuplicateJSONKeyError, unique_object
-from sdr_grader.input.loader import STDIN_TOKEN, load_snapshot
+from sdr_grader.input.loader import STDIN_TOKEN, list_snapshot_candidates, load_snapshot
 from sdr_grader.input.shell_out import shell_aa, shell_cja
 from sdr_grader.render import cap_component_items, render
 from sdr_grader.render.color_packs import COLOR_PACK_CODES
@@ -50,6 +50,10 @@ BUNDLED_PACKS_DIR = Path(__file__).resolve().parent.parent / "rules" / "packs"
 def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
+    for flag, value in _string_option_values(args):
+        if value == "":
+            print(f"error: {flag} requires a non-empty value", file=sys.stderr)
+            return RUNTIME_ERROR
 
     rubric_dir = _resolve_rubric_dir(args)
     if rubric_dir is None:
@@ -472,6 +476,13 @@ def _load_snapshot_for_args(args) -> tuple[dict, str]:
         raise InvalidSnapshotError(
             "multiple input modes specified; pick one of snapshot / --dataview / --rsid."
         )
+    if args.at is not None and (
+        args.dataview
+        or args.rsid
+        or args.snapshot == STDIN_TOKEN
+        or (Path(args.snapshot).exists() and not Path(args.snapshot).is_dir())
+    ):
+        raise InvalidSnapshotError("--at requires a snapshot directory")
     if args.dataview:
         return shell_cja(args.dataview)
     if args.rsid:
@@ -537,10 +548,33 @@ def _default_trend_output_path(trend) -> Path:
     return Path(portable_leaf("trend-", identity, ".html"))
 
 
+def _string_option_values(args) -> list[tuple[str, str | None]]:
+    """Options whose empty value would otherwise be dropped as if unset."""
+    return [
+        ("--dataview", args.dataview),
+        ("--rsid", args.rsid),
+        ("--at", args.at),
+        ("--rubric", args.rubric),
+        ("--pack", args.pack),
+        ("--output", args.output),
+        ("--json", args.json_output),
+        ("--suppress-config", args.suppress_config),
+        ("--distribution-data", args.distribution_data),
+        ("--fail-below", args.fail_below),
+    ]
+
+
 def _read_paths_for_args(args, rubric_dir: Path, suppression_path: Path) -> list[Path]:
     paths = [Path(rubric_dir), Path(suppression_path)]
+    # Protect the files read from inside input directories, not only the
+    # directories themselves: the rubric pack's YAML files and every snapshot
+    # candidate a directory or trend run may read.
+    paths.extend(sorted(Path(rubric_dir).glob("*.yaml")))
     if args.snapshot and args.snapshot != STDIN_TOKEN:
-        paths.append(Path(args.snapshot))
+        snapshot_path = Path(args.snapshot)
+        paths.append(snapshot_path)
+        if snapshot_path.is_dir():
+            paths.extend(list_snapshot_candidates(snapshot_path))
     for spec in args.extra_input:
         if "=" in spec:
             _key, _separator, path = spec.partition("=")

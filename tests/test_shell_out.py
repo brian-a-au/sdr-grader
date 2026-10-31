@@ -397,3 +397,23 @@ def test_shell_numeric_conversion_is_controlled(monkeypatch):
     with pytest.raises(InvalidSnapshotError, match=r"shell error \[invalid-json\]") as raised:
         _run_python(monkeypatch, "print('{\"PRIVATE\":' + '9' * 5000 + '}')")
     assert "PRIVATE" not in str(raised.value)
+
+
+@pytest.mark.parametrize(
+    ("shell", "flag"),
+    [(shell_out.shell_cja, "--dataview"), (shell_out.shell_aa, "--rsid")],
+)
+@pytest.mark.parametrize("identifier", ["", "--help", "-x", "--output=/tmp/x"])
+def test_shell_out_rejects_option_like_or_empty_ids_before_spawning(
+    monkeypatch: pytest.MonkeyPatch, shell, flag: str, identifier: str
+) -> None:
+    def _no_spawn(*_args, **_kwargs):
+        raise AssertionError("the upstream tool must not be started")
+
+    monkeypatch.setattr(shell_out.shutil, "which", lambda _tool: sys.executable)
+    monkeypatch.setattr(shell_out.subprocess, "Popen", _no_spawn)
+
+    with pytest.raises(InvalidSnapshotError) as exc_info:
+        shell(identifier)
+
+    assert str(exc_info.value) == f"{flag} requires an ID that is not empty and does not start with '-'"

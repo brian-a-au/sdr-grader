@@ -2,11 +2,18 @@
 
 from __future__ import annotations
 
+import re
+from collections import Counter
 from typing import Any
+
+from hypothesis import given, settings
+from hypothesis import strategies as st
 
 from sdr_grader.core.models import CalculatedMetric, Component, Implementation, Segment
 from sdr_grader.rules.checks.naming import (
+    _WORD_RE,
     _classify_casing,
+    _count_word,
     _target_display,
     check_casing_consistency,
     check_prefix_consistency,
@@ -283,3 +290,39 @@ def test_semantic_consistency_event_and_conversion_NOT_in_defaults():
     ]
     findings = check_semantic_consistency(_impl(dimensions=dims), _ctx("NAME-004"))
     assert findings == []
+
+
+_COUNT_ALPHABET = list("aps sitemé_0 |-.İı́ßſ 日本") + ["page", "pages", "s", "ss"]
+_COUNT_TEXT = st.lists(st.sampled_from(_COUNT_ALPHABET), max_size=40).map("".join)
+
+
+@settings(max_examples=2000, deadline=None)
+@given(
+    haystack=_COUNT_TEXT,
+    word=st.one_of(
+        st.sampled_from(["page", "s", "item", "é", "sku", "a b", "pa-ge", ""]),
+        _COUNT_TEXT,
+    ),
+)
+def test_count_word_matches_word_boundary_regex(haystack: str, word: str) -> None:
+    expected = len(re.findall(rf"\b{re.escape(word)}s?\b", haystack))
+    assert _count_word(haystack, word, Counter(_WORD_RE.findall(haystack))) == expected
+
+
+def test_semantic_consistency_scans_default_words_in_one_pass(monkeypatch) -> None:
+    calls = 0
+    real_findall = re.findall
+
+    def counting_findall(*args: Any, **kwargs: Any) -> list[Any]:
+        nonlocal calls
+        calls += 1
+        return real_findall(*args, **kwargs)
+
+    monkeypatch.setattr(re, "findall", counting_findall)
+    dims = [
+        _component(1, name="Page views", cid="variables/page_views"),
+        _component(2, name="Screen views", cid="variables/screen_views"),
+    ]
+    findings = check_semantic_consistency(_impl(dimensions=dims), _ctx("NAME-004"))
+    assert len(findings) == 1
+    assert calls == 0
