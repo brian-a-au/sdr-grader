@@ -496,15 +496,26 @@ def _resolve_rubric_dir(args) -> Path | None:
             print(f"error: rubric directory not found: {path}", file=sys.stderr)
             return None
         return path
-    bundled = BUNDLED_PACKS_DIR / args.pack
-    if not bundled.is_dir():
+    # --pack takes a pack name, never a path: match it exactly against the
+    # bundled pack directories so "../x", "strict/" or a case variant on a
+    # case-insensitive filesystem cannot select another directory.
+    names = _bundled_pack_names()
+    if args.pack not in names:
         print(
-            f"error: bundled pack {args.pack!r} not found at {bundled}; "
-            f"pass --rubric PATH to use a custom pack.",
+            f"error: bundled pack {args.pack!r} not found; choose one of: "
+            f"{', '.join(names)}, or pass --rubric PATH to use a custom pack.",
             file=sys.stderr,
         )
         return None
-    return bundled
+    return BUNDLED_PACKS_DIR / args.pack
+
+
+def _bundled_pack_names() -> list[str]:
+    return sorted(
+        entry.name
+        for entry in BUNDLED_PACKS_DIR.iterdir()
+        if entry.is_dir() and (entry / "_meta.yaml").is_file()
+    )
 
 
 # ---------------------------------------------------------------------------

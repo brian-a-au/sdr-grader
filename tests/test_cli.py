@@ -1398,3 +1398,27 @@ def test_x_extension_keys_do_not_change_report_bytes(tmp_path):
 
     assert (tmp_path / "a.json").read_bytes() == (tmp_path / "b.json").read_bytes()
     assert (tmp_path / "a.html").read_bytes() == (tmp_path / "b.html").read_bytes()
+
+
+@pytest.mark.parametrize(
+    "pack",
+    ["../packs/strict", "__pycache__", "strict/", "./strict", "STRICT", "missing"],
+)
+def test_cli_pack_accepts_only_bundled_pack_names(tmp_path, capsys, pack):
+    rc = main([str(FIXTURES / "cja_snapshot_clean.json"), "--pack", pack, "--output", str(tmp_path / "o.html")])
+
+    assert rc == RUNTIME_ERROR
+    assert capsys.readouterr().err == (
+        f"error: bundled pack {pack!r} not found; choose one of: aa-admin, pragmatic, "
+        "strict, or pass --rubric PATH to use a custom pack.\n"
+    )
+    assert not (tmp_path / "o.html").exists()
+
+
+@pytest.mark.parametrize("pack", ["aa-admin", "pragmatic", "strict"])
+def test_cli_pack_loads_each_bundled_pack_by_name(tmp_path, pack):
+    snapshot = "aa_snapshot_clean.json" if pack == "aa-admin" else "cja_snapshot_clean.json"
+
+    rc = main([str(FIXTURES / snapshot), "--pack", pack, "--output", str(tmp_path / "o.html"), "--quiet"])
+
+    assert rc in (SUCCESS, GRADE_BELOW_THRESHOLD)
