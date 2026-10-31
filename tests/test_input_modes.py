@@ -754,6 +754,20 @@ def test_stdin_is_decoded_as_utf8_regardless_of_locale_encoding(monkeypatch):
     assert snapshot["report_suite"]["name"] == "Café Ünïcode"
 
 
+@pytest.mark.parametrize("stream", ["bytes", "text"])
+def test_stdin_accepts_a_utf8_bom_like_file_input(monkeypatch, stream):
+    payload = json.dumps(_aa_snapshot_named("Clean Production"))
+    if stream == "bytes":
+        stdin = _stdin_bytes(b"\xef\xbb\xbf" + payload.encode("utf-8"), encoding="utf-8")
+    else:
+        stdin = io.StringIO("﻿" + payload)
+    monkeypatch.setattr(sys, "stdin", stdin)
+
+    snapshot, _ = load_snapshot("-")
+
+    assert snapshot["report_suite"]["name"] == "Clean Production"
+
+
 def test_stdin_rejects_bytes_that_are_not_utf8(monkeypatch):
     monkeypatch.setattr(sys, "stdin", _stdin_bytes(b'{"name": "\xff"}', encoding="latin-1"))
 

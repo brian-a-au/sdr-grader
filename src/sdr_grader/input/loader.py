@@ -54,11 +54,15 @@ def load_snapshot(path_or_token: str, *, at: str | None = None) -> tuple[dict[st
 
 
 def _load_stdin() -> tuple[dict[str, Any], str]:
-    # Decode stdin bytes as UTF-8, like file input, instead of the locale
-    # encoding of sys.stdin. A text-only stream (no .buffer) is already decoded.
+    # Decode stdin bytes as UTF-8 with an optional BOM, like file input,
+    # instead of the locale encoding of sys.stdin. A text-only stream (no
+    # .buffer) is already decoded; drop one BOM there for the same result.
     try:
         buffer = getattr(sys.stdin, "buffer", None)
-        raw = buffer.read().decode("utf-8") if buffer is not None else sys.stdin.read()
+        if buffer is not None:
+            raw = buffer.read().decode("utf-8-sig")
+        else:
+            raw = sys.stdin.read().removeprefix("\ufeff")
     except UnicodeError:
         raise InvalidSnapshotError("stdin is not valid UTF-8") from None
     if not raw.strip():
