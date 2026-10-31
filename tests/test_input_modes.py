@@ -183,13 +183,48 @@ def test_list_snapshot_candidates_returns_complete_sorted_json_set(tmp_path):
 def test_list_snapshot_candidates_wraps_discovery_errors(tmp_path, monkeypatch):
     from sdr_grader.input.loader import list_snapshot_candidates
 
-    def fail_glob(_path, _pattern):
+    def fail_iterdir(_path):
         raise OSError("simulated discovery failure")
 
-    monkeypatch.setattr(Path, "glob", fail_glob)
+    monkeypatch.setattr(Path, "iterdir", fail_iterdir)
 
     with pytest.raises(InvalidSnapshotError, match="could not inspect snapshot directory"):
         list_snapshot_candidates(tmp_path)
+
+
+def test_list_snapshot_candidates_keeps_json_glob_matching(tmp_path):
+    from sdr_grader.input.loader import list_snapshot_candidates
+
+    (tmp_path / "sub.json").mkdir()
+    for name in ["a.json", ".hidden.json", ".json", "UPPER.JSON", "b.json.bak", "c d.json", "é.json"]:
+        (tmp_path / name).write_text("{}", encoding="utf-8")
+    (tmp_path / "link.json").symlink_to(tmp_path / "a.json")
+    (tmp_path / "dangling.json").symlink_to(tmp_path / "missing")
+
+    names = [path.name for path in list_snapshot_candidates(tmp_path)]
+
+    assert names == [".hidden.json", ".json", "a.json", "c d.json", "link.json", "é.json"]
+
+
+@pytest.mark.skipif(
+    sys.platform == "win32" or os.geteuid() == 0,
+    reason="needs POSIX permissions enforced for a non-root user",
+)
+@pytest.mark.parametrize("trend", [False, True])
+def test_unreadable_snapshot_directory_reports_inspection_error(tmp_path, capsys, trend):
+    directory = tmp_path / "snapshots"
+    directory.mkdir()
+    (directory / "snapshot_2026-04-01.json").write_text("{}", encoding="utf-8")
+    directory.chmod(0)
+    try:
+        rc = main([str(directory), *(["--trend"] if trend else []), "--output", str(tmp_path / "o.html")])
+    finally:
+        directory.chmod(0o755)
+
+    assert rc == RUNTIME_ERROR
+    err = capsys.readouterr().err
+    assert "could not inspect snapshot directory" in err
+    assert "no .json snapshots" not in err
 
 
 def test_directory_pick_prefers_fresh_untimestamped_file(tmp_path):
