@@ -54,8 +54,11 @@ def load_snapshot(path_or_token: str, *, at: str | None = None) -> tuple[dict[st
 
 
 def _load_stdin() -> tuple[dict[str, Any], str]:
+    # Decode stdin bytes as UTF-8, like file input, instead of the locale
+    # encoding of sys.stdin. A text-only stream (no .buffer) is already decoded.
     try:
-        raw = sys.stdin.read()
+        buffer = getattr(sys.stdin, "buffer", None)
+        raw = buffer.read().decode("utf-8") if buffer is not None else sys.stdin.read()
     except UnicodeError:
         raise InvalidSnapshotError("stdin is not valid UTF-8") from None
     if not raw.strip():

@@ -730,3 +730,32 @@ def test_directory_ignores_broken_symlink_and_subdirectory_candidates(tmp_path):
     snap, source = load_snapshot(str(tmp_path))
     assert snap["metadata"]["Data View ID"] == "dv_clean_prod_web"
     assert source.endswith("a.json")
+
+
+def _stdin_bytes(data: bytes, *, encoding: str) -> io.TextIOWrapper:
+    # A text stream whose locale encoding is not UTF-8, as on a Latin-1
+    # terminal or a Windows pipe; .buffer still holds the raw bytes.
+    return io.TextIOWrapper(io.BytesIO(data), encoding=encoding)
+
+
+def _aa_snapshot_named(name: str) -> dict:
+    snapshot = json.loads((FIXTURES / "aa_snapshot_clean.json").read_text(encoding="utf-8"))
+    snapshot["report_suite"]["name"] = name
+    return snapshot
+
+
+def test_stdin_is_decoded_as_utf8_regardless_of_locale_encoding(monkeypatch):
+    payload = json.dumps(_aa_snapshot_named("Café Ünïcode"), ensure_ascii=False).encode("utf-8")
+    monkeypatch.setattr(sys, "stdin", _stdin_bytes(payload, encoding="latin-1"))
+
+    snapshot, source = load_snapshot("-")
+
+    assert source == "stdin"
+    assert snapshot["report_suite"]["name"] == "Café Ünïcode"
+
+
+def test_stdin_rejects_bytes_that_are_not_utf8(monkeypatch):
+    monkeypatch.setattr(sys, "stdin", _stdin_bytes(b'{"name": "\xff"}', encoding="latin-1"))
+
+    with pytest.raises(InvalidSnapshotError, match="^stdin is not valid UTF-8$"):
+        load_snapshot("-")
