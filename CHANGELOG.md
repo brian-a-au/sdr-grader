@@ -3,6 +3,24 @@
 All notable changes follow the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
+## 1.6.3 — 2026-10-30
+
+Prepared October 30, 2026. Not yet published; see the
+[readiness record](docs/releases/1.6.3-readiness.md).
+
+This patch changes no grading code. The bundled `strict`, `pragmatic` and
+`aa-admin` packs are unchanged, and grades and report bytes for the same
+snapshot are the same apart from the version footer.
+
+- (#151) Advance the tested-through generator markers to `cja_auto_sdr` 3.13.6
+  and `aa_auto_sdr` 1.24.5. Snapshots that declare those versions no longer
+  print a newer-than-tested warning. Later versions are still accepted with the
+  warning.
+- With `cja_auto_sdr` 3.13.6, some segments report a greater nesting depth,
+  because that release now counts the steps of sequential segments. SEG-007 can
+  flag more segments as a result. This comes from the generator's snapshot, not
+  from a change in sdr-grader.
+
 ## 1.6.2 — 2026-10-30
 
 Published October 30, 2026 as a scoped public preview. Announcement remains on
