@@ -687,3 +687,22 @@ def test_oversized_integer_numeric_field_uses_default_aa():
     expected = adapt(snap).calculated_metrics[0].complexity_score
     snap["calculated_metrics"][0]["complexity_score"] = 10**400
     assert adapt(snap).calculated_metrics[0].complexity_score == expected
+
+
+@pytest.mark.parametrize("missing", [float("nan"), float("inf")])
+def test_non_finite_names_and_types_count_as_missing(missing):
+    from sdr_grader.adapters.aa import (
+        _calc_from_record,
+        _component_from_record,
+        _segment_from_record,
+    )
+
+    component = _component_from_record({"id": "evar1", "name": missing, "type": missing}, "dimension", {})
+    calc = _calc_from_record({"id": "cm1", "name": missing})
+    segment = _segment_from_record({"id": "s1", "name": missing})
+    impl = adapt(_minimal_snapshot(report_suite={"rsid": "rs1", "name": missing}), source="nan.json")
+
+    assert (component.name, component.data_type) == ("evar1", None)
+    assert calc.name == "cm1"
+    assert segment.name == "s1"
+    assert impl.instance_name == "rs1"
