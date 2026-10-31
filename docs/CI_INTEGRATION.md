@@ -18,6 +18,10 @@ documentation linked from the [latest release](https://github.com/brian-a-au/sdr
 | 2    | Graded successfully but below `--fail-below` |
 | 3    | Rubric / suppression validation failure   |
 
+An empty option value is a runtime error (exit 1). For example,
+`--fail-below "$THRESHOLD"` with an unset variable fails the step instead of
+turning the threshold off.
+
 ## GitHub Actions example
 
 ```yaml
