@@ -17,7 +17,7 @@ from pathlib import Path
 
 import pytest
 
-from sdr_grader.adapters.cja import adapt
+from sdr_grader.adapters.cja import _segment_from_record, adapt
 from sdr_grader.core.exceptions import InvalidSnapshotError
 from sdr_grader.core.models import CalculatedMetric, Component, Implementation, Segment
 from sdr_grader.core.structure_limits import MAX_DEFINITION_NODES, MAX_STRUCTURE_DEPTH
@@ -226,7 +226,8 @@ def test_shallow_segment_falls_back_to_declared_container_when_no_nested(
     # exercises that the walk finds it correctly.
     seg = next(s for s in messy_impl.segments if s.id == "segments/seg_simple_001")
     assert seg.container_types == ["event"]
-    assert seg.nesting_depth == 2
+    # One container. The exported nesting_depth of 2 also counts the predicate.
+    assert seg.nesting_depth == 1
 
 
 # ---------------------------------------------------------------------------
@@ -930,3 +931,47 @@ def test_oversized_integer_numeric_field_uses_default_cja(messy_snapshot) -> Non
     expected = adapt(snap).calculated_metrics[0].complexity_score
     record["complexity_score"] = 10**400
     assert adapt(snap).calculated_metrics[0].complexity_score == expected
+
+
+def test_segment_nesting_depth_counts_containers_like_the_aa_adapter(messy_impl: Implementation) -> None:
+    from sdr_grader.adapters.aa import _analyze_segment_definition
+
+    for segment in messy_impl.segments:
+        assert segment.nesting_depth == _analyze_segment_definition(segment.definition)[0], segment.id
+
+
+@pytest.mark.parametrize(
+    ("definition", "expected"),
+    [
+        ({"func": "segment", "container": {"func": "container", "context": "hits", "pred": {"func": "streq"}}}, 1),
+        (
+            {
+                "func": "container",
+                "context": "visitors",
+                "pred": {
+                    "func": "sequence",
+                    "stream": [
+                        {"func": "container", "context": "visits", "pred": {"func": "streq"}},
+                        {"func": "container", "context": "visits", "pred": {"func": "streq"}},
+                    ],
+                },
+            },
+            2,
+        ),
+        ({"func": "segment", "pred": {"func": "and", "preds": [{"func": "streq"}, {"func": "streq"}]}}, 0),
+        ({"func": "container", "pred": {"func": "streq"}}, 0),
+    ],
+    ids=["one-container", "sequence-steps", "no-container", "container-without-context"],
+)
+def test_segment_nesting_depth_ignores_predicate_and_step_levels(definition, expected) -> None:
+    segment = _segment_from_record(
+        {"segment_id": "s1", "nesting_depth": 7, "definition_json": json.dumps(definition)}
+    )
+
+    assert segment.nesting_depth == expected
+
+
+def test_segment_without_definition_keeps_the_exported_nesting_depth() -> None:
+    assert _segment_from_record({"segment_id": "s1", "nesting_depth": 4}).nesting_depth == 4
+    assert _segment_from_record({"segment_id": "s1", "nesting_depth": 4, "definition_json": "{}"}).nesting_depth == 4
+

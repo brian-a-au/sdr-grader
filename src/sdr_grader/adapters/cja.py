@@ -540,7 +540,14 @@ def _segment_from_record(record: dict[str, Any], *, index: int | None = None) ->
         record.get("definition_json"),
         label=f"segment definition {segment_id!r}",
     )
-    nesting_depth = _safe_int(record.get("nesting_depth"))
+    # cja_auto_sdr's nesting_depth also adds a level for every pred, preds,
+    # exclude and sequence step, so it is not comparable with AA. Count
+    # containers from the definition, as the AA adapter does, and keep the
+    # exported value only when the snapshot carries no definition.
+    if definition:
+        nesting_depth = _container_depth(definition)
+    else:
+        nesting_depth = _safe_int(record.get("nesting_depth"))
     container_types = _extract_container_types(record.get("container_type"), definition)
     references = _inventory_references(definition, record, segment=True)
 
@@ -601,6 +608,22 @@ def _extract_container_types(declared_container: Any, definition: dict[str, Any]
             seen.add(ctx)
             ordered.append(ctx)
     return ordered
+
+
+def _container_depth(node: Any) -> int:
+    """Count nested `func: container` levels that declare a context.
+
+    Same measure as the AA adapter's segment walk. Recursion is bounded by
+    the definition structure budget (depth 100) checked during parsing.
+    """
+    if isinstance(node, dict):
+        inner = max((_container_depth(value) for value in node.values()), default=0)
+        if node.get("func") == "container" and node.get("context"):
+            return inner + 1
+        return inner
+    if isinstance(node, list):
+        return max((_container_depth(item) for item in node), default=0)
+    return 0
 
 
 def _walk_for_contexts(node: Any, out: list[str]) -> None:
