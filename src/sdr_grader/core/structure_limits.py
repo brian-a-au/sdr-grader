@@ -73,7 +73,8 @@ def validate_unicode_scalars(value: Any, *, label: str) -> None:
 
 
 def _validate_string(value: Any, *, label: str) -> None:
-    if isinstance(value, str) and _SURROGATE_RE.search(value):
+    # Surrogates are never ASCII, and isascii() is O(1) on CPython strings.
+    if isinstance(value, str) and not value.isascii() and _SURROGATE_RE.search(value):
         raise InvalidSnapshotError(f"{label} contains a Unicode surrogate code point")
 
 
