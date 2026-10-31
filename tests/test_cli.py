@@ -868,9 +868,9 @@ def test_trend_unknown_platform_is_controlled_runtime_error(
     ("platform", "version"),
     [
         ("cja", "99.0.0"),
-        ("cja", "3.13.3"),
+        ("cja", "3.13.7"),
         ("aa", "99.0.0"),
-        ("aa", "1.24.2"),
+        ("aa", "1.24.6"),
     ],
 )
 def test_cli_warns_once_for_newer_generator_without_snapshot_data(
@@ -911,10 +911,12 @@ def test_cli_warns_once_for_newer_generator_without_snapshot_data(
 @pytest.mark.parametrize(
     ("platform", "version"),
     [
+        ("cja", "3.13.6"),
         ("cja", "3.13.2"),
         ("cja", "3.11.7"),
         ("cja", "3.5.17"),
         ("cja", "unparseable"),
+        ("aa", "1.24.5"),
         ("aa", "1.24.1"),
         ("aa", "1.21.10"),
         ("aa", "1.18.0"),
