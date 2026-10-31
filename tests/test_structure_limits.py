@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+from sdr_grader.core import structure_limits
 from sdr_grader.core.exceptions import InvalidSnapshotError
 from sdr_grader.core.structure_limits import (
     MAX_DEFINITION_NODES,
@@ -13,6 +14,7 @@ from sdr_grader.core.structure_limits import (
     validate_decoded_structure,
     validate_definition_structure,
     validate_snapshot_structure,
+    validate_unicode_scalars,
 )
 
 
@@ -110,3 +112,26 @@ def test_snapshot_structure_accepts_valid_non_bmp_unicode_without_changing_count
     validate_snapshot_structure(value, label="test snapshot")
 
     assert measure_structure(value) == (5, 2)
+
+
+class _CountingPattern:
+    def __init__(self, pattern):
+        self.pattern = pattern
+        self.searched: list[str] = []
+
+    def search(self, value: str):
+        self.searched.append(value)
+        return self.pattern.search(value)
+
+
+@pytest.mark.parametrize(
+    "validate",
+    [validate_snapshot_structure, validate_decoded_structure, validate_unicode_scalars],
+)
+def test_surrogate_scan_skips_ascii_strings_and_keys(monkeypatch, validate):
+    counting = _CountingPattern(structure_limits._SURROGATE_RE)
+    monkeypatch.setattr(structure_limits, "_SURROGATE_RE", counting)
+
+    validate({"ascii-key": ["plain", "café"], "東京": "value"}, label="test snapshot")
+
+    assert sorted(counting.searched) == ["café", "東京"]

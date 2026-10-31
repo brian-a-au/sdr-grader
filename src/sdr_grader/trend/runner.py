@@ -57,6 +57,7 @@ def build_trend_report(
             "trend reports require timestamped filenames "
             "(e.g. snapshot_2026-04-25.json)."
         )
+    timestamped_candidates = _one_name_per_file(timestamped_candidates)
 
     points: list[TrendPoint] = []
     first_impl: Implementation | None = None
@@ -111,3 +112,23 @@ def build_trend_report(
         pack_version=rubric.version,
         points=points,
     )
+
+
+def _one_name_per_file(
+    candidates: list[tuple[datetime, Path]],
+) -> list[tuple[datetime, Path]]:
+    """Keep one entry per resolved file, at its earliest (timestamp, path).
+
+    Several timestamped names for one file (e.g. a symlink) are one snapshot,
+    as in directory mode. Kept entries stay in their original order.
+    """
+    try:
+        resolved = [path.resolve() for _timestamp, path in candidates]
+    except (OSError, RuntimeError) as exc:
+        raise InvalidSnapshotError(f"could not inspect a trend snapshot path: {exc}") from exc
+    first: dict[Path, tuple[datetime, Path]] = {}
+    for entry, identity in zip(candidates, resolved, strict=True):
+        if identity not in first or entry < first[identity]:
+            first[identity] = entry
+    kept = set(first.values())
+    return [entry for entry in candidates if entry in kept]

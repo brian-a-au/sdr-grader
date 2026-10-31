@@ -161,8 +161,11 @@ sdr-grader snapshot.json --output reports\grade.html --json reports\grade.json
 ```
 
 The grader creates missing parent directories, but it cannot bypass operating
-system permissions. Avoid network shares while diagnosing a write failure, and
-do not choose either input snapshot as an output destination.
+system permissions. Avoid network shares while diagnosing a write failure.
+Do not choose an input file as an output destination. This includes a snapshot
+inside a snapshot directory or trend directory and a YAML file inside a
+`--rubric` directory. The grader rejects these with "collides with an input
+path" and exit code 1.
 
 ## Privacy and safe diagnostics
 

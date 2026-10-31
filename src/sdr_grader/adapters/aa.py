@@ -27,6 +27,7 @@ from sdr_grader.core.structure_limits import (
     validate_unicode_scalars,
 )
 from sdr_grader.core.timeparse import select_snapshot_timestamp
+from sdr_grader.input.json_io import DuplicateJSONKeyError, unique_object
 
 
 def adapt(snapshot: dict[str, Any], *, source: str = "<unknown>") -> Implementation:
@@ -262,6 +263,9 @@ def _calc_from_record(record: Any, *, index: int | None = None) -> CalculatedMet
         value = record.get(alias)
         if value is not None and not isinstance(value, str):
             raise InvalidSnapshotError("calculated metric attribution must be a string or null")
+    allocation = record.get("allocation")
+    if allocation is not None and not isinstance(allocation, str):
+        raise InvalidSnapshotError("calculated metric allocation must be a string or null")
 
     return CalculatedMetric(
         id=str(metric_id),
@@ -270,7 +274,7 @@ def _calc_from_record(record: Any, *, index: int | None = None) -> CalculatedMet
         formula=formula if isinstance(formula, dict) else {},
         formula_text=formula_text,
         attribution_model=record.get("attribution") or record.get("attribution_model"),
-        allocation=record.get("allocation"),
+        allocation=allocation,
         complexity_score=_safe_float(record.get("complexity_score")),
         references=references,
         reference_classifications=_aa_reference_classifications(definition, references),
@@ -570,9 +574,11 @@ def _parse_tag_list(value: Any) -> list[str]:
         return _tag_names(value)
     if isinstance(value, str):
         try:
-            parsed = json.loads(value)
+            parsed = json.loads(value, object_pairs_hook=unique_object)
         except json.JSONDecodeError:
             return []
+        except DuplicateJSONKeyError:
+            raise InvalidSnapshotError("tag list JSON contains duplicate object keys") from None
         except (ValueError, RecursionError) as exc:
             raise InvalidSnapshotError("tag list JSON exceeds decoder limits") from exc
         validate_decoded_structure(parsed, label="tag list")

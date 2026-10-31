@@ -610,7 +610,7 @@ def test_aa_embedded_tags_reject_resource_errors_and_decoded_surrogates(monkeypa
     monkeypatch.setattr(
         aa.json,
         "loads",
-        lambda _value: (_ for _ in ()).throw(ValueError("integer limit")),
+        lambda _value, **_kwargs: (_ for _ in ()).throw(ValueError("integer limit")),
     )
     with pytest.raises(InvalidSnapshotError, match="JSON exceeds decoder limits"):
         aa._parse_tag_list('["value"]')
@@ -687,6 +687,25 @@ def test_oversized_integer_numeric_field_uses_default_aa():
     expected = adapt(snap).calculated_metrics[0].complexity_score
     snap["calculated_metrics"][0]["complexity_score"] = 10**400
     assert adapt(snap).calculated_metrics[0].complexity_score == expected
+
+
+@pytest.mark.parametrize("allocation", [{"type": "linear"}, ["linear"], 7, True])
+def test_calc_metric_allocation_must_be_string_or_null(allocation):
+    snapshot = _minimal_snapshot(calculated_metrics=[{"id": "cm1", "allocation": allocation}])
+
+    with pytest.raises(
+        InvalidSnapshotError, match="^calculated metric allocation must be a string or null$"
+    ):
+        adapt(snapshot, source="allocation.json")
+
+
+@pytest.mark.parametrize("allocation", ["linear", None])
+def test_calc_metric_string_or_null_allocation_is_kept(allocation):
+    snapshot = _minimal_snapshot(calculated_metrics=[{"id": "cm1", "allocation": allocation}])
+
+    impl = adapt(snapshot, source="allocation.json")
+
+    assert impl.calculated_metrics[0].allocation == allocation
 
 
 @pytest.mark.parametrize("missing", [float("nan"), float("inf")])

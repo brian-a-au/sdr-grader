@@ -731,7 +731,7 @@ def test_definition_parser_wraps_json_recursion_error(monkeypatch):
     monkeypatch.setattr(
         cja.json,
         "loads",
-        lambda _value: (_ for _ in ()).throw(RecursionError("decoder recursion")),
+        lambda _value, **_kwargs: (_ for _ in ()).throw(RecursionError("decoder recursion")),
     )
 
     with pytest.raises(InvalidSnapshotError, match="definition JSON exceeds decoder limits"):
@@ -744,7 +744,7 @@ def test_definition_parser_wraps_json_recursion_error(monkeypatch):
 def test_embedded_json_resource_errors_are_invalid_snapshot(monkeypatch, error):
     from sdr_grader.adapters import cja
 
-    monkeypatch.setattr(cja.json, "loads", lambda _value: (_ for _ in ()).throw(error))
+    monkeypatch.setattr(cja.json, "loads", lambda _value, **_kwargs: (_ for _ in ()).throw(error))
 
     for parser in (cja._parse_definition_json, cja._parse_tag_list, cja._parse_ref_list):
         with pytest.raises(InvalidSnapshotError, match="JSON exceeds decoder limits"):
@@ -930,6 +930,28 @@ def test_oversized_integer_numeric_field_uses_default_cja(messy_snapshot) -> Non
     expected = adapt(snap).calculated_metrics[0].complexity_score
     record["complexity_score"] = 10**400
     assert adapt(snap).calculated_metrics[0].complexity_score == expected
+
+
+@pytest.mark.parametrize(
+    ("parser", "value", "message"),
+    [
+        ("cja._parse_definition_json", '{"context": "hits", "context": "visitors"}', "definition"),
+        ("cja._parse_tag_list", '[{"name": "a", "name": "b"}]', "tag list"),
+        ("cja._parse_ref_list", '[{"id": "a", "id": "b"}]', "reference list"),
+        ("cja._inventory_ref_list", '[{"id": "a", "id": "b"}]', "reference list"),
+        ("aa._parse_tag_list", '[{"name": "a", "name": "b"}]', "tag list"),
+    ],
+)
+def test_embedded_json_rejects_duplicate_keys_like_the_outer_document(parser, value, message):
+    from sdr_grader.adapters import aa, cja
+
+    module_name, function_name = parser.split(".")
+    function = getattr({"aa": aa, "cja": cja}[module_name], function_name)
+
+    with pytest.raises(
+        InvalidSnapshotError, match=f"^{message} JSON contains duplicate object keys$"
+    ):
+        function(value)
 
 
 _NAN = float("nan")

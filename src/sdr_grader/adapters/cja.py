@@ -30,6 +30,7 @@ from sdr_grader.core.structure_limits import (
     validate_unicode_scalars,
 )
 from sdr_grader.core.timeparse import select_snapshot_timestamp
+from sdr_grader.input.json_io import DuplicateJSONKeyError, unique_object
 
 
 def adapt(snapshot: dict[str, Any], *, source: str = "<unknown>") -> Implementation:
@@ -467,9 +468,13 @@ def _inventory_ref_list(value: Any) -> list[str]:
             return []
         if value[0] in '[{"' or value in {"null", "true", "false"}:
             try:
-                value = json.loads(value)
+                value = json.loads(value, object_pairs_hook=unique_object)
             except json.JSONDecodeError:
                 return []
+            except DuplicateJSONKeyError:
+                raise InvalidSnapshotError(
+                    "reference list JSON contains duplicate object keys"
+                ) from None
             except (ValueError, RecursionError) as exc:
                 raise InvalidSnapshotError("reference list JSON exceeds decoder limits") from exc
             validate_decoded_structure(value, label="reference list")
@@ -708,9 +713,11 @@ def _parse_definition_json(value: Any, *, label: str = "definition") -> dict[str
         parsed = value
     elif isinstance(value, str):
         try:
-            parsed = json.loads(value)
+            parsed = json.loads(value, object_pairs_hook=unique_object)
         except json.JSONDecodeError:
             return {}
+        except DuplicateJSONKeyError:
+            raise InvalidSnapshotError(f"{label} JSON contains duplicate object keys") from None
         except (ValueError, RecursionError) as exc:
             raise InvalidSnapshotError(f"{label} JSON exceeds decoder limits") from exc
         validate_unicode_scalars(parsed, label=label)
@@ -765,9 +772,11 @@ def _parse_tag_list(value: Any) -> list[str]:
         return _tag_names(value)
     if isinstance(value, str):
         try:
-            parsed = json.loads(value)
+            parsed = json.loads(value, object_pairs_hook=unique_object)
         except json.JSONDecodeError:
             return []
+        except DuplicateJSONKeyError:
+            raise InvalidSnapshotError("tag list JSON contains duplicate object keys") from None
         except (ValueError, RecursionError) as exc:
             raise InvalidSnapshotError("tag list JSON exceeds decoder limits") from exc
         validate_decoded_structure(parsed, label="tag list")
@@ -799,9 +808,13 @@ def _parse_ref_list(value: Any) -> list[str]:
         return [str(t) for t in value]
     if isinstance(value, str):
         try:
-            parsed = json.loads(value)
+            parsed = json.loads(value, object_pairs_hook=unique_object)
         except json.JSONDecodeError:
             return []
+        except DuplicateJSONKeyError:
+            raise InvalidSnapshotError(
+                "reference list JSON contains duplicate object keys"
+            ) from None
         except (ValueError, RecursionError) as exc:
             raise InvalidSnapshotError("reference list JSON exceeds decoder limits") from exc
         validate_decoded_structure(parsed, label="reference list")
