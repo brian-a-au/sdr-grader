@@ -22,6 +22,8 @@ class TrendPoint:
     timestamp: datetime
     source: str           # filesystem path or label
     report: Report        # full single-snapshot Report
+    # Generator-reported input gaps (e.g. a degraded AA fetch), for the CLI.
+    input_warnings: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)

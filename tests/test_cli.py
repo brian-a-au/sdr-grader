@@ -1398,3 +1398,43 @@ def test_x_extension_keys_do_not_change_report_bytes(tmp_path):
 
     assert (tmp_path / "a.json").read_bytes() == (tmp_path / "b.json").read_bytes()
     assert (tmp_path / "a.html").read_bytes() == (tmp_path / "b.html").read_bytes()
+
+
+def _aa_snapshot_with_degraded_classifications(path: Path) -> Path:
+    snapshot = json.loads((FIXTURES / "aa_snapshot_clean.json").read_text(encoding="utf-8"))
+    snapshot["fetch_status"] = {"classifications": {"status": "degraded", "expansion_level": None}}
+    path.write_text(json.dumps(snapshot), encoding="utf-8")
+    return path
+
+
+_DEGRADED_WARNING = (
+    "warning [aa-fetch-status]: aa_auto_sdr reported the classifications fetch as degraded; "
+    "classification tags may be missing, so findings about untagged dimensions can be overstated\n"
+)
+
+
+def test_cli_warns_about_a_degraded_aa_fetch_without_changing_the_report(tmp_path, capsys):
+    degraded = _aa_snapshot_with_degraded_classifications(tmp_path / "degraded.json")
+
+    rc_clean = main([str(FIXTURES / "aa_snapshot_clean.json"), "--json", str(tmp_path / "clean.json"), "--output", str(tmp_path / "clean.html"), "--quiet"])
+    capsys.readouterr()
+    rc = main([str(degraded), "--json", str(tmp_path / "degraded-report.json"), "--output", str(tmp_path / "degraded.html"), "--quiet"])
+
+    assert rc == rc_clean
+    assert capsys.readouterr().err == _DEGRADED_WARNING
+    clean_report = json.loads((tmp_path / "clean.json").read_text(encoding="utf-8"))
+    degraded_report = json.loads((tmp_path / "degraded-report.json").read_text(encoding="utf-8"))
+    for key in ("grade", "overall_pct", "categories", "findings"):
+        assert degraded_report[key] == clean_report[key]
+
+
+def test_cli_trend_warns_once_about_a_degraded_aa_fetch(tmp_path, capsys):
+    directory = tmp_path / "trend"
+    directory.mkdir()
+    _aa_snapshot_with_degraded_classifications(directory / "snap_2026-04-01.json")
+    _aa_snapshot_with_degraded_classifications(directory / "snap_2026-04-02.json")
+
+    rc = main([str(directory), "--trend", "--output", str(tmp_path / "trend.html"), "--quiet"])
+
+    assert rc == SUCCESS
+    assert capsys.readouterr().err == _DEGRADED_WARNING

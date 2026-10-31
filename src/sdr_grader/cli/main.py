@@ -33,6 +33,7 @@ from sdr_grader.core.exceptions import (
 from sdr_grader.core.grader import grade
 from sdr_grader.core.structure_limits import validate_snapshot_structure
 from sdr_grader.input.adapt import adapt_snapshot as _adapt_snapshot
+from sdr_grader.input.adapt import input_warnings
 from sdr_grader.input.json_io import DuplicateJSONKeyError, unique_object
 from sdr_grader.input.loader import STDIN_TOKEN, load_snapshot
 from sdr_grader.input.shell_out import shell_aa, shell_cja
@@ -116,6 +117,7 @@ def main(argv: list[str] | None = None) -> int:
         impl.platform,
         impl.adapter_version,
     )
+    _emit_input_warnings(input_warnings(impl))
 
     if args.snapshot and Path(args.snapshot).is_dir():
         from sdr_grader.input.history import matching_snapshot_sibling_exists
@@ -421,6 +423,9 @@ def _run_trend(args, rubric, suppression, rubric_dir, suppression_path) -> int:
             continue
         warned_generators.add(key)
         _emit_generator_version_warning(*key)
+    _emit_input_warnings(
+        list(dict.fromkeys(warning for point in trend.points for warning in point.input_warnings))
+    )
 
     output_path = Path(args.output) if args.output else _default_trend_output_path(trend)
     read_paths = _read_paths_for_args(args, rubric_dir, suppression_path)
@@ -559,6 +564,11 @@ def _grade_to_min_pct(grade_label: str, rubric) -> float | None:
         if band.grade == normalized or band.grade == grade_label:
             return band.min_score
     return None
+
+
+def _emit_input_warnings(warnings: list[str]) -> None:
+    for warning in warnings:
+        print(f"warning [aa-fetch-status]: {warning}", file=sys.stderr)
 
 
 def _emit_generator_version_warning(

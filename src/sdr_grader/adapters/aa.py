@@ -477,6 +477,45 @@ def _extract_aa_segment_refs(definition: Any) -> list[str]:
 TESTED_THROUGH_GENERATOR_VERSION = "1.24.5"
 
 
+# aa_auto_sdr writes `fetch_status` entries only for component families whose
+# fetch was not healthy. Only these known families and statuses are named in a
+# warning; anything else from the snapshot is summarized, never echoed.
+_FETCH_FAMILY_EFFECTS = {
+    "classifications": (
+        "classification tags may be missing, so findings about untagged "
+        "dimensions can be overstated"
+    ),
+    "virtual_report_suites": "the snapshot may be missing virtual_report_suites data",
+}
+_FETCH_STATUSES = frozenset({"degraded", "partial"})
+
+
+def fetch_status_warnings(snapshot: Any) -> list[str]:
+    """Describe the non-healthy fetches an aa_auto_sdr snapshot reports."""
+    status_by_family = snapshot.get("fetch_status") if isinstance(snapshot, dict) else None
+    if not isinstance(status_by_family, dict):
+        return []
+    warnings: list[str] = []
+    unrecognized = False
+    for family, entry in status_by_family.items():
+        status = entry.get("status") if isinstance(entry, dict) else None
+        if not isinstance(status, str) or status == "healthy":
+            continue
+        if family in _FETCH_FAMILY_EFFECTS and status in _FETCH_STATUSES:
+            warnings.append(
+                f"aa_auto_sdr reported the {family} fetch as {status}; "
+                f"{_FETCH_FAMILY_EFFECTS[family]}"
+            )
+        else:
+            unrecognized = True
+    if unrecognized:
+        warnings.append(
+            "aa_auto_sdr reported a component fetch that was not healthy; "
+            "the snapshot may be incomplete"
+        )
+    return sorted(warnings)
+
+
 def generator_version_warning(adapter_version: str) -> str | None:
     """Return warning text when the snapshot's generator is newer than the
     newest version this release was tested against, else None. Unparseable
