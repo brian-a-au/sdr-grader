@@ -288,7 +288,7 @@ This parameter was introduced in pack 2.1 with grader 1.4.0 and remains enabled
 in default packs 3.0. Older graders ignore this parameter. Pack 3.0 additionally
 requires the new AA administration check implementations and therefore grader
 1.5.0 or later. The v1.5.0 tag first includes both pack 3.0 and those checks;
-1.4.0 cannot load pack 3.0. This guide targets grader 1.6.1. See
+1.4.0 cannot load pack 3.0. This guide targets grader 1.6.2. See
 [AA administration evidence](AA_ADMIN_INPUT.md).
 Version text
 alone does not enable policy behavior. See

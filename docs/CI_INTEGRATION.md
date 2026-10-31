@@ -48,7 +48,7 @@ jobs:
           version: "0.13.6"
 
       - name: Install sdr-grader
-        run: uv tool install sdr-grader==1.6.1
+        run: uv tool install sdr-grader==1.6.2
 
       - name: Run grader
         run: |
