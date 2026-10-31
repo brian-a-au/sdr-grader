@@ -5,8 +5,8 @@ spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
 ## 1.7.0 — 2026-10-31
 
-Prepared October 31, 2026. Not yet published; see the
-[readiness record](docs/releases/1.7.0-readiness.md).
+Published October 31, 2026 as a scoped public preview. Announcement remains on
+HOLD; see the [release record](docs/releases/1.7.0-readiness.md).
 
 This minor release fixes grading bugs, tightens several input contracts and
 speeds up grading of large snapshots. The bundled `strict`, `pragmatic` and
