@@ -220,9 +220,10 @@ def check_semantic_consistency(
     groups: list[list[str]] = [[w.lower() for w in grp] for grp in raw_groups]
 
     haystack = _names_haystack(impl)
+    token_counts = Counter(_WORD_RE.findall(haystack))
     conflicts: list[tuple[list[str], dict[str, int]]] = []
     for group in groups:
-        counts = {word: _count_word(haystack, word) for word in group}
+        counts = {word: _count_word(haystack, word, token_counts) for word in group}
         present = {w: c for w, c in counts.items() if c > 0}
         if len(present) >= 2:
             conflicts.append((group, present))
@@ -333,5 +334,13 @@ def _names_haystack(impl: Implementation) -> str:
     return " | ".join(parts).lower()
 
 
-def _count_word(haystack: str, word: str) -> int:
+_WORD_RE = re.compile(r"\w+")
+
+
+def _count_word(haystack: str, word: str, token_counts: Counter[str]) -> int:
+    # For a word made only of \w characters, a `\bword s?\b` match is exactly
+    # a whole \w+ token equal to `word` or `word + "s"`, so one tokenizing pass
+    # over the haystack serves every such word. Other words keep the regex.
+    if _WORD_RE.fullmatch(word):
+        return token_counts[word] + token_counts[word + "s"]
     return len(re.findall(rf"\b{re.escape(word)}s?\b", haystack))
