@@ -331,6 +331,33 @@ def test_calc_metric_non_string_timestamps_become_none():
     assert calc.modified_at is None
 
 
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("attribution", {"model": "x"}),
+        ("attribution_model", 5),
+        ("allocation", 7),
+        ("allocation", {"kind": "x"}),
+        ("allocation", ["linear"]),
+    ],
+)
+def test_calc_metric_non_string_attribution_fields_are_invalid(field, value):
+    from sdr_grader.adapters.aa import _calc_from_record
+
+    message = "allocation" if field == "allocation" else "attribution"
+    with pytest.raises(InvalidSnapshotError, match=f"{message} must be a string or null"):
+        _calc_from_record({"id": "cm1", field: value})
+
+
+def test_calc_metric_string_or_null_attribution_fields_are_kept():
+    from sdr_grader.adapters.aa import _calc_from_record
+
+    calc = _calc_from_record({"id": "cm1", "attribution": "linear", "allocation": "participation"})
+    assert (calc.attribution_model, calc.allocation) == ("linear", "participation")
+    calc = _calc_from_record({"id": "cm1", "attribution": None, "allocation": None})
+    assert (calc.attribution_model, calc.allocation) == (None, None)
+
+
 def test_segment_non_string_timestamps_become_none():
     from sdr_grader.adapters.aa import _segment_from_record
 
