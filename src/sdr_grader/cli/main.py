@@ -331,7 +331,7 @@ def _attach_extra_inputs(impl, raw_specs: list[str]) -> None:
         if not path.is_file():
             raise InvalidSnapshotError(f"--extra-input {key}: file not found at {path}")
         try:
-            text = path.read_text(encoding="utf-8")
+            text = path.read_text(encoding="utf-8-sig")
         except UnicodeError:
             raise InvalidSnapshotError("--extra-input is not valid UTF-8") from None
         except OSError as exc:

@@ -1438,3 +1438,17 @@ def test_cli_trend_warns_once_about_a_degraded_aa_fetch(tmp_path, capsys):
 
     assert rc == SUCCESS
     assert capsys.readouterr().err == _DEGRADED_WARNING
+
+
+def test_extra_input_accepts_a_utf8_bom_like_snapshot_files(tmp_path):
+    from types import SimpleNamespace
+
+    from sdr_grader.cli.main import _attach_extra_inputs
+
+    source = tmp_path / "usage.json"
+    source.write_bytes(b"\xef\xbb\xbf" + json.dumps({"rows": [1, 2]}).encode("utf-8"))
+    impl = SimpleNamespace(supplementary_data={})
+
+    _attach_extra_inputs(impl, [f"usage={source}"])
+
+    assert impl.supplementary_data == {"usage": {"rows": [1, 2]}}
