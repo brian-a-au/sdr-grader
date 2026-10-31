@@ -188,8 +188,8 @@ def test_missing_dimensions_key_raises():
         ([{"name": "", "id": "tag-id"}], ["tag-id"]),
         ([{}, {"name": ""}, {"id": ""}], []),
         (
-            ["first", 7, None, False, {"name": "Named"}, {"id": "last"}],
-            ["first", "7", "None", "False", "Named", "last"],
+            ["first", 7, None, False, "", {"name": "Named"}, {"id": "last"}],
+            ["first", "Named", "last"],
         ),
     ],
     ids=["strings", "named-object", "id-fallback", "empty-objects", "mixed-order"],

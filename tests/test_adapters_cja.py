@@ -379,8 +379,8 @@ def _minimal_snapshot(*, dim_tags, metric_tags=None):
         ([{"name": "", "id": "tag-id"}], ["tag-id"]),
         ([{}, {"name": ""}, {"id": ""}], []),
         (
-            ["first", 7, None, False, {"name": "Named"}, {"id": "last"}],
-            ["first", "7", "None", "False", "Named", "last"],
+            ["first", 7, None, False, "", {"name": "Named"}, {"id": "last"}],
+            ["first", "Named", "last"],
         ),
     ],
     ids=["strings", "named-object", "id-fallback", "empty-objects", "mixed-order"],
@@ -858,7 +858,7 @@ def test_component_normalizers_preserve_owner_description_polarity_and_governanc
     assert component.description is None
     assert component.polarity == "negative"
     assert component.owner == "owner@example.com"
-    assert component.tags == ["governed", "7"]
+    assert component.tags == ["governed"]
     assert component.platform_specific == {"component_id": "variables/d1", "schema": "web"}
 
     assert _normalize_owner(7) is None
@@ -972,3 +972,29 @@ def test_non_finite_names_and_types_count_as_missing(missing):
     assert derived.name == "variables/df1"
     assert calc.name == "cm1"
     assert segment.name == "s1"
+
+
+def test_components_with_only_scalar_tags_count_as_untagged_for_gov_005():
+    from sdr_grader.rules.checks.governance import check_missing_tags
+    from sdr_grader.rules.engine import RuleContext
+
+    impl = adapt(
+        {
+            "metadata": {"Data View ID": "dv_x"},
+            "metrics": [{"id": f"metrics/m{i}", "name": f"M{i}", "tags": "[null, 7, false]"} for i in range(3)],
+            "dimensions": [{"id": "variables/d1", "name": "D1", "tags": ["governed"]}],
+        }
+    )
+    ctx = RuleContext(
+        rule_id="GOV-005",
+        rule_name="Missing tags",
+        severity="medium",
+        category="governance",
+        platforms=["cja"],
+        params={"threshold": 0.5},
+    )
+
+    findings = check_missing_tags(impl, ctx)
+
+    assert [finding.id for finding in findings] == ["GOV-005"]
+    assert "3 of 4 components" in str(findings[0].body)

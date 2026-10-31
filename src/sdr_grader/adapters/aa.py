@@ -589,14 +589,17 @@ def _parse_tag_list(value: Any) -> list[str]:
 
 
 def _tag_names(values: list[Any]) -> list[str]:
-    """Keep string tags and reduce API tag objects to their useful identity."""
+    """Keep string tags and reduce API tag objects to their useful identity.
+
+    Null, numbers, booleans and empty strings are not tags. Turning them into
+    "None", "7" or "False" would count an untagged component as tagged.
+    """
     tags = []
     for value in values:
         if isinstance(value, dict):
             value = value.get("name") or value.get("id")
-            if not isinstance(value, str) or not value:
-                continue
-        tags.append(str(value))
+        if isinstance(value, str) and value:
+            tags.append(value)
     return tags
 
 
