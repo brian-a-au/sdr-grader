@@ -262,6 +262,9 @@ def _calc_from_record(record: Any, *, index: int | None = None) -> CalculatedMet
         value = record.get(alias)
         if value is not None and not isinstance(value, str):
             raise InvalidSnapshotError("calculated metric attribution must be a string or null")
+    allocation = record.get("allocation")
+    if allocation is not None and not isinstance(allocation, str):
+        raise InvalidSnapshotError("calculated metric allocation must be a string or null")
 
     return CalculatedMetric(
         id=str(metric_id),
@@ -270,7 +273,7 @@ def _calc_from_record(record: Any, *, index: int | None = None) -> CalculatedMet
         formula=formula if isinstance(formula, dict) else {},
         formula_text=formula_text,
         attribution_model=record.get("attribution") or record.get("attribution_model"),
-        allocation=record.get("allocation"),
+        allocation=allocation,
         complexity_score=_safe_float(record.get("complexity_score")),
         references=references,
         reference_classifications=_aa_reference_classifications(definition, references),
