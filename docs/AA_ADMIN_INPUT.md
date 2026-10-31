@@ -176,7 +176,7 @@ to AA admin checks; older supplementary checks may stay silent while still
 remaining in their rubric's denominator.
 
 Default pack 3.0 is a scoring-policy change from 2.1 and requires grader 1.5.0
-or later. This guide targets grader 1.6.3. Complete AA evidence adds
+or later. This guide targets grader 1.7.0. Complete AA evidence adds
 the rules to their category severity denominators; a mismatch can lower a score,
 and a passing rule can change the relative share of existing failures. Without
 AA admin evidence the four rules are excluded, preserving prior numeric scores
