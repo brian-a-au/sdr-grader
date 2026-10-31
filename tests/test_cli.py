@@ -16,7 +16,7 @@ from sdr_grader.cli.exit_codes import (
     RUNTIME_ERROR,
     SUCCESS,
 )
-from sdr_grader.cli.main import main
+from sdr_grader.cli.main import BUNDLED_PACKS_DIR, main
 from sdr_grader.core.exceptions import UnknownPlatformError
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -459,6 +459,44 @@ def test_cli_rejects_output_colliding_with_snapshot(tmp_path, capsys):
     err = capsys.readouterr().err
     assert "collides with an input path" in err
     assert "Wrote " not in err
+
+
+def _snapshot_directory(tmp_path: Path) -> tuple[Path, Path, str]:
+    directory = tmp_path / "snapshots"
+    directory.mkdir()
+    original = (FIXTURES / "cja_snapshot_clean.json").read_text(encoding="utf-8")
+    (directory / "snapshot_2026-04-01.json").write_text(original, encoding="utf-8")
+    latest = directory / "snapshot_2026-04-03.json"
+    latest.write_text(original, encoding="utf-8")
+    return directory, latest, original
+
+
+@pytest.mark.parametrize("trend", [False, True])
+def test_cli_rejects_output_colliding_with_snapshot_in_directory(tmp_path, capsys, trend):
+    directory, latest, original = _snapshot_directory(tmp_path)
+
+    rc = main([str(directory), *(["--trend"] if trend else []), "--output", str(latest)])
+
+    assert rc == RUNTIME_ERROR
+    assert latest.read_text(encoding="utf-8") == original
+    err = capsys.readouterr().err
+    assert "collides with an input path" in err
+    assert "Wrote " not in err
+
+
+def test_cli_rejects_output_colliding_with_rubric_file(tmp_path, capsys):
+    pack = tmp_path / "pack"
+    shutil.copytree(BUNDLED_PACKS_DIR / "strict", pack)
+    meta = pack / "_meta.yaml"
+    original = meta.read_text(encoding="utf-8")
+
+    rc = main(
+        [str(FIXTURES / "cja_snapshot_clean.json"), "--rubric", str(pack), "--output", str(meta)]
+    )
+
+    assert rc == RUNTIME_ERROR
+    assert meta.read_text(encoding="utf-8") == original
+    assert "collides with an input path" in capsys.readouterr().err
 
 
 def test_cli_rejects_html_json_destination_alias(tmp_path, capsys):

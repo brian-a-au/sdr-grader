@@ -34,7 +34,7 @@ from sdr_grader.core.grader import grade
 from sdr_grader.core.structure_limits import validate_snapshot_structure
 from sdr_grader.input.adapt import adapt_snapshot as _adapt_snapshot
 from sdr_grader.input.json_io import DuplicateJSONKeyError, unique_object
-from sdr_grader.input.loader import STDIN_TOKEN, load_snapshot
+from sdr_grader.input.loader import STDIN_TOKEN, list_snapshot_candidates, load_snapshot
 from sdr_grader.input.shell_out import shell_aa, shell_cja
 from sdr_grader.render import cap_component_items, render
 from sdr_grader.render.color_packs import COLOR_PACK_CODES
@@ -528,8 +528,15 @@ def _default_trend_output_path(trend) -> Path:
 
 def _read_paths_for_args(args, rubric_dir: Path, suppression_path: Path) -> list[Path]:
     paths = [Path(rubric_dir), Path(suppression_path)]
+    # Protect the files read from inside input directories, not only the
+    # directories themselves: the rubric pack's YAML files and every snapshot
+    # candidate a directory or trend run may read.
+    paths.extend(sorted(Path(rubric_dir).glob("*.yaml")))
     if args.snapshot and args.snapshot != STDIN_TOKEN:
-        paths.append(Path(args.snapshot))
+        snapshot_path = Path(args.snapshot)
+        paths.append(snapshot_path)
+        if snapshot_path.is_dir():
+            paths.extend(list_snapshot_candidates(snapshot_path))
     for spec in args.extra_input:
         if "=" in spec:
             _key, _separator, path = spec.partition("=")
