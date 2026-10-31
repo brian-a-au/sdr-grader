@@ -610,7 +610,7 @@ def test_aa_embedded_tags_reject_resource_errors_and_decoded_surrogates(monkeypa
     monkeypatch.setattr(
         aa.json,
         "loads",
-        lambda _value: (_ for _ in ()).throw(ValueError("integer limit")),
+        lambda _value, **_kwargs: (_ for _ in ()).throw(ValueError("integer limit")),
     )
     with pytest.raises(InvalidSnapshotError, match="JSON exceeds decoder limits"):
         aa._parse_tag_list('["value"]')
