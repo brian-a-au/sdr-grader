@@ -78,6 +78,7 @@ exclude = [
     "/.superpowers",
     "/.hypothesis",
     "/.github",
+    "/.githooks",
     "/.venv",
     "/.env",
     "/.env.local",
