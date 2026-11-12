@@ -17,6 +17,12 @@ from [`cja_auto_sdr`](https://github.com/brian-a-au/cja_auto_sdr) and
 against a versioned YAML rubric, and produces a self-contained HTML report
 card plus machine-readable JSON.
 
+> **Not affiliated with Adobe.** sdr-grader is an independent open source
+> project. It is not affiliated with, endorsed by, sponsored by, or supported
+> by Adobe Inc. Adobe, Adobe Analytics, and Customer Journey Analytics are
+> trademarks of Adobe Inc. They are used here only to name the products this
+> tool works with. For help with Adobe products, contact Adobe support.
+
 These instructions match this source version. For the published package, use
 the documentation linked from the [latest release](https://github.com/brian-a-au/sdr-grader/releases/latest).
 Version-pinned links and examples become available when that version is released.
@@ -280,7 +286,7 @@ Before sharing an HTML or JSON report, follow the current
 
 - [CI integration](https://github.com/brian-a-au/sdr-grader/blob/v1.7.0/docs/CI_INTEGRATION.md) — use `--fail-below` safely in automation.
 - [Trend reports](https://github.com/brian-a-au/sdr-grader/blob/v1.7.0/docs/TREND_REPORTS.md) — filename conventions and flag interactions.
-- [Internal leaderboards](https://github.com/brian-a-au/sdr-grader/blob/v1.7.0/docs/LEADERBOARDS.md) — build a distribution reference from collected JSON outputs.
+- [Portfolio distribution reference](https://github.com/brian-a-au/sdr-grader/blob/v1.7.0/docs/LEADERBOARDS.md) — build a distribution reference from collected JSON outputs.
 - [Supplementary inputs](https://github.com/brian-a-au/sdr-grader/blob/v1.7.0/docs/SUPPLEMENTARY_INPUTS.md) — attach repeatable `--extra-input KEY=PATH` data.
 - [Claude Code skill](https://github.com/brian-a-au/sdr-grader/tree/v1.7.0/skills/sdr-grader) — query a grade without rerunning the grader.
 
