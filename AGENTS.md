@@ -40,6 +40,11 @@ Claude Code. That import syntax is Claude-specific, not a universal AGENTS.md
 feature. The bundled `skills/sdr-grader/SKILL.md` and Claude plugin are a separate
 integration; repository guidance does not change their behavior.
 
+Commit only as the `brian-a-au` GitHub identity. Set the repository's local
+`user.email` to `brian.a.au@gmail.com` and never commit with an employer
+address. The `Commit identity` PR check and the `.githooks/pre-commit` hook
+enforce this.
+
 PR titles and bodies must contain no Compound Engineering badge, link,
 attribution, or generated-by text. When using its shipping workflow, select
 `branding:off`.

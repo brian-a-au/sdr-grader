@@ -2,7 +2,7 @@ name: dependabot-auto-merge
 
 on:
   workflow_run:
-    workflows: [dependabot-policy, tests, lint, version-sync, "Dependency review", CodeQL]
+    workflows: [dependabot-policy, tests, lint, version-sync, commit-identity, "Dependency review", CodeQL]
     types: [completed]
   workflow_dispatch:
     inputs:
