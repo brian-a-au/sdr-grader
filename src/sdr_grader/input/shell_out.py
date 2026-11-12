@@ -1,4 +1,4 @@
-"""Mode 3: shell out to cja_auto_sdr / aa_auto_sdr (SPEC §7).
+"""Mode 3: shell out to cja_auto_sdr / aa_auto_sdr.
 
 The grader does not call Adobe APIs directly. To run against a live data
 view or report suite, it asks the upstream snapshot tool for JSON and

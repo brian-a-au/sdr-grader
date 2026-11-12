@@ -246,8 +246,7 @@ adding new supplementary-input rules.
 ## Vendoring parity with sdr-visualizer
 
 `adapters/{cja,aa}.py` share a defensive-coercion layer with
-[`sdr-visualizer`](https://github.com/brian-a-au/sdr-visualizer) per
-SPEC §11/§15. The adapters are not byte-identical, but changes to these
+[`sdr-visualizer`](https://github.com/brian-a-au/sdr-visualizer). The adapters are not byte-identical, but changes to these
 shared helpers must be mirrored to the sibling repository in the same cycle:
 
 - `_parse_tag_list` / `_parse_ref_list` parse JSON-encoded list strings and

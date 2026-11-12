@@ -1,6 +1,6 @@
 """Render a TrendReport to a single self-contained HTML file.
 
-Visual register matches the main report (SPEC §3): warm off-white
+Visual register matches the main report: warm off-white
 background, publication-serif body, monospace IDs, severity-colored
 accents only. Sparklines are server-side SVG; no JS, no CDN.
 """

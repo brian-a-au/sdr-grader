@@ -8,7 +8,7 @@ Loading validates: every rule has a registered check function, severities are
 known, category weights sum to 1.0 (within tolerance), rule IDs are unique,
 and grade scale is monotonic. Failures raise RubricValidationError loudly.
 
-See SPEC §6 for the YAML shapes.
+See docs/RUBRIC_FORMAT.md for the YAML shapes.
 """
 
 from __future__ import annotations

@@ -1,6 +1,6 @@
 """Command-line entry point.
 
-All four input modes land here (SPEC §7): snapshot file, snapshot
+All four input modes land here: snapshot file, snapshot
 directory, shell-out to cja_auto_sdr / aa_auto_sdr, and stdin. Exit
 codes mirror cja_auto_sdr.
 """

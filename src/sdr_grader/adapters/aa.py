@@ -1,8 +1,9 @@
 """AA adapter: aa_auto_sdr JSON output -> normalized Implementation.
 
-Per SPEC §5: eVars and props both map to dimensions (with platform_specific
-preserving allocation/expiration/prop-specific flags); events map to metrics;
-classifications attach as tags on the parent dimension.
+See core/models.py and docs/ADAPTER_GUIDE.md. eVars and props both map to
+dimensions (with platform_specific preserving allocation/expiration/prop-specific
+flags); events map to metrics; classifications attach as tags on the parent
+dimension.
 """
 
 from __future__ import annotations
@@ -524,7 +525,7 @@ def generator_version_warning(adapter_version: str) -> str | None:
     """Return warning text when the snapshot's generator is newer than the
     newest version this release was tested against, else None. Unparseable
     versions ("unknown", empty, suffixed builds) never warn. Vendored
-    parity: behavior-identical copy in sdr-visualizer (SPEC §11/§15); the
+    parity: behavior-identical copy in sdr-visualizer (see docs/ADAPTER_GUIDE.md); the
     per-platform constant value is the one deliberate difference."""
     tested = _version_tuple(TESTED_THROUGH_GENERATOR_VERSION)
     seen = _version_tuple(adapter_version)
@@ -557,7 +558,7 @@ def _optional_timestamp(value: Any) -> str | None:
     absent, not fabricated (fuzz-surfaced in the sibling sdr-visualizer:
     $.components[*].modified_at). Same helper as cja.py's copy (adapters
     stay standalone reference examples, so it's intentionally duplicated).
-    Mirrored from sdr-visualizer's copy (SPEC §11/§15); owner needs no
+    Mirrored from sdr-visualizer's copy; owner needs no
     equivalent mirror — its `owner_id` path is already cast here."""
     return value if isinstance(value, str) and value else None
 

@@ -1,4 +1,4 @@
-"""Exit code conventions, mirrored from cja_auto_sdr (see SPEC §7)."""
+"""Exit code conventions, mirrored from cja_auto_sdr."""
 
 SUCCESS = 0
 RUNTIME_ERROR = 1

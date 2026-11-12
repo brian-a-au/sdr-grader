@@ -2,7 +2,7 @@ category: segment_complexity
 description: |
   Segment complexity rules — container discipline, references, nesting,
   and duplicates. Rules measure shape, ratio, or correctness — never raw
-  cardinality (see SPEC §11).
+  cardinality.
 
 rules:
   - id: SEG-002

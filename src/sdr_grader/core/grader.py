@@ -1,6 +1,6 @@
 """Orchestrator: Implementation + Rubric -> render.Report.
 
-The single one-way flow described in SPEC §4:
+The single one-way flow (see the README's "How it grades" section):
     input -> adapter -> Implementation -> grader -> Report -> renderer -> HTML
 
 This module is the only place that knows about both the rule engine and the

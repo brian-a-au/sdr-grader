@@ -3,7 +3,7 @@
 The contract every adapter produces and every rule consumes. Rules write
 generic logic against this model; the renderer never sees it directly.
 
-See SPEC §5. The shapes here are load-bearing — adding fields is fine,
+See docs/ADAPTER_GUIDE.md. The shapes here are load-bearing — adding fields is fine,
 renaming or removing them breaks the rule contract.
 """
 

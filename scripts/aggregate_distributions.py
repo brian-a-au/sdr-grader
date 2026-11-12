@@ -1,9 +1,7 @@
 """Aggregate sdr-grader --json outputs into a distribution.json reference.
 
-Closes the gap until a real opt-in submission service exists (SPEC §8
-deferred items). Teams that grade many implementations internally can
-collect the JSON outputs into a directory, run this script, and use
-the resulting file as `--distribution-data PATH` for the report's
+Teams that grade many implementations can collect the JSON outputs
+into a directory, run this script, and use the resulting file as `--distribution-data PATH` for the report's
 distribution context.
 
 Usage:

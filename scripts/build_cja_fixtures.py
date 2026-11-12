@@ -14,8 +14,8 @@ tests:
     distinct.
 
 Re-run only when fixture properties need to change deliberately. The
-generated JSON is the test contract; downstream tests (and Phase 3+
-end-to-end suites) assert specific counts and IDs against it.
+generated JSON is the test contract; downstream tests, including the
+end-to-end suites, assert specific counts and IDs against it.
 """
 
 from __future__ import annotations

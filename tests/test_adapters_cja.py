@@ -1,6 +1,6 @@
 """CJA adapter tests.
 
-Per SPEC §8 Phase 2: round-trip every field, segment depth and calc metric
+Round-trip every field, segment depth and calc metric
 complexity computed correctly, references extracted. The messy fixture
 encodes specific known counts (487 components, 240 missing descriptions,
 4 deep segments, 7 near-duplicate revenue calc metrics) — those numbers
@@ -435,7 +435,7 @@ def test_wrong_typed_references_and_numerics_degrade():
 # Wrong-typed optional scalars (visualizer parity): a non-string
 # created/modified is missing, not a value worth fabricating; a falsy
 # derived-field output_type is likewise missing after the cast; a truthy one
-# is stringified. Mirrored from sdr-visualizer (SPEC §11/§15).
+# is stringified. Mirrored from sdr-visualizer.
 # ---------------------------------------------------------------------------
 
 
@@ -505,7 +505,7 @@ def test_numeric_inline_echo_of_derived_field_is_deduped():
 
 # ---------------------------------------------------------------------------
 # Q5 (1.0.0): generator-version compatibility warning helper. Warn-only,
-# never refuse. Mirrors the sdr-visualizer originals (SPEC §11/§15).
+# never refuse. Mirrors the sdr-visualizer originals.
 # ---------------------------------------------------------------------------
 
 
@@ -546,7 +546,7 @@ def test_tuple_length_mismatch_versions_compare_correctly():
 # ---------------------------------------------------------------------------
 # Real cja_auto_sdr snapshots carry the generation timestamp only under
 # "Generated Date & timestamp and timezone" (corpus, 2026-07-17). Mirrors
-# the sdr-visualizer originals (SPEC §11/§15).
+# the sdr-visualizer originals.
 # ---------------------------------------------------------------------------
 
 

@@ -1,6 +1,6 @@
 """Check function registry.
 
-Per SPEC §6: rules are YAML; checks are pure Python functions registered by
+See docs/CHECK_FUNCTION_GUIDE.md: rules are YAML; checks are pure Python functions registered by
 name via the @register_check decorator. The registry is a global dict;
 rubric loading looks up each rule's `check:` field here. This is a function
 lookup with a declared param contract, not a plugin system — keep it simple.

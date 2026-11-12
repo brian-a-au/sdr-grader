@@ -1,8 +1,8 @@
 """HTML report renderer.
 
-The visual contract is locked (SPEC §3). The renderer is a presentation layer:
+The visual contract (templates/ and static/) is locked. The renderer is a presentation layer:
 it must work standalone with fabricated data and never call back into the rule
-engine (SPEC §4).
+engine.
 """
 
 from sdr_grader.render.renderer import (

@@ -1,7 +1,7 @@
 """Score and grade computation.
 
-Algorithm (SPEC §6 makes the inputs explicit; the algorithm itself is
-calibrated here):
+Algorithm (docs/RUBRIC_FORMAT.md makes the inputs explicit; the
+algorithm itself is calibrated here):
 
 - For each category with non-zero weight:
     rules_in_category = resolved effective rules where rule.category == slug
