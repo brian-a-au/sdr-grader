@@ -4,8 +4,8 @@ Reads the JSON shape produced by `cja_auto_sdr ... --format json`. Maps
 platform vocabulary into the model in core/models.py. Validates the input
 shape and raises InvalidSnapshotError with an explicit message on failure.
 
-See SPEC §5 (model contract) and the upstream cja_auto_sdr repo for the
-authoritative output shape.
+See core/models.py (model contract), docs/ADAPTER_GUIDE.md, and the
+upstream cja_auto_sdr repo for the authoritative output shape.
 """
 
 from __future__ import annotations
@@ -659,7 +659,7 @@ def generator_version_warning(adapter_version: str) -> str | None:
     """Return warning text when the snapshot's generator is newer than the
     newest version this release was tested against, else None. Unparseable
     versions ("unknown", empty, suffixed builds) never warn. Vendored
-    parity: behavior-identical copy in sdr-visualizer (SPEC §11/§15); the
+    parity: behavior-identical copy in sdr-visualizer (see docs/ADAPTER_GUIDE.md); the
     per-platform constant value is the one deliberate difference."""
     tested = _version_tuple(TESTED_THROUGH_GENERATOR_VERSION)
     seen = _version_tuple(adapter_version)
@@ -762,7 +762,7 @@ def _optional_str(value: Any) -> str | None:
     $.components[*].data_type). Falsy input (including 0) stays None rather
     than becoming the string "0" — matching the pre-existing
     `str(x) if x else None` pattern the metric/dimension path already used.
-    Mirrored from sdr-visualizer's copy (SPEC §11/§15); owner needs no
+    Mirrored from sdr-visualizer's copy; owner needs no
     equivalent here — `_normalize_owner` already reduces a non-string owner
     to None by a different mechanism."""
     return str(value) if value else None
@@ -776,7 +776,7 @@ def _optional_timestamp(value: Any) -> str | None:
     read as absent, not as a fabricated one (fuzz-surfaced in the sibling
     sdr-visualizer: $.components[*].modified_at, where the render-path
     schema check caught it; here it protects rule inputs from the same
-    shape). Mirrored from sdr-visualizer's copy (SPEC §11/§15)."""
+    shape). Mirrored from sdr-visualizer's copy."""
     return value if isinstance(value, str) and value else None
 
 

@@ -1,6 +1,6 @@
 """Project-level suppression config (.sdr-grader.yaml).
 
-Per SPEC §7: a project drops a YAML file in the working directory to
+See docs/PROJECT_CONFIG.md: a project drops a YAML file in the working directory to
 suppress noisy rules, override severities, or rebalance category weights
 for their context. The file is opt-in; without it, the strict rubric runs
 unmodified.

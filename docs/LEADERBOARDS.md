@@ -1,4 +1,4 @@
-# Internal leaderboards (distribution data)
+# Portfolio distribution reference
 
 Teams that grade many implementations — multiple data views, report
 suites, business units, or accounts — often want to know more than the

@@ -78,6 +78,7 @@ exclude = [
     "/.superpowers",
     "/.hypothesis",
     "/.github",
+    "/.githooks",
     "/.venv",
     "/.env",
     "/.env.local",
@@ -136,7 +137,7 @@ ignore = []
 # Fixture/example builders: data-heavy scripts where long literal rows are clearer aligned.
 "scripts/**" = ["E501"]
 # Renderer literals (SVG markup, long content strings, embedded HTML) are part
-# of the locked visual contract (SPEC §3). Keeping them on one line preserves
+# of the locked visual contract. Keeping them on one line preserves
 # readability against the rendered HTML structure.
 "src/sdr_grader/render/svg.py" = ["E501"]
 "src/sdr_grader/render/renderer.py" = ["E501"]

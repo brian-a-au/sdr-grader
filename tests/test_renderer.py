@@ -1,6 +1,6 @@
 """Renderer regression tests.
 
-The renderer's output is the visual contract (SPEC §3). These tests guard:
+The renderer's output is the visual contract. These tests guard:
 
 1. **Structural integrity**: expected sections, finding/category counts.
 2. **Determinism**: same input -> byte-identical output, twice in a row.

@@ -1,6 +1,6 @@
 {
   "version": "0.1",
-  "description": "Reference distribution percentiles used by the renderer's distribution-context section. Replace with real leaderboard data once the opt-in submission service ships (SPEC §8 deferred items).",
+  "description": "Reference distribution percentiles used by the renderer's distribution-context section. Supply your own file with --distribution-data; see docs/LEADERBOARDS.md.",
   "n_instances": 142,
   "overall": {
     "median": 67,

@@ -1,8 +1,8 @@
 """Build the renderer's Distribution block from a percentile data file.
 
 The data file is a JSON shape parallel to data/distribution.json bundled
-with the package. Replace with real leaderboard data once the opt-in
-submission service is built (SPEC §8 deferred items).
+with the package. Supply your own file with --distribution-data; see
+docs/LEADERBOARDS.md.
 """
 
 from __future__ import annotations

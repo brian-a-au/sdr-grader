@@ -1,6 +1,6 @@
 """Auto-detect platform from a parsed JSON snapshot's top-level shape.
 
-Per SPEC §5: CJA snapshots have a `metadata` object with "Data View ID" and
+CJA snapshots have a `metadata` object with "Data View ID" and
 top-level `metrics` / `dimensions` arrays. AA snapshots have `report_suite`
 with rsid plus top-level `metrics` / `dimensions` / (often) classifications.
 """

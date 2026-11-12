@@ -1,6 +1,6 @@
 """Shared helpers for rules/checks/*.
 
-Per SPEC §6: check functions stay self-contained, but truly cross-cutting
+See docs/CHECK_FUNCTION_GUIDE.md: check functions stay self-contained, but truly cross-cutting
 formatting + iteration helpers belong here so each check module doesn't
 re-derive the same conventions.
 """

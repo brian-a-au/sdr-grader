@@ -73,6 +73,19 @@ admitted-cohort distribution evidence.
 - **PR directly** for bug fixes, fuzz-found adapter guards, docs, or
   CI improvements.
 
+## Commit identity
+
+Maintainer commits must use the `brian-a-au` GitHub identity
+(`brian.a.au@gmail.com` or the account's noreply address). Employer email
+addresses are rejected. The `Commit identity` check enforces this on every pull
+request with `scripts/check_commit_identity.py`. Commits from other contributors
+and bots are not affected. To catch a wrong identity before you commit, enable
+the bundled hook once per clone:
+
+```bash
+git config core.hooksPath .githooks
+```
+
 ## Running locally
 
 All commands in this section are source-checkout workflows run from the

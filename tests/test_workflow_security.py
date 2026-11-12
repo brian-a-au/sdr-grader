@@ -111,6 +111,7 @@ def test_pr_workflows_have_read_only_defaults_and_stable_check_names():
         "lint.yml": "name: Lint",
         "test.yml": "name: Tests / Python ${{ matrix.python-version }}",
         "version-sync.yml": "name: Version identity",
+        "commit-identity.yml": "name: Commit identity",
         "dependency-review.yml": "name: Dependency review",
         "codeql.yml": "name: CodeQL / Python",
     }

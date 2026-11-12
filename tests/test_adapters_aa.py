@@ -309,7 +309,7 @@ def test_formula_text_renders_nested_formulas_readably():
 # Wrong-typed optional timestamps (visualizer parity): a non-string
 # created/modified is missing, not a value worth fabricating. Owner needs no
 # equivalent guard — its owner_id path is already cast. Mirrored from
-# sdr-visualizer (SPEC §11/§15).
+# sdr-visualizer.
 # ---------------------------------------------------------------------------
 
 
@@ -353,7 +353,7 @@ def test_classification_without_name_or_id_is_skipped():
 
 # ---------------------------------------------------------------------------
 # Q5 (1.0.0): generator-version compatibility warning helper. Warn-only,
-# never refuse. Mirrors the sdr-visualizer originals (SPEC §11/§15).
+# never refuse. Mirrors the sdr-visualizer originals.
 # ---------------------------------------------------------------------------
 
 

@@ -1,6 +1,4 @@
-# Local reference artifacts (kept in working directory, not tracked).
-# These are the inputs the SPEC describes — the visual contract reference and
-# the spec itself. Phase 1 will copy them into src/sdr_grader/render/ paths.
+# Local maintainer reference files (never tracked).
 /render.py
 /report.css
 /report.html.j2
@@ -62,16 +60,12 @@ coverage.xml
 .env
 .env.local
 
-# Claude Code "superpowers" plugin artifacts and plans — local tooling only,
-# never committed. Matches any `superpowers/` directory at any depth
-# (e.g. `/superpowers/`, `docs/superpowers/plans/`), including the
-# dot-prefixed `.superpowers/` working directory the plugin writes to.
+# Local editor and assistant tooling output (never tracked).
 **/superpowers/
 .superpowers/
 
 # Private production SDR snapshots used for rubric calibration.
-# Real customer data; never committed. See the calibration plan in
-# `docs/superpowers/plans/` for the loader contract.
+# Real customer data; never committed. See docs/CALIBRATION_CORPUS.md.
 /tests/fixtures/private/
 
 # Local audit evidence and isolated workspaces.
