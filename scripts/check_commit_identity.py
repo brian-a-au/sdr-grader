@@ -77,7 +77,7 @@ def _split_ident(ident: str) -> tuple[str, str]:
 def pending_records() -> list[tuple[str, str, str, str, str]]:
     author = _split_ident(_git("var", "GIT_AUTHOR_IDENT"))
     committer = _split_ident(_git("var", "GIT_COMMITTER_IDENT"))
-    return [("pending-commit", *author, *committer)]
+    return [("pending", *author, *committer)]
 
 
 def main(argv: list[str] | None = None) -> int:
