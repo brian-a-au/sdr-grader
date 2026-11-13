@@ -3,6 +3,23 @@
 All notable changes follow the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
+## 1.7.1 — 2026-11-13
+
+Prepared November 13, 2026. Not yet published; see the
+[readiness record](docs/releases/1.7.1-readiness.md).
+
+This patch changes no grading code. The bundled `strict`, `pragmatic` and
+`aa-admin` packs are unchanged, and grades and report bytes for the same
+snapshot are the same apart from the version footer.
+
+- (#172) The README, and so the PyPI project page, now states that sdr-grader
+  is an independent project and is not affiliated with or endorsed by Adobe.
+- (#172) Code comments and the bundled distribution reference description no
+  longer point to an internal design document. They point to the public docs
+  instead. The description is not shown in reports.
+- (#173, #174, #175) Development and CI dependencies were updated. None of
+  them ship in the package.
+
 ## 1.7.0 — 2026-10-31
 
 Published October 31, 2026 as a scoped public preview. Announcement remains on
