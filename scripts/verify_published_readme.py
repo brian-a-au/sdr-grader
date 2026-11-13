@@ -452,9 +452,8 @@ def _validate_same_repository_link(parsed, *, version: str) -> None:
                 raise PolicyError(f"same-repository release ref must be {expected_ref}")
         elif ref not in {"main", expected_ref}:
             raise PolicyError("same-repository link has unsupported ref")
-    elif parsed.hostname != "github.com":
-        if len(parts) < 4 or parts[2] != expected_ref:
-            raise PolicyError(f"same-repository release ref must be {expected_ref}")
+    elif parsed.hostname != "github.com" and (len(parts) < 4 or parts[2] != expected_ref):
+        raise PolicyError(f"same-repository release ref must be {expected_ref}")
 
 
 def _validated_url(url: str) -> str:
