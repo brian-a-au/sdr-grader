@@ -272,6 +272,22 @@ shared helpers must be mirrored to the sibling repository in the same cycle:
   `str(x) if x else None` coercion used by the visualizer. Grader-side `owner`
   safety comes through `_normalize_owner`: a different mechanism with the same
   defensive outcome, so no owner-specific `_optional_str` mirror is needed.
+- `_parse_definition_json` (CJA) limits every decoded `definition_json` value
+  to depth 100 and 10,000 nodes before the object-shape fallback, so a decoded
+  list or scalar cannot skip the definition budget. A small non-object still
+  becomes `{}`.
+- AA definitions are limited wherever they are walked. A calculated-metric
+  `definition` is checked as a whole, not only its `formula`, because reference
+  extraction walks all of it. A segment `definition` that is not an object is
+  treated as `{}` before it is validated, walked, or stored.
+- `_parse_ref_list` (CJA) keeps only non-empty strings. Null, objects, numbers,
+  and booleans are dropped instead of becoming IDs such as `"None"`. In the
+  grader this helper is test-only, because reference reading moved to
+  `_inventory_ref_list` in #63; it stays behavior-identical with the visualizer.
+- `_extract_attribution`, the calculated-metric formula summary, and segment
+  container contexts (CJA) keep only non-empty strings. A list, object, number,
+  or boolean is treated as missing instead of being stringified into a Python
+  repr.
 
 Directory input, history evidence, and trend discovery share the loader-owned
 `list_snapshot_candidates` helper so they consume the same complete, sorted

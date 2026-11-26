@@ -320,7 +320,9 @@ def _calc_metric_from_record(
         record.get("definition_json"),
         label=f"calculated metric definition {metric_id!r}",
     )
-    formula_text = record.get("formula_summary") or record.get("definition_summary") or ""
+    formula_text = (
+        _text(record.get("formula_summary")) or _text(record.get("definition_summary")) or ""
+    )
     references = _inventory_references(formula, record, segment=False)
     complexity = _safe_float(record.get("complexity_score"))
 
@@ -353,7 +355,7 @@ def _calc_metric_from_record(
         name=str(name),
         description=description,
         formula=formula,
-        formula_text=str(formula_text),
+        formula_text=formula_text,
         attribution_model=attribution_model,
         allocation=allocation,
         complexity_score=complexity,
@@ -501,17 +503,18 @@ def _extract_attribution(formula: dict[str, Any]) -> tuple[str | None, str | Non
     if not isinstance(formula, dict):
         return None, None
     attribution_model = (
-        formula.get("attribution") or formula.get("attribution_model") or formula.get("model")
+        _text(formula.get("attribution"))
+        or _text(formula.get("attribution_model"))
+        or _text(formula.get("model"))
     )
-    allocation = formula.get("allocation")
+    allocation = _text(formula.get("allocation"))
     func = formula.get("func")
     if isinstance(func, dict):
-        attribution_model = attribution_model or func.get("attribution") or func.get("model")
-        allocation = allocation or func.get("allocation")
-    return (
-        str(attribution_model) if attribution_model else None,
-        str(allocation) if allocation else None,
-    )
+        attribution_model = (
+            attribution_model or _text(func.get("attribution")) or _text(func.get("model"))
+        )
+        allocation = allocation or _text(func.get("allocation"))
+    return attribution_model, allocation
 
 
 # ---------------------------------------------------------------------------
@@ -604,8 +607,8 @@ def _extract_container_types(declared_container: Any, definition: dict[str, Any]
     """
     found: list[str] = []
     _walk_for_contexts(definition, found)
-    if not found and declared_container:
-        found = [str(declared_container)]
+    if not found and _text(declared_container):
+        found = [declared_container]
     seen: set[str] = set()
     ordered: list[str] = []
     for ctx in found:
@@ -633,8 +636,8 @@ def _container_depth(node: Any) -> int:
 
 def _walk_for_contexts(node: Any, out: list[str]) -> None:
     if isinstance(node, dict):
-        if node.get("func") == "container" and node.get("context"):
-            out.append(str(node["context"]))
+        if node.get("func") == "container" and _text(node.get("context")):
+            out.append(node["context"])
         for value in node.values():
             _walk_for_contexts(value, out)
     elif isinstance(node, list):
@@ -744,12 +747,16 @@ def _parse_definition_json(value: Any, *, label: str = "definition") -> dict[str
         except (ValueError, RecursionError) as exc:
             raise InvalidSnapshotError(f"{label} JSON exceeds decoder limits") from exc
         validate_unicode_scalars(parsed, label=label)
-        if not isinstance(parsed, dict):
-            return {}
     else:
         return {}
+    # Limit every decoded value before the shape fallback, as tags and refs do.
     validate_definition_structure(parsed, label=label)
-    return parsed
+    return parsed if isinstance(parsed, dict) else {}
+
+
+def _text(value: Any) -> str | None:
+    """Return a non-empty string; other JSON values are absent, never a repr."""
+    return value if isinstance(value, str) and value else None
 
 
 def _optional_str(value: Any) -> str | None:
@@ -831,7 +838,7 @@ def _parse_ref_list(value: Any) -> list[str]:
     if value is None or value == "":
         return []
     if isinstance(value, list):
-        return [str(t) for t in value]
+        return _reference_strings(value)
     if isinstance(value, str):
         try:
             parsed = json.loads(value, object_pairs_hook=unique_object)
@@ -846,8 +853,13 @@ def _parse_ref_list(value: Any) -> list[str]:
         validate_decoded_structure(parsed, label="reference list")
         validate_unicode_scalars(parsed, label="reference list")
         if isinstance(parsed, list):
-            return [str(t) for t in parsed]
+            return _reference_strings(parsed)
     return []
+
+
+def _reference_strings(items: list[Any]) -> list[str]:
+    """Keep non-empty string IDs; null, objects, and numbers are not references."""
+    return [item for item in items if isinstance(item, str) and item.strip()]
 
 
 def _present(value: Any) -> Any:

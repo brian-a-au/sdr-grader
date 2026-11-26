@@ -255,6 +255,8 @@ def _calc_from_record(record: Any, *, index: int | None = None) -> CalculatedMet
         formula_text = _stringify_formula(formula)
     else:
         formula_text = ""
+    # Reference extraction walks the whole definition, not only its formula.
+    validate_definition_structure(definition, label=f"calculated metric definition {metric_id!r}")
     references = _extract_aa_calc_refs(definition)
 
     extra = record.get("extra") if isinstance(record.get("extra"), dict) else {}
@@ -373,11 +375,13 @@ def _segment_from_record(record: Any, *, index: int | None = None) -> Segment:
     name = _present(record.get("name")) or segment_id
     description = _normalize_description(record.get("description"))
     definition = record.get("definition") or {}
-    if isinstance(definition, dict):
-        validate_definition_structure(
-            definition,
-            label=f"segment definition {segment_id!r}",
-        )
+    if not isinstance(definition, dict):
+        # Stored, walked, and reported shapes must agree; a non-object is empty.
+        definition = {}
+    validate_definition_structure(
+        definition,
+        label=f"segment definition {segment_id!r}",
+    )
     nesting_depth, container_types, references = _analyze_segment_definition(definition)
 
     extra = record.get("extra") if isinstance(record.get("extra"), dict) else {}
@@ -387,7 +391,7 @@ def _segment_from_record(record: Any, *, index: int | None = None) -> Segment:
         id=str(segment_id),
         name=str(name),
         description=description,
-        definition=definition if isinstance(definition, dict) else {},
+        definition=definition,
         nesting_depth=nesting_depth,
         container_types=container_types,
         references=references,
