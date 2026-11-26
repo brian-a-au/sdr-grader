@@ -125,3 +125,8 @@ def test_cja_declared_string_container_type_still_falls_back():
     record = {"segment_id": "s", "definition_json": {}, "container_type": "visit"}
     impl = cja.adapt(_cja(segments=[record]))
     assert impl.segments[0].container_types == ["visit"]
+
+
+@pytest.mark.parametrize("value", [None, "", '{"not": "a list"}', 7])
+def test_cja_reference_list_non_list_inputs_are_empty(value):
+    assert cja._parse_ref_list(value) == []
