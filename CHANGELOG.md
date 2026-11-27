@@ -5,8 +5,8 @@ spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
 ## 1.7.2 — 2026-11-26
 
-Prepared November 26, 2026. Not yet published; see the
-[readiness record](docs/releases/1.7.2-readiness.md).
+Published November 26, 2026 as a scoped public preview. Announcement remains on
+HOLD; see the [release record](docs/releases/1.7.2-readiness.md).
 
 This patch changes how the CJA and AA adapters read malformed snapshots. The
 bundled `strict`, `pragmatic` and `aa-admin` packs are unchanged, and the
