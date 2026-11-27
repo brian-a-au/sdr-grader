@@ -3,6 +3,55 @@
 All notable changes follow the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 spirit. The version numbers follow [Semantic Versioning](https://semver.org/).
 
+## 1.7.2 — 2026-11-26
+
+Prepared November 26, 2026. Not yet published; see the
+[readiness record](docs/releases/1.7.2-readiness.md).
+
+This patch changes how the CJA and AA adapters read malformed snapshots. The
+bundled `strict`, `pragmatic` and `aa-admin` packs are unchanged, and the
+report schema is unchanged at 1. For a valid snapshot, grades and report bytes
+are the same apart from the version footer. sdr-visualizer makes the same
+adapter changes in brian-a-au/sdr-visualizer#144.
+
+### Input contract changes
+
+- (#179) A CJA `definition_json` value that decodes to a list or another
+  non-object value now has the same limits as an object, which are a depth of
+  100 and 10,000 nodes. A snapshot with a value over these limits is rejected
+  as invalid input. A small non-object value is still read as an empty
+  definition.
+- (#179) For AA calculated metrics, these limits now apply to the whole
+  `definition`, not only to `definition.formula`.
+- (#179) An AA segment whose `definition` is not an object is now read as an
+  empty definition before it is checked. Before, the adapter stored an empty
+  definition but still reported depth, contexts and references from the
+  original value.
+
+### Grading changes for malformed input
+
+- (#179) The adapters now treat these values as missing when they are not
+  strings:
+  - attribution and allocation settings
+  - the calculated metric formula summary and formula functions
+  - segment container contexts and the declared container type
+  - component references
+
+  Before, the adapters turned such a value into text, e.g., `"True"`.
+- (#179) A segment container whose context is not a string no longer counts
+  toward nesting depth. Before, such a container could trigger SEG-002 or
+  SEG-007.
+- (#179) SCH-008 and SCH-009 now use only references that are non-blank
+  strings. Before, a derived field reference that was not a string, e.g., an
+  object, was reported as a missing reference.
+
+### Dependencies
+
+- (#183) The lock file now pins PyYAML 6.0.4. The package still requires
+  `pyyaml>=6.0`, so this does not change what an install requires.
+- (#178, #180, #181, #182) Development and CI dependencies were updated. None
+  of them ship in the package.
+
 ## 1.7.1 — 2026-11-13
 
 Published November 13, 2026 as a scoped public preview. Announcement remains on
