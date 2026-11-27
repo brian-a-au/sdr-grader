@@ -68,6 +68,32 @@ by the generator. Do not paste credentials into a snapshot, report, issue, CI
 log, or troubleshooting request. Child diagnostics are intentionally bounded;
 rerun the generator itself when its full authentication error is needed.
 
+The generator finds the credential by its own lookup. sdr-grader reads no
+credential, and the child generator inherits the environment and the working
+folder unchanged. To use one of the generator's credential profiles, add
+`--profile NAME` to the `--dataview` or `--rsid` command.
+
+When the generator exits with an error, sdr-grader hides the generator's error
+output and prints the command that tests a profile:
+
+```text
+error: shell error [child-exit]: cja_auto_sdr returned status 1. The error output of cja_auto_sdr is hidden. To test the credential of a profile, run: cja_auto_sdr --profile-test client-a
+```
+
+Run that command. It signs in to Adobe with the profile and reports the result.
+When you gave no `--profile`, the command shows `<name>` in place of a profile
+name. A generator can also fail for a reason other than the credential, e.g., a
+data view ID that does not exist. Run the generator itself to read its full
+error.
+
+These `--profile` errors come from sdr-grader, before the generator starts:
+
+- `--profile requires --dataview or --rsid`: you gave `--profile` in a mode that
+  starts no generator. Remove the option.
+- `invalid profile name [invalid_profile_name]`: the name breaks the profile
+  name rule. A name holds letters, digits, dots, underscores and hyphens only.
+  It starts with a letter or a digit, and it is 64 characters or fewer.
+
 ## Incomplete CJA inventory
 
 For a file or pipeline created directly by `cja_auto_sdr`, use

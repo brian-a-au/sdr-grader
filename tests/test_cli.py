@@ -1443,6 +1443,7 @@ def test_x_extension_keys_do_not_change_report_bytes(tmp_path):
     [
         "--dataview",
         "--rsid",
+        "--profile",
         "--at",
         "--rubric",
         "--pack",

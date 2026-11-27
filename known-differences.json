@@ -1,0 +1,56 @@
+{
+  "spec": "adobe-credentials/v1",
+  "tool": "sdr-grader",
+  "tool_version": "1.8.0",
+  "not_applicable": [
+    {
+      "rule": "L1.1",
+      "reason": "The parts of this rule about showing a secret do not apply, because sdr-grader never reads or holds a secret. The part about the arguments of a child process applies, and the case mask-009 tests it."
+    },
+    {
+      "rule": "L1.2",
+      "reason": "sdr-grader never reads or shows a client ID."
+    },
+    {
+      "rule": "L1.3",
+      "reason": "sdr-grader reads no credential file, writes no credential file and creates no credentials folder."
+    },
+    {
+      "rule": "L2.1",
+      "reason": "sdr-grader reads no credential fields. sdr-grader does not look up a credential. In the --dataview and --rsid modes the generator child, cja_auto_sdr or aa_auto_sdr, looks it up."
+    },
+    {
+      "rule": "L2.2",
+      "reason": "sdr-grader reads no credential variables. The generator child inherits the environment unchanged and reads them."
+    },
+    {
+      "rule": "L2.3",
+      "reason": "sdr-grader builds no profile path. It checks the --profile name and passes it to the generator child, which owns the profile folders."
+    },
+    {
+      "rule": "L2.4",
+      "reason": "sdr-grader has no config check, because it has no credential lookup to report. Use the config check of the generator."
+    },
+    {
+      "rule": "L2.5",
+      "reason": "sdr-grader does not call Adobe, so it has no live test. Use the live test of the generator. When the child fails, sdr-grader names the generator's --profile-test command."
+    },
+    {
+      "rule": "L2.6",
+      "reason": "sdr-grader does not call Adobe, so it cannot detect a credential with no product access. The generator reports it."
+    },
+    {
+      "rule": "L3.1",
+      "reason": "sdr-grader does not look up a credential. In the --dataview and --rsid modes the generator child, cja_auto_sdr or aa_auto_sdr, looks it up."
+    },
+    {
+      "rule": "L3.2",
+      "reason": "sdr-grader does not look up a credential. In the --dataview and --rsid modes the generator child, cja_auto_sdr or aa_auto_sdr, looks it up."
+    },
+    {
+      "rule": "L3.3",
+      "reason": "sdr-grader has no scopes. sdr-grader does not look up a credential. In the --dataview and --rsid modes the generator child, cja_auto_sdr or aa_auto_sdr, looks it up."
+    }
+  ],
+  "differences": []
+}
