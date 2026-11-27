@@ -557,7 +557,9 @@ def _derived_field_refs(df) -> list[str]:
     """
     value = df.platform_specific.get("component_references")
     if isinstance(value, list):
-        return [str(r) for r in value if r]
+        # Only non-blank strings are IDs; other JSON values must not become
+        # fake references such as "{'y': 1}" or "None".
+        return [r for r in value if isinstance(r, str) and r.strip()]
     return []
 
 

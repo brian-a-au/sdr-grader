@@ -208,7 +208,7 @@ def _index_classifications(classifications: Any) -> dict[str, list[str]]:
 
 
 def _stringify_formula(formula: dict[str, Any]) -> str:
-    func = formula.get("func")
+    func = _text(formula.get("func"))
     if not func:
         return ""
     # The API uses named operands (col1/col2/col), typed metric nodes,
@@ -227,7 +227,7 @@ def _stringify_formula_arg(arg: Any) -> str:
         # Nested formula: render it the same way instead of leaking a
         # Python dict repr into user-facing formula summaries.
         rendered = _stringify_formula(arg)
-        return rendered or str(arg.get("func") or "?")
+        return rendered or _text(arg.get("func")) or "?"
     return str(arg)
 
 
@@ -449,9 +449,9 @@ def _analyze_segment_definition(
                 if ref not in seen_references:
                     seen_references.add(ref)
                     references.append(ref)
-            is_container = node.get("func") == "container" and node.get("context")
+            ctx = _text(node.get("context")) if node.get("func") == "container" else None
+            is_container = ctx is not None
             if is_container:
-                ctx = str(node["context"])
                 if ctx not in seen_contexts:
                     seen_contexts.add(ctx)
                     contexts.append(ctx)
@@ -606,6 +606,11 @@ def _tag_names(values: list[Any]) -> list[str]:
         if isinstance(value, str) and value:
             tags.append(value)
     return tags
+
+
+def _text(value: Any) -> str | None:
+    """Return a non-empty string, or None for anything else."""
+    return value if isinstance(value, str) and value else None
 
 
 def _present(value: Any) -> Any:

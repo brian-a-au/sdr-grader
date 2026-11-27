@@ -626,7 +626,7 @@ def _container_depth(node: Any) -> int:
     """
     if isinstance(node, dict):
         inner = max((_container_depth(value) for value in node.values()), default=0)
-        if node.get("func") == "container" and node.get("context"):
+        if node.get("func") == "container" and _text(node.get("context")):
             return inner + 1
         return inner
     if isinstance(node, list):
@@ -746,11 +746,13 @@ def _parse_definition_json(value: Any, *, label: str = "definition") -> dict[str
             raise InvalidSnapshotError(f"{label} JSON contains duplicate object keys") from None
         except (ValueError, RecursionError) as exc:
             raise InvalidSnapshotError(f"{label} JSON exceeds decoder limits") from exc
-        validate_unicode_scalars(parsed, label=label)
     else:
         return {}
-    # Limit every decoded value before the shape fallback, as tags and refs do.
+    # Limit every value before the shape fallback and before the unbounded
+    # surrogate walk of decoded text, as tags and refs do.
     validate_definition_structure(parsed, label=label)
+    if isinstance(value, str):
+        validate_unicode_scalars(parsed, label=label)
     return parsed if isinstance(parsed, dict) else {}
 
 

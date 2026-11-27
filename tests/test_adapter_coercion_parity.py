@@ -6,9 +6,11 @@ import json
 
 import pytest
 
+from _rule_test_helpers import ctx
 from sdr_grader.adapters import aa, cja
 from sdr_grader.core.exceptions import InvalidSnapshotError
 from sdr_grader.core.structure_limits import MAX_DEFINITION_NODES, MAX_STRUCTURE_DEPTH
+from sdr_grader.rules.checks.schema_hygiene import check_derived_field_broken_refs
 
 
 def _cja(**updates):
@@ -130,3 +132,88 @@ def test_cja_declared_string_container_type_still_falls_back():
 @pytest.mark.parametrize("value", [None, "", '{"not": "a list"}', 7])
 def test_cja_reference_list_non_list_inputs_are_empty(value):
     assert cja._parse_ref_list(value) == []
+
+
+# --- the structure budget runs before the unbounded surrogate walk ---
+
+
+def test_cja_decoded_definition_checks_node_budget_before_surrogates():
+    # The surrogate sits past the node budget, so only the budget can see it first.
+    encoded = '["\\ud800",' + ",".join(["0"] * (MAX_DEFINITION_NODES + 5)) + "]"
+    with pytest.raises(InvalidSnapshotError, match="nodes"):
+        cja._parse_definition_json(encoded, label="definition")
+    with pytest.raises(InvalidSnapshotError, match="nodes"):
+        cja._parse_tag_list(encoded)
+
+
+def test_cja_decoded_definition_still_rejects_surrogates_within_budget():
+    with pytest.raises(InvalidSnapshotError, match="surrogate"):
+        cja._parse_definition_json('{"func": "\\ud800"}', label="definition")
+
+
+# --- AA segment contexts and formula functions keep only strings ---
+
+
+@pytest.mark.parametrize("bad", [{"x": 1}, ["hits"], 7, True])
+def test_aa_non_string_contexts_never_become_container_types(bad):
+    definition = {"func": "container", "context": bad, "pred": {"func": "container"}}
+    impl = aa.adapt(_aa(segments=[{"id": "s", "definition": definition}]))
+    assert impl.segments[0].container_types == []
+
+
+def test_aa_string_context_is_still_a_container_type():
+    definition = {"func": "container", "context": "hits", "pred": {"func": "container"}}
+    impl = aa.adapt(_aa(segments=[{"id": "s", "definition": definition}]))
+    assert impl.segments[0].container_types == ["hits"]
+
+
+@pytest.mark.parametrize("bad", [["divide"], {"func": "divide"}, 7, True])
+def test_aa_non_string_formula_func_is_not_rendered(bad):
+    formula = {"func": bad, "args": ["metrics/a"]}
+    record = {"id": "cm", "definition": {"formula": formula}}
+    impl = aa.adapt(_aa(calculated_metrics=[record]))
+    assert impl.calculated_metrics[0].formula_text == ""
+
+
+@pytest.mark.parametrize("bad", [["divide"], {"x": 1}, 7])
+def test_aa_non_string_nested_formula_func_is_a_placeholder(bad):
+    formula = {"func": "add", "args": [{"func": bad}]}
+    record = {"id": "cm", "definition": {"formula": formula}}
+    impl = aa.adapt(_aa(calculated_metrics=[record]))
+    assert impl.calculated_metrics[0].formula_text == "add(?)"
+
+
+# --- grader-only: depth agrees with contexts, and SCH-009 sees only string IDs ---
+
+
+@pytest.mark.parametrize("bad", [{"x": 1}, ["event"], 7, True])
+def test_cja_non_string_contexts_do_not_count_toward_depth(bad):
+    definition = {"func": "container", "context": bad, "pred": {"func": "container"}}
+    impl = cja.adapt(_cja(segments=[{"segment_id": "s", "definition_json": definition}]))
+    assert impl.segments[0].container_types == []
+    assert impl.segments[0].nesting_depth == 0
+
+
+@pytest.mark.parametrize("bad", [{"x": 1}, ["hits"], 7, True])
+def test_aa_non_string_contexts_do_not_count_toward_depth(bad):
+    definition = {"func": "container", "context": bad, "pred": {"func": "container"}}
+    impl = aa.adapt(_aa(segments=[{"id": "s", "definition": definition}]))
+    assert impl.segments[0].nesting_depth == 0
+
+
+def test_string_contexts_still_count_toward_depth():
+    inner = {"func": "container", "context": "hits", "pred": {}}
+    definition = {"func": "container", "context": "visits", "pred": inner}
+    cja_impl = cja.adapt(_cja(segments=[{"segment_id": "s", "definition_json": definition}]))
+    aa_impl = aa.adapt(_aa(segments=[{"id": "s", "definition": definition}]))
+    assert cja_impl.segments[0].nesting_depth == aa_impl.segments[0].nesting_depth == 2
+
+
+def test_derived_field_non_string_references_are_not_reported_missing():
+    refs = [None, "variables/x", {"y": 1}, 7, True, "   ", "variables/missing"]
+    snapshot = _cja(
+        dimensions=[{"id": "variables/x", "name": "X"}],
+        derived_fields=[{"id": "variables/df", "component_references": refs}],
+    )
+    finding = check_derived_field_broken_refs(cja.adapt(snapshot), ctx("SCH-009"))[0]
+    assert finding.body[1].items == ["variables/df -> missing variables/missing"]
