@@ -272,6 +272,34 @@ shared helpers must be mirrored to the sibling repository in the same cycle:
   `str(x) if x else None` coercion used by the visualizer. Grader-side `owner`
   safety comes through `_normalize_owner`: a different mechanism with the same
   defensive outcome, so no owner-specific `_optional_str` mirror is needed.
+- `_parse_definition_json` (CJA) limits every decoded `definition_json` value
+  to depth 100 and 10,000 nodes before the object-shape fallback, so a decoded
+  list or scalar cannot skip the definition budget. The budget runs before the
+  unbounded surrogate check of decoded text, as it does for tags and refs. A
+  small non-object still becomes `{}`.
+- AA definitions are limited wherever they are walked. A calculated-metric
+  `definition` is checked as a whole, not only its `formula`, because reference
+  extraction walks all of it. A segment `definition` that is not an object is
+  treated as `{}` before it is validated, walked, or stored.
+- `_parse_ref_list` (CJA) keeps only non-empty strings. Null, objects, numbers,
+  and booleans are dropped instead of becoming IDs such as `"None"`. In the
+  grader this helper is test-only: calculated-metric and segment references
+  are read by `_inventory_ref_list` (#63), and derived-field
+  `component_references` stay raw in `platform_specific`. The helper stays
+  behavior-identical with the visualizer.
+- Derived-field `component_references` (grader only) — the visualizer
+  normalizes them in the adapter. The grader keeps them raw, and
+  `schema_hygiene._derived_field_refs` uses only non-blank strings, so SCH-008
+  and SCH-009 never treat null, objects, numbers, or booleans as reference IDs.
+- `_extract_attribution`, the calculated-metric formula summary, and segment
+  container contexts (CJA) keep only non-empty strings. A list, object, number,
+  or boolean is treated as missing instead of being stringified into a Python
+  repr.
+- AA segment container contexts and calculated-metric `func` values keep only
+  non-empty strings. A formula with a non-string `func` renders as an empty
+  summary, and a nested one as `?`. In the grader, a container whose context is
+  not a string also does not count toward `nesting_depth` (CJA and AA), so it
+  cannot trigger SEG-002 or SEG-007.
 
 Directory input, history evidence, and trend discovery share the loader-owned
 `list_snapshot_candidates` helper so they consume the same complete, sorted
