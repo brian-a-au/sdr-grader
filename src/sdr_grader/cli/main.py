@@ -36,7 +36,7 @@ from sdr_grader.input.adapt import adapt_snapshot as _adapt_snapshot
 from sdr_grader.input.adapt import input_warnings
 from sdr_grader.input.json_io import DuplicateJSONKeyError, unique_object
 from sdr_grader.input.loader import STDIN_TOKEN, list_snapshot_candidates, load_snapshot
-from sdr_grader.input.shell_out import shell_aa, shell_cja
+from sdr_grader.input.shell_out import require_profile_name, shell_aa, shell_cja
 from sdr_grader.render import cap_component_items, render
 from sdr_grader.render.color_packs import COLOR_PACK_CODES
 from sdr_grader.rules.rubric import load_rubric
@@ -54,6 +54,17 @@ def main(argv: list[str] | None = None) -> int:
     for flag, value in _string_option_values(args):
         if value == "":
             print(f"error: {flag} requires a non-empty value", file=sys.stderr)
+            return RUNTIME_ERROR
+    if args.profile is not None:
+        # --profile is a generator option. Reject it before any other work in
+        # a mode that starts no generator, and check the name before a child
+        # can receive it.
+        try:
+            if not (args.dataview or args.rsid):
+                raise InvalidSnapshotError("--profile requires --dataview or --rsid")
+            require_profile_name(args.profile)
+        except InvalidSnapshotError as exc:
+            print(f"error: {exc}", file=sys.stderr)
             return RUNTIME_ERROR
 
     rubric_dir = _resolve_rubric_dir(args)
@@ -230,6 +241,15 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--rsid",
         help="Shell out to aa_auto_sdr against the given Report Suite ID (Mode 3).",
+    )
+    parser.add_argument(
+        "--profile",
+        metavar="NAME",
+        help=(
+            "Used with --dataview or --rsid: pass this credential profile name "
+            "to the generator as --profile NAME. sdr-grader reads no credential "
+            "itself."
+        ),
     )
     parser.add_argument(
         "--at",
@@ -488,10 +508,13 @@ def _load_snapshot_for_args(args) -> tuple[dict, str]:
         or (Path(args.snapshot).exists() and not Path(args.snapshot).is_dir())
     ):
         raise InvalidSnapshotError("--at requires a snapshot directory")
+    # Without --profile the generator call is the same as before the option
+    # existed.
+    profile_options = {} if args.profile is None else {"profile": args.profile}
     if args.dataview:
-        return shell_cja(args.dataview)
+        return shell_cja(args.dataview, **profile_options)
     if args.rsid:
-        return shell_aa(args.rsid)
+        return shell_aa(args.rsid, **profile_options)
     # Mode 1, 2, or 4 — handled by the loader.
     if args.snapshot != STDIN_TOKEN and not Path(args.snapshot).exists():
         # Preserve the historical "snapshot file not found" message for the
@@ -558,6 +581,7 @@ def _string_option_values(args) -> list[tuple[str, str | None]]:
     return [
         ("--dataview", args.dataview),
         ("--rsid", args.rsid),
+        ("--profile", args.profile),
         ("--at", args.at),
         ("--rubric", args.rubric),
         ("--pack", args.pack),

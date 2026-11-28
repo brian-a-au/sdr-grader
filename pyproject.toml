@@ -87,6 +87,8 @@ exclude = [
     "/docs/specs",
     "/pages",
     "/tests",
+    # The list of credentials standard rules is read by the tests only.
+    "/known-differences.json",
     "/dist",
     "**/__pycache__",
     "**/*.pyc",

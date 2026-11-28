@@ -3,6 +3,10 @@
 The grader does not call Adobe APIs directly. To run against a live data
 view or report suite, it asks the upstream snapshot tool for JSON and
 parses the emitted snapshot as if it were a Mode 1 file.
+
+The grader never reads an Adobe credential. The upstream tool looks up the
+credential itself, so the child inherits the grader's environment and working
+folder unchanged. ``--profile`` only passes a profile name to the child.
 """
 
 from __future__ import annotations
@@ -10,6 +14,7 @@ from __future__ import annotations
 import contextlib
 import json
 import os
+import re
 import shutil
 import signal
 import subprocess
@@ -32,9 +37,58 @@ _READ_CHUNK_BYTES = 64 * 1024
 _READER_JOIN_SECONDS = 1.0
 _POST_EXIT_PIPE_GRACE_SECONDS = 5.0
 
+# The profile name rule of the Adobe credentials standard v1 (L1.4). A valid
+# name starts with a letter or a digit, so the child cannot read it as an
+# option, and it holds no path separator.
+MAX_PROFILE_NAME_LENGTH = 64
+_PROFILE_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
+
+
+def is_valid_profile_name(name: object) -> bool:
+    """Return True when ``name`` meets the profile name rule (L1.4)."""
+    return (
+        isinstance(name, str)
+        and len(name) <= MAX_PROFILE_NAME_LENGTH
+        and _PROFILE_NAME.fullmatch(name) is not None
+    )
+
+
+def require_profile_name(name: str) -> None:
+    """Raise ``InvalidSnapshotError`` when ``name`` breaks the profile name rule.
+
+    The message does not repeat the name, because the name can hold control
+    characters.
+    """
+    if not is_valid_profile_name(name):
+        raise InvalidSnapshotError(
+            "invalid profile name [invalid_profile_name]: a --profile name holds "
+            "letters, digits, dots, underscores and hyphens only, starts with a "
+            f"letter or a digit, and is {MAX_PROFILE_NAME_LENGTH} characters or fewer"
+        )
+
+
+def _profile_args(profile: str | None) -> list[str]:
+    if profile is None:
+        return []
+    require_profile_name(profile)
+    return ["--profile", profile]
+
+
+def _profile_test_hint(tool: str, profile: str | None) -> str:
+    # The child's own error output is hidden, so name the command that shows
+    # whether the credential works.
+    name = profile if profile is not None else "NAME"
+    return (
+        f"The error output of {tool} is hidden. To test the credential of a "
+        f"profile, run: {tool} --profile-test {name}"
+    )
+
 
 def shell_cja(
-    dataview_id: str, *, extra_args: list[str] | None = None
+    dataview_id: str,
+    *,
+    extra_args: list[str] | None = None,
+    profile: str | None = None,
 ) -> tuple[dict[str, Any], str]:
     """Shell out to cja_auto_sdr against a CJA data view ID.
 
@@ -43,8 +97,12 @@ def shell_cja(
     without it, those rule packs grade against empty inputs and stay
     silent. See cja_auto_sdr's Component Inventory Overview for the full
     set of ``--include-*`` switches.
+
+    ``profile`` is a profile name for the child. It is checked against the
+    profile name rule and added after ``extra_args`` as ``--profile <name>``.
     """
     _require_positional_id(dataview_id, flag="--dataview")
+    extra = [*(extra_args or []), *_profile_args(profile)]
     try:
         with tempfile.TemporaryDirectory(prefix="sdr-grader-cja-") as output_dir:
             return _shell_out(
@@ -57,10 +115,11 @@ def shell_cja(
                     output_dir,
                     "--include-all-inventory",
                     "--quiet",
-                    *(extra_args or []),
+                    *extra,
                 ],
                 flag="--dataview",
                 json_output_dir=Path(output_dir),
+                profile=profile,
             )
     except OSError:
         raise InvalidSnapshotError(
@@ -68,13 +127,23 @@ def shell_cja(
         ) from None
 
 
-def shell_aa(rsid: str, *, extra_args: list[str] | None = None) -> tuple[dict[str, Any], str]:
-    """Shell out to aa_auto_sdr against an AA report suite ID."""
+def shell_aa(
+    rsid: str,
+    *,
+    extra_args: list[str] | None = None,
+    profile: str | None = None,
+) -> tuple[dict[str, Any], str]:
+    """Shell out to aa_auto_sdr against an AA report suite ID.
+
+    ``profile`` is handled as in :func:`shell_cja`.
+    """
     _require_positional_id(rsid, flag="--rsid")
+    extra = [*(extra_args or []), *_profile_args(profile)]
     return _shell_out(
         "aa_auto_sdr",
-        [rsid, "--format", "json", "--output", "-", *(extra_args or [])],
+        [rsid, "--format", "json", "--output", "-", *extra],
         flag="--rsid",
+        profile=profile,
     )
 
 
@@ -93,6 +162,7 @@ def _shell_out(
     *,
     flag: str,
     json_output_dir: Path | None = None,
+    profile: str | None = None,
 ) -> tuple[dict[str, Any], str]:
     binary = shutil.which(tool)
     if not binary:
@@ -104,7 +174,9 @@ def _shell_out(
 
     # This bounds and cleans up a normal child-process boundary; it is not a
     # sandbox. The invoked snapshot tool retains the OS/network authority of
-    # the user who launched sdr-grader.
+    # the user who launched sdr-grader. The child also inherits the
+    # environment and the working folder, because it looks up the Adobe
+    # credential there. Do not pass env= or cwd= to Popen.
     popen_options = _popen_options(os.name)
 
     try:
@@ -117,7 +189,8 @@ def _shell_out(
     stdout, stderr = _communicate_bounded(process, tool=tool)
     if process.returncode:
         raise InvalidSnapshotError(
-            f"shell error [child-exit]: {tool} returned status {process.returncode}"
+            f"shell error [child-exit]: {tool} returned status {process.returncode}. "
+            f"{_profile_test_hint(tool, profile)}"
         )
 
     if stderr:

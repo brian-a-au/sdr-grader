@@ -200,6 +200,33 @@ One run grades one platform. Keep CJA and AA snapshots in separate directories.
 Directory history uses only same-platform, same-instance siblings; trend mode
 rejects mixed-platform or mixed-instance input rather than combining it.
 
+### Credentials in the child generator modes
+
+sdr-grader never reads an Adobe credential. With `--dataview` or `--rsid`, the
+child generator finds the credential by its own lookup, exactly as it does when
+you run `cja_auto_sdr` or `aa_auto_sdr` yourself. The child inherits the
+environment and the working folder of sdr-grader unchanged, so it sees the same
+variables, the same `.env` file and the same config files. The generator's
+documentation describes the lookup.
+
+To choose a credential profile of the generator, add `--profile NAME`:
+
+```bash
+sdr-grader --dataview dv_prod_web --profile client-a
+sdr-grader --rsid prod_us --profile client-a
+```
+
+sdr-grader passes the name to the generator as `--profile NAME` and reads no
+profile file itself. A profile name holds letters, digits, dots, underscores and
+hyphens only. It starts with a letter or a digit, and it is 64 characters or
+fewer. `--profile` is an error without `--dataview` or `--rsid`, and an invalid
+name is an error before the generator starts.
+
+sdr-grader hides the generator's error output. When the generator fails, the
+error names the command that tests a profile, e.g.,
+`cja_auto_sdr --profile-test client-a`. Run that command to see whether the
+credential works.
+
 Snapshot JSON must have unique keys within each object, including nested
 objects. Duplicate keys are rejected before grading instead of silently keeping
 the last value. This applies to files, stdin, and child-generator output. It
