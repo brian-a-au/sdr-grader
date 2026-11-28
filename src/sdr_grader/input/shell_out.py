@@ -77,7 +77,7 @@ def _profile_args(profile: str | None) -> list[str]:
 def _profile_test_hint(tool: str, profile: str | None) -> str:
     # The child's own error output is hidden, so name the command that shows
     # whether the credential works.
-    name = profile if profile is not None else "<name>"
+    name = profile if profile is not None else "NAME"
     return (
         f"The error output of {tool} is hidden. To test the credential of a "
         f"profile, run: {tool} --profile-test {name}"

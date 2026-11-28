@@ -255,7 +255,7 @@ def test_cli_rejects_an_invalid_profile_name_before_spawning(
 )
 @pytest.mark.parametrize(
     ("profile", "command_name"),
-    [("client-a", "client-a"), (None, "<name>")],
+    [("client-a", "client-a"), (None, "NAME")],
 )
 def test_failed_child_names_the_generator_profile_test(
     monkeypatch, shell, tool, profile, command_name
